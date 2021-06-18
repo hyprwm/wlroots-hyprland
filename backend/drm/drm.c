@@ -36,7 +36,8 @@ static const uint32_t COMMIT_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BUFFER |
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ENABLED |
-	WLR_OUTPUT_STATE_GAMMA_LUT;
+	WLR_OUTPUT_STATE_GAMMA_LUT |
+	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL | COMMIT_OUTPUT_STATE;
@@ -487,6 +488,12 @@ static bool drm_connector_test(struct wlr_output *output,
 				"Can't enable an output without a mode");
 			return false;
 		}
+	}
+
+	if ((state->committed & WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED) &&
+			state->adaptive_sync_enabled &&
+			!drm_connector_supports_vrr(conn)) {
+		return false;
 	}
 
 	struct wlr_drm_connector_state pending = {0};
