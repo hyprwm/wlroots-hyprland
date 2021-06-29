@@ -53,7 +53,8 @@ static void surface_handle_attach(struct wl_client *client,
 		}
 	}
 
-	surface->pending.committed |= WLR_SURFACE_STATE_BUFFER;
+	surface->pending.committed |=
+		WLR_SURFACE_STATE_BUFFER | WLR_SURFACE_STATE_OFFSET;
 	surface->pending.dx = dx;
 	surface->pending.dy = dy;
 
@@ -279,11 +280,14 @@ static void surface_state_move(struct wlr_surface_state *state,
 	if (next->committed & WLR_SURFACE_STATE_TRANSFORM) {
 		state->transform = next->transform;
 	}
-	if (next->committed & WLR_SURFACE_STATE_BUFFER) {
+	if (next->committed & WLR_SURFACE_STATE_OFFSET) {
 		state->dx = next->dx;
 		state->dy = next->dy;
 		next->dx = next->dy = 0;
-
+	} else {
+		state->dx = state->dy = 0;
+	}
+	if (next->committed & WLR_SURFACE_STATE_BUFFER) {
 		wlr_buffer_unlock(state->buffer);
 		state->buffer = NULL;
 		if (next->buffer) {
@@ -291,8 +295,6 @@ static void surface_state_move(struct wlr_surface_state *state,
 		}
 		wlr_buffer_unlock(next->buffer);
 		next->buffer = NULL;
-	} else {
-		state->dx = state->dy = 0;
 	}
 	if (next->committed & WLR_SURFACE_STATE_SURFACE_DAMAGE) {
 		pixman_region32_copy(&state->surface_damage, &next->surface_damage);
