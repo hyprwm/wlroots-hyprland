@@ -542,6 +542,12 @@ static void capture_output(struct wl_client *wl_client,
 			"Failed to capture output: no read format supported by renderer");
 		goto error;
 	}
+	const struct wlr_pixel_format_info *info = drm_get_pixel_format_info(drm_format);
+	if (!info) {
+		wlr_log(WLR_ERROR,
+			"Failed to capture output: no pixel format info matching read format");
+		goto error;
+	}
 
 	frame->format = convert_drm_format_to_wl_shm(drm_format);
 	if (output->allocator &&
@@ -569,7 +575,7 @@ static void capture_output(struct wl_client *wl_client,
 	}
 
 	frame->box = buffer_box;
-	frame->stride = 4 * buffer_box.width; // TODO: depends on read format
+	frame->stride = (info->bpp / 8) * buffer_box.width;
 
 	zwlr_screencopy_frame_v1_send_buffer(frame->resource, frame->format,
 		buffer_box.width, buffer_box.height, frame->stride);
