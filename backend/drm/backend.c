@@ -275,15 +275,17 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 			goto error_mgpu_renderer;
 		}
 
-		// Force a linear layout. In case explicit modifiers aren't supported,
-		// the meaning of implicit modifiers changes from one GPU to the other.
-		// In case explicit modifiers are supported, we still have no guarantee
-		// that the buffer producer will support these, so they might fallback
-		// to implicit modifiers.
+		// Forbid implicit modifiers, because their meaning changes from one
+		// GPU to another.
 		for (size_t i = 0; i < texture_formats->len; i++) {
 			const struct wlr_drm_format *fmt = texture_formats->formats[i];
-			wlr_drm_format_set_add(&drm->mgpu_formats, fmt->format,
-				DRM_FORMAT_MOD_LINEAR);
+			for (size_t j = 0; j < fmt->len; j++) {
+				uint64_t mod = fmt->modifiers[j];
+				if (mod == DRM_FORMAT_MOD_INVALID) {
+					continue;
+				}
+				wlr_drm_format_set_add(&drm->mgpu_formats, fmt->format, mod);
+			}
 		}
 	}
 
