@@ -62,6 +62,7 @@ enum wlr_output_state_field {
 	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED = 1 << 6,
 	WLR_OUTPUT_STATE_GAMMA_LUT = 1 << 7,
 	WLR_OUTPUT_STATE_RENDER_FORMAT = 1 << 8,
+	WLR_OUTPUT_STATE_SUBPIXEL = 1 << 9,
 };
 
 enum wlr_output_state_mode_type {
@@ -80,6 +81,7 @@ struct wlr_output_state {
 	enum wl_output_transform transform;
 	bool adaptive_sync_enabled;
 	uint32_t render_format;
+	enum wl_output_subpixel subpixel;
 
 	// only valid if WLR_OUTPUT_STATE_BUFFER
 	struct wlr_buffer *buffer;

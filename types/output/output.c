@@ -328,16 +328,12 @@ void wlr_output_set_render_format(struct wlr_output *output, uint32_t format) {
 void wlr_output_set_subpixel(struct wlr_output *output,
 		enum wl_output_subpixel subpixel) {
 	if (output->subpixel == subpixel) {
+		output->pending.committed &= ~WLR_OUTPUT_STATE_SUBPIXEL;
 		return;
 	}
 
-	output->subpixel = subpixel;
-
-	struct wl_resource *resource;
-	wl_resource_for_each(resource, &output->resources) {
-		send_geometry(resource);
-	}
-	wlr_output_schedule_done(output);
+	output->pending.committed |= WLR_OUTPUT_STATE_SUBPIXEL;
+	output->pending.subpixel = subpixel;
 }
 
 void wlr_output_set_name(struct wlr_output *output, const char *name) {
@@ -634,6 +630,10 @@ static bool output_basic_test(struct wlr_output *output) {
 		wlr_log(WLR_DEBUG, "Tried to set the gamma lut on a disabled output");
 		return false;
 	}
+	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		wlr_log(WLR_DEBUG, "Tried to set the subpixel layout on a disabled output");
+		return false;
+	}
 
 	return true;
 }
@@ -716,6 +716,10 @@ bool wlr_output_commit(struct wlr_output *output) {
 		output->render_format = output->pending.render_format;
 	}
 
+	if (output->pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		output->subpixel = output->pending.subpixel;
+	}
+
 	output->commit_seq++;
 
 	bool scale_updated = output->pending.committed & WLR_OUTPUT_STATE_SCALE;
@@ -729,7 +733,8 @@ bool wlr_output_commit(struct wlr_output *output) {
 	}
 
 	bool geometry_updated = output->pending.committed &
-		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM);
+		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM |
+		WLR_OUTPUT_STATE_SUBPIXEL);
 	if (geometry_updated || scale_updated) {
 		struct wl_resource *resource;
 		wl_resource_for_each(resource, &output->resources) {
