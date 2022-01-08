@@ -489,19 +489,17 @@ struct wlr_surface *wlr_xdg_surface_surface_at(
 struct wlr_surface *wlr_xdg_surface_popup_surface_at(
 		struct wlr_xdg_surface *surface, double sx, double sy,
 		double *sub_x, double *sub_y) {
-	struct wlr_xdg_popup *popup_state;
-	wl_list_for_each(popup_state, &surface->popups, link) {
-		struct wlr_xdg_surface *popup = popup_state->base;
-		if (!popup->mapped) {
+	struct wlr_xdg_popup *popup;
+	wl_list_for_each(popup, &surface->popups, link) {
+		if (!popup->base->mapped) {
 			continue;
 		}
 
 		double popup_sx, popup_sy;
-		wlr_xdg_popup_get_position(popup_state, &popup_sx, &popup_sy);
+		wlr_xdg_popup_get_position(popup, &popup_sx, &popup_sy);
 
-		struct wlr_surface *sub = wlr_xdg_surface_surface_at(popup,
-			sx - popup_sx,
-			sy - popup_sy,
+		struct wlr_surface *sub = wlr_xdg_surface_surface_at(
+			popup->base, sx - popup_sx, sy - popup_sy,
 			sub_x, sub_y);
 		if (sub != NULL) {
 			return sub;
@@ -526,28 +524,25 @@ static void xdg_surface_iterator(struct wlr_surface *surface,
 
 static void xdg_surface_for_each_popup_surface(struct wlr_xdg_surface *surface,
 		int x, int y, wlr_surface_iterator_func_t iterator, void *user_data) {
-	struct wlr_xdg_popup *popup_state;
-	wl_list_for_each(popup_state, &surface->popups, link) {
-		struct wlr_xdg_surface *popup = popup_state->base;
-		if (!popup->configured || !popup->mapped) {
+	struct wlr_xdg_popup *popup;
+	wl_list_for_each(popup, &surface->popups, link) {
+		if (!popup->base->configured || !popup->base->mapped) {
 			continue;
 		}
 
 		double popup_sx, popup_sy;
-		wlr_xdg_popup_get_position(popup_state, &popup_sx, &popup_sy);
+		wlr_xdg_popup_get_position(popup, &popup_sx, &popup_sy);
 
 		struct xdg_surface_iterator_data data = {
 			.user_iterator = iterator,
 			.user_data = user_data,
 			.x = x + popup_sx, .y = y + popup_sy,
 		};
-		wlr_surface_for_each_surface(popup->surface, xdg_surface_iterator,
-			&data);
+		wlr_surface_for_each_surface(popup->base->surface,
+			xdg_surface_iterator, &data);
 
-		xdg_surface_for_each_popup_surface(popup,
-			x + popup_sx,
-			y + popup_sy,
-			iterator, user_data);
+		xdg_surface_for_each_popup_surface(popup->base,
+			x + popup_sx, y + popup_sy, iterator, user_data);
 	}
 }
 
