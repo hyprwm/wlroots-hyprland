@@ -331,6 +331,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		wl_resource_get_version(surface->resource), id);
 	if (surface->popup->resource == NULL) {
 		free(surface->popup);
+		surface->popup = NULL;
 		wl_resource_post_no_memory(surface->resource);
 		return;
 	}

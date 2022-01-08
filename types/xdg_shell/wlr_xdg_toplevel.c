@@ -475,6 +475,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		wl_resource_get_version(surface->resource), id);
 	if (surface->toplevel->resource == NULL) {
 		free(surface->toplevel);
+		surface->toplevel = NULL;
 		wl_resource_post_no_memory(surface->resource);
 		return;
 	}
