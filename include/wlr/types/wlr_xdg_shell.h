@@ -231,26 +231,26 @@ struct wlr_xdg_surface {
 };
 
 struct wlr_xdg_toplevel_move_event {
-	struct wlr_xdg_surface *surface;
+	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_seat_client *seat;
 	uint32_t serial;
 };
 
 struct wlr_xdg_toplevel_resize_event {
-	struct wlr_xdg_surface *surface;
+	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_seat_client *seat;
 	uint32_t serial;
 	uint32_t edges;
 };
 
 struct wlr_xdg_toplevel_set_fullscreen_event {
-	struct wlr_xdg_surface *surface;
+	struct wlr_xdg_toplevel *toplevel;
 	bool fullscreen;
 	struct wlr_output *output;
 };
 
 struct wlr_xdg_toplevel_show_window_menu_event {
-	struct wlr_xdg_surface *surface;
+	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_seat_client *seat;
 	uint32_t serial;
 	uint32_t x, y;

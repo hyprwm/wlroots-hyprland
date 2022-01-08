@@ -227,7 +227,7 @@ static void xdg_toplevel_handle_show_window_menu(struct wl_client *client,
 	}
 
 	struct wlr_xdg_toplevel_show_window_menu_event event = {
-		.surface = toplevel->base,
+		.toplevel = toplevel,
 		.seat = seat,
 		.serial = serial,
 		.x = x,
@@ -258,7 +258,7 @@ static void xdg_toplevel_handle_move(struct wl_client *client,
 	}
 
 	struct wlr_xdg_toplevel_move_event event = {
-		.surface = toplevel->base,
+		.toplevel = toplevel,
 		.seat = seat,
 		.serial = serial,
 	};
@@ -287,7 +287,7 @@ static void xdg_toplevel_handle_resize(struct wl_client *client,
 	}
 
 	struct wlr_xdg_toplevel_resize_event event = {
-		.surface = toplevel->base,
+		.toplevel = toplevel,
 		.seat = seat,
 		.serial = serial,
 		.edges = edges,
@@ -367,7 +367,7 @@ static void xdg_toplevel_handle_set_fullscreen(struct wl_client *client,
 	store_fullscreen_requested(toplevel, true, output);
 
 	struct wlr_xdg_toplevel_set_fullscreen_event event = {
-		.surface = toplevel->base,
+		.toplevel = toplevel,
 		.fullscreen = true,
 		.output = output,
 	};
@@ -384,7 +384,7 @@ static void xdg_toplevel_handle_unset_fullscreen(struct wl_client *client,
 	store_fullscreen_requested(toplevel, false, NULL);
 
 	struct wlr_xdg_toplevel_set_fullscreen_event event = {
-		.surface = toplevel->base,
+		.toplevel = toplevel,
 		.fullscreen = false,
 		.output = NULL,
 	};
