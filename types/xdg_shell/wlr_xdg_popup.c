@@ -196,25 +196,23 @@ struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
 	return xdg_grab;
 }
 
-void handle_xdg_surface_popup_committed(struct wlr_xdg_surface *surface) {
-	assert(surface->role == WLR_XDG_SURFACE_ROLE_POPUP);
-
-	if (!surface->popup->parent) {
-		wl_resource_post_error(surface->resource,
+void handle_xdg_popup_committed(struct wlr_xdg_popup *popup) {
+	if (!popup->parent) {
+		wl_resource_post_error(popup->base->resource,
 			XDG_SURFACE_ERROR_NOT_CONSTRUCTED,
 			"xdg_popup has no parent");
 		return;
 	}
 
-	if (!surface->popup->committed) {
-		wlr_xdg_surface_schedule_configure(surface);
-		surface->popup->committed = true;
+	if (!popup->committed) {
+		wlr_xdg_surface_schedule_configure(popup->base);
+		popup->committed = true;
 	}
 }
 
 static const struct xdg_popup_interface xdg_popup_implementation;
 
-struct wlr_xdg_surface *wlr_xdg_surface_from_popup_resource(
+struct wlr_xdg_popup *wlr_xdg_popup_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource, &xdg_popup_interface,
 		&xdg_popup_implementation));
@@ -224,35 +222,35 @@ struct wlr_xdg_surface *wlr_xdg_surface_from_popup_resource(
 static void xdg_popup_handle_grab(struct wl_client *client,
 		struct wl_resource *resource, struct wl_resource *seat_resource,
 		uint32_t serial) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_popup_resource(resource);
-	struct wlr_seat_client *seat_client =
-		wlr_seat_client_from_resource(seat_resource);
-	if (!surface) {
+	struct wlr_xdg_popup *popup =
+		wlr_xdg_popup_from_resource(resource);
+	if (!popup) {
 		return;
 	}
 
-	if (surface->popup->committed) {
-		wl_resource_post_error(surface->popup->resource,
+	struct wlr_seat_client *seat_client =
+		wlr_seat_client_from_resource(seat_resource);
+	if (popup->committed) {
+		wl_resource_post_error(popup->resource,
 			XDG_POPUP_ERROR_INVALID_GRAB,
 			"xdg_popup is already mapped");
 		return;
 	}
 
 	struct wlr_xdg_popup_grab *popup_grab = get_xdg_shell_popup_grab_from_seat(
-		surface->client->shell, seat_client->seat);
+		popup->base->client->shell, seat_client->seat);
 
-	if (!wl_list_empty(&surface->popups)) {
-		wl_resource_post_error(surface->client->resource,
+	if (!wl_list_empty(&popup->base->popups)) {
+		wl_resource_post_error(popup->base->client->resource,
 			XDG_WM_BASE_ERROR_NOT_THE_TOPMOST_POPUP,
 			"xdg_popup was not created on the topmost popup");
 		return;
 	}
 
-	popup_grab->client = surface->client->client;
-	surface->popup->seat = seat_client->seat;
+	popup_grab->client = popup->base->client->client;
+	popup->seat = seat_client->seat;
 
-	wl_list_insert(&popup_grab->popups, &surface->popup->grab_link);
+	wl_list_insert(&popup_grab->popups, &popup->grab_link);
 
 	wlr_seat_pointer_start_grab(seat_client->seat,
 		&popup_grab->pointer_grab);
@@ -264,11 +262,11 @@ static void xdg_popup_handle_grab(struct wl_client *client,
 
 static void xdg_popup_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_popup_resource(resource);
+	struct wlr_xdg_popup *popup =
+		wlr_xdg_popup_from_resource(resource);
 
-	if (surface && !wl_list_empty(&surface->popups)) {
-		wl_resource_post_error(surface->client->resource,
+	if (popup && !wl_list_empty(&popup->base->popups)) {
+		wl_resource_post_error(popup->base->client->resource,
 			XDG_WM_BASE_ERROR_NOT_THE_TOPMOST_POPUP,
 			"xdg_popup was destroyed while it was not the topmost popup");
 		return;
@@ -283,12 +281,12 @@ static const struct xdg_popup_interface xdg_popup_implementation = {
 };
 
 static void xdg_popup_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_from_popup_resource(resource);
-	if (xdg_surface == NULL) {
+	struct wlr_xdg_popup *popup =
+		wlr_xdg_popup_from_resource(resource);
+	if (popup == NULL) {
 		return;
 	}
-	wlr_xdg_popup_destroy(xdg_surface);
+	wlr_xdg_popup_destroy(popup);
 }
 
 const struct wlr_surface_role xdg_popup_surface_role = {
@@ -337,7 +335,7 @@ void create_xdg_popup(struct wlr_xdg_surface *xdg_surface,
 		return;
 	}
 	wl_resource_set_implementation(xdg_surface->popup->resource,
-		&xdg_popup_implementation, xdg_surface,
+		&xdg_popup_implementation, xdg_surface->popup,
 		xdg_popup_handle_resource_destroy);
 
 	xdg_surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
@@ -355,6 +353,21 @@ void create_xdg_popup(struct wlr_xdg_surface *xdg_surface,
 	} else {
 		wl_list_init(&xdg_surface->popup->link);
 	}
+}
+
+void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
+	if (popup == NULL) {
+		return;
+	}
+
+	struct wlr_xdg_popup *child, *child_tmp;
+	wl_list_for_each_safe(child, child_tmp, &popup->base->popups, link) {
+		wlr_xdg_popup_destroy(child);
+	}
+
+	xdg_popup_send_popup_done(popup->resource);
+	wl_resource_set_user_data(popup->resource, NULL);
+	reset_xdg_surface(popup->base);
 }
 
 void wlr_xdg_popup_get_anchor_point(struct wlr_xdg_popup *popup,

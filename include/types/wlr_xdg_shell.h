@@ -30,7 +30,7 @@ struct wlr_xdg_positioner_resource *get_xdg_positioner_from_resource(
 void create_xdg_popup(struct wlr_xdg_surface *xdg_surface,
 	struct wlr_xdg_surface *parent,
 	struct wlr_xdg_positioner_resource *positioner, uint32_t id);
-void handle_xdg_surface_popup_committed(struct wlr_xdg_surface *surface);
+void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);
 struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
 	struct wlr_xdg_shell *shell, struct wlr_seat *seat);
 

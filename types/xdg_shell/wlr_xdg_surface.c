@@ -32,7 +32,7 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup->base);
+		wlr_xdg_popup_destroy(popup);
 	}
 
 	// TODO: probably need to ungrab before this event
@@ -324,7 +324,7 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		handle_xdg_toplevel_committed(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		handle_xdg_surface_popup_committed(surface);
+		handle_xdg_popup_committed(surface->popup);
 		break;
 	}
 
@@ -493,23 +493,6 @@ void wlr_xdg_surface_ping(struct wlr_xdg_surface *surface) {
 		surface->client->shell->ping_timeout);
 	xdg_wm_base_send_ping(surface->client->resource,
 		surface->client->ping_serial);
-}
-
-void wlr_xdg_popup_destroy(struct wlr_xdg_surface *surface) {
-	if (surface == NULL) {
-		return;
-	}
-	assert(surface->popup);
-	assert(surface->role == WLR_XDG_SURFACE_ROLE_POPUP);
-
-	struct wlr_xdg_popup *popup, *popup_tmp;
-	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup->base);
-	}
-
-	xdg_popup_send_popup_done(surface->popup->resource);
-	wl_resource_set_user_data(surface->popup->resource, NULL);
-	reset_xdg_surface(surface);
 }
 
 void wlr_xdg_popup_get_position(struct wlr_xdg_popup *popup,

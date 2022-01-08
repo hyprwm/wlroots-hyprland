@@ -265,7 +265,13 @@ struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display);
  */
 struct wlr_xdg_surface *wlr_xdg_surface_from_resource(
 		struct wl_resource *resource);
-struct wlr_xdg_surface *wlr_xdg_surface_from_popup_resource(
+
+/** Get the corresponding wlr_xdg_popup from a resource.
+ *
+ * Aborts if the resource doesn't have the correct type. Returns NULL if the
+ * resource is inert.
+ */
+struct wlr_xdg_popup *wlr_xdg_popup_from_resource(
 		struct wl_resource *resource);
 
 /** Get the corresponding wlr_xdg_toplevel from a resource.
@@ -339,7 +345,7 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 /**
  * Request that this xdg popup closes.
  **/
-void wlr_xdg_popup_destroy(struct wlr_xdg_surface *surface);
+void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup);
 
 /**
  * Get the position for this popup in the surface parent's coordinate system.

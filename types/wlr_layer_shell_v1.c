@@ -211,14 +211,12 @@ static void layer_surface_handle_get_popup(struct wl_client *client,
 		struct wl_resource *popup_resource) {
 	struct wlr_layer_surface_v1 *parent =
 		layer_surface_from_resource(layer_resource);
-	struct wlr_xdg_surface *popup_surface =
-		wlr_xdg_surface_from_popup_resource(popup_resource);
+	struct wlr_xdg_popup *popup =
+		wlr_xdg_popup_from_resource(popup_resource);
 
 	if (!parent) {
 		return;
 	}
-	assert(popup_surface->role == WLR_XDG_SURFACE_ROLE_POPUP);
-	struct wlr_xdg_popup *popup = popup_surface->popup;
 	popup->parent = parent->surface;
 	wl_list_insert(&parent->popups, &popup->link);
 	wlr_signal_emit_safe(&parent->events.new_popup, popup);
@@ -265,7 +263,7 @@ static void layer_surface_unmap(struct wlr_layer_surface_v1 *surface) {
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup->base);
+		wlr_xdg_popup_destroy(popup);
 	}
 
 	struct wlr_layer_surface_v1_configure *configure, *tmp;
