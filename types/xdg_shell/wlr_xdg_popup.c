@@ -295,63 +295,63 @@ const struct wlr_surface_role xdg_popup_surface_role = {
 	.precommit = xdg_surface_role_precommit,
 };
 
-void create_xdg_popup(struct wlr_xdg_surface *xdg_surface,
+void create_xdg_popup(struct wlr_xdg_surface *surface,
 		struct wlr_xdg_surface *parent,
 		struct wlr_xdg_positioner_resource *positioner, uint32_t id) {
 	if (positioner->attrs.size.width == 0 ||
 			positioner->attrs.anchor_rect.width == 0) {
-		wl_resource_post_error(xdg_surface->resource,
+		wl_resource_post_error(surface->resource,
 			XDG_WM_BASE_ERROR_INVALID_POSITIONER,
 			"positioner object is not complete");
 		return;
 	}
 
-	if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-		wl_resource_post_error(xdg_surface->resource,
+	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
+		wl_resource_post_error(surface->resource,
 			XDG_SURFACE_ERROR_ALREADY_CONSTRUCTED,
 			"xdg-surface has already been constructed");
 		return;
 	}
 
-	if (!wlr_surface_set_role(xdg_surface->surface, &xdg_popup_surface_role,
-			xdg_surface, xdg_surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
+	if (!wlr_surface_set_role(surface->surface, &xdg_popup_surface_role,
+			surface, surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
 		return;
 	}
 
-	assert(xdg_surface->popup == NULL);
-	xdg_surface->popup = calloc(1, sizeof(struct wlr_xdg_popup));
-	if (!xdg_surface->popup) {
-		wl_resource_post_no_memory(xdg_surface->resource);
+	assert(surface->popup == NULL);
+	surface->popup = calloc(1, sizeof(struct wlr_xdg_popup));
+	if (!surface->popup) {
+		wl_resource_post_no_memory(surface->resource);
 		return;
 	}
-	xdg_surface->popup->base = xdg_surface;
+	surface->popup->base = surface;
 
-	xdg_surface->popup->resource = wl_resource_create(
-		xdg_surface->client->client, &xdg_popup_interface,
-		wl_resource_get_version(xdg_surface->resource), id);
-	if (xdg_surface->popup->resource == NULL) {
-		free(xdg_surface->popup);
-		wl_resource_post_no_memory(xdg_surface->resource);
+	surface->popup->resource = wl_resource_create(
+		surface->client->client, &xdg_popup_interface,
+		wl_resource_get_version(surface->resource), id);
+	if (surface->popup->resource == NULL) {
+		free(surface->popup);
+		wl_resource_post_no_memory(surface->resource);
 		return;
 	}
-	wl_resource_set_implementation(xdg_surface->popup->resource,
-		&xdg_popup_implementation, xdg_surface->popup,
+	wl_resource_set_implementation(surface->popup->resource,
+		&xdg_popup_implementation, surface->popup,
 		xdg_popup_handle_resource_destroy);
 
-	xdg_surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
+	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 
 	// positioner properties
-	memcpy(&xdg_surface->popup->positioner, &positioner->attrs,
+	memcpy(&surface->popup->positioner, &positioner->attrs,
 		sizeof(struct wlr_xdg_positioner));
-	xdg_surface->popup->geometry =
+	surface->popup->geometry =
 		wlr_xdg_positioner_get_geometry(&positioner->attrs);
 
 	if (parent) {
-		xdg_surface->popup->parent = parent->surface;
-		wl_list_insert(&parent->popups, &xdg_surface->popup->link);
-		wlr_signal_emit_safe(&parent->events.new_popup, xdg_surface->popup);
+		surface->popup->parent = parent->surface;
+		wl_list_insert(&parent->popups, &surface->popup->link);
+		wlr_signal_emit_safe(&parent->events.new_popup, surface->popup);
 	} else {
-		wl_list_init(&xdg_surface->popup->link);
+		wl_list_init(&surface->popup->link);
 	}
 }
 

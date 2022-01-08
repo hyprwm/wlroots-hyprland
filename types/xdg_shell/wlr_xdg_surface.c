@@ -364,102 +364,102 @@ static void xdg_surface_handle_surface_destroy(struct wl_listener *listener,
 }
 
 struct wlr_xdg_surface *create_xdg_surface(
-		struct wlr_xdg_client *client, struct wlr_surface *surface,
+		struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 		uint32_t id) {
-	struct wlr_xdg_surface *xdg_surface =
+	struct wlr_xdg_surface *surface =
 		calloc(1, sizeof(struct wlr_xdg_surface));
-	if (xdg_surface == NULL) {
+	if (surface == NULL) {
 		wl_client_post_no_memory(client->client);
 		return NULL;
 	}
 
-	xdg_surface->client = client;
-	xdg_surface->role = WLR_XDG_SURFACE_ROLE_NONE;
-	xdg_surface->surface = surface;
-	xdg_surface->resource = wl_resource_create(client->client,
+	surface->client = client;
+	surface->role = WLR_XDG_SURFACE_ROLE_NONE;
+	surface->surface = wlr_surface;
+	surface->resource = wl_resource_create(client->client,
 		&xdg_surface_interface, wl_resource_get_version(client->resource),
 		id);
-	if (xdg_surface->resource == NULL) {
-		free(xdg_surface);
+	if (surface->resource == NULL) {
+		free(surface);
 		wl_client_post_no_memory(client->client);
 		return NULL;
 	}
 
-	if (wlr_surface_has_buffer(xdg_surface->surface)) {
-		wl_resource_destroy(xdg_surface->resource);
-		free(xdg_surface);
+	if (wlr_surface_has_buffer(surface->surface)) {
+		wl_resource_destroy(surface->resource);
+		free(surface);
 		wl_resource_post_error(client->resource,
 			XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER,
 			"xdg_surface must not have a buffer at creation");
 		return NULL;
 	}
 
-	wl_list_init(&xdg_surface->configure_list);
-	wl_list_init(&xdg_surface->popups);
+	wl_list_init(&surface->configure_list);
+	wl_list_init(&surface->popups);
 
-	wl_signal_init(&xdg_surface->events.destroy);
-	wl_signal_init(&xdg_surface->events.ping_timeout);
-	wl_signal_init(&xdg_surface->events.new_popup);
-	wl_signal_init(&xdg_surface->events.map);
-	wl_signal_init(&xdg_surface->events.unmap);
-	wl_signal_init(&xdg_surface->events.configure);
-	wl_signal_init(&xdg_surface->events.ack_configure);
+	wl_signal_init(&surface->events.destroy);
+	wl_signal_init(&surface->events.ping_timeout);
+	wl_signal_init(&surface->events.new_popup);
+	wl_signal_init(&surface->events.map);
+	wl_signal_init(&surface->events.unmap);
+	wl_signal_init(&surface->events.configure);
+	wl_signal_init(&surface->events.ack_configure);
 
-	wl_signal_add(&xdg_surface->surface->events.destroy,
-		&xdg_surface->surface_destroy);
-	xdg_surface->surface_destroy.notify = xdg_surface_handle_surface_destroy;
+	wl_signal_add(&surface->surface->events.destroy,
+		&surface->surface_destroy);
+	surface->surface_destroy.notify = xdg_surface_handle_surface_destroy;
 
-	wl_signal_add(&xdg_surface->surface->events.commit,
-		&xdg_surface->surface_commit);
-	xdg_surface->surface_commit.notify = xdg_surface_handle_surface_commit;
+	wl_signal_add(&surface->surface->events.commit,
+		&surface->surface_commit);
+	surface->surface_commit.notify = xdg_surface_handle_surface_commit;
 
-	wlr_log(WLR_DEBUG, "new xdg_surface %p (res %p)", xdg_surface,
-		xdg_surface->resource);
-	wl_resource_set_implementation(xdg_surface->resource,
-		&xdg_surface_implementation, xdg_surface,
+	wlr_log(WLR_DEBUG, "new xdg_surface %p (res %p)", surface,
+		surface->resource);
+	wl_resource_set_implementation(surface->resource,
+		&xdg_surface_implementation, surface,
 		xdg_surface_handle_resource_destroy);
-	wl_list_insert(&client->surfaces, &xdg_surface->link);
+	wl_list_insert(&client->surfaces, &surface->link);
 
-	return xdg_surface;
+	return surface;
 }
 
-void reset_xdg_surface(struct wlr_xdg_surface *xdg_surface) {
-	if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-		unmap_xdg_surface(xdg_surface);
+void reset_xdg_surface(struct wlr_xdg_surface *surface) {
+	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
+		unmap_xdg_surface(surface);
 	}
 
-	if (xdg_surface->added) {
-		wlr_signal_emit_safe(&xdg_surface->events.destroy, xdg_surface);
-		xdg_surface->added = false;
+	if (surface->added) {
+		wlr_signal_emit_safe(&surface->events.destroy, surface);
+		surface->added = false;
 	}
 
-	switch (xdg_surface->role) {
+	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		wl_resource_set_user_data(xdg_surface->toplevel->resource, NULL);
-		xdg_surface->toplevel->resource = NULL;
+		wl_resource_set_user_data(surface->toplevel->resource, NULL);
+		surface->toplevel->resource = NULL;
 		struct wlr_xdg_toplevel_requested *req =
-			&xdg_surface->toplevel->requested;
+			&surface->toplevel->requested;
 		if (req->fullscreen_output) {
 			wl_list_remove(&req->fullscreen_output_destroy.link);
 		}
-		free(xdg_surface->toplevel);
-		xdg_surface->toplevel = NULL;
+		free(surface->toplevel);
+		surface->toplevel = NULL;
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		wl_resource_set_user_data(xdg_surface->popup->resource, NULL);
-		xdg_surface->popup->resource = NULL;
+		wl_resource_set_user_data(surface->popup->resource, NULL);
+		surface->popup->resource = NULL;
 
-		wl_list_remove(&xdg_surface->popup->link);
+		wl_list_remove(&surface->popup->link);
 
-		free(xdg_surface->popup);
-		xdg_surface->popup = NULL;
+		free(surface->popup);
+		surface->popup = NULL;
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
 		// This space is intentionally left blank
 		break;
 	}
 
-	xdg_surface->role = WLR_XDG_SURFACE_ROLE_NONE;
+	surface->role = WLR_XDG_SURFACE_ROLE_NONE;
 }
 
 void destroy_xdg_surface(struct wlr_xdg_surface *surface) {
