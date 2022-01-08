@@ -125,7 +125,7 @@ struct wlr_xdg_toplevel {
 	struct wlr_xdg_surface *base;
 	bool added;
 
-	struct wlr_xdg_surface *parent;
+	struct wlr_xdg_toplevel *parent;
 	struct wl_listener parent_unmap;
 
 	struct wlr_xdg_toplevel_state current, pending;

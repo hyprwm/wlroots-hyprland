@@ -142,8 +142,7 @@ struct wlr_xdg_toplevel *wlr_xdg_toplevel_from_resource(
 static void handle_parent_unmap(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel *toplevel =
 		wl_container_of(listener, toplevel, parent_unmap);
-	wlr_xdg_toplevel_set_parent(toplevel,
-			toplevel->parent->toplevel->parent->toplevel);
+	wlr_xdg_toplevel_set_parent(toplevel, toplevel->parent->parent);
 }
 
 void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
@@ -151,14 +150,12 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 	if (toplevel->parent) {
 		wl_list_remove(&toplevel->parent_unmap.link);
 	}
-
+	
+	toplevel->parent = parent;
 	if (parent) {
-		toplevel->parent = parent->base;
 		toplevel->parent_unmap.notify = handle_parent_unmap;
-		wl_signal_add(&toplevel->parent->events.unmap,
+		wl_signal_add(&toplevel->parent->base->events.unmap,
 				&toplevel->parent_unmap);
-	} else {
-		toplevel->parent = NULL;
 	}
 
 	wlr_signal_emit_safe(&toplevel->events.set_parent, NULL);
