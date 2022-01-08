@@ -332,7 +332,7 @@ uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled_edges);
 
 /**
- * Request that this xdg toplevel closes.
+ * Request that this toplevel closes.
  */
 void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel);
 
@@ -343,7 +343,7 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 		struct wlr_xdg_toplevel *parent);
 
 /**
- * Request that this xdg popup closes.
+ * Request that this popup closes.
  **/
 void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup);
 
