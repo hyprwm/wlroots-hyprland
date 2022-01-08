@@ -299,7 +299,7 @@ const struct wlr_surface_role xdg_popup_surface_role = {
 
 void create_xdg_popup(struct wlr_xdg_surface *xdg_surface,
 		struct wlr_xdg_surface *parent,
-		struct wlr_xdg_positioner_resource *positioner, int32_t id) {
+		struct wlr_xdg_positioner_resource *positioner, uint32_t id) {
 	if (positioner->attrs.size.width == 0 ||
 			positioner->attrs.anchor_rect.width == 0) {
 		wl_resource_post_error(xdg_surface->resource,
