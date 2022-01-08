@@ -243,12 +243,6 @@ struct wlr_xdg_toplevel_resize_event {
 	uint32_t edges;
 };
 
-struct wlr_xdg_toplevel_set_fullscreen_event {
-	struct wlr_xdg_toplevel *toplevel;
-	bool fullscreen;
-	struct wlr_output *output;
-};
-
 struct wlr_xdg_toplevel_show_window_menu_event {
 	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_seat_client *seat;
