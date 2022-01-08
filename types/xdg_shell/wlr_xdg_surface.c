@@ -37,7 +37,7 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	// TODO: probably need to ungrab before this event
 	if (surface->mapped) {
-		wlr_signal_emit_safe(&surface->events.unmap, surface);
+		wlr_signal_emit_safe(&surface->events.unmap, NULL);
 	}
 
 	switch (surface->role) {
@@ -312,7 +312,7 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 	if (surface->configured && wlr_surface_has_buffer(surface->surface) &&
 			!surface->mapped) {
 		surface->mapped = true;
-		wlr_signal_emit_safe(&surface->events.map, surface);
+		wlr_signal_emit_safe(&surface->events.map, NULL);
 	}
 }
 
@@ -405,7 +405,7 @@ void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	}
 
 	if (surface->added) {
-		wlr_signal_emit_safe(&surface->events.destroy, surface);
+		wlr_signal_emit_safe(&surface->events.destroy, NULL);
 		surface->added = false;
 	}
 
