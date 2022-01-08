@@ -42,34 +42,10 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		if (surface->toplevel->parent) {
-			wl_list_remove(&surface->toplevel->parent_unmap.link);
-			surface->toplevel->parent = NULL;
-		}
-		free(surface->toplevel->title);
-		surface->toplevel->title = NULL;
-		free(surface->toplevel->app_id);
-		surface->toplevel->app_id = NULL;
+		unmap_xdg_toplevel(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		if (surface->popup->seat != NULL) {
-			struct wlr_xdg_popup_grab *grab =
-				get_xdg_shell_popup_grab_from_seat(surface->client->shell,
-					surface->popup->seat);
-
-			wl_list_remove(&surface->popup->grab_link);
-
-			if (wl_list_empty(&grab->popups)) {
-				if (grab->seat->pointer_state.grab == &grab->pointer_grab) {
-					wlr_seat_pointer_end_grab(grab->seat);
-				}
-				if (grab->seat->keyboard_state.grab == &grab->keyboard_grab) {
-					wlr_seat_keyboard_end_grab(grab->seat);
-				}
-			}
-
-			surface->popup->seat = NULL;
-		}
+		unmap_xdg_popup(surface->popup);
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
 		assert(false && "not reached");
@@ -436,21 +412,13 @@ void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 		wl_resource_set_user_data(surface->toplevel->resource, NULL);
-		surface->toplevel->resource = NULL;
-		struct wlr_xdg_toplevel_requested *req =
-			&surface->toplevel->requested;
-		if (req->fullscreen_output) {
-			wl_list_remove(&req->fullscreen_output_destroy.link);
-		}
 		free(surface->toplevel);
 		surface->toplevel = NULL;
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		wl_resource_set_user_data(surface->popup->resource, NULL);
-		surface->popup->resource = NULL;
-
 		wl_list_remove(&surface->popup->link);
 
+		wl_resource_set_user_data(surface->popup->resource, NULL);
 		free(surface->popup);
 		surface->popup = NULL;
 		break;

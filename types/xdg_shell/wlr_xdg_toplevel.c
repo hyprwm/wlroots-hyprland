@@ -426,7 +426,10 @@ static const struct xdg_toplevel_interface xdg_toplevel_implementation = {
 static void xdg_toplevel_handle_resource_destroy(struct wl_resource *resource) {
 	struct wlr_xdg_toplevel *toplevel =
 		wlr_xdg_toplevel_from_resource(resource);
-	destroy_xdg_toplevel(toplevel);
+	if (toplevel == NULL) {
+		return;
+	}
+	reset_xdg_surface(toplevel->base);
 }
 
 const struct wlr_surface_role xdg_toplevel_surface_role = {
@@ -482,11 +485,23 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	surface->role = WLR_XDG_SURFACE_ROLE_TOPLEVEL;
 }
 
-void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
-	if (toplevel == NULL) {
-		return;
+void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
+	if (toplevel->parent) {
+		wl_list_remove(&toplevel->parent_unmap.link);
+		toplevel->parent = NULL;
 	}
-	reset_xdg_surface(toplevel->base);
+	free(toplevel->title);
+	toplevel->title = NULL;
+	free(toplevel->app_id);
+	toplevel->app_id = NULL;
+
+	if (toplevel->requested.fullscreen_output) {
+		wl_list_remove(&toplevel->requested.fullscreen_output_destroy.link);
+		toplevel->requested.fullscreen_output = NULL;
+	}
+	toplevel->requested.fullscreen = false;
+	toplevel->requested.maximized = false;
+	toplevel->requested.minimized = false;
 }
 
 void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel) {

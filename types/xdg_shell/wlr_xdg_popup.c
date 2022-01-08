@@ -355,6 +355,27 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	}
 }
 
+void unmap_xdg_popup(struct wlr_xdg_popup *popup) {
+	if (popup->seat != NULL) {
+		struct wlr_xdg_popup_grab *grab =
+			get_xdg_shell_popup_grab_from_seat(
+				popup->base->client->shell, popup->seat);
+
+		wl_list_remove(&popup->grab_link);
+
+		if (wl_list_empty(&grab->popups)) {
+			if (grab->seat->pointer_state.grab == &grab->pointer_grab) {
+				wlr_seat_pointer_end_grab(grab->seat);
+			}
+			if (grab->seat->keyboard_state.grab == &grab->keyboard_grab) {
+				wlr_seat_keyboard_end_grab(grab->seat);
+			}
+		}
+
+		popup->seat = NULL;
+	}
+}
+
 void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
 	if (popup == NULL) {
 		return;
