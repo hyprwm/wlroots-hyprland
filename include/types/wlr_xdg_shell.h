@@ -36,11 +36,11 @@ struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
 
 void create_xdg_toplevel(struct wlr_xdg_surface *xdg_surface,
 	uint32_t id);
-void handle_xdg_surface_toplevel_committed(struct wlr_xdg_surface *surface);
-void send_xdg_toplevel_configure(struct wlr_xdg_surface *surface,
-	struct wlr_xdg_surface_configure *configure);
-void handle_xdg_toplevel_ack_configure(struct wlr_xdg_surface *surface,
-	struct wlr_xdg_surface_configure *configure);
-void destroy_xdg_toplevel(struct wlr_xdg_surface *surface);
+void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel);
+struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
+	struct wlr_xdg_toplevel *toplevel);
+void handle_xdg_toplevel_ack_configure(struct wlr_xdg_toplevel *toplevel,
+	struct wlr_xdg_toplevel_configure *configure);
+void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
 
 #endif

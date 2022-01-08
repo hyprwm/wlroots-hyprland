@@ -130,7 +130,8 @@ static void xdg_surface_handle_ack_configure(struct wl_client *client,
 		assert(0 && "not reached");
 		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		handle_xdg_toplevel_ack_configure(surface, configure);
+		handle_xdg_toplevel_ack_configure(surface->toplevel,
+				configure->toplevel_configure);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
 		break;
@@ -164,7 +165,8 @@ static void surface_send_configure(void *user_data) {
 		assert(0 && "not reached");
 		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		send_xdg_toplevel_configure(surface, configure);
+		configure->toplevel_configure =
+			send_xdg_toplevel_configure(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
 		xdg_popup_send_configure(surface->popup->resource,
@@ -319,7 +321,7 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		// inert toplevel or popup
 		return;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		handle_xdg_surface_toplevel_committed(surface);
+		handle_xdg_toplevel_committed(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
 		handle_xdg_surface_popup_committed(surface);
@@ -491,12 +493,6 @@ void wlr_xdg_surface_ping(struct wlr_xdg_surface *surface) {
 		surface->client->shell->ping_timeout);
 	xdg_wm_base_send_ping(surface->client->resource,
 		surface->client->ping_serial);
-}
-
-void wlr_xdg_toplevel_send_close(struct wlr_xdg_surface *surface) {
-	assert(surface->toplevel);
-	assert(surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
-	xdg_toplevel_send_close(surface->toplevel->resource);
 }
 
 void wlr_xdg_popup_destroy(struct wlr_xdg_surface *surface) {

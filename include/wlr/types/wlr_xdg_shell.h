@@ -258,7 +258,7 @@ struct wlr_xdg_toplevel_show_window_menu_event {
 
 struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display);
 
-/** Returns the wlr_xdg_surface from an xdg_surface resource.
+/** Get the corresponding wlr_xdg_surface from a resource.
  *
  * Aborts if the resource doesn't have the correct type. Returns NULL if the
  * resource is inert.
@@ -267,7 +267,13 @@ struct wlr_xdg_surface *wlr_xdg_surface_from_resource(
 		struct wl_resource *resource);
 struct wlr_xdg_surface *wlr_xdg_surface_from_popup_resource(
 		struct wl_resource *resource);
-struct wlr_xdg_surface *wlr_xdg_surface_from_toplevel_resource(
+
+/** Get the corresponding wlr_xdg_toplevel from a resource.
+ *
+ * Aborts if the resource doesn't have the correct type. Returns NULL if the
+ * resource is inert.
+ */
+struct wlr_xdg_toplevel *wlr_xdg_toplevel_from_resource(
 		struct wl_resource *resource);
 
 /**
@@ -280,55 +286,55 @@ void wlr_xdg_surface_ping(struct wlr_xdg_surface *surface);
  * Request that this toplevel surface be the given size. Returns the associated
  * configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_size(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_size(struct wlr_xdg_toplevel *toplevel,
 		uint32_t width, uint32_t height);
 
 /**
- * Request that this toplevel surface show itself in an activated or deactivated
+ * Request that this toplevel show itself in an activated or deactivated
  * state. Returns the associated configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_activated(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_activated(struct wlr_xdg_toplevel *toplevel,
 		bool activated);
 
 /**
- * Request that this toplevel surface consider itself maximized or not
+ * Request that this toplevel consider itself maximized or not
  * maximized. Returns the associated configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_maximized(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_maximized(struct wlr_xdg_toplevel *toplevel,
 		bool maximized);
 
 /**
- * Request that this toplevel surface consider itself fullscreen or not
+ * Request that this toplevel consider itself fullscreen or not
  * fullscreen. Returns the associated configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_fullscreen(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_fullscreen(struct wlr_xdg_toplevel *toplevel,
 		bool fullscreen);
 
 /**
- * Request that this toplevel surface consider itself to be resizing or not
+ * Request that this toplevel consider itself to be resizing or not
  * resizing. Returns the associated configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_resizing(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_resizing(struct wlr_xdg_toplevel *toplevel,
 		bool resizing);
 
 /**
- * Request that this toplevel surface consider itself in a tiled layout and some
+ * Request that this toplevel consider itself in a tiled layout and some
  * edges are adjacent to another part of the tiling grid. `tiled_edges` is a
  * bitfield of `enum wlr_edges`. Returns the associated configure serial.
  */
-uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_surface *surface,
+uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled_edges);
 
 /**
  * Request that this xdg toplevel closes.
  */
-void wlr_xdg_toplevel_send_close(struct wlr_xdg_surface *surface);
+void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel);
 
 /**
  * Sets the parent of this toplevel. Parent can be NULL.
  */
-void wlr_xdg_toplevel_set_parent(struct wlr_xdg_surface *surface,
-		struct wlr_xdg_surface *parent);
+void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
+		struct wlr_xdg_toplevel *parent);
 
 /**
  * Request that this xdg popup closes.
