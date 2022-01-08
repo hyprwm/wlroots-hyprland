@@ -32,8 +32,6 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	struct wlr_xdg_positioner_resource *positioner, uint32_t id);
 void unmap_xdg_popup(struct wlr_xdg_popup *popup);
 void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);
-struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
-	struct wlr_xdg_shell *shell, struct wlr_seat *seat);
 
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	uint32_t id);
