@@ -19,8 +19,8 @@ struct wlr_xdg_surface *create_xdg_surface(
 void unmap_xdg_surface(struct wlr_xdg_surface *surface);
 void reset_xdg_surface(struct wlr_xdg_surface *xdg_surface);
 void destroy_xdg_surface(struct wlr_xdg_surface *surface);
-void handle_xdg_surface_commit(struct wlr_surface *wlr_surface);
-void handle_xdg_surface_precommit(struct wlr_surface *wlr_surface,
+void xdg_surface_role_commit(struct wlr_surface *wlr_surface);
+void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 	const struct wlr_surface_state *state);
 
 void create_xdg_positioner(struct wlr_xdg_client *client, uint32_t id);
