@@ -134,8 +134,8 @@ struct wlr_xdg_toplevel {
 	struct wlr_xdg_toplevel_configure scheduled;
 
 	// Properties that the client has requested. Intended to be checked
-	// by the compositor on surface map and handled accordingly
-	// (e.g. a client might want to start already in a fullscreen state).
+	// by the compositor on surface map and state change requests (such as
+	// xdg_toplevel::set_fullscreen) and handled accordingly.
 	struct wlr_xdg_toplevel_requested requested;
 
 	char *title;
