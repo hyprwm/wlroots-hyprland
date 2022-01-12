@@ -157,7 +157,9 @@ static bool output_attach_empty_back_buffer(struct wlr_output *output,
 	output_pending_resolution(output, state, &width, &height);
 
 	struct wlr_renderer *renderer = output->renderer;
-	wlr_renderer_begin(renderer, width, height);
+	if (!wlr_renderer_begin(renderer, width, height)) {
+		return false;
+	}
 	wlr_renderer_clear(renderer, (float[]){0, 0, 0, 0});
 	wlr_renderer_end(renderer);
 
