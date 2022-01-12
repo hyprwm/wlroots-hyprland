@@ -288,6 +288,9 @@ static bool egl_init_display(struct wlr_egl *egl, EGLDisplay display) {
 			"eglQueryDmaBufModifiersEXT");
 	}
 
+	egl->exts.EXT_create_context_robustness =
+		check_egl_ext(display_exts_str, "EGL_EXT_create_context_robustness");
+
 	const char *device_exts_str = NULL, *driver_name = NULL;
 	if (egl->exts.EXT_device_query) {
 		EGLAttrib device_attrib;
@@ -385,7 +388,7 @@ static bool egl_init(struct wlr_egl *egl, EGLenum platform,
 	}
 
 	size_t atti = 0;
-	EGLint attribs[5];
+	EGLint attribs[7];
 	attribs[atti++] = EGL_CONTEXT_CLIENT_VERSION;
 	attribs[atti++] = 2;
 
@@ -398,6 +401,11 @@ static bool egl_init(struct wlr_egl *egl, EGLenum platform,
 	if (request_high_priority) {
 		attribs[atti++] = EGL_CONTEXT_PRIORITY_LEVEL_IMG;
 		attribs[atti++] = EGL_CONTEXT_PRIORITY_HIGH_IMG;
+	}
+
+	if (egl->exts.EXT_create_context_robustness) {
+		attribs[atti++] = EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT;
+		attribs[atti++] = EGL_LOSE_CONTEXT_ON_RESET_EXT;
 	}
 
 	attribs[atti++] = EGL_NONE;
