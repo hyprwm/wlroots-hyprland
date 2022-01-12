@@ -198,12 +198,34 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
+static const char *reset_status_str(GLenum status) {
+	switch (status) {
+	case GL_GUILTY_CONTEXT_RESET_KHR:
+		return "guilty";
+	case GL_INNOCENT_CONTEXT_RESET_KHR:
+		return "innocent";
+	case GL_UNKNOWN_CONTEXT_RESET_KHR:
+		return "unknown";
+	default:
+		return "<invalid>";
+	}
+}
+
 static bool gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
 		uint32_t height) {
 	struct wlr_gles2_renderer *renderer =
 		gles2_get_renderer_in_context(wlr_renderer);
 
 	push_gles2_debug(renderer);
+
+	if (renderer->procs.glGetGraphicsResetStatusKHR) {
+		GLenum status = renderer->procs.glGetGraphicsResetStatusKHR();
+		if (status != GL_NO_ERROR) {
+			wlr_log(WLR_ERROR, "GPU reset (%s)", reset_status_str(status));
+			wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
+			return false;
+		}
+	}
 
 	glViewport(0, 0, width, height);
 	renderer->viewport_width = width;
@@ -769,6 +791,21 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 		renderer->exts.OES_egl_image = true;
 		load_gl_proc(&renderer->procs.glEGLImageTargetRenderbufferStorageOES,
 			"glEGLImageTargetRenderbufferStorageOES");
+	}
+
+	if (check_gl_ext(exts_str, "GL_KHR_robustness")) {
+		GLint notif_strategy = 0;
+		glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_KHR, &notif_strategy);
+		switch (notif_strategy) {
+		case GL_LOSE_CONTEXT_ON_RESET_KHR:
+			wlr_log(WLR_DEBUG, "GPU reset notifications are enabled");
+			load_gl_proc(&renderer->procs.glGetGraphicsResetStatusKHR,
+				"glGetGraphicsResetStatusKHR");
+			break;
+		case GL_NO_RESET_NOTIFICATION_KHR:
+			wlr_log(WLR_DEBUG, "GPU reset notifications are disabled");
+			break;
+		}
 	}
 
 	if (renderer->exts.KHR_debug) {
