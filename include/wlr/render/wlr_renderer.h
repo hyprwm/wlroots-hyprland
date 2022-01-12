@@ -49,8 +49,10 @@ struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend);
  *
  * This should be called after wlr_output_attach_render(). Compositors must call
  * wlr_renderer_end() when they are done.
+ *
+ * Returns false on failure, in which case compositors shouldn't try rendering.
  */
-void wlr_renderer_begin(struct wlr_renderer *r, uint32_t width, uint32_t height);
+bool wlr_renderer_begin(struct wlr_renderer *r, uint32_t width, uint32_t height);
 /**
  * Start a render pass on the provided struct wlr_buffer.
  *
