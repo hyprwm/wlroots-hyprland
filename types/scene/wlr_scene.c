@@ -1538,7 +1538,11 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		return true;
 	}
 
-	wlr_renderer_begin(renderer, output->width, output->height);
+	if (!wlr_renderer_begin(renderer, output->width, output->height)) {
+		pixman_region32_fini(&damage);
+		wlr_output_rollback(output);
+		return false;
+	}
 
 	pixman_region32_t background;
 	pixman_region32_init(&background);
