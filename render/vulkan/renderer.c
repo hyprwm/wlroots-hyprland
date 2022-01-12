@@ -691,14 +691,14 @@ static bool vulkan_bind_buffer(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
-static void vulkan_begin(struct wlr_renderer *wlr_renderer,
+static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
 		uint32_t width, uint32_t height) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	assert(renderer->current_render_buffer);
 
 	struct wlr_vk_command_buffer *cb = acquire_command_buffer(renderer);
 	if (cb == NULL) {
-		return;
+		return false;
 	}
 
 	assert(renderer->current_command_buffer == NULL);
@@ -707,7 +707,11 @@ static void vulkan_begin(struct wlr_renderer *wlr_renderer,
 	VkCommandBufferBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
-	vkBeginCommandBuffer(cb->vk, &begin_info);
+	VkResult res = vkBeginCommandBuffer(cb->vk, &begin_info);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkBeginCommandBuffer", res);
+		return false;
+	}
 
 	// begin render pass
 	VkFramebuffer fb = renderer->current_render_buffer->framebuffer;
@@ -737,6 +741,8 @@ static void vulkan_begin(struct wlr_renderer *wlr_renderer,
 	renderer->render_width = width;
 	renderer->render_height = height;
 	renderer->bound_pipe = VK_NULL_HANDLE;
+
+	return true;
 }
 
 static void vulkan_end(struct wlr_renderer *wlr_renderer) {

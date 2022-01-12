@@ -22,7 +22,7 @@ struct wlr_fbox;
 struct wlr_renderer_impl {
 	bool (*bind_buffer)(struct wlr_renderer *renderer,
 		struct wlr_buffer *buffer);
-	void (*begin)(struct wlr_renderer *renderer, uint32_t width,
+	bool (*begin)(struct wlr_renderer *renderer, uint32_t width,
 		uint32_t height);
 	void (*end)(struct wlr_renderer *renderer);
 	void (*clear)(struct wlr_renderer *renderer, const float color[static 4]);

@@ -198,7 +198,7 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
-static void gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
+static bool gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
 		uint32_t height) {
 	struct wlr_gles2_renderer *renderer =
 		gles2_get_renderer_in_context(wlr_renderer);
@@ -219,6 +219,8 @@ static void gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
 	// for users to sling matricies themselves
 
 	pop_gles2_debug(renderer);
+
+	return true;
 }
 
 static void gles2_end(struct wlr_renderer *wlr_renderer) {
