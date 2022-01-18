@@ -68,6 +68,9 @@ struct wlr_scene {
 	// May be NULL
 	struct wlr_presentation *presentation;
 	struct wl_listener presentation_destroy;
+
+	// List of buffers which need to be imported as textures
+	struct wl_list pending_buffers; // wlr_scene_buffer.pending_link
 };
 
 /** A sub-tree in the scene-graph. */
@@ -114,6 +117,7 @@ struct wlr_scene_buffer {
 	struct wlr_fbox src_box;
 	int dst_width, dst_height;
 	enum wl_output_transform transform;
+	struct wl_list pending_link; // wlr_scene.pending_buffers
 };
 
 /** A viewport for an output in the scene-graph */
