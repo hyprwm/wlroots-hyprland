@@ -81,7 +81,6 @@ struct wlr_x11_backend {
 	struct wl_list outputs; // wlr_x11_output::link
 
 	struct wlr_keyboard keyboard;
-	struct wlr_input_device keyboard_dev;
 
 	int drm_fd;
 	struct wlr_drm_format_set dri3_formats;

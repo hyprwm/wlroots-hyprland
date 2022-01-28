@@ -785,14 +785,14 @@ void create_wl_keyboard(struct wlr_wl_seat *seat) {
 	}
 
 	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-
 	wlr_dev->keyboard = calloc(1, sizeof(*wlr_dev->keyboard));
 	if (!wlr_dev->keyboard) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		wlr_input_device_destroy(wlr_dev);
 		return;
 	}
-	wlr_keyboard_init(wlr_dev->keyboard, NULL);
+
+	wlr_keyboard_init(wlr_dev->keyboard, NULL, wlr_dev->name);
 
 	wl_keyboard_add_listener(wl_keyboard, &keyboard_listener, wlr_dev);
 	wlr_signal_emit_safe(&seat->backend->backend.events.new_input, wlr_dev);

@@ -60,16 +60,7 @@ struct wlr_keyboard_group *wlr_keyboard_group_create(void) {
 		return NULL;
 	}
 
-	group->input_device = calloc(1, sizeof(struct wlr_input_device));
-	if (!group->input_device) {
-		wlr_log(WLR_ERROR, "Failed to allocate wlr_input_device for group");
-		free(group);
-		return NULL;
-	}
-	wl_signal_init(&group->input_device->events.destroy);
-	group->input_device->keyboard = &group->keyboard;
-
-	wlr_keyboard_init(&group->keyboard, &impl);
+	wlr_keyboard_init(&group->keyboard, &impl, "keyboard-group");
 	wl_list_init(&group->devices);
 	wl_list_init(&group->keys);
 
@@ -335,9 +326,7 @@ void wlr_keyboard_group_destroy(struct wlr_keyboard_group *group) {
 		wlr_keyboard_group_remove_keyboard(group, device->keyboard);
 	}
 	wlr_keyboard_destroy(&group->keyboard);
-	wl_list_remove(&group->input_device->events.destroy.listener_list);
 	wl_list_remove(&group->events.enter.listener_list);
 	wl_list_remove(&group->events.leave.listener_list);
-	free(group->input_device);
 	free(group);
 }

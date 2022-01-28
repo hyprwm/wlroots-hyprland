@@ -49,7 +49,10 @@ struct wlr_keyboard *create_libinput_keyboard(
 	libinput_device_ref(libinput_dev);
 	libinput_device_led_update(libinput_dev, 0);
 	struct wlr_keyboard *wlr_kb = &kb->wlr_keyboard;
-	wlr_keyboard_init(wlr_kb, &impl);
+	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_keyboard_init(wlr_kb, &impl, name);
+	wlr_kb->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_kb->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_kb;
 }
 

@@ -336,5 +336,10 @@ void update_x11_pointer_position(struct wlr_x11_output *output,
 }
 
 bool wlr_input_device_is_x11(struct wlr_input_device *wlr_dev) {
-	return wlr_dev->impl == &input_device_impl;
+	switch (wlr_dev->type) {
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return wlr_dev->keyboard->impl == &keyboard_impl;
+	default:
+		return wlr_dev->impl == &input_device_impl;
+	}
 }

@@ -26,7 +26,7 @@ struct wlr_virtual_keyboard_manager_v1 {
 };
 
 struct wlr_virtual_keyboard_v1 {
-	struct wlr_input_device input_device;
+	struct wlr_keyboard keyboard;
 	struct wl_resource *resource;
 	struct wlr_seat *seat;
 	bool has_keymap;
