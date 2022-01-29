@@ -8,15 +8,10 @@
 #include <wlr/util/log.h>
 #include "util/signal.h"
 
-struct wlr_output_layout_state {
-	struct wlr_box _box; // should never be read directly, use the getter
-};
-
 struct wlr_output_layout_output_state {
 	struct wlr_output_layout *layout;
 	struct wlr_output_layout_output *l_output;
 
-	struct wlr_box _box; // should never be read directly, use the getter
 	bool auto_configured;
 
 	struct wl_listener mode;
@@ -29,11 +24,6 @@ struct wlr_output_layout *wlr_output_layout_create(void) {
 	struct wlr_output_layout *layout =
 		calloc(1, sizeof(struct wlr_output_layout));
 	if (layout == NULL) {
-		return NULL;
-	}
-	layout->state = calloc(1, sizeof(struct wlr_output_layout_state));
-	if (layout->state == NULL) {
-		free(layout);
 		return NULL;
 	}
 	wl_list_init(&layout->outputs);
@@ -69,7 +59,6 @@ void wlr_output_layout_destroy(struct wlr_output_layout *layout) {
 		output_layout_output_destroy(l_output);
 	}
 
-	free(layout->state);
 	free(layout);
 }
 
