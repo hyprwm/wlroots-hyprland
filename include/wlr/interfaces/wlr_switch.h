@@ -16,7 +16,7 @@ struct wlr_switch_impl {
 };
 
 void wlr_switch_init(struct wlr_switch *switch_device,
-		struct wlr_switch_impl *impl);
+	struct wlr_switch_impl *impl, const char *name);
 void wlr_switch_destroy(struct wlr_switch *switch_device);
 
 #endif

@@ -16,8 +16,11 @@ struct wlr_switch *create_libinput_switch(
 		wlr_log(WLR_ERROR, "Unable to allocate wlr_switch");
 		return NULL;
 	}
-	wlr_switch_init(wlr_switch, NULL);
-	wlr_log(WLR_DEBUG, "Created switch for device %s", libinput_device_get_name(libinput_dev));
+	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_switch_init(wlr_switch, NULL, name);
+	wlr_log(WLR_DEBUG, "Created switch for device %s", name);
+	wlr_switch->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_switch->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_switch;
 }
 
