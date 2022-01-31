@@ -1,11 +1,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
+#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/types/wlr_pointer.h>
 
 void wlr_pointer_init(struct wlr_pointer *pointer,
-		const struct wlr_pointer_impl *impl) {
+		const struct wlr_pointer_impl *impl, const char *name) {
+	wlr_input_device_init(&pointer->base, WLR_INPUT_DEVICE_POINTER, NULL, name);
+	pointer->base.pointer = pointer;
+
 	pointer->impl = impl;
 	wl_signal_init(&pointer->events.motion);
 	wl_signal_init(&pointer->events.motion_absolute);
@@ -26,6 +30,7 @@ void wlr_pointer_destroy(struct wlr_pointer *pointer) {
 	if (!pointer) {
 		return;
 	}
+	wlr_input_device_finish(&pointer->base);
 	if (pointer->impl && pointer->impl->destroy) {
 		pointer->impl->destroy(pointer);
 	} else {

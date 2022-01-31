@@ -16,7 +16,7 @@ struct wlr_pointer_impl {
 };
 
 void wlr_pointer_init(struct wlr_pointer *pointer,
-		const struct wlr_pointer_impl *impl);
+		const struct wlr_pointer_impl *impl, const char *name);
 void wlr_pointer_destroy(struct wlr_pointer *pointer);
 
 #endif

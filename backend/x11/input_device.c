@@ -33,7 +33,7 @@ static void send_key_event(struct wlr_x11_backend *x11, uint32_t key,
 static void send_button_event(struct wlr_x11_output *output, uint32_t key,
 		enum wlr_button_state st, xcb_timestamp_t time) {
 	struct wlr_event_pointer_button ev = {
-		.device = &output->pointer_dev,
+		.device = &output->pointer.base,
 		.time_msec = time,
 		.button = key,
 		.state = st,
@@ -45,7 +45,7 @@ static void send_button_event(struct wlr_x11_output *output, uint32_t key,
 static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 		xcb_timestamp_t time) {
 	struct wlr_event_pointer_axis ev = {
-		.device = &output->pointer_dev,
+		.device = &output->pointer.base,
 		.time_msec = time,
 		.source = WLR_AXIS_SOURCE_WHEEL,
 		.orientation = WLR_AXIS_ORIENTATION_VERTICAL,
@@ -60,7 +60,7 @@ static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 static void send_pointer_position_event(struct wlr_x11_output *output,
 		int16_t x, int16_t y, xcb_timestamp_t time) {
 	struct wlr_event_pointer_motion_absolute ev = {
-		.device = &output->pointer_dev,
+		.device = &output->pointer.base,
 		.time_msec = time,
 		.x = (double)x / output->wlr_output.width,
 		.y = (double)y / output->wlr_output.height,
@@ -339,6 +339,8 @@ bool wlr_input_device_is_x11(struct wlr_input_device *wlr_dev) {
 	switch (wlr_dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
 		return wlr_dev->keyboard->impl == &keyboard_impl;
+	case WLR_INPUT_DEVICE_POINTER:
+		return wlr_dev->pointer->impl == &pointer_impl;
 	default:
 		return wlr_dev->impl == &input_device_impl;
 	}

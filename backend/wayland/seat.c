@@ -532,6 +532,10 @@ static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
 		zwp_relative_pointer_v1_destroy(pointer->relative_pointer);
 	}
 
+	wlr_input_device_finish(&pointer->input_device->wlr_input_device);
+	wl_list_remove(&pointer->input_device->link);
+	free(pointer->input_device);
+
 	wl_list_remove(&pointer->output_destroy.link);
 	free(pointer);
 }
@@ -705,7 +709,7 @@ static void pointer_handle_output_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_wl_pointer *pointer =
 		wl_container_of(listener, pointer, output_destroy);
-	wlr_input_device_destroy(&pointer->input_device->wlr_input_device);
+	wlr_pointer_destroy(&pointer->wlr_pointer);
 }
 
 void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
@@ -743,7 +747,7 @@ void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
 	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
 	wlr_dev->pointer = &pointer->wlr_pointer;
 	wlr_dev->output_name = strdup(output->wlr_output.name);
-	wlr_pointer_init(wlr_dev->pointer, &pointer_impl);
+	wlr_pointer_init(wlr_dev->pointer, &pointer_impl, wlr_dev->name);
 
 	if (backend->zwp_pointer_gestures_v1) {
 		uint32_t version = zwp_pointer_gestures_v1_get_version(

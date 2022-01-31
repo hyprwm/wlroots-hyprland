@@ -18,8 +18,8 @@
 #include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_output.h>
-#include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/interfaces/wlr_touch.h>
+#include <wlr/types/wlr_pointer.h>
 #include <wlr/render/drm_format_set.h>
 
 #define XCB_EVENT_RESPONSE_TYPE_MASK 0x7f
@@ -35,7 +35,6 @@ struct wlr_x11_output {
 	xcb_present_event_t present_event_id;
 
 	struct wlr_pointer pointer;
-	struct wlr_input_device pointer_dev;
 
 	struct wlr_touch touch;
 	struct wlr_input_device touch_dev;

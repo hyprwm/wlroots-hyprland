@@ -16,7 +16,10 @@ struct wlr_pointer *create_libinput_pointer(
 		wlr_log(WLR_ERROR, "Unable to allocate wlr_pointer");
 		return NULL;
 	}
-	wlr_pointer_init(wlr_pointer, NULL);
+	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_pointer_init(wlr_pointer, NULL, name);
+	wlr_pointer->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_pointer->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_pointer;
 }
 
