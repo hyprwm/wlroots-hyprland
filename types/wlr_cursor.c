@@ -248,11 +248,12 @@ static void get_mapping(struct wlr_cursor *cur,
 	if (c_device) {
 		if (!wlr_box_empty(&c_device->mapped_box)) {
 			*box = c_device->mapped_box;
+			return;
 		} else if (c_device->mapped_output) {
 			wlr_output_layout_get_box(cur->state->layout,
 				c_device->mapped_output, box);
+			return;
 		}
-		return;
 	}
 
 	if (!wlr_box_empty(&cur->state->mapped_box)) {
