@@ -909,7 +909,7 @@ static void handle_tab_added(void *data,
 		return;
 	}
 	zwp_tablet_v2_set_user_data(id, wlr_dev->tablet);
-	wlr_tablet_init(wlr_dev->tablet, NULL);
+	wlr_tablet_init(wlr_dev->tablet, NULL, wlr_dev->name);
 	zwp_tablet_v2_add_listener(id, &tablet_listener, dev);
 }
 

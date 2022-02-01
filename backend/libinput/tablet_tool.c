@@ -75,7 +75,11 @@ struct wlr_tablet *create_libinput_tablet(
 	}
 
 	struct wlr_tablet *wlr_tablet = &libinput_tablet->wlr_tablet;
-	wlr_tablet_init(wlr_tablet, &tablet_impl);
+	const char *name = libinput_device_get_name(libinput_dev);
+
+	wlr_tablet_init(wlr_tablet, &tablet_impl, name);
+	wlr_tablet->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_tablet->base.product = libinput_device_get_id_product(libinput_dev);
 
 	struct udev_device *udev = libinput_device_get_udev_device(libinput_dev);
 	char **dst = wl_array_add(&wlr_tablet->paths, sizeof(char *));
