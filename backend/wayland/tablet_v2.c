@@ -453,7 +453,7 @@ static void handle_pad_added(void *data,
 		zwp_tablet_pad_v2_destroy(id);
 		return;
 	}
-	wlr_tablet_pad_init(wlr_dev->tablet_pad, NULL);
+	wlr_tablet_pad_init(wlr_dev->tablet_pad, NULL, wlr_dev->name);
 	zwp_tablet_pad_v2_add_listener(id, &tablet_pad_listener, dev);
 }
 

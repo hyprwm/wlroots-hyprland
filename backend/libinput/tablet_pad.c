@@ -75,7 +75,10 @@ struct wlr_tablet_pad *create_libinput_tablet_pad(
 		wlr_log(WLR_ERROR, "Unable to allocate wlr_tablet_pad");
 		return NULL;
 	}
-	wlr_tablet_pad_init(wlr_tablet_pad, NULL);
+	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_tablet_pad_init(wlr_tablet_pad, NULL, name);
+	wlr_tablet_pad->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_tablet_pad->base.product = libinput_device_get_id_product(libinput_dev);
 
 	wlr_tablet_pad->button_count =
 		libinput_device_tablet_pad_get_num_buttons(libinput_dev);
