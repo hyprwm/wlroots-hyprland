@@ -819,7 +819,7 @@ void create_wl_touch(struct wlr_wl_seat *seat) {
 		wlr_input_device_destroy(wlr_dev);
 		return;
 	}
-	wlr_touch_init(wlr_dev->touch, NULL);
+	wlr_touch_init(wlr_dev->touch, NULL, wlr_dev->name);
 
 	wl_touch_add_listener(wl_touch, &touch_listener, dev);
 	wlr_signal_emit_safe(&seat->backend->backend.events.new_input, wlr_dev);

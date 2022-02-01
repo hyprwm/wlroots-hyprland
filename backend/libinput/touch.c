@@ -16,7 +16,10 @@ struct wlr_touch *create_libinput_touch(
 		wlr_log(WLR_ERROR, "Unable to allocate wlr_touch");
 		return NULL;
 	}
-	wlr_touch_init(wlr_touch, NULL);
+	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_touch_init(wlr_touch, NULL, name);
+	wlr_touch->base.vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_touch->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_touch;
 }
 
