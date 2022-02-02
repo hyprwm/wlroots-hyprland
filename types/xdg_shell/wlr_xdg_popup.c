@@ -307,7 +307,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		struct wlr_xdg_positioner_resource *positioner, uint32_t id) {
 	if (positioner->attrs.size.width == 0 ||
 			positioner->attrs.anchor_rect.width == 0) {
-		wl_resource_post_error(surface->resource,
+		wl_resource_post_error(surface->client->resource,
 			XDG_WM_BASE_ERROR_INVALID_POSITIONER,
 			"positioner object is not complete");
 		return;
