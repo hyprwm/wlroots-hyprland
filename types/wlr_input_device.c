@@ -15,13 +15,12 @@
 
 void wlr_input_device_init(struct wlr_input_device *dev,
 		enum wlr_input_device_type type,
-		const struct wlr_input_device_impl *impl,
-		const char *name, int vendor, int product) {
+		const struct wlr_input_device_impl *impl, const char *name) {
 	dev->type = type;
 	dev->impl = impl;
 	dev->name = strdup(name);
-	dev->vendor = vendor;
-	dev->product = product;
+	dev->vendor = 0;
+	dev->product = 0;
 
 	wl_signal_init(&dev->events.destroy);
 }

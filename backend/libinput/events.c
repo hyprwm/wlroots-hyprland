@@ -48,8 +48,6 @@ static struct wlr_input_device *allocate_device(
 		struct wlr_libinput_backend *backend,
 		struct libinput_device *libinput_dev, struct wl_list *wlr_devices,
 		enum wlr_input_device_type type) {
-	int vendor = libinput_device_get_id_vendor(libinput_dev);
-	int product = libinput_device_get_id_product(libinput_dev);
 	const char *name = libinput_device_get_name(libinput_dev);
 	struct wlr_libinput_input_device *dev =
 		calloc(1, sizeof(struct wlr_libinput_input_device));
@@ -66,8 +64,9 @@ static struct wlr_input_device *allocate_device(
 	wl_list_insert(wlr_devices, &dev->link);
 	dev->handle = libinput_dev;
 	libinput_device_ref(libinput_dev);
-	wlr_input_device_init(wlr_dev, type, &input_device_impl,
-			name, vendor, product);
+	wlr_input_device_init(wlr_dev, type, &input_device_impl, name);
+	wlr_dev->vendor = libinput_device_get_id_vendor(libinput_dev);
+	wlr_dev->product = libinput_device_get_id_product(libinput_dev);
 	return wlr_dev;
 }
 

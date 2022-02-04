@@ -639,7 +639,7 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 #endif
 
 	wlr_input_device_init(&x11->keyboard_dev, WLR_INPUT_DEVICE_KEYBOARD,
-		&input_device_impl, "X11 keyboard", 0, 0);
+		&input_device_impl, "X11 keyboard");
 	wlr_keyboard_init(&x11->keyboard, &keyboard_impl);
 	x11->keyboard_dev.keyboard = &x11->keyboard;
 

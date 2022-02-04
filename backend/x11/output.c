@@ -574,13 +574,13 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	wlr_output_update_enabled(wlr_output, true);
 
 	wlr_input_device_init(&output->pointer_dev, WLR_INPUT_DEVICE_POINTER,
-		&input_device_impl, "X11 pointer", 0, 0);
+		&input_device_impl, "X11 pointer");
 	wlr_pointer_init(&output->pointer, &pointer_impl);
 	output->pointer_dev.pointer = &output->pointer;
 	output->pointer_dev.output_name = strdup(wlr_output->name);
 
 	wlr_input_device_init(&output->touch_dev, WLR_INPUT_DEVICE_TOUCH,
-		&input_device_impl, "X11 touch", 0, 0);
+		&input_device_impl, "X11 touch");
 	wlr_touch_init(&output->touch, &touch_impl);
 	output->touch_dev.touch = &output->touch;
 	output->touch_dev.output_name = strdup(wlr_output->name);

@@ -270,8 +270,7 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 		virtual_pointer, virtual_pointer_destroy_resource);
 
 	wlr_input_device_init(&virtual_pointer->input_device,
-		WLR_INPUT_DEVICE_POINTER, &input_device_impl, "virtual pointer",
-		0x0, 0x0);
+		WLR_INPUT_DEVICE_POINTER, &input_device_impl, "virtual pointer");
 
 	struct wlr_virtual_pointer_v1_new_pointer_event event = {
 		.new_pointer = virtual_pointer,

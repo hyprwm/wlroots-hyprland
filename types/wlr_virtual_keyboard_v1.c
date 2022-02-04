@@ -207,8 +207,7 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 		virtual_keyboard, virtual_keyboard_destroy_resource);
 
 	wlr_input_device_init(&virtual_keyboard->input_device,
-		WLR_INPUT_DEVICE_KEYBOARD, &input_device_impl, "virtual keyboard",
-		0x0, 0x0);
+		WLR_INPUT_DEVICE_KEYBOARD, &input_device_impl, "virtual keyboard");
 
 	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
 
