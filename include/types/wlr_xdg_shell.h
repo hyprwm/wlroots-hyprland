@@ -31,11 +31,13 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	struct wlr_xdg_surface *parent,
 	struct wlr_xdg_positioner_resource *positioner, uint32_t id);
 void unmap_xdg_popup(struct wlr_xdg_popup *popup);
+void destroy_xdg_popup(struct wlr_xdg_popup *popup);
 void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);
 
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	uint32_t id);
 void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
+void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
 void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel);
 struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	struct wlr_xdg_toplevel *toplevel);

@@ -411,15 +411,11 @@ void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		wl_resource_set_user_data(surface->toplevel->resource, NULL);
-		free(surface->toplevel);
+		destroy_xdg_toplevel(surface->toplevel);
 		surface->toplevel = NULL;
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		wl_list_remove(&surface->popup->link);
-
-		wl_resource_set_user_data(surface->popup->resource, NULL);
-		free(surface->popup);
+		destroy_xdg_popup(surface->popup);
 		surface->popup = NULL;
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:

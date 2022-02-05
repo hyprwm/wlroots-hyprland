@@ -389,6 +389,12 @@ void unmap_xdg_popup(struct wlr_xdg_popup *popup) {
 	}
 }
 
+void destroy_xdg_popup(struct wlr_xdg_popup *popup) {
+	wl_list_remove(&popup->link);
+	wl_resource_set_user_data(popup->resource, NULL);
+	free(popup);
+}
+
 void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
 	if (popup == NULL) {
 		return;
