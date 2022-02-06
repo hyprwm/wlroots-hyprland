@@ -186,8 +186,8 @@ static void xdg_surface_handle_get_popup(struct wl_client *client,
 	if (xdg_surface == NULL) {
 		return; // TODO: create an inert xdg_popup
 	}
-	struct wlr_xdg_positioner_resource *positioner =
-		get_xdg_positioner_from_resource(positioner_resource);
+	struct wlr_xdg_positioner *positioner =
+		wlr_xdg_positioner_from_resource(positioner_resource);
 	create_xdg_popup(xdg_surface, parent, positioner, id);
 }
 

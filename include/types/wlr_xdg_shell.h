@@ -5,11 +5,6 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include "xdg-shell-protocol.h"
 
-struct wlr_xdg_positioner_resource {
-	struct wl_resource *resource;
-	struct wlr_xdg_positioner attrs;
-};
-
 extern const struct wlr_surface_role xdg_toplevel_surface_role;
 extern const struct wlr_surface_role xdg_popup_surface_role;
 
@@ -24,12 +19,10 @@ void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 	const struct wlr_surface_state *state);
 
 void create_xdg_positioner(struct wlr_xdg_client *client, uint32_t id);
-struct wlr_xdg_positioner_resource *get_xdg_positioner_from_resource(
-	struct wl_resource *resource);
 
 void create_xdg_popup(struct wlr_xdg_surface *surface,
 	struct wlr_xdg_surface *parent,
-	struct wlr_xdg_positioner_resource *positioner, uint32_t id);
+	struct wlr_xdg_positioner *positioner, uint32_t id);
 void unmap_xdg_popup(struct wlr_xdg_popup *popup);
 void destroy_xdg_popup(struct wlr_xdg_popup *popup);
 void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);

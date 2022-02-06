@@ -304,9 +304,9 @@ const struct wlr_surface_role xdg_popup_surface_role = {
 
 void create_xdg_popup(struct wlr_xdg_surface *surface,
 		struct wlr_xdg_surface *parent,
-		struct wlr_xdg_positioner_resource *positioner, uint32_t id) {
-	if (positioner->attrs.size.width == 0 ||
-			positioner->attrs.anchor_rect.width == 0) {
+		struct wlr_xdg_positioner *positioner, uint32_t id) {
+	if (positioner->rules.size.width == 0 ||
+			positioner->rules.anchor_rect.width == 0) {
 		wl_resource_post_error(surface->client->resource,
 			XDG_WM_BASE_ERROR_INVALID_POSITIONER,
 			"positioner object is not complete");
@@ -348,11 +348,10 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 
 	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 
-	// positioner properties
-	memcpy(&surface->popup->positioner, &positioner->attrs,
-		sizeof(struct wlr_xdg_positioner));
-	surface->popup->geometry =
-		wlr_xdg_positioner_get_geometry(&positioner->attrs);
+	memcpy(&surface->popup->positioner_rules,
+		&positioner->rules, sizeof(positioner->rules));
+	wlr_xdg_positioner_rules_get_geometry(
+		&positioner->rules, &surface->popup->geometry);
 
 	if (parent) {
 		surface->popup->parent = parent->surface;
@@ -412,8 +411,8 @@ void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
 
 void wlr_xdg_popup_get_anchor_point(struct wlr_xdg_popup *popup,
 		int *root_sx, int *root_sy) {
-	struct wlr_box rect = popup->positioner.anchor_rect;
-	enum xdg_positioner_anchor anchor = popup->positioner.anchor;
+	struct wlr_box rect = popup->positioner_rules.anchor_rect;
+	enum xdg_positioner_anchor anchor = popup->positioner_rules.anchor;
 	int sx = 0, sy = 0;
 
 	if (anchor == XDG_POSITIONER_ANCHOR_NONE) {
@@ -511,22 +510,22 @@ static bool xdg_popup_unconstrain_flip(struct wlr_xdg_popup *popup,
 	}
 
 	bool flip_x = offset_x &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X);
 
 	bool flip_y = offset_y &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y);
 
 	if (flip_x) {
-		wlr_positioner_invert_x(&popup->positioner);
+		wlr_xdg_positioner_rules_invert_x(&popup->positioner_rules);
 	}
 	if (flip_y) {
-		wlr_positioner_invert_y(&popup->positioner);
+		wlr_xdg_positioner_rules_invert_y(&popup->positioner_rules);
 	}
 
-	popup->geometry =
-		wlr_xdg_positioner_get_geometry(&popup->positioner);
+	wlr_xdg_positioner_rules_get_geometry(
+		&popup->positioner_rules, &popup->geometry);
 
 	xdg_popup_box_constraints(popup, toplevel_sx_box,
 		&offset_x, &offset_y);
@@ -538,14 +537,14 @@ static bool xdg_popup_unconstrain_flip(struct wlr_xdg_popup *popup,
 
 	// revert the positioner back if it didn't fix it and go to the next part
 	if (offset_x && flip_x) {
-		wlr_positioner_invert_x(&popup->positioner);
+		wlr_xdg_positioner_rules_invert_x(&popup->positioner_rules);
 	}
 	if (offset_y && flip_y) {
-		wlr_positioner_invert_y(&popup->positioner);
+		wlr_xdg_positioner_rules_invert_y(&popup->positioner_rules);
 	}
 
-	popup->geometry =
-		wlr_xdg_positioner_get_geometry(&popup->positioner);
+	wlr_xdg_positioner_rules_get_geometry(
+		&popup->positioner_rules, &popup->geometry);
 
 	return false;
 }
@@ -561,11 +560,11 @@ static bool xdg_popup_unconstrain_slide(struct wlr_xdg_popup *popup,
 	}
 
 	bool slide_x = offset_x &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X);
 
 	bool slide_y = offset_y &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y);
 
 	if (slide_x) {
@@ -604,11 +603,11 @@ static bool xdg_popup_unconstrain_resize(struct wlr_xdg_popup *popup,
 	}
 
 	bool resize_x = offset_x &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_X);
 
 	bool resize_y = offset_y &&
-		(popup->positioner.constraint_adjustment &
+		(popup->positioner_rules.constraint_adjustment &
 		 XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_Y);
 
 	if (resize_x) {
