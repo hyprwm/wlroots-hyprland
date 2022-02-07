@@ -363,13 +363,14 @@ void wlr_xdg_popup_get_position(struct wlr_xdg_popup *popup,
  * Get the geometry based on positioner rules.
  */
 void wlr_xdg_positioner_rules_get_geometry(
-		struct wlr_xdg_positioner_rules *rules, struct wlr_box *box);
+		const struct wlr_xdg_positioner_rules *rules, struct wlr_box *box);
 
 /**
- * Get the anchor point for this popup in the toplevel parent's coordinate system.
+ * Unconstrain the box from the constraint area according to positioner rules.
  */
-void wlr_xdg_popup_get_anchor_point(struct wlr_xdg_popup *popup,
-		int *toplevel_sx, int *toplevel_sy);
+void wlr_xdg_positioner_rules_unconstrain_box(
+		const struct wlr_xdg_positioner_rules *rules,
+		const struct wlr_box *constraint, struct wlr_box *box);
 
 /**
  * Convert the given coordinates in the popup coordinate system to the toplevel
@@ -384,21 +385,7 @@ void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,
  * surface coordinate system.
  */
 void wlr_xdg_popup_unconstrain_from_box(struct wlr_xdg_popup *popup,
-		const struct wlr_box *toplevel_sx_box);
-
-/**
-  Invert the top/bottom anchor and gravity for those positioner rules.
-  This can be used to "flip" the positioner around the anchor rect in
-  the x direction.
- */
-void wlr_xdg_positioner_rules_invert_x(struct wlr_xdg_positioner_rules *rules);
-
-/**
-  Invert the top/bottom anchor and gravity for those positioner rules.
-  This can be used to "flip" the positioner around the anchor rect in
-  the y direction.
- */
-void wlr_xdg_positioner_rules_invert_y(struct wlr_xdg_positioner_rules *rules);
+		const struct wlr_box *toplevel_space_box);
 
 /**
  * Find a surface within this xdg-surface tree at the given surface-local
