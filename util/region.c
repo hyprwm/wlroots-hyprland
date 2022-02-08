@@ -214,7 +214,7 @@ static void region_confine(pixman_region32_t *region, double x1, double y1, doub
 	int y_ext = floor(y) + (dy == 0 ? 0 : dy > 0 ? 1 : -1);
 
 	if (pixman_region32_contains_point(region, x_ext, y_ext, &box)) {
-		return region_confine(region, x1, y1, x2, y2, x2_out, y2_out, box);
+		return region_confine(region, x, y, x2, y2, x2_out, y2_out, box);
 	} else if (dx == 0 || dy == 0) {
 		*x2_out = x;
 		*y2_out = y;
