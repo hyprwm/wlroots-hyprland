@@ -18,6 +18,13 @@ struct wlr_input_device_impl {
 void wlr_input_device_init(struct wlr_input_device *wlr_device,
 	enum wlr_input_device_type type, const struct wlr_input_device_impl *impl,
 	const char *name);
+
+/**
+ * Cleans up all of the provided wlr_input_device resources and signals the
+ * destroy event.
+ */
+void wlr_input_device_finish(struct wlr_input_device *wlr_device);
+
 void wlr_input_device_destroy(struct wlr_input_device *dev);
 
 #endif

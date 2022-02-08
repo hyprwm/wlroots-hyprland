@@ -25,6 +25,17 @@ void wlr_input_device_init(struct wlr_input_device *dev,
 	wl_signal_init(&dev->events.destroy);
 }
 
+void wlr_input_device_finish(struct wlr_input_device *wlr_device) {
+	if (!wlr_device) {
+		return;
+	}
+
+	wlr_signal_emit_safe(&wlr_device->events.destroy, wlr_device);
+
+	free(wlr_device->name);
+	free(wlr_device->output_name);
+}
+
 void wlr_input_device_destroy(struct wlr_input_device *dev) {
 	if (!dev) {
 		return;
