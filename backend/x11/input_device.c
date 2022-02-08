@@ -286,19 +286,11 @@ void handle_x11_xinput_event(struct wlr_x11_backend *x11,
 	}
 }
 
-static void input_device_destroy(struct wlr_input_device *wlr_device) {
-	// Don't free the input device, it's on the stack
-}
-
-const struct wlr_input_device_impl input_device_impl = {
-	.destroy = input_device_destroy,
-};
-
 static void keyboard_destroy(struct wlr_keyboard *wlr_keyboard) {
 	// Don't free the keyboard, it's on the stack
 }
 
-const struct wlr_keyboard_impl keyboard_impl = {
+const struct wlr_keyboard_impl x11_keyboard_impl = {
 	.destroy = keyboard_destroy,
 };
 
@@ -306,7 +298,7 @@ static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
 	// Don't free the pointer, it's on the stack
 }
 
-const struct wlr_pointer_impl pointer_impl = {
+const struct wlr_pointer_impl x11_pointer_impl = {
 	.destroy = pointer_destroy,
 };
 
@@ -314,7 +306,7 @@ static void touch_destroy(struct wlr_touch *wlr_touch) {
 	// Don't free the touch, it's on the stack
 }
 
-const struct wlr_touch_impl touch_impl = {
+const struct wlr_touch_impl x11_touch_impl = {
 	.destroy = touch_destroy,
 };
 
@@ -338,12 +330,12 @@ void update_x11_pointer_position(struct wlr_x11_output *output,
 bool wlr_input_device_is_x11(struct wlr_input_device *wlr_dev) {
 	switch (wlr_dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
-		return wlr_dev->keyboard->impl == &keyboard_impl;
+		return wlr_dev->keyboard->impl == &x11_keyboard_impl;
 	case WLR_INPUT_DEVICE_POINTER:
-		return wlr_dev->pointer->impl == &pointer_impl;
+		return wlr_dev->pointer->impl == &x11_pointer_impl;
 	case WLR_INPUT_DEVICE_TOUCH:
-		return wlr_dev->touch->impl == &touch_impl;
+		return wlr_dev->touch->impl == &x11_touch_impl;
 	default:
-		return wlr_dev->impl == &input_device_impl;
+		return false;
 	}
 }

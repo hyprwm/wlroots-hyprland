@@ -638,7 +638,7 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 	}
 #endif
 
-	wlr_keyboard_init(&x11->keyboard, &keyboard_impl, "x11-keyboard");
+	wlr_keyboard_init(&x11->keyboard, &x11_keyboard_impl, "x11-keyboard");
 
 	x11->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &x11->display_destroy);

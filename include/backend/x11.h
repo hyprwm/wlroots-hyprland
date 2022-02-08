@@ -15,7 +15,6 @@
 
 #include <pixman.h>
 #include <wlr/backend/x11.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/interfaces/wlr_touch.h>
@@ -127,10 +126,9 @@ struct wlr_x11_backend *get_x11_backend_from_backend(
 struct wlr_x11_output *get_x11_output_from_window_id(
 	struct wlr_x11_backend *x11, xcb_window_t window);
 
-extern const struct wlr_keyboard_impl keyboard_impl;
-extern const struct wlr_pointer_impl pointer_impl;
-extern const struct wlr_touch_impl touch_impl;
-extern const struct wlr_input_device_impl input_device_impl;
+extern const struct wlr_keyboard_impl x11_keyboard_impl;
+extern const struct wlr_pointer_impl x11_pointer_impl;
+extern const struct wlr_touch_impl x11_touch_impl;
 
 void handle_x11_xinput_event(struct wlr_x11_backend *x11,
 		xcb_ge_generic_event_t *event);
