@@ -6,7 +6,7 @@
 #include <wlr/types/wlr_tablet_pad.h>
 
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
-		struct wlr_tablet_pad_impl *impl, const char *name) {
+		const struct wlr_tablet_pad_impl *impl, const char *name) {
 	wlr_input_device_init(&pad->base, WLR_INPUT_DEVICE_TABLET_PAD, NULL, name);
 	pad->base.tablet_pad = pad;
 

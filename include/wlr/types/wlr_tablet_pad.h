@@ -24,7 +24,7 @@ struct wlr_tablet_pad_impl;
 struct wlr_tablet_pad {
 	struct wlr_input_device base;
 
-	struct wlr_tablet_pad_impl *impl;
+	const struct wlr_tablet_pad_impl *impl;
 
 	struct {
 		struct wl_signal button;

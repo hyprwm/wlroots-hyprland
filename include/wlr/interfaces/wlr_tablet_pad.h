@@ -16,7 +16,7 @@ struct wlr_tablet_pad_impl {
 };
 
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
-	struct wlr_tablet_pad_impl *impl, const char *name);
+	const struct wlr_tablet_pad_impl *impl, const char *name);
 void wlr_tablet_pad_destroy(struct wlr_tablet_pad *pad);
 
 #endif
