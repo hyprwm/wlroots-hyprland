@@ -426,6 +426,8 @@ static const struct zwp_tablet_pad_v2_listener tablet_pad_listener = {
 	.removed = handle_tablet_pad_removed,
 };
 
+const struct wlr_tablet_pad_impl tablet_pad_impl = {0};
+
 static void handle_pad_added(void *data,
 		struct zwp_tablet_seat_v2 *zwp_tablet_seat_v2,
 		struct zwp_tablet_pad_v2 *id) {
@@ -453,7 +455,7 @@ static void handle_pad_added(void *data,
 		zwp_tablet_pad_v2_destroy(id);
 		return;
 	}
-	wlr_tablet_pad_init(wlr_dev->tablet_pad, NULL, wlr_dev->name);
+	wlr_tablet_pad_init(wlr_dev->tablet_pad, &tablet_pad_impl, wlr_dev->name);
 	zwp_tablet_pad_v2_add_listener(id, &tablet_pad_listener, dev);
 }
 
@@ -887,6 +889,8 @@ static const struct zwp_tablet_v2_listener tablet_listener = {
 	.removed = handle_tablet_removed,
 };
 
+const struct wlr_tablet_impl tablet_impl = {0};
+
 static void handle_tab_added(void *data,
 		struct zwp_tablet_seat_v2 *zwp_tablet_seat_v2,
 		struct zwp_tablet_v2 *id) {
@@ -909,7 +913,7 @@ static void handle_tab_added(void *data,
 		return;
 	}
 	zwp_tablet_v2_set_user_data(id, wlr_dev->tablet);
-	wlr_tablet_init(wlr_dev->tablet, NULL, wlr_dev->name);
+	wlr_tablet_init(wlr_dev->tablet, &tablet_impl, wlr_dev->name);
 	zwp_tablet_v2_add_listener(id, &tablet_listener, dev);
 }
 
