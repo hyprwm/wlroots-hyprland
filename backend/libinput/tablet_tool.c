@@ -14,10 +14,8 @@
 #include "util/array.h"
 #include "util/signal.h"
 
-static const struct wlr_tablet_impl tablet_impl;
-
 static bool tablet_is_libinput(struct wlr_tablet *tablet) {
-	return tablet->impl == &tablet_impl;
+	return tablet->impl == &libinput_tablet_impl;
 }
 
 struct wlr_libinput_tablet_tool {
@@ -42,7 +40,6 @@ static void destroy_tool(struct wlr_libinput_tablet_tool *tool) {
 	free(tool);
 }
 
-
 static void destroy_tablet(struct wlr_tablet *wlr_tablet) {
 	assert(tablet_is_libinput(wlr_tablet));
 	struct wlr_libinput_tablet *tablet =
@@ -60,7 +57,7 @@ static void destroy_tablet(struct wlr_tablet *wlr_tablet) {
 	free(tablet);
 }
 
-static const struct wlr_tablet_impl tablet_impl = {
+const struct wlr_tablet_impl libinput_tablet_impl = {
 	.destroy = destroy_tablet,
 };
 
@@ -77,7 +74,7 @@ struct wlr_tablet *create_libinput_tablet(
 	struct wlr_tablet *wlr_tablet = &libinput_tablet->wlr_tablet;
 	const char *name = libinput_device_get_name(libinput_dev);
 
-	wlr_tablet_init(wlr_tablet, &tablet_impl, name);
+	wlr_tablet_init(wlr_tablet, &libinput_tablet_impl, name);
 	wlr_tablet->base.vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_tablet->base.product = libinput_device_get_id_product(libinput_dev);
 

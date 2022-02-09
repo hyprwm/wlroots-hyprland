@@ -8,6 +8,8 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
+const struct wlr_switch_impl libinput_switch_impl;
+
 struct wlr_switch *create_libinput_switch(
 		struct libinput_device *libinput_dev) {
 	assert(libinput_dev);
@@ -17,7 +19,7 @@ struct wlr_switch *create_libinput_switch(
 		return NULL;
 	}
 	const char *name = libinput_device_get_name(libinput_dev);
-	wlr_switch_init(wlr_switch, NULL, name);
+	wlr_switch_init(wlr_switch, &libinput_switch_impl, name);
 	wlr_log(WLR_DEBUG, "Created switch for device %s", name);
 	wlr_switch->base.vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_switch->base.product = libinput_device_get_id_product(libinput_dev);

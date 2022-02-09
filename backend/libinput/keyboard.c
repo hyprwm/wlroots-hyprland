@@ -2,7 +2,6 @@
 #include <libinput.h>
 #include <stdlib.h>
 #include <wlr/backend/session.h>
-#include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
@@ -12,11 +11,9 @@ struct wlr_libinput_keyboard {
 	struct libinput_device *libinput_dev;
 };
 
-static const struct wlr_keyboard_impl impl;
-
 static struct wlr_libinput_keyboard *get_libinput_keyboard_from_keyboard(
 		struct wlr_keyboard *wlr_kb) {
-	assert(wlr_kb->impl == &impl);
+	assert(wlr_kb->impl == &libinput_keyboard_impl);
 	return (struct wlr_libinput_keyboard *)wlr_kb;
 }
 
@@ -33,7 +30,7 @@ static void keyboard_destroy(struct wlr_keyboard *wlr_kb) {
 	free(kb);
 }
 
-static const struct wlr_keyboard_impl impl = {
+const struct wlr_keyboard_impl libinput_keyboard_impl = {
 	.destroy = keyboard_destroy,
 	.led_update = keyboard_set_leds
 };
@@ -50,7 +47,7 @@ struct wlr_keyboard *create_libinput_keyboard(
 	libinput_device_led_update(libinput_dev, 0);
 	struct wlr_keyboard *wlr_kb = &kb->wlr_keyboard;
 	const char *name = libinput_device_get_name(libinput_dev);
-	wlr_keyboard_init(wlr_kb, &impl, name);
+	wlr_keyboard_init(wlr_kb, &libinput_keyboard_impl, name);
 	wlr_kb->base.vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_kb->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_kb;

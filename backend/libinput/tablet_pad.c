@@ -66,6 +66,8 @@ static void add_pad_group_from_libinput(struct wlr_tablet_pad *pad,
 	wl_list_insert(&pad->groups, &group->link);
 }
 
+const struct wlr_tablet_pad_impl libinput_tablet_pad_impl;
+
 struct wlr_tablet_pad *create_libinput_tablet_pad(
 		struct libinput_device *libinput_dev) {
 	assert(libinput_dev);
@@ -76,7 +78,7 @@ struct wlr_tablet_pad *create_libinput_tablet_pad(
 		return NULL;
 	}
 	const char *name = libinput_device_get_name(libinput_dev);
-	wlr_tablet_pad_init(wlr_tablet_pad, NULL, name);
+	wlr_tablet_pad_init(wlr_tablet_pad, &libinput_tablet_pad_impl, name);
 	wlr_tablet_pad->base.vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_tablet_pad->base.product = libinput_device_get_id_product(libinput_dev);
 

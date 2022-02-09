@@ -8,6 +8,8 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
+const struct wlr_touch_impl libinput_touch_impl;
+
 struct wlr_touch *create_libinput_touch(
 		struct libinput_device *libinput_dev) {
 	assert(libinput_dev);
@@ -17,7 +19,7 @@ struct wlr_touch *create_libinput_touch(
 		return NULL;
 	}
 	const char *name = libinput_device_get_name(libinput_dev);
-	wlr_touch_init(wlr_touch, NULL, name);
+	wlr_touch_init(wlr_touch, &libinput_touch_impl, name);
 	wlr_touch->base.vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_touch->base.product = libinput_device_get_id_product(libinput_dev);
 	return wlr_touch;

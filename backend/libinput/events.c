@@ -10,12 +10,6 @@
 #include "util/array.h"
 #include "util/signal.h"
 
-static struct wlr_libinput_input_device *get_libinput_device_from_device(
-		struct wlr_input_device *wlr_dev) {
-	assert(wlr_input_device_is_libinput(wlr_dev));
-	return (struct wlr_libinput_input_device *)wlr_dev;
-}
-
 struct wlr_input_device *get_appropriate_device(
 		enum wlr_input_device_type desired_type,
 		struct libinput_device *libinput_dev) {
@@ -32,17 +26,22 @@ struct wlr_input_device *get_appropriate_device(
 	return NULL;
 }
 
-static void input_device_destroy(struct wlr_input_device *wlr_dev) {
-	struct wlr_libinput_input_device *dev =
-		get_libinput_device_from_device(wlr_dev);
+void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
+{
+	/**
+	 * TODO remove the redundant wlr_input_device from wlr_libinput_input_device
+	 * wlr_libinput_input_device::wlr_input_device is not owned by its input
+	 * device type, which means we have 2 wlr_input_device to cleanup
+	 */
+	if (dev->wlr_input_device._device) {
+		wlr_input_device_destroy(&dev->wlr_input_device);
+	}
+	wlr_input_device_finish(&dev->wlr_input_device);
+
 	libinput_device_unref(dev->handle);
 	wl_list_remove(&dev->link);
 	free(dev);
 }
-
-static const struct wlr_input_device_impl input_device_impl = {
-	.destroy = input_device_destroy,
-};
 
 static struct wlr_input_device *allocate_device(
 		struct wlr_libinput_backend *backend,
@@ -64,14 +63,29 @@ static struct wlr_input_device *allocate_device(
 	wl_list_insert(wlr_devices, &dev->link);
 	dev->handle = libinput_dev;
 	libinput_device_ref(libinput_dev);
-	wlr_input_device_init(wlr_dev, type, &input_device_impl, name);
+	wlr_input_device_init(wlr_dev, type, NULL, name);
 	wlr_dev->vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_dev->product = libinput_device_get_id_product(libinput_dev);
 	return wlr_dev;
 }
 
 bool wlr_input_device_is_libinput(struct wlr_input_device *wlr_dev) {
-	return wlr_dev->impl == &input_device_impl;
+	switch (wlr_dev->type) {
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return wlr_dev->keyboard->impl == &libinput_keyboard_impl;
+	case WLR_INPUT_DEVICE_POINTER:
+		return wlr_dev->pointer->impl == &libinput_pointer_impl;
+	case WLR_INPUT_DEVICE_TOUCH:
+		return wlr_dev->touch->impl == &libinput_touch_impl;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return wlr_dev->tablet->impl == &libinput_tablet_impl;
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return wlr_dev->tablet_pad->impl == &libinput_tablet_pad_impl;
+	case WLR_INPUT_DEVICE_SWITCH:
+		return wlr_dev->switch_device->impl == &libinput_switch_impl;
+	default:
+		return false;
+	}
 }
 
 static void handle_device_added(struct wlr_libinput_backend *backend,
@@ -216,7 +230,7 @@ static void handle_device_removed(struct wlr_libinput_backend *backend,
 	}
 	struct wlr_libinput_input_device *dev, *tmp_dev;
 	wl_list_for_each_safe(dev, tmp_dev, wlr_devices, link) {
-		wlr_input_device_destroy(&dev->wlr_input_device);
+		destroy_libinput_input_device(dev);
 	}
 	size_t i = 0;
 	struct wl_list **ptr;

@@ -5,7 +5,12 @@
 #include <wayland-server-core.h>
 #include <wlr/backend/interface.h>
 #include <wlr/backend/libinput.h>
-#include <wlr/interfaces/wlr_input_device.h>
+#include <wlr/interfaces/wlr_keyboard.h>
+#include <wlr/interfaces/wlr_pointer.h>
+#include <wlr/interfaces/wlr_switch.h>
+#include <wlr/interfaces/wlr_tablet_pad.h>
+#include <wlr/interfaces/wlr_tablet_tool.h>
+#include <wlr/interfaces/wlr_touch.h>
 #include <wlr/types/wlr_input_device.h>
 
 struct wlr_libinput_backend {
@@ -38,6 +43,15 @@ void handle_libinput_event(struct wlr_libinput_backend *state,
 struct wlr_input_device *get_appropriate_device(
 		enum wlr_input_device_type desired_type,
 		struct libinput_device *device);
+
+void destroy_libinput_input_device(struct wlr_libinput_input_device *dev);
+
+extern const struct wlr_keyboard_impl libinput_keyboard_impl;
+extern const struct wlr_pointer_impl libinput_pointer_impl;
+extern const struct wlr_switch_impl libinput_switch_impl;
+extern const struct wlr_tablet_impl libinput_tablet_impl;
+extern const struct wlr_tablet_pad_impl libinput_tablet_pad_impl;
+extern const struct wlr_touch_impl libinput_touch_impl;
 
 struct wlr_keyboard *create_libinput_keyboard(
 		struct libinput_device *device);
