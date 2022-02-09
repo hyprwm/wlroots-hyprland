@@ -9,7 +9,6 @@
 
 #include <wayland-client.h>
 
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/interfaces/wlr_pointer.h>
@@ -494,7 +493,7 @@ struct wlr_wl_input_device *create_wl_input_device(
 	char name[name_size];
 	(void) snprintf(name, name_size, "wayland-%s-%s", type_name, seat->name);
 
-	wlr_input_device_init(wlr_dev, type, NULL, name);
+	wlr_input_device_init(wlr_dev, type, name);
 	wl_list_insert(&seat->backend->devices, &dev->link);
 	return dev;
 }

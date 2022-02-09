@@ -4,7 +4,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/util/log.h>
@@ -116,7 +115,7 @@ void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
 
 void wlr_keyboard_init(struct wlr_keyboard *kb,
 		const struct wlr_keyboard_impl *impl, const char *name) {
-	wlr_input_device_init(&kb->base, WLR_INPUT_DEVICE_KEYBOARD, NULL, name);
+	wlr_input_device_init(&kb->base, WLR_INPUT_DEVICE_KEYBOARD, name);
 	kb->base.keyboard = kb;
 
 	kb->impl = impl;

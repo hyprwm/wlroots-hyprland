@@ -13,7 +13,6 @@
 #include <xf86drm.h>
 
 #include <wlr/backend/interface.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/util/log.h>
 

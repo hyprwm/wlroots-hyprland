@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <wayland-util.h>
 #include <wlr/backend/session.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
 #include "util/array.h"
@@ -63,7 +62,7 @@ static struct wlr_input_device *allocate_device(
 	wl_list_insert(wlr_devices, &dev->link);
 	dev->handle = libinput_dev;
 	libinput_device_ref(libinput_dev);
-	wlr_input_device_init(wlr_dev, type, NULL, name);
+	wlr_input_device_init(wlr_dev, type, name);
 	wlr_dev->vendor = libinput_device_get_id_vendor(libinput_dev);
 	wlr_dev->product = libinput_device_get_id_product(libinput_dev);
 	return wlr_dev;

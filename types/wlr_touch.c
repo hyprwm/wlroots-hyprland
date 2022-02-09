@@ -1,13 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_touch.h>
 #include <wlr/types/wlr_touch.h>
 
 void wlr_touch_init(struct wlr_touch *touch,
 		const struct wlr_touch_impl *impl, const char *name) {
-	wlr_input_device_init(&touch->base, WLR_INPUT_DEVICE_TOUCH, NULL, name);
+	wlr_input_device_init(&touch->base, WLR_INPUT_DEVICE_TOUCH, name);
 	touch->base.touch = touch;
 
 	touch->impl = impl;

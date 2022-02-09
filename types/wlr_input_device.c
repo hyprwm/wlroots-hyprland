@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/interfaces/wlr_switch.h>
@@ -14,10 +13,8 @@
 #include "util/signal.h"
 
 void wlr_input_device_init(struct wlr_input_device *dev,
-		enum wlr_input_device_type type,
-		const struct wlr_input_device_impl *impl, const char *name) {
+		enum wlr_input_device_type type, const char *name) {
 	dev->type = type;
-	dev->impl = impl;
 	dev->name = strdup(name);
 	dev->vendor = 0;
 	dev->product = 0;
@@ -64,10 +61,6 @@ void wlr_input_device_destroy(struct wlr_input_device *dev) {
 		}
 	} else {
 		wlr_input_device_finish(dev);
-		if (dev->impl && dev->impl->destroy) {
-			dev->impl->destroy(dev);
-		} else {
-			free(dev);
-		}
+		free(dev);
 	}
 }

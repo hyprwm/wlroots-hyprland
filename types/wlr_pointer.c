@@ -1,13 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
-#include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/types/wlr_pointer.h>
 
 void wlr_pointer_init(struct wlr_pointer *pointer,
 		const struct wlr_pointer_impl *impl, const char *name) {
-	wlr_input_device_init(&pointer->base, WLR_INPUT_DEVICE_POINTER, NULL, name);
+	wlr_input_device_init(&pointer->base, WLR_INPUT_DEVICE_POINTER, name);
 	pointer->base.pointer = pointer;
 
 	pointer->impl = impl;
