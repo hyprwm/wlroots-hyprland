@@ -6,7 +6,7 @@
 #include <wlr/types/wlr_switch.h>
 
 void wlr_switch_init(struct wlr_switch *switch_device,
-		struct wlr_switch_impl *impl, const char *name) {
+		const struct wlr_switch_impl *impl, const char *name) {
 	wlr_input_device_init(&switch_device->base, WLR_INPUT_DEVICE_SWITCH, NULL,
 		name);
 	switch_device->base.switch_device = switch_device;
