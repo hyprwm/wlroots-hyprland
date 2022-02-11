@@ -41,8 +41,6 @@ void wlr_input_device_destroy(struct wlr_input_device *dev) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&dev->events.destroy, dev);
-
 	if (dev->_device) {
 		switch (dev->type) {
 		case WLR_INPUT_DEVICE_KEYBOARD:
@@ -63,17 +61,13 @@ void wlr_input_device_destroy(struct wlr_input_device *dev) {
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 			wlr_tablet_pad_destroy(dev->tablet_pad);
 			break;
-		default:
-			wlr_log(WLR_DEBUG, "Warning: leaking memory %p %p %d",
-					dev->_device, dev, dev->type);
-			break;
 		}
-	}
-	free(dev->name);
-	free(dev->output_name);
-	if (dev->impl && dev->impl->destroy) {
-		dev->impl->destroy(dev);
 	} else {
-		free(dev);
+		wlr_input_device_finish(dev);
+		if (dev->impl && dev->impl->destroy) {
+			dev->impl->destroy(dev);
+		} else {
+			free(dev);
+		}
 	}
 }
