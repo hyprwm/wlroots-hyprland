@@ -323,33 +323,33 @@ static bool server_start(struct wlr_xwayland_server *server) {
 	server->client_destroy.notify = handle_client_destroy;
 	wl_client_add_destroy_listener(server->client, &server->client_destroy);
 
-	int p[2];
-	if (pipe(p) == -1) {
+	int notify_fd[2];
+	if (pipe(notify_fd) == -1) {
 		wlr_log_errno(WLR_ERROR, "pipe failed");
 		server_finish_process(server);
 		return false;
 	}
-	if (!set_cloexec(p[1], true) || !set_cloexec(p[0], true)) {
+	if (!set_cloexec(notify_fd[1], true) || !set_cloexec(notify_fd[0], true)) {
 		wlr_log(WLR_ERROR, "Failed to set CLOEXEC on FD");
 		server_finish_process(server);
 		return false;
 	}
 
 	struct wl_event_loop *loop = wl_display_get_event_loop(server->wl_display);
-	server->pipe_source = wl_event_loop_add_fd(loop, p[0],
+	server->pipe_source = wl_event_loop_add_fd(loop, notify_fd[0],
 		WL_EVENT_READABLE, xserver_handle_ready, server);
 
 	server->pid = fork();
 	if (server->pid < 0) {
 		wlr_log_errno(WLR_ERROR, "fork failed");
-		close(p[0]);
-		close(p[1]);
+		close(notify_fd[0]);
+		close(notify_fd[1]);
 		server_finish_process(server);
 		return false;
 	} else if (server->pid == 0) {
 		/* Double-fork, but we need to forward SIGUSR1 once Xserver(1)
 		 * is ready, or error if there was one. */
-		close(p[0]);
+		close(notify_fd[0]);
 		sigset_t sigset;
 		sigemptyset(&sigset);
 		sigaddset(&sigset, SIGUSR1);
@@ -359,7 +359,7 @@ static bool server_start(struct wlr_xwayland_server *server) {
 		pid_t pid = fork();
 		if (pid < 0) {
 			wlr_log_errno(WLR_ERROR, "second fork failed");
-			(void)!write(p[1], "\n", 1);
+			(void)!write(notify_fd[1], "\n", 1);
 			_exit(EXIT_FAILURE);
 		} else if (pid == 0) {
 			exec_xwayland(server);
@@ -367,7 +367,7 @@ static bool server_start(struct wlr_xwayland_server *server) {
 
 		int sig;
 		sigwait(&sigset, &sig);
-		if (write(p[1], "\n", 1) < 1) {
+		if (write(notify_fd[1], "\n", 1) < 1) {
 			// Note: if this write failed and we've leaked the write
 			// end of the pipe (due to a race between another thread
 			// exec'ing and our call to fcntl), then our handler will
@@ -387,7 +387,7 @@ static bool server_start(struct wlr_xwayland_server *server) {
 
 	/* close child fds */
 	/* remain managing x sockets for lazy start */
-	close(p[1]);
+	close(notify_fd[1]);
 	close(server->wl_fd[1]);
 	safe_close(server->wm_fd[1]);
 	server->wl_fd[1] = server->wm_fd[1] = -1;
