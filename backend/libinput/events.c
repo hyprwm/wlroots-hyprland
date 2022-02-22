@@ -224,6 +224,16 @@ static void handle_device_removed(struct wlr_libinput_backend *backend,
 	int product = libinput_device_get_id_product(libinput_dev);
 	const char *name = libinput_device_get_name(libinput_dev);
 	wlr_log(WLR_DEBUG, "Removing %s [%d:%d]", name, vendor, product);
+
+	if (!wl_list_empty(&backend->devices)) {
+		struct wlr_libinput_input_device *dev, *tmp_dev;
+		wl_list_for_each_safe(dev, tmp_dev, &backend->devices, link) {
+			if (dev->handle == libinput_dev) {
+				destroy_libinput_input_device(dev);
+			}
+		}
+	}
+
 	if (!wlr_devices) {
 		return;
 	}
