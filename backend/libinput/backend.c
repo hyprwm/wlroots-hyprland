@@ -238,8 +238,16 @@ struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
 
 struct libinput_device *wlr_libinput_get_device_handle(
 		struct wlr_input_device *wlr_dev) {
-	struct wlr_libinput_input_device *dev =
-		(struct wlr_libinput_input_device *)wlr_dev;
+	struct wlr_libinput_input_device *dev = NULL;
+	switch (wlr_dev->type) {
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		dev = device_from_keyboard(wlr_dev->keyboard);
+		break;
+	default:
+		dev = (struct wlr_libinput_input_device *)wlr_dev;
+		break;
+	}
+
 	return dev->handle;
 }
 

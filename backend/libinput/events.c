@@ -25,6 +25,7 @@ struct wlr_input_device *get_appropriate_device(
 	return NULL;
 }
 
+
 void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
 {
 	/**
@@ -34,8 +35,12 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
 	 */
 	if (dev->wlr_input_device._device) {
 		wlr_input_device_destroy(&dev->wlr_input_device);
+		wlr_input_device_finish(&dev->wlr_input_device);
+	} else {
+		if (dev->keyboard.impl) {
+			wlr_keyboard_destroy(&dev->keyboard);
+		}
 	}
-	wlr_input_device_finish(&dev->wlr_input_device);
 
 	libinput_device_unref(dev->handle);
 	wl_list_remove(&dev->link);
@@ -98,28 +103,46 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 	int vendor = libinput_device_get_id_vendor(libinput_dev);
 	int product = libinput_device_get_id_product(libinput_dev);
 	const char *name = libinput_device_get_name(libinput_dev);
+	wlr_log(WLR_DEBUG, "Added %s [%d:%d]", name, vendor, product);
+
+	struct wlr_libinput_input_device *dev =
+		calloc(1, sizeof(struct wlr_libinput_input_device));
+	if (dev == NULL) {
+		wlr_log_errno(WLR_ERROR, "failed to allocate wlr_libinput_input_device");
+		return;
+	}
+
+	dev->handle = libinput_dev;
+	libinput_device_ref(libinput_dev);
+	libinput_device_set_user_data(libinput_dev, dev);
+
+	bool dev_used = false;
+
+	if (libinput_device_has_capability(
+			libinput_dev, LIBINPUT_DEVICE_CAP_KEYBOARD)) {
+		init_device_keyboard(dev);
+
+		wlr_signal_emit_safe(&backend->backend.events.new_input,
+			&dev->keyboard.base);
+		dev_used = true;
+	}
+
+
+	if (dev_used) {
+		wl_list_insert(&backend->devices, &dev->link);
+		return;
+	} else {
+		libinput_device_unref(libinput_dev);
+		free(dev);
+	}
+
 	struct wl_list *wlr_devices = calloc(1, sizeof(struct wl_list));
 	if (!wlr_devices) {
 		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
 	wl_list_init(wlr_devices);
-	wlr_log(WLR_DEBUG, "Added %s [%d:%d]", name, vendor, product);
 
-	if (libinput_device_has_capability(
-			libinput_dev, LIBINPUT_DEVICE_CAP_KEYBOARD)) {
-		struct wlr_input_device *wlr_dev = allocate_device(backend,
-				libinput_dev, wlr_devices, WLR_INPUT_DEVICE_KEYBOARD);
-		if (!wlr_dev) {
-			goto fail;
-		}
-		wlr_dev->keyboard = create_libinput_keyboard(libinput_dev);
-		if (!wlr_dev->keyboard) {
-			free(wlr_dev);
-			goto fail;
-		}
-		wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
-	}
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_POINTER)) {
 		struct wlr_input_device *wlr_dev = allocate_device(backend,
@@ -210,30 +233,32 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 
 fail:
 	wlr_log(WLR_ERROR, "Could not allocate new device");
-	struct wlr_libinput_input_device *dev, *tmp_dev;
-	wl_list_for_each_safe(dev, tmp_dev, wlr_devices, link) {
-		free(dev);
+	struct wlr_libinput_input_device *device, *tmp;
+	wl_list_for_each_safe(device, tmp, wlr_devices, link) {
+		free(device);
 	}
 	free(wlr_devices);
 }
 
 static void handle_device_removed(struct wlr_libinput_backend *backend,
 		struct libinput_device *libinput_dev) {
-	struct wl_list *wlr_devices = libinput_device_get_user_data(libinput_dev);
 	int vendor = libinput_device_get_id_vendor(libinput_dev);
 	int product = libinput_device_get_id_product(libinput_dev);
 	const char *name = libinput_device_get_name(libinput_dev);
 	wlr_log(WLR_DEBUG, "Removing %s [%d:%d]", name, vendor, product);
 
+	// TODO: use libinput_device_get_user_data(libinput_dev);
 	if (!wl_list_empty(&backend->devices)) {
 		struct wlr_libinput_input_device *dev, *tmp_dev;
 		wl_list_for_each_safe(dev, tmp_dev, &backend->devices, link) {
 			if (dev->handle == libinput_dev) {
 				destroy_libinput_input_device(dev);
+				return;
 			}
 		}
 	}
 
+	struct wl_list *wlr_devices = libinput_device_get_user_data(libinput_dev);
 	if (!wlr_devices) {
 		return;
 	}
@@ -258,6 +283,8 @@ static void handle_device_removed(struct wlr_libinput_backend *backend,
 void handle_libinput_event(struct wlr_libinput_backend *backend,
 		struct libinput_event *event) {
 	struct libinput_device *libinput_dev = libinput_event_get_device(event);
+	struct wlr_libinput_input_device *dev =
+		libinput_device_get_user_data(libinput_dev);
 	enum libinput_event_type event_type = libinput_event_get_type(event);
 	switch (event_type) {
 	case LIBINPUT_EVENT_DEVICE_ADDED:
@@ -267,7 +294,7 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 		handle_device_removed(backend, libinput_dev);
 		break;
 	case LIBINPUT_EVENT_KEYBOARD_KEY:
-		handle_keyboard_key(event, libinput_dev);
+		handle_keyboard_key(event, &dev->keyboard);
 		break;
 	case LIBINPUT_EVENT_POINTER_MOTION:
 		handle_pointer_motion(event, libinput_dev);

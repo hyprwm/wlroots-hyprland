@@ -32,8 +32,11 @@ struct wlr_libinput_backend {
 
 struct wlr_libinput_input_device {
 	struct wlr_input_device wlr_input_device;
-	struct wl_list link;
 	struct libinput_device *handle;
+
+	struct wlr_keyboard keyboard;
+
+	struct wl_list link;
 };
 
 uint32_t usec_to_msec(uint64_t usec);
@@ -54,10 +57,9 @@ extern const struct wlr_tablet_impl libinput_tablet_impl;
 extern const struct wlr_tablet_pad_impl libinput_tablet_pad_impl;
 extern const struct wlr_touch_impl libinput_touch_impl;
 
-struct wlr_keyboard *create_libinput_keyboard(
-		struct libinput_device *device);
-void handle_keyboard_key(struct libinput_event *event,
-		struct libinput_device *device);
+void init_device_keyboard(struct wlr_libinput_input_device *dev);
+struct wlr_libinput_input_device *device_from_keyboard(struct wlr_keyboard *kb);
+void handle_keyboard_key(struct libinput_event *event, struct wlr_keyboard *kb);
 
 struct wlr_pointer *create_libinput_pointer(
 		struct libinput_device *device);
