@@ -43,6 +43,9 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
 		if (dev->pointer.impl) {
 			wlr_pointer_destroy(&dev->pointer);
 		}
+		if (dev->switch_device.impl) {
+			wlr_switch_destroy(&dev->switch_device);
+		}
 	}
 
 	libinput_device_unref(dev->handle);
@@ -140,6 +143,14 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		dev_used = true;
 	}
 
+	if (libinput_device_has_capability(
+			libinput_dev, LIBINPUT_DEVICE_CAP_SWITCH)) {
+		init_device_switch(dev);
+		wlr_signal_emit_safe(&backend->backend.events.new_input,
+			&dev->switch_device.base);
+		dev_used = true;
+	}
+
 	if (dev_used) {
 		wl_list_insert(&backend->devices, &dev->link);
 		return;
@@ -200,20 +211,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_GESTURE)) {
 		// TODO
-	}
-	if (libinput_device_has_capability(
-			libinput_dev, LIBINPUT_DEVICE_CAP_SWITCH)) {
-		struct wlr_input_device *wlr_dev = allocate_device(backend,
-			libinput_dev, wlr_devices, WLR_INPUT_DEVICE_SWITCH);
-		if (!wlr_dev) {
-			goto fail;
-		}
-		wlr_dev->switch_device = create_libinput_switch(libinput_dev);
-		if (!wlr_dev->switch_device) {
-			free(wlr_dev);
-			goto fail;
-		}
-		wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
 	}
 
 	if (!wl_list_empty(wlr_devices)) {
@@ -343,7 +340,7 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 		handle_tablet_pad_strip(event, libinput_dev);
 		break;
 	case LIBINPUT_EVENT_SWITCH_TOGGLE:
-		handle_switch_toggle(event, libinput_dev);
+		handle_switch_toggle(event, &dev->switch_device);
 		break;
 	case LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN:
 		handle_pointer_swipe_begin(event, &dev->pointer);

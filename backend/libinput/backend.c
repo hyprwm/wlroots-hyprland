@@ -246,6 +246,9 @@ struct libinput_device *wlr_libinput_get_device_handle(
 	case WLR_INPUT_DEVICE_POINTER:
 		dev = device_from_pointer(wlr_dev->pointer);
 		break;
+	case WLR_INPUT_DEVICE_SWITCH:
+		dev = device_from_switch(wlr_dev->switch_device);
+		break;
 	default:
 		dev = (struct wlr_libinput_input_device *)wlr_dev;
 		break;

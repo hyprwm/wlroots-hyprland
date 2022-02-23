@@ -36,6 +36,7 @@ struct wlr_libinput_input_device {
 
 	struct wlr_keyboard keyboard;
 	struct wlr_pointer pointer;
+	struct wlr_switch switch_device;
 
 	struct wl_list link;
 };
@@ -89,10 +90,11 @@ void handle_pointer_hold_begin(struct libinput_event *event,
 void handle_pointer_hold_end(struct libinput_event *event,
 	struct wlr_pointer *pointer);
 
-struct wlr_switch *create_libinput_switch(
-		struct libinput_device *device);
+void init_device_switch(struct wlr_libinput_input_device *dev);
+struct wlr_libinput_input_device *device_from_switch(
+	struct wlr_switch *switch_device);
 void handle_switch_toggle(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_switch *switch_device);
 
 struct wlr_touch *create_libinput_touch(
 		struct libinput_device *device);
