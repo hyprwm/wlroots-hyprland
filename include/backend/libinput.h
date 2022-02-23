@@ -37,6 +37,7 @@ struct wlr_libinput_input_device {
 	struct wlr_keyboard keyboard;
 	struct wlr_pointer pointer;
 	struct wlr_switch switch_device;
+	struct wlr_touch touch;
 
 	struct wl_list link;
 };
@@ -96,18 +97,19 @@ struct wlr_libinput_input_device *device_from_switch(
 void handle_switch_toggle(struct libinput_event *event,
 	struct wlr_switch *switch_device);
 
-struct wlr_touch *create_libinput_touch(
-		struct libinput_device *device);
+void init_device_touch(struct wlr_libinput_input_device *dev);
+struct wlr_libinput_input_device *device_from_touch(
+	struct wlr_touch *touch);
 void handle_touch_down(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_touch *touch);
 void handle_touch_up(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_touch *touch);
 void handle_touch_motion(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_touch *touch);
 void handle_touch_cancel(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_touch *touch);
 void handle_touch_frame(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_touch *touch);
 
 struct wlr_tablet *create_libinput_tablet(
 		struct libinput_device *device);
