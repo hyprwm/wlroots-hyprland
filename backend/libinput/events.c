@@ -49,6 +49,9 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
 		if (dev->touch.impl) {
 			wlr_touch_destroy(&dev->touch);
 		}
+		if (dev->tablet.impl) {
+			wlr_tablet_destroy(&dev->tablet);
+		}
 	}
 
 	libinput_device_unref(dev->handle);
@@ -162,6 +165,14 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		dev_used = true;
 	}
 
+	if (libinput_device_has_capability(libinput_dev,
+			LIBINPUT_DEVICE_CAP_TABLET_TOOL)) {
+		init_device_tablet(dev);
+		wlr_signal_emit_safe(&backend->backend.events.new_input,
+			&dev->tablet.base);
+		dev_used = true;
+	}
+
 	if (dev_used) {
 		wl_list_insert(&backend->devices, &dev->link);
 		return;
@@ -177,20 +188,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 	}
 	wl_list_init(wlr_devices);
 
-	if (libinput_device_has_capability(libinput_dev,
-			LIBINPUT_DEVICE_CAP_TABLET_TOOL)) {
-		struct wlr_input_device *wlr_dev = allocate_device(backend,
-				libinput_dev, wlr_devices, WLR_INPUT_DEVICE_TABLET_TOOL);
-		if (!wlr_dev) {
-			goto fail;
-		}
-		wlr_dev->tablet = create_libinput_tablet(libinput_dev);
-		if (!wlr_dev->tablet) {
-			free(wlr_dev);
-			goto fail;
-		}
-		wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
-	}
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_TABLET_PAD)) {
 		struct wlr_input_device *wlr_dev = allocate_device(backend,
@@ -316,16 +313,16 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 		handle_touch_frame(event, &dev->touch);
 		break;
 	case LIBINPUT_EVENT_TABLET_TOOL_AXIS:
-		handle_tablet_tool_axis(event, libinput_dev);
+		handle_tablet_tool_axis(event, &dev->tablet);
 		break;
 	case LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY:
-		handle_tablet_tool_proximity(event, libinput_dev);
+		handle_tablet_tool_proximity(event, &dev->tablet);
 		break;
 	case LIBINPUT_EVENT_TABLET_TOOL_TIP:
-		handle_tablet_tool_tip(event, libinput_dev);
+		handle_tablet_tool_tip(event, &dev->tablet);
 		break;
 	case LIBINPUT_EVENT_TABLET_TOOL_BUTTON:
-		handle_tablet_tool_button(event, libinput_dev);
+		handle_tablet_tool_button(event, &dev->tablet);
 		break;
 	case LIBINPUT_EVENT_TABLET_PAD_BUTTON:
 		handle_tablet_pad_button(event, libinput_dev);
