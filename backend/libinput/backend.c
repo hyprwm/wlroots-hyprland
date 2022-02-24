@@ -255,11 +255,10 @@ struct libinput_device *wlr_libinput_get_device_handle(
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
 		dev = device_from_tablet(wlr_dev->tablet);
 		break;
-	default:
-		dev = (struct wlr_libinput_input_device *)wlr_dev;
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		dev = device_from_tablet_pad(wlr_dev->tablet_pad);
 		break;
 	}
-
 	return dev->handle;
 }
 

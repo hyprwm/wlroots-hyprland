@@ -40,6 +40,7 @@ struct wlr_libinput_input_device {
 	struct wlr_touch touch;
 	struct wlr_tablet tablet;
 	struct wl_list tablet_tools; // see backend/libinput/tablet_tool.c
+	struct wlr_tablet_pad tablet_pad;
 
 	struct wl_list link;
 };
@@ -125,13 +126,14 @@ void handle_tablet_tool_tip(struct libinput_event *event,
 void handle_tablet_tool_button(struct libinput_event *event,
 	struct wlr_tablet *tablet);
 
-struct wlr_tablet_pad *create_libinput_tablet_pad(
-		struct libinput_device *device);
+void init_device_tablet_pad(struct wlr_libinput_input_device *dev);
+struct wlr_libinput_input_device *device_from_tablet_pad(
+	struct wlr_tablet_pad *tablet_pad);
 void handle_tablet_pad_button(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_tablet_pad *tablet_pad);
 void handle_tablet_pad_ring(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_tablet_pad *tablet_pad);
 void handle_tablet_pad_strip(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_tablet_pad *tablet_pad);
 
 #endif

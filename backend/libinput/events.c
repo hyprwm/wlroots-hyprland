@@ -52,37 +52,14 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
 		if (dev->tablet.impl) {
 			wlr_tablet_destroy(&dev->tablet);
 		}
+		if (dev->tablet_pad.impl) {
+			wlr_tablet_pad_destroy(&dev->tablet_pad);
+		}
 	}
 
 	libinput_device_unref(dev->handle);
 	wl_list_remove(&dev->link);
 	free(dev);
-}
-
-static struct wlr_input_device *allocate_device(
-		struct wlr_libinput_backend *backend,
-		struct libinput_device *libinput_dev, struct wl_list *wlr_devices,
-		enum wlr_input_device_type type) {
-	const char *name = libinput_device_get_name(libinput_dev);
-	struct wlr_libinput_input_device *dev =
-		calloc(1, sizeof(struct wlr_libinput_input_device));
-	if (dev == NULL) {
-		return NULL;
-	}
-	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-	libinput_device_get_size(libinput_dev,
-			&wlr_dev->width_mm, &wlr_dev->height_mm);
-	const char *output_name = libinput_device_get_output_name(libinput_dev);
-	if (output_name != NULL) {
-		wlr_dev->output_name = strdup(output_name);
-	}
-	wl_list_insert(wlr_devices, &dev->link);
-	dev->handle = libinput_dev;
-	libinput_device_ref(libinput_dev);
-	wlr_input_device_init(wlr_dev, type, name);
-	wlr_dev->vendor = libinput_device_get_id_vendor(libinput_dev);
-	wlr_dev->product = libinput_device_get_id_product(libinput_dev);
-	return wlr_dev;
 }
 
 bool wlr_input_device_is_libinput(struct wlr_input_device *wlr_dev) {
@@ -173,6 +150,14 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		dev_used = true;
 	}
 
+	if (libinput_device_has_capability(
+			libinput_dev, LIBINPUT_DEVICE_CAP_TABLET_PAD)) {
+		init_device_tablet_pad(dev);
+		wlr_signal_emit_safe(&backend->backend.events.new_input,
+			&dev->tablet_pad.base);
+		dev_used = true;
+	}
+
 	if (dev_used) {
 		wl_list_insert(&backend->devices, &dev->link);
 		return;
@@ -187,21 +172,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		return;
 	}
 	wl_list_init(wlr_devices);
-
-	if (libinput_device_has_capability(
-			libinput_dev, LIBINPUT_DEVICE_CAP_TABLET_PAD)) {
-		struct wlr_input_device *wlr_dev = allocate_device(backend,
-				libinput_dev, wlr_devices, WLR_INPUT_DEVICE_TABLET_PAD);
-		if (!wlr_dev) {
-			goto fail;
-		}
-		wlr_dev->tablet_pad = create_libinput_tablet_pad(libinput_dev);
-		if (!wlr_dev->tablet_pad) {
-			free(wlr_dev);
-			goto fail;
-		}
-		wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
-	}
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_GESTURE)) {
 		// TODO
@@ -325,13 +295,13 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 		handle_tablet_tool_button(event, &dev->tablet);
 		break;
 	case LIBINPUT_EVENT_TABLET_PAD_BUTTON:
-		handle_tablet_pad_button(event, libinput_dev);
+		handle_tablet_pad_button(event, &dev->tablet_pad);
 		break;
 	case LIBINPUT_EVENT_TABLET_PAD_RING:
-		handle_tablet_pad_ring(event, libinput_dev);
+		handle_tablet_pad_ring(event, &dev->tablet_pad);
 		break;
 	case LIBINPUT_EVENT_TABLET_PAD_STRIP:
-		handle_tablet_pad_strip(event, libinput_dev);
+		handle_tablet_pad_strip(event, &dev->tablet_pad);
 		break;
 	case LIBINPUT_EVENT_SWITCH_TOGGLE:
 		handle_switch_toggle(event, &dev->switch_device);
