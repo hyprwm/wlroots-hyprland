@@ -1,60 +1,36 @@
 #define _POSIX_C_SOURCE 200809L
-#include <assert.h>
+
 #include <libinput.h>
 #include <stdlib.h>
-#include <wayland-util.h>
 #include <wlr/backend/session.h>
+#include <wlr/interfaces/wlr_keyboard.h>
+#include <wlr/interfaces/wlr_pointer.h>
+#include <wlr/interfaces/wlr_touch.h>
+#include <wlr/interfaces/wlr_tablet_tool.h>
+#include <wlr/interfaces/wlr_tablet_pad.h>
+#include <wlr/interfaces/wlr_switch.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
-#include "util/array.h"
 #include "util/signal.h"
 
-struct wlr_input_device *get_appropriate_device(
-		enum wlr_input_device_type desired_type,
-		struct libinput_device *libinput_dev) {
-	struct wl_list *wlr_devices = libinput_device_get_user_data(libinput_dev);
-	if (!wlr_devices) {
-		return NULL;
+void destroy_libinput_input_device(struct wlr_libinput_input_device *dev) {
+	if (dev->keyboard.impl) {
+		wlr_keyboard_destroy(&dev->keyboard);
 	}
-	struct wlr_libinput_input_device *dev;
-	wl_list_for_each(dev, wlr_devices, link) {
-		if (dev->wlr_input_device.type == desired_type) {
-			return &dev->wlr_input_device;
-		}
+	if (dev->pointer.impl) {
+		wlr_pointer_destroy(&dev->pointer);
 	}
-	return NULL;
-}
-
-
-void destroy_libinput_input_device(struct wlr_libinput_input_device *dev)
-{
-	/**
-	 * TODO remove the redundant wlr_input_device from wlr_libinput_input_device
-	 * wlr_libinput_input_device::wlr_input_device is not owned by its input
-	 * device type, which means we have 2 wlr_input_device to cleanup
-	 */
-	if (dev->wlr_input_device._device) {
-		wlr_input_device_destroy(&dev->wlr_input_device);
-		wlr_input_device_finish(&dev->wlr_input_device);
-	} else {
-		if (dev->keyboard.impl) {
-			wlr_keyboard_destroy(&dev->keyboard);
-		}
-		if (dev->pointer.impl) {
-			wlr_pointer_destroy(&dev->pointer);
-		}
-		if (dev->switch_device.impl) {
-			wlr_switch_destroy(&dev->switch_device);
-		}
-		if (dev->touch.impl) {
-			wlr_touch_destroy(&dev->touch);
-		}
-		if (dev->tablet.impl) {
-			wlr_tablet_destroy(&dev->tablet);
-		}
-		if (dev->tablet_pad.impl) {
-			wlr_tablet_pad_destroy(&dev->tablet_pad);
-		}
+	if (dev->switch_device.impl) {
+		wlr_switch_destroy(&dev->switch_device);
+	}
+	if (dev->touch.impl) {
+		wlr_touch_destroy(&dev->touch);
+	}
+	if (dev->tablet.impl) {
+		wlr_tablet_destroy(&dev->tablet);
+	}
+	if (dev->tablet_pad.impl) {
+		wlr_tablet_pad_destroy(&dev->tablet_pad);
 	}
 
 	libinput_device_unref(dev->handle);
@@ -83,16 +59,10 @@ bool wlr_input_device_is_libinput(struct wlr_input_device *wlr_dev) {
 
 static void handle_device_added(struct wlr_libinput_backend *backend,
 		struct libinput_device *libinput_dev) {
-	/*
-	 * Note: the wlr API exposes only devices with a single capability, because
-	 * that meshes better with how Wayland does things and is a bit simpler.
-	 * However, libinput devices often have multiple capabilities - in such
-	 * cases we have to create several devices.
-	 */
 	int vendor = libinput_device_get_id_vendor(libinput_dev);
 	int product = libinput_device_get_id_product(libinput_dev);
 	const char *name = libinput_device_get_name(libinput_dev);
-	wlr_log(WLR_DEBUG, "Added %s [%d:%d]", name, vendor, product);
+	wlr_log(WLR_DEBUG, "Adding %s [%d:%d]", name, vendor, product);
 
 	struct wlr_libinput_input_device *dev =
 		calloc(1, sizeof(struct wlr_libinput_input_device));
@@ -105,7 +75,7 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 	libinput_device_ref(libinput_dev);
 	libinput_device_set_user_data(libinput_dev, dev);
 
-	bool dev_used = false;
+	wl_list_insert(&backend->devices, &dev->link);
 
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_KEYBOARD)) {
@@ -113,7 +83,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->keyboard.base);
-		dev_used = true;
 	}
 
 	if (libinput_device_has_capability(
@@ -122,8 +91,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->pointer.base);
-
-		dev_used = true;
 	}
 
 	if (libinput_device_has_capability(
@@ -131,7 +98,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		init_device_switch(dev);
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->switch_device.base);
-		dev_used = true;
 	}
 
 	if (libinput_device_has_capability(
@@ -139,7 +105,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		init_device_touch(dev);
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->touch.base);
-		dev_used = true;
 	}
 
 	if (libinput_device_has_capability(libinput_dev,
@@ -147,7 +112,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		init_device_tablet(dev);
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->tablet.base);
-		dev_used = true;
 	}
 
 	if (libinput_device_has_capability(
@@ -155,48 +119,12 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		init_device_tablet_pad(dev);
 		wlr_signal_emit_safe(&backend->backend.events.new_input,
 			&dev->tablet_pad.base);
-		dev_used = true;
 	}
 
-	if (dev_used) {
-		wl_list_insert(&backend->devices, &dev->link);
-		return;
-	} else {
-		libinput_device_unref(libinput_dev);
-		free(dev);
-	}
-
-	struct wl_list *wlr_devices = calloc(1, sizeof(struct wl_list));
-	if (!wlr_devices) {
-		wlr_log(WLR_ERROR, "Allocation failed");
-		return;
-	}
-	wl_list_init(wlr_devices);
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_GESTURE)) {
-		// TODO
+		wlr_log(WLR_DEBUG, "libinput gesture not handled");
 	}
-
-	if (!wl_list_empty(wlr_devices)) {
-		struct wl_list **dst = wl_array_add(&backend->wlr_device_lists, sizeof(wlr_devices));
-		if (!dst) {
-			goto fail;
-		}
-		*dst = wlr_devices;
-
-		libinput_device_set_user_data(libinput_dev, wlr_devices);
-	} else {
-		free(wlr_devices);
-	}
-	return;
-
-fail:
-	wlr_log(WLR_ERROR, "Could not allocate new device");
-	struct wlr_libinput_input_device *device, *tmp;
-	wl_list_for_each_safe(device, tmp, wlr_devices, link) {
-		free(device);
-	}
-	free(wlr_devices);
 }
 
 static void handle_device_removed(struct wlr_libinput_backend *backend,
@@ -206,37 +134,14 @@ static void handle_device_removed(struct wlr_libinput_backend *backend,
 	const char *name = libinput_device_get_name(libinput_dev);
 	wlr_log(WLR_DEBUG, "Removing %s [%d:%d]", name, vendor, product);
 
-	// TODO: use libinput_device_get_user_data(libinput_dev);
-	if (!wl_list_empty(&backend->devices)) {
-		struct wlr_libinput_input_device *dev, *tmp_dev;
-		wl_list_for_each_safe(dev, tmp_dev, &backend->devices, link) {
-			if (dev->handle == libinput_dev) {
-				destroy_libinput_input_device(dev);
-				return;
-			}
-		}
-	}
-
-	struct wl_list *wlr_devices = libinput_device_get_user_data(libinput_dev);
-	if (!wlr_devices) {
+	struct wlr_libinput_input_device *dev =
+		libinput_device_get_user_data(libinput_dev);
+	if (dev == NULL) {
+		wlr_log(WLR_ERROR, "libinput_device has no wlr_libinput_input_device");
 		return;
 	}
-	struct wlr_libinput_input_device *dev, *tmp_dev;
-	wl_list_for_each_safe(dev, tmp_dev, wlr_devices, link) {
-		destroy_libinput_input_device(dev);
-	}
-	size_t i = 0;
-	struct wl_list **ptr;
-	wl_array_for_each(ptr, &backend->wlr_device_lists) {
-		struct wl_list *iter = *ptr;
-		if (iter == wlr_devices) {
-			array_remove_at(&backend->wlr_device_lists,
-				i * sizeof(struct wl_list *), sizeof(struct wl_list *));
-			break;
-		}
-		i++;
-	}
-	free(wlr_devices);
+
+	destroy_libinput_input_device(dev);
 }
 
 void handle_libinput_event(struct wlr_libinput_backend *backend,

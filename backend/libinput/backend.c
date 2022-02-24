@@ -110,11 +110,9 @@ static bool backend_start(struct wlr_backend *wlr_backend) {
 			no_devs = NULL;
 		}
 	}
-	if (!no_devs && (backend->wlr_device_lists.size == 0
-			|| wl_list_empty(&backend->devices))) {
+	if (!no_devs && wl_list_empty(&backend->devices)) {
 		handle_libinput_readable(libinput_fd, WL_EVENT_READABLE, backend);
-		if (backend->wlr_device_lists.size == 0
-				&& wl_list_empty(&backend->devices)) {
+		if (wl_list_empty(&backend->devices)) {
 			wlr_log(WLR_ERROR, "libinput initialization failed, no input devices");
 			wlr_log(WLR_ERROR, "Set WLR_LIBINPUT_NO_DEVICES=1 to suppress this check");
 			return false;
@@ -143,15 +141,6 @@ static void backend_destroy(struct wlr_backend *wlr_backend) {
 	struct wlr_libinput_backend *backend =
 		get_libinput_backend_from_backend(wlr_backend);
 
-	struct wl_list **wlr_devices_ptr;
-	wl_array_for_each(wlr_devices_ptr, &backend->wlr_device_lists) {
-		struct wlr_libinput_input_device *dev, *tmp;
-		wl_list_for_each_safe(dev, tmp, *wlr_devices_ptr, link) {
-			destroy_libinput_input_device(dev);
-		}
-		free(*wlr_devices_ptr);
-	}
-
 	struct wlr_libinput_input_device *dev, *tmp;
 	wl_list_for_each_safe(dev, tmp, &backend->devices, link) {
 		destroy_libinput_input_device(dev);
@@ -163,7 +152,6 @@ static void backend_destroy(struct wlr_backend *wlr_backend) {
 	wl_list_remove(&backend->session_destroy.link);
 	wl_list_remove(&backend->session_signal.link);
 
-	wl_array_release(&backend->wlr_device_lists);
 	if (backend->input_event) {
 		wl_event_source_remove(backend->input_event);
 	}
@@ -218,7 +206,6 @@ struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
 	}
 	wlr_backend_init(&backend->backend, &backend_impl);
 
-	wl_array_init(&backend->wlr_device_lists);
 	wl_list_init(&backend->devices);
 
 	backend->session = session;

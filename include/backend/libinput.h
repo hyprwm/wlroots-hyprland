@@ -5,13 +5,12 @@
 #include <wayland-server-core.h>
 #include <wlr/backend/interface.h>
 #include <wlr/backend/libinput.h>
-#include <wlr/interfaces/wlr_keyboard.h>
-#include <wlr/interfaces/wlr_pointer.h>
-#include <wlr/interfaces/wlr_switch.h>
-#include <wlr/interfaces/wlr_tablet_pad.h>
-#include <wlr/interfaces/wlr_tablet_tool.h>
-#include <wlr/interfaces/wlr_touch.h>
-#include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_switch.h>
+#include <wlr/types/wlr_tablet_pad.h>
+#include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_touch.h>
 
 struct wlr_libinput_backend {
 	struct wlr_backend backend;
@@ -26,12 +25,10 @@ struct wlr_libinput_backend {
 	struct wl_listener session_destroy;
 	struct wl_listener session_signal;
 
-	struct wl_array wlr_device_lists; // struct wl_list *
 	struct wl_list devices; // wlr_libinput_device::link
 };
 
 struct wlr_libinput_input_device {
-	struct wlr_input_device wlr_input_device;
 	struct libinput_device *handle;
 
 	struct wlr_keyboard keyboard;
@@ -49,10 +46,6 @@ uint32_t usec_to_msec(uint64_t usec);
 
 void handle_libinput_event(struct wlr_libinput_backend *state,
 		struct libinput_event *event);
-
-struct wlr_input_device *get_appropriate_device(
-		enum wlr_input_device_type desired_type,
-		struct libinput_device *device);
 
 void destroy_libinput_input_device(struct wlr_libinput_input_device *dev);
 
