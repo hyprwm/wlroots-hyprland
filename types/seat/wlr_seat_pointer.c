@@ -301,7 +301,7 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 			if (value_discrete &&
 					version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
 				wl_pointer_send_axis_discrete(resource, orientation,
-					value_discrete);
+					value_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
 			}
 
 			wl_pointer_send_axis(resource, time, orientation,

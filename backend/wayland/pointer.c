@@ -184,7 +184,7 @@ static void pointer_handle_axis_discrete(void *data,
 		return;
 	}
 
-	pointer->axis_discrete = discrete;
+	pointer->axis_discrete = discrete * WLR_POINTER_AXIS_DISCRETE_STEP;
 }
 
 static const struct wl_pointer_listener pointer_listener = {

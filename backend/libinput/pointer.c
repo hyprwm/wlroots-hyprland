@@ -116,6 +116,7 @@ void handle_pointer_axis(struct libinput_event *event,
 				libinput_event_pointer_get_axis_value(pevent, axes[i]);
 			wlr_event.delta_discrete =
 				libinput_event_pointer_get_axis_value_discrete(pevent, axes[i]);
+			wlr_event.delta_discrete *= WLR_POINTER_AXIS_DISCRETE_STEP;
 			wlr_signal_emit_safe(&pointer->events.axis, &wlr_event);
 		}
 	}

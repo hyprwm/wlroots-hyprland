@@ -78,6 +78,8 @@ enum wlr_axis_orientation {
 	WLR_AXIS_ORIENTATION_HORIZONTAL,
 };
 
+#define WLR_POINTER_AXIS_DISCRETE_STEP 120
+
 struct wlr_pointer_axis_event {
 	struct wlr_pointer *pointer;
 	uint32_t time_msec;
