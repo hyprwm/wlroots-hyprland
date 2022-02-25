@@ -346,8 +346,15 @@ static void registry_global(void *data, struct wl_registry *registry,
 		wl->compositor = wl_registry_bind(registry, name,
 			&wl_compositor_interface, 4);
 	} else if (strcmp(iface, wl_seat_interface.name) == 0) {
+		uint32_t target_version = version;
+		if (version < 5) {
+			target_version = 5;
+		}
+		if (version > 8) {
+			target_version = 8;
+		}
 		struct wl_seat *wl_seat = wl_registry_bind(registry, name,
-			&wl_seat_interface, 5);
+			&wl_seat_interface, target_version);
 		if (!create_wl_seat(wl_seat, wl)) {
 			wl_seat_destroy(wl_seat);
 		}

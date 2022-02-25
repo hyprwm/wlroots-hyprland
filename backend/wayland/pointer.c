@@ -187,6 +187,17 @@ static void pointer_handle_axis_discrete(void *data,
 	pointer->axis_discrete = discrete * WLR_POINTER_AXIS_DISCRETE_STEP;
 }
 
+static void pointer_handle_axis_value120(void *data,
+		struct wl_pointer *wl_pointer, uint32_t axis, int32_t value120) {
+	struct wlr_wl_seat *seat = data;
+	struct wlr_wl_pointer *pointer = seat->active_pointer;
+	if (pointer == NULL) {
+		return;
+	}
+
+	pointer->axis_discrete = value120;
+}
+
 static const struct wl_pointer_listener pointer_listener = {
 	.enter = pointer_handle_enter,
 	.leave = pointer_handle_leave,
@@ -197,6 +208,7 @@ static const struct wl_pointer_listener pointer_listener = {
 	.axis_source = pointer_handle_axis_source,
 	.axis_stop = pointer_handle_axis_stop,
 	.axis_discrete = pointer_handle_axis_discrete,
+	.axis_value120 = pointer_handle_axis_value120,
 };
 
 static void gesture_swipe_begin(void *data,
