@@ -103,22 +103,24 @@ void handle_pointer_axis(struct libinput_event *event,
 		LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL,
 	};
 	for (size_t i = 0; i < sizeof(axes) / sizeof(axes[0]); ++i) {
-		if (libinput_event_pointer_has_axis(pevent, axes[i])) {
-			switch (axes[i]) {
-			case LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL:
-				wlr_event.orientation = WLR_AXIS_ORIENTATION_VERTICAL;
-				break;
-			case LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL:
-				wlr_event.orientation = WLR_AXIS_ORIENTATION_HORIZONTAL;
-				break;
-			}
-			wlr_event.delta =
-				libinput_event_pointer_get_axis_value(pevent, axes[i]);
-			wlr_event.delta_discrete =
-				libinput_event_pointer_get_axis_value_discrete(pevent, axes[i]);
-			wlr_event.delta_discrete *= WLR_POINTER_AXIS_DISCRETE_STEP;
-			wlr_signal_emit_safe(&pointer->events.axis, &wlr_event);
+		if (!libinput_event_pointer_has_axis(pevent, axes[i])) {
+			continue;
 		}
+
+		switch (axes[i]) {
+		case LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL:
+			wlr_event.orientation = WLR_AXIS_ORIENTATION_VERTICAL;
+			break;
+		case LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL:
+			wlr_event.orientation = WLR_AXIS_ORIENTATION_HORIZONTAL;
+			break;
+		}
+		wlr_event.delta =
+			libinput_event_pointer_get_axis_value(pevent, axes[i]);
+		wlr_event.delta_discrete =
+			libinput_event_pointer_get_axis_value_discrete(pevent, axes[i]);
+		wlr_event.delta_discrete *= WLR_POINTER_AXIS_DISCRETE_STEP;
+		wlr_signal_emit_safe(&pointer->events.axis, &wlr_event);
 	}
 	wlr_signal_emit_safe(&pointer->events.frame, pointer);
 }
