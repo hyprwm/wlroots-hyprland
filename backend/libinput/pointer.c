@@ -123,6 +123,45 @@ void handle_pointer_axis(struct libinput_event *event,
 	wlr_signal_emit_safe(&pointer->events.frame, pointer);
 }
 
+#if LIBINPUT_HAS_SCROLL_VALUE120
+void handle_pointer_axis_value120(struct libinput_event *event,
+		struct wlr_pointer *pointer, enum wlr_axis_source source) {
+	struct libinput_event_pointer *pevent =
+		libinput_event_get_pointer_event(event);
+	struct wlr_pointer_axis_event wlr_event = { 0 };
+	wlr_event.pointer = pointer;
+	wlr_event.time_msec =
+		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
+	wlr_event.source = source;
+
+	const enum libinput_pointer_axis axes[] = {
+		LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL,
+		LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL,
+	};
+	for (size_t i = 0; i < sizeof(axes) / sizeof(axes[0]); ++i) {
+		if (!libinput_event_pointer_has_axis(pevent, axes[i])) {
+			continue;
+		}
+		switch (axes[i]) {
+		case LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL:
+			wlr_event.orientation = WLR_AXIS_ORIENTATION_VERTICAL;
+			break;
+		case LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL:
+			wlr_event.orientation = WLR_AXIS_ORIENTATION_HORIZONTAL;
+			break;
+		}
+		wlr_event.delta =
+			libinput_event_pointer_get_scroll_value(pevent, axes[i]);
+		if (source == WLR_AXIS_SOURCE_WHEEL) {
+			wlr_event.delta_discrete =
+				libinput_event_pointer_get_scroll_value_v120(pevent, axes[i]);
+		}
+		wlr_signal_emit_safe(&pointer->events.axis, &wlr_event);
+	}
+	wlr_signal_emit_safe(&pointer->events.frame, pointer);
+}
+#endif
+
 void handle_pointer_swipe_begin(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
