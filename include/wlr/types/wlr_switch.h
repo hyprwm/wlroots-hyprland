@@ -34,8 +34,7 @@ enum wlr_switch_type {
 
 enum wlr_switch_state {
 	WLR_SWITCH_STATE_OFF = 0,
-	WLR_SWITCH_STATE_ON,
-	WLR_SWITCH_STATE_TOGGLE
+	WLR_SWITCH_STATE_ON
 };
 
 struct wlr_event_switch_toggle {
