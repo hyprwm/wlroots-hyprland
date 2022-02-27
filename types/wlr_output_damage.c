@@ -206,12 +206,9 @@ void wlr_output_damage_add_whole(struct wlr_output_damage *output_damage) {
 
 void wlr_output_damage_add_box(struct wlr_output_damage *output_damage,
 		struct wlr_box *box) {
-	int width, height;
-	wlr_output_transformed_resolution(output_damage->output, &width, &height);
-
-	pixman_region32_union_rect(&output_damage->current, &output_damage->current,
+	pixman_region32_t damage;
+	pixman_region32_init_rect(&damage,
 		box->x, box->y, box->width, box->height);
-	pixman_region32_intersect_rect(&output_damage->current,
-		&output_damage->current, 0, 0, width, height);
-	wlr_output_schedule_frame(output_damage->output);
+	wlr_output_damage_add(output_damage, &damage);
+	pixman_region32_fini(&damage);
 }
