@@ -187,11 +187,17 @@ void wlr_output_damage_add(struct wlr_output_damage *output_damage,
 	int width, height;
 	wlr_output_transformed_resolution(output_damage->output, &width, &height);
 
-	pixman_region32_union(&output_damage->current, &output_damage->current,
-		damage);
-	pixman_region32_intersect_rect(&output_damage->current,
-		&output_damage->current, 0, 0, width, height);
-	wlr_output_schedule_frame(output_damage->output);
+	pixman_region32_t clipped_damage;
+	pixman_region32_init(&clipped_damage);
+	pixman_region32_intersect_rect(&clipped_damage, damage, 0, 0, width, height);
+
+	if (pixman_region32_not_empty(&clipped_damage)) {
+		pixman_region32_union(&output_damage->current, &output_damage->current,
+			&clipped_damage);
+		wlr_output_schedule_frame(output_damage->output);
+	}
+
+	pixman_region32_fini(&clipped_damage);
 }
 
 void wlr_output_damage_add_whole(struct wlr_output_damage *output_damage) {
