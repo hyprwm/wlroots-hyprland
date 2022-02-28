@@ -35,6 +35,7 @@ struct wlr_libinput_input_device {
 	struct libinput_device *handle;
 
 	struct wlr_keyboard keyboard;
+	struct wlr_pointer pointer;
 
 	struct wl_list link;
 };
@@ -61,32 +62,32 @@ void init_device_keyboard(struct wlr_libinput_input_device *dev);
 struct wlr_libinput_input_device *device_from_keyboard(struct wlr_keyboard *kb);
 void handle_keyboard_key(struct libinput_event *event, struct wlr_keyboard *kb);
 
-struct wlr_pointer *create_libinput_pointer(
-		struct libinput_device *device);
+void init_device_pointer(struct wlr_libinput_input_device *dev);
+struct wlr_libinput_input_device *device_from_pointer(struct wlr_pointer *kb);
 void handle_pointer_motion(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_motion_abs(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_button(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_axis(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_swipe_begin(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_swipe_update(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_swipe_end(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_pinch_begin(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_pinch_update(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_pinch_end(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_hold_begin(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 void handle_pointer_hold_end(struct libinput_event *event,
-		struct libinput_device *device);
+	struct wlr_pointer *pointer);
 
 struct wlr_switch *create_libinput_switch(
 		struct libinput_device *device);
