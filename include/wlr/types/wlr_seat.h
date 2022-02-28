@@ -119,9 +119,11 @@ struct wlr_touch_grab_interface {
 	void (*enter)(struct wlr_seat_touch_grab *grab, uint32_t time_msec,
 			struct wlr_touch_point *point);
 	void (*frame)(struct wlr_seat_touch_grab *grab);
-	// XXX this will conflict with the actual touch cancel which is different so
-	// we need to rename this
+	// Cancel grab
 	void (*cancel)(struct wlr_seat_touch_grab *grab);
+	// Send wl_touch::cancel
+	void (*wl_cancel)(struct wlr_seat_touch_grab *grab,
+			struct wlr_surface *surface);
 };
 
 /**
@@ -613,6 +615,14 @@ void wlr_seat_touch_send_up(struct wlr_seat *seat, uint32_t time_msec,
 void wlr_seat_touch_send_motion(struct wlr_seat *seat, uint32_t time_msec,
 		int32_t touch_id, double sx, double sy);
 
+/**
+ * Notify the seat that this is a global gesture and the client should cancel
+ * processing it. The event will go to the client for the surface given.
+ * This function does not respect touch grabs: you probably want
+ * `wlr_seat_touch_notify_cancel()` instead.
+ */
+void wlr_seat_touch_send_cancel(struct wlr_seat *seat, struct wlr_surface *surface);
+
 void wlr_seat_touch_send_frame(struct wlr_seat *seat);
 
 /**
@@ -638,6 +648,13 @@ void wlr_seat_touch_notify_up(struct wlr_seat *seat, uint32_t time_msec,
  */
 void wlr_seat_touch_notify_motion(struct wlr_seat *seat, uint32_t time_msec,
 		int32_t touch_id, double sx, double sy);
+
+/**
+ * Notify the seat that this is a global gesture and the client should
+ * cancel processing it. Defers to any grab of the touch device.
+ */
+void wlr_seat_touch_notify_cancel(struct wlr_seat *seat,
+		struct wlr_surface *surface);
 
 void wlr_seat_touch_notify_frame(struct wlr_seat *seat);
 
