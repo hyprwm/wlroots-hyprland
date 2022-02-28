@@ -9,13 +9,7 @@
 #include "wlr-virtual-pointer-unstable-v1-protocol.h"
 
 static void pointer_destroy(struct wlr_pointer *pointer) {
-	struct wlr_virtual_pointer_v1 *virtual_pointer =
-		(struct wlr_virtual_pointer_v1 *)pointer;
-
-	wl_resource_set_user_data(virtual_pointer->resource, NULL);
-	wlr_signal_emit_safe(&virtual_pointer->events.destroy, virtual_pointer);
-	wl_list_remove(&virtual_pointer->link);
-	free(virtual_pointer);
+	/* no-op, pointer belongs to the wlr_virtual_pointer_v1 */
 }
 
 static const struct wlr_pointer_impl pointer_impl = {
@@ -205,9 +199,16 @@ static void virtual_pointer_axis_discrete(struct wl_client *client,
 static void virtual_pointer_destroy_resource(struct wl_resource *resource) {
 	struct wlr_virtual_pointer_v1 *pointer =
 		virtual_pointer_from_resource(resource);
-	if (pointer != NULL) {
-		wlr_pointer_destroy(&pointer->pointer);
+	if (pointer == NULL) {
+		return;
 	}
+
+	/* TODO: rework wlr_pointer device destruction */
+	wlr_signal_emit_safe(&pointer->events.destroy, pointer);
+	wlr_pointer_destroy(&pointer->pointer);
+	wl_resource_set_user_data(pointer->resource, NULL);
+	wl_list_remove(&pointer->link);
+	free(pointer);
 }
 
 static void virtual_pointer_destroy(struct wl_client *client,
