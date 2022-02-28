@@ -34,14 +34,7 @@ static void keyboard_release_pressed_keys(struct wlr_keyboard *keyboard) {
 }
 
 static void keyboard_destroy(struct wlr_keyboard *wlr_kb) {
-	struct wlr_virtual_keyboard_v1 *keyboard =
-		(struct wlr_virtual_keyboard_v1 *)wlr_kb;
-
-	keyboard_release_pressed_keys(&keyboard->keyboard);
-	wl_resource_set_user_data(keyboard->resource, NULL);
-	wlr_signal_emit_safe(&keyboard->events.destroy, keyboard);
-	wl_list_remove(&keyboard->link);
-	free(keyboard);
+	/* no-op, keyboard belongs to the wlr_virtual_keyboard_v1 */
 }
 
 static const struct wlr_keyboard_impl keyboard_impl = {
@@ -138,9 +131,17 @@ static void virtual_keyboard_modifiers(struct wl_client *client,
 static void virtual_keyboard_destroy_resource(struct wl_resource *resource) {
 	struct wlr_virtual_keyboard_v1 *keyboard =
 		virtual_keyboard_from_resource(resource);
-	if (keyboard != NULL) {
-		wlr_keyboard_destroy(&keyboard->keyboard);
+	if (keyboard == NULL) {
+		return;
 	}
+
+	/* TODO: rework wlr_keyboard device destruction */
+	keyboard_release_pressed_keys(&keyboard->keyboard);
+	wlr_signal_emit_safe(&keyboard->events.destroy, keyboard);
+	wlr_keyboard_destroy(&keyboard->keyboard);
+	wl_resource_set_user_data(keyboard->resource, NULL);
+	wl_list_remove(&keyboard->link);
+	free(keyboard);
 }
 
 static void virtual_keyboard_destroy(struct wl_client *client,
