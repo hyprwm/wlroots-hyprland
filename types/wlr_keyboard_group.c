@@ -37,18 +37,8 @@ static void keyboard_set_leds(struct wlr_keyboard *kb, uint32_t leds) {
 	}
 }
 
-static void keyboard_destroy(struct wlr_keyboard *kb) {
-	// Just remove the event listeners. The keyboard will be freed as part of
-	// the wlr_keyboard_group in wlr_keyboard_group_destroy.
-	wl_list_remove(&kb->events.key.listener_list);
-	wl_list_remove(&kb->events.modifiers.listener_list);
-	wl_list_remove(&kb->events.keymap.listener_list);
-	wl_list_remove(&kb->events.repeat_info.listener_list);
-	wl_list_remove(&kb->events.destroy.listener_list);
-}
-
 static const struct wlr_keyboard_impl impl = {
-	.destroy = keyboard_destroy,
+	.name = "keyboard-group",
 	.led_update = keyboard_set_leds
 };
 
@@ -60,7 +50,7 @@ struct wlr_keyboard_group *wlr_keyboard_group_create(void) {
 		return NULL;
 	}
 
-	wlr_keyboard_init(&group->keyboard, &impl, "keyboard-group");
+	wlr_keyboard_init(&group->keyboard, &impl, "wlr_keyboard_group");
 	wl_list_init(&group->devices);
 	wl_list_init(&group->keys);
 
@@ -325,7 +315,7 @@ void wlr_keyboard_group_destroy(struct wlr_keyboard_group *group) {
 	wl_list_for_each_safe(device, tmp, &group->devices, link) {
 		wlr_keyboard_group_remove_keyboard(group, device->keyboard);
 	}
-	wlr_keyboard_destroy(&group->keyboard);
+	wlr_keyboard_finish(&group->keyboard);
 	wl_list_remove(&group->events.enter.listener_list);
 	wl_list_remove(&group->events.leave.listener_list);
 	free(group);

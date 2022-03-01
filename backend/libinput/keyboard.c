@@ -17,12 +17,8 @@ static void keyboard_set_leds(struct wlr_keyboard *wlr_kb, uint32_t leds) {
 	libinput_device_led_update(dev->handle, leds);
 }
 
-static void keyboard_destroy(struct wlr_keyboard *wlr_kb) {
-	/* wlr_keyboard belongs to the wlr_libinput_input_device */
-}
-
 const struct wlr_keyboard_impl libinput_keyboard_impl = {
-	.destroy = keyboard_destroy,
+	.name = "libinput-keyboard",
 	.led_update = keyboard_set_leds
 };
 

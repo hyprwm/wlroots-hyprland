@@ -9,36 +9,10 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 #include "util/signal.h"
-#include "util/time.h"
 #include "virtual-keyboard-unstable-v1-protocol.h"
 
-/**
- * Send release event for each pressed key to bring the keyboard back to
- * neutral state.
- *
- * This may be needed for virtual keyboards. For physical devices, kernel
- * or libinput will deal with the removal of devices.
- */
-static void keyboard_release_pressed_keys(struct wlr_keyboard *keyboard) {
-	size_t orig_num_keycodes = keyboard->num_keycodes;
-	for (size_t i = 0; i < orig_num_keycodes; ++i) {
-		assert(keyboard->num_keycodes == orig_num_keycodes - i);
-		struct wlr_event_keyboard_key event = {
-			.time_msec = get_current_time_msec(),
-			.keycode = keyboard->keycodes[orig_num_keycodes - i - 1],
-			.update_state = false,
-			.state = WL_KEYBOARD_KEY_STATE_RELEASED,
-		};
-		wlr_keyboard_notify_key(keyboard, &event);  // updates num_keycodes
-	}
-}
-
-static void keyboard_destroy(struct wlr_keyboard *wlr_kb) {
-	/* no-op, keyboard belongs to the wlr_virtual_keyboard_v1 */
-}
-
 static const struct wlr_keyboard_impl keyboard_impl = {
-	.destroy = keyboard_destroy,
+	.name = "virtual-keyboard",
 };
 
 static const struct zwp_virtual_keyboard_v1_interface virtual_keyboard_impl;
@@ -135,10 +109,10 @@ static void virtual_keyboard_destroy_resource(struct wl_resource *resource) {
 		return;
 	}
 
-	/* TODO: rework wlr_keyboard device destruction */
-	keyboard_release_pressed_keys(&keyboard->keyboard);
 	wlr_signal_emit_safe(&keyboard->events.destroy, keyboard);
-	wlr_keyboard_destroy(&keyboard->keyboard);
+
+	wlr_keyboard_finish(&keyboard->keyboard);
+
 	wl_resource_set_user_data(keyboard->resource, NULL);
 	wl_list_remove(&keyboard->link);
 	free(keyboard);
@@ -179,7 +153,7 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 	}
 
 	wlr_keyboard_init(&virtual_keyboard->keyboard, &keyboard_impl,
-		"virtual-keyboard");
+		"wlr_virtual_keyboard_v1");
 
 	struct wl_resource *keyboard_resource = wl_resource_create(client,
 		&zwp_virtual_keyboard_v1_interface, wl_resource_get_version(resource),

@@ -24,7 +24,9 @@
 #include "util/time.h"
 
 static const struct wlr_pointer_impl pointer_impl;
-static const struct wlr_keyboard_impl keyboard_impl;
+static const struct wlr_keyboard_impl keyboard_impl = {
+	.name = "wl-keyboard",
+};
 static const struct wlr_touch_impl touch_impl;
 
 static struct wlr_wl_pointer *output_get_pointer(
@@ -506,7 +508,16 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 	 */
 	wlr_input_device_finish(&dev->wlr_input_device);
 	if (dev->wlr_input_device._device) {
-		wlr_input_device_destroy(&dev->wlr_input_device);
+		struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
+		switch (wlr_dev->type) {
+		case WLR_INPUT_DEVICE_KEYBOARD:
+			wlr_keyboard_finish(wlr_dev->keyboard);
+			free(wlr_dev->keyboard);
+			break;
+		default:
+			wlr_input_device_destroy(wlr_dev);
+			break;
+		}
 	}
 	wl_list_remove(&dev->link);
 	free(dev);

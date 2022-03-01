@@ -285,12 +285,8 @@ void handle_x11_xinput_event(struct wlr_x11_backend *x11,
 	}
 }
 
-static void keyboard_destroy(struct wlr_keyboard *wlr_keyboard) {
-	// Don't free the keyboard, it's on the stack
-}
-
 const struct wlr_keyboard_impl x11_keyboard_impl = {
-	.destroy = keyboard_destroy,
+	.name = "x11-keyboard",
 };
 
 static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
