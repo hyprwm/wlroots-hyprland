@@ -61,11 +61,4 @@ void wlr_input_device_init(struct wlr_input_device *wlr_device,
  */
 void wlr_input_device_finish(struct wlr_input_device *wlr_device);
 
-/**
- * Calls the specialized input device destroy function.
- * If the wlr_input_device is not owned by a specialized input device, the
- * function will finish the wlr_input_device and free it.
- */
-void wlr_input_device_destroy(struct wlr_input_device *dev);
-
 #endif

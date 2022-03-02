@@ -571,9 +571,6 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 			wlr_touch_finish(wlr_dev->touch);
 			free(wlr_dev->touch);
 			break;
-		default:
-			wlr_input_device_destroy(wlr_dev);
-			break;
 		}
 	}
 	wl_list_remove(&dev->link);
