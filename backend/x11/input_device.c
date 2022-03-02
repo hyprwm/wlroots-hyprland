@@ -293,12 +293,8 @@ const struct wlr_pointer_impl x11_pointer_impl = {
 	.name = "x11-pointer",
 };
 
-static void touch_destroy(struct wlr_touch *wlr_touch) {
-	// Don't free the touch, it's on the stack
-}
-
 const struct wlr_touch_impl x11_touch_impl = {
-	.destroy = touch_destroy,
+	.name = "x11-touch",
 };
 
 void update_x11_pointer_position(struct wlr_x11_output *output,

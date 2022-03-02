@@ -77,7 +77,7 @@ static void output_destroy(struct wlr_output *wlr_output) {
 	pixman_region32_fini(&output->exposed);
 
 	wlr_pointer_finish(&output->pointer);
-	wlr_touch_destroy(&output->touch);
+	wlr_touch_finish(&output->touch);
 
 	struct wlr_x11_buffer *buffer, *buffer_tmp;
 	wl_list_for_each_safe(buffer, buffer_tmp, &output->buffers, link) {

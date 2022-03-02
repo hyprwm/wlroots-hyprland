@@ -17,11 +17,6 @@ void wlr_touch_init(struct wlr_touch *touch,
 	wl_signal_init(&touch->events.frame);
 }
 
-void wlr_touch_destroy(struct wlr_touch *touch) {
+void wlr_touch_finish(struct wlr_touch *touch) {
 	wlr_input_device_finish(&touch->base);
-	if (touch && touch->impl && touch->impl->destroy) {
-		touch->impl->destroy(touch);
-	} else {
-		free(touch);
-	}
 }

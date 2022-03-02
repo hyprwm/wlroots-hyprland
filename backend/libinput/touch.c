@@ -4,12 +4,8 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
-static void touch_destroy(struct wlr_touch *touch) {
-	/* wlr_touch belongs to the wlr_libinput_input_device */
-}
-
 const struct wlr_touch_impl libinput_touch_impl = {
-	.destroy = touch_destroy,
+	.name = "libinput-touch",
 };
 
 void init_device_touch(struct wlr_libinput_input_device *dev) {

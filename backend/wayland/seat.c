@@ -567,6 +567,10 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 			wlr_tablet_finish(wlr_dev->tablet);
 			free(wlr_dev->tablet);
 			break;
+		case WLR_INPUT_DEVICE_TOUCH:
+			wlr_touch_finish(wlr_dev->touch);
+			free(wlr_dev->touch);
+			break;
 		default:
 			wlr_input_device_destroy(wlr_dev);
 			break;

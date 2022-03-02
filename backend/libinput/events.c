@@ -24,7 +24,7 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev) {
 		wlr_switch_finish(&dev->switch_device);
 	}
 	if (dev->touch.impl) {
-		wlr_touch_destroy(&dev->touch);
+		wlr_touch_finish(&dev->touch);
 	}
 	if (dev->tablet.impl) {
 		finish_device_tablet(dev);
