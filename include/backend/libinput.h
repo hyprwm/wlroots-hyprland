@@ -120,6 +120,7 @@ void handle_tablet_tool_button(struct libinput_event *event,
 	struct wlr_tablet *tablet);
 
 void init_device_tablet_pad(struct wlr_libinput_input_device *dev);
+void finish_device_tablet_pad(struct wlr_libinput_input_device *dev);
 struct wlr_libinput_input_device *device_from_tablet_pad(
 	struct wlr_tablet_pad *tablet_pad);
 void handle_tablet_pad_button(struct libinput_event *event,

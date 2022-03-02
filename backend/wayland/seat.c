@@ -559,6 +559,10 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 		case WLR_INPUT_DEVICE_SWITCH:
 			wlr_switch_finish(wlr_dev->switch_device);
 			break;
+		case WLR_INPUT_DEVICE_TABLET_PAD:
+			wlr_tablet_pad_finish(wlr_dev->tablet_pad);
+			free(wlr_dev->tablet_pad);
+			break;
 		default:
 			wlr_input_device_destroy(wlr_dev);
 			break;

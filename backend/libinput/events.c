@@ -30,7 +30,7 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev) {
 		wlr_tablet_destroy(&dev->tablet);
 	}
 	if (dev->tablet_pad.impl) {
-		wlr_tablet_pad_destroy(&dev->tablet_pad);
+		finish_device_tablet_pad(dev);
 	}
 
 	libinput_device_unref(dev->handle);

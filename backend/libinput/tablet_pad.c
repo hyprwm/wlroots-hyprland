@@ -8,6 +8,10 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
+const struct wlr_tablet_pad_impl libinput_tablet_pad_impl = {
+	.name = "libinput-tablet-pad",
+};
+
 static void group_destroy(struct wlr_tablet_pad_group *group) {
 	free(group->buttons);
 	free(group->strips);
@@ -15,7 +19,6 @@ static void group_destroy(struct wlr_tablet_pad_group *group) {
 	free(group);
 }
 
-// FIXME: Decide on how to alloc/count here
 static void add_pad_group_from_libinput(struct wlr_tablet_pad *pad,
 		struct libinput_device *device, unsigned int index) {
 	struct libinput_tablet_pad_mode_group *li_group =
@@ -88,27 +91,6 @@ group_fail:
 	group_destroy(group);
 }
 
-static void tablet_pad_destroy(struct wlr_tablet_pad *wlr_tablet_pad) {
-	struct wlr_libinput_input_device *dev =
-		device_from_tablet_pad(wlr_tablet_pad);
-
-	struct wlr_tablet_pad_group *group, *tmp;
-	wl_list_for_each_safe(group, tmp, &wlr_tablet_pad->groups, link) {
-		group_destroy(group);
-	}
-
-	int groups = libinput_device_tablet_pad_get_num_mode_groups(dev->handle);
-	for (int i = 0; i < groups; ++i) {
-		struct libinput_tablet_pad_mode_group *li_group =
-			libinput_device_tablet_pad_get_mode_group(dev->handle, i);
-		libinput_tablet_pad_mode_group_unref(li_group);
-	}
-}
-
-const struct wlr_tablet_pad_impl libinput_tablet_pad_impl = {
-	.destroy = tablet_pad_destroy,
-};
-
 void init_device_tablet_pad(struct wlr_libinput_input_device *dev) {
 	struct libinput_device *handle = dev->handle;
 	const char *name = libinput_device_get_name(handle);
@@ -131,6 +113,22 @@ void init_device_tablet_pad(struct wlr_libinput_input_device *dev) {
 	int groups = libinput_device_tablet_pad_get_num_mode_groups(handle);
 	for (int i = 0; i < groups; ++i) {
 		add_pad_group_from_libinput(wlr_tablet_pad, handle, i);
+	}
+}
+
+void finish_device_tablet_pad(struct wlr_libinput_input_device *dev) {
+	struct wlr_tablet_pad_group *group, *tmp;
+	wl_list_for_each_safe(group, tmp, &dev->tablet_pad.groups, link) {
+		group_destroy(group);
+	}
+
+	wlr_tablet_pad_finish(&dev->tablet_pad);
+
+	int groups = libinput_device_tablet_pad_get_num_mode_groups(dev->handle);
+	for (int i = 0; i < groups; ++i) {
+		struct libinput_tablet_pad_mode_group *li_group =
+			libinput_device_tablet_pad_get_mode_group(dev->handle, i);
+		libinput_tablet_pad_mode_group_unref(li_group);
 	}
 }
 

@@ -289,10 +289,11 @@ static void handle_tablet_pad_group_removed(
 
 	zwp_tablet_pad_group_v2_destroy(group->pad_group);
 
-	/* While I'm pretty sure we have control over this as well, it's
-	 * outside the scope of a single function, so better be safe than
-	 * sorry */
+	free(group->group.buttons);
+	free(group->group.strips);
+	free(group->group.rings);
 	wl_list_remove(&group->group.link);
+
 	free(group);
 }
 
@@ -396,22 +397,15 @@ static void handle_tablet_pad_leave(void *data,
 static void handle_tablet_pad_removed(void *data,
 		struct zwp_tablet_pad_v2 *zwp_tablet_pad_v2) {
 	struct wlr_wl_input_device *dev = data;
+
 	struct wlr_tablet_pad *tablet_pad = dev->wlr_input_device.tablet_pad;
-
-	/* This doesn't free anything, but emits the destroy signal */
-	wlr_input_device_destroy(&dev->wlr_input_device);
-	/* This is a bit ugly, but we need to remove it from our list */
-	wl_list_remove(&dev->link);
-
 	struct wlr_wl_tablet_pad_group *group, *it;
 	wl_list_for_each_safe(group, it, &tablet_pad->groups, group.link) {
 		handle_tablet_pad_group_removed(group);
 	}
 
-	/* This frees */
-	wlr_tablet_pad_destroy(tablet_pad);
 	zwp_tablet_pad_v2_destroy(dev->resource);
-	free(dev);
+	destroy_wl_input_device(dev);
 }
 
 static const struct zwp_tablet_pad_v2_listener tablet_pad_listener = {
@@ -425,7 +419,9 @@ static const struct zwp_tablet_pad_v2_listener tablet_pad_listener = {
 	.removed = handle_tablet_pad_removed,
 };
 
-const struct wlr_tablet_pad_impl tablet_pad_impl = {0};
+const struct wlr_tablet_pad_impl tablet_pad_impl = {
+	.name = "wl-tablet-pad",
+};
 
 static void handle_pad_added(void *data,
 		struct zwp_tablet_seat_v2 *zwp_tablet_seat_v2,
@@ -454,7 +450,7 @@ static void handle_pad_added(void *data,
 		zwp_tablet_pad_v2_destroy(id);
 		return;
 	}
-	wlr_tablet_pad_init(wlr_dev->tablet_pad, &tablet_pad_impl, wlr_dev->name);
+	wlr_tablet_pad_init(wlr_dev->tablet_pad, &tablet_pad_impl, "wlr_tablet_v2");
 	zwp_tablet_pad_v2_add_listener(id, &tablet_pad_listener, dev);
 }
 
