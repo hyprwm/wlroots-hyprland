@@ -867,13 +867,8 @@ static void handle_tablet_removed(void *data,
 		struct zwp_tablet_v2 *zwp_tablet_v2) {
 	struct wlr_wl_input_device *dev = data;
 
-	/* This doesn't free anything, but emits the destroy signal */
-	wlr_input_device_destroy(&dev->wlr_input_device);
-	/* This is a bit ugly, but we need to remove it from our list */
-	wl_list_remove(&dev->link);
-
 	zwp_tablet_v2_destroy(dev->resource);
-	free(dev);
+	destroy_wl_input_device(dev);
 }
 
 static const struct zwp_tablet_v2_listener tablet_listener = {
@@ -884,7 +879,9 @@ static const struct zwp_tablet_v2_listener tablet_listener = {
 	.removed = handle_tablet_removed,
 };
 
-const struct wlr_tablet_impl tablet_impl = {0};
+const struct wlr_tablet_impl tablet_impl = {
+	.name = "wl-tablet-tool",
+};
 
 static void handle_tab_added(void *data,
 		struct zwp_tablet_seat_v2 *zwp_tablet_seat_v2,
@@ -908,7 +905,7 @@ static void handle_tab_added(void *data,
 		return;
 	}
 	zwp_tablet_v2_set_user_data(id, wlr_dev->tablet);
-	wlr_tablet_init(wlr_dev->tablet, &tablet_impl, wlr_dev->name);
+	wlr_tablet_init(wlr_dev->tablet, &tablet_impl, "wlr_tablet_v2");
 	zwp_tablet_v2_add_listener(id, &tablet_listener, dev);
 }
 

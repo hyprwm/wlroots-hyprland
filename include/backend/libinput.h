@@ -108,6 +108,7 @@ void handle_touch_frame(struct libinput_event *event,
 	struct wlr_touch *touch);
 
 void init_device_tablet(struct wlr_libinput_input_device *dev);
+void finish_device_tablet(struct wlr_libinput_input_device *dev);
 struct wlr_libinput_input_device *device_from_tablet(
 	struct wlr_tablet *tablet);
 void handle_tablet_tool_axis(struct libinput_event *event,

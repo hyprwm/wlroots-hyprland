@@ -14,24 +14,8 @@ struct tablet_tool {
 	struct wl_list link; // wlr_libinput_input_device::tablet_tools
 };
 
-static void tool_destroy(struct tablet_tool *tool) {
-	wlr_signal_emit_safe(&tool->wlr_tool.events.destroy, &tool->wlr_tool);
-	libinput_tablet_tool_unref(tool->handle);
-	libinput_tablet_tool_set_user_data(tool->handle, NULL);
-	wl_list_remove(&tool->link);
-	free(tool);
-}
-
-static void tablet_destroy(struct wlr_tablet *wlr_tablet) {
-	struct wlr_libinput_input_device *dev = device_from_tablet(wlr_tablet);
-	struct tablet_tool *tool, *tmp;
-	wl_list_for_each_safe(tool, tmp, &dev->tablet_tools, link) {
-		tool_destroy(tool);
-	}
-}
-
 const struct wlr_tablet_impl libinput_tablet_impl = {
-	.destroy = tablet_destroy,
+	.name = "libinput-tablet-tool",
 };
 
 void init_device_tablet(struct wlr_libinput_input_device *dev) {
@@ -46,6 +30,23 @@ void init_device_tablet(struct wlr_libinput_input_device *dev) {
 	*dst = strdup(udev_device_get_syspath(udev));
 
 	wl_list_init(&dev->tablet_tools);
+}
+
+static void tool_destroy(struct tablet_tool *tool) {
+	wlr_signal_emit_safe(&tool->wlr_tool.events.destroy, &tool->wlr_tool);
+	libinput_tablet_tool_unref(tool->handle);
+	libinput_tablet_tool_set_user_data(tool->handle, NULL);
+	wl_list_remove(&tool->link);
+	free(tool);
+}
+
+void finish_device_tablet(struct wlr_libinput_input_device *dev) {
+	struct tablet_tool *tool, *tmp;
+	wl_list_for_each_safe(tool, tmp, &dev->tablet_tools, link) {
+		tool_destroy(tool);
+	}
+
+	wlr_tablet_finish(&dev->tablet);
 }
 
 struct wlr_libinput_input_device *device_from_tablet(
