@@ -13,14 +13,6 @@ void wlr_switch_init(struct wlr_switch *switch_device,
 	wl_signal_init(&switch_device->events.toggle);
 }
 
-void wlr_switch_destroy(struct wlr_switch *switch_device) {
-	if (!switch_device) {
-		return;
-	}
+void wlr_switch_finish(struct wlr_switch *switch_device) {
 	wlr_input_device_finish(&switch_device->base);
-	if (switch_device->impl && switch_device->impl->destroy) {
-		switch_device->impl->destroy(switch_device);
-	} else {
-		free(switch_device);
-	}
 }

@@ -4,12 +4,8 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
-static void switch_destroy(struct wlr_switch *wlr_switch) {
-	/* wlr_switch belongs to the wlr_libinput_input_device */
-}
-
 const struct wlr_switch_impl libinput_switch_impl = {
-	.destroy = switch_destroy,
+	.name = "libinput-switch",
 };
 
 void init_device_switch(struct wlr_libinput_input_device *dev) {
