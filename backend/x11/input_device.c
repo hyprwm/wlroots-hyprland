@@ -289,12 +289,8 @@ const struct wlr_keyboard_impl x11_keyboard_impl = {
 	.name = "x11-keyboard",
 };
 
-static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
-	// Don't free the pointer, it's on the stack
-}
-
 const struct wlr_pointer_impl x11_pointer_impl = {
-	.destroy = pointer_destroy,
+	.name = "x11-pointer",
 };
 
 static void touch_destroy(struct wlr_touch *wlr_touch) {

@@ -4,12 +4,8 @@
 #include "backend/libinput.h"
 #include "util/signal.h"
 
-static void pointer_destroy(struct wlr_pointer *pointer) {
-	/* wlr_pointer belongs to the wlr_libinput_input_device */
-}
-
 const struct wlr_pointer_impl libinput_pointer_impl = {
-	.destroy = pointer_destroy,
+	.name = "libinput-pointer",
 };
 
 void init_device_pointer(struct wlr_libinput_input_device *dev) {

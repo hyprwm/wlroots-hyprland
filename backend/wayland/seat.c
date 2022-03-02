@@ -500,29 +500,6 @@ struct wlr_wl_input_device *create_wl_input_device(
 	return dev;
 }
 
-void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
-	/**
-	 * TODO remove the redundant wlr_input_device from wlr_wl_input_device
-	 * wlr_wl_input_device::wlr_input_device is not owned by its input device
-	 * type, which means we have 2 wlr_input_device to cleanup
-	 */
-	wlr_input_device_finish(&dev->wlr_input_device);
-	if (dev->wlr_input_device._device) {
-		struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-		switch (wlr_dev->type) {
-		case WLR_INPUT_DEVICE_KEYBOARD:
-			wlr_keyboard_finish(wlr_dev->keyboard);
-			free(wlr_dev->keyboard);
-			break;
-		default:
-			wlr_input_device_destroy(wlr_dev);
-			break;
-		}
-	}
-	wl_list_remove(&dev->link);
-	free(dev);
-}
-
 struct wlr_wl_pointer *pointer_get_wl(struct wlr_pointer *wlr_pointer) {
 	assert(wlr_pointer->impl == &pointer_impl);
 	return (struct wlr_wl_pointer *)wlr_pointer;
@@ -555,13 +532,37 @@ static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
 		zwp_relative_pointer_v1_destroy(pointer->relative_pointer);
 	}
 
+	wlr_pointer_finish(&pointer->wlr_pointer);
 	wl_list_remove(&pointer->output_destroy.link);
 	free(pointer);
 }
 
-static const struct wlr_pointer_impl pointer_impl = {
-	.destroy = pointer_destroy,
-};
+void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
+	/**
+	 * TODO remove the redundant wlr_input_device from wlr_wl_input_device
+	 * wlr_wl_input_device::wlr_input_device is not owned by its input device
+	 * type, which means we have 2 wlr_input_device to cleanup
+	 */
+	wlr_input_device_finish(&dev->wlr_input_device);
+	if (dev->wlr_input_device._device) {
+		struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
+		switch (wlr_dev->type) {
+		case WLR_INPUT_DEVICE_KEYBOARD:
+			wlr_keyboard_finish(wlr_dev->keyboard);
+			free(wlr_dev->keyboard);
+			break;
+		case WLR_INPUT_DEVICE_POINTER:
+			/* Owned by wlr_wl_pointer */
+			pointer_destroy(wlr_dev->pointer);
+			break;
+		default:
+			wlr_input_device_destroy(wlr_dev);
+			break;
+		}
+	}
+	wl_list_remove(&dev->link);
+	free(dev);
+}
 
 static void gesture_swipe_begin(void *data,
 		struct zwp_pointer_gesture_swipe_v1 *zwp_pointer_gesture_swipe_v1,

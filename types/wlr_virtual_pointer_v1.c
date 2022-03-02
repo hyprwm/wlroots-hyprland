@@ -8,12 +8,8 @@
 #include "util/signal.h"
 #include "wlr-virtual-pointer-unstable-v1-protocol.h"
 
-static void pointer_destroy(struct wlr_pointer *pointer) {
-	/* no-op, pointer belongs to the wlr_virtual_pointer_v1 */
-}
-
 static const struct wlr_pointer_impl pointer_impl = {
-	.destroy = pointer_destroy,
+	.name = "virtual-pointer",
 };
 
 static const struct zwlr_virtual_pointer_v1_interface virtual_pointer_impl;
@@ -203,9 +199,10 @@ static void virtual_pointer_destroy_resource(struct wl_resource *resource) {
 		return;
 	}
 
-	/* TODO: rework wlr_pointer device destruction */
 	wlr_signal_emit_safe(&pointer->events.destroy, pointer);
-	wlr_pointer_destroy(&pointer->pointer);
+
+	wlr_pointer_finish(&pointer->pointer);
+
 	wl_resource_set_user_data(pointer->resource, NULL);
 	wl_list_remove(&pointer->link);
 	free(pointer);
@@ -251,7 +248,7 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 	}
 
 	wlr_pointer_init(&virtual_pointer->pointer, &pointer_impl,
-		"virtual-pointer");
+		"wlr_virtual_pointer_v1");
 
 	struct wl_resource *pointer_resource = wl_resource_create(client,
 		&zwlr_virtual_pointer_v1_interface, wl_resource_get_version(resource),

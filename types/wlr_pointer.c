@@ -25,14 +25,6 @@ void wlr_pointer_init(struct wlr_pointer *pointer,
 	wl_signal_init(&pointer->events.hold_end);
 }
 
-void wlr_pointer_destroy(struct wlr_pointer *pointer) {
-	if (!pointer) {
-		return;
-	}
+void wlr_pointer_finish(struct wlr_pointer *pointer) {
 	wlr_input_device_finish(&pointer->base);
-	if (pointer->impl && pointer->impl->destroy) {
-		pointer->impl->destroy(pointer);
-	} else {
-		free(pointer);
-	}
 }

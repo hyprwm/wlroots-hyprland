@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
-#include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/interfaces/wlr_tablet_pad.h>
 #include <wlr/interfaces/wlr_tablet_tool.h>
@@ -43,7 +42,7 @@ void wlr_input_device_destroy(struct wlr_input_device *dev) {
 			wlr_log(WLR_ERROR, "wlr_keyboard will not be destroyed");
 			break;
 		case WLR_INPUT_DEVICE_POINTER:
-			wlr_pointer_destroy(dev->pointer);
+			wlr_log(WLR_ERROR, "wlr_pointer will not be destroyed");
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
 			wlr_switch_destroy(dev->switch_device);
