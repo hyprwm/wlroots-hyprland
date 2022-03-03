@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <wlr/types/wlr_input_device.h>
+#include "interfaces/wlr_input_device.h"
 #include "util/signal.h"
 
 void wlr_input_device_init(struct wlr_input_device *dev,

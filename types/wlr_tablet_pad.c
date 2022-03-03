@@ -5,6 +5,8 @@
 #include <wlr/types/wlr_tablet_pad.h>
 #include <wlr/util/log.h>
 
+#include "interfaces/wlr_input_device.h"
+
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
 		const struct wlr_tablet_pad_impl *impl, const char *name) {
 	wlr_input_device_init(&pad->base, WLR_INPUT_DEVICE_TABLET_PAD, name);

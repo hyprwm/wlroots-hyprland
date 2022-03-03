@@ -25,8 +25,6 @@ enum wlr_input_device_type {
 	WLR_INPUT_DEVICE_SWITCH,
 };
 
-struct wlr_input_device_impl;
-
 struct wlr_input_device {
 	enum wlr_input_device_type type;
 	unsigned int vendor, product;
@@ -52,13 +50,5 @@ struct wlr_input_device {
 
 	void *data;
 };
-
-void wlr_input_device_init(struct wlr_input_device *wlr_device,
-	enum wlr_input_device_type type, const char *name);
-
-/**
- * Clean up all of the provided wlr_input_device resources
- */
-void wlr_input_device_finish(struct wlr_input_device *wlr_device);
 
 #endif

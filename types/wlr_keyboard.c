@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <wayland-server-core.h>
 #include <wlr/interfaces/wlr_keyboard.h>
-#include <wlr/types/wlr_keyboard.h>
 #include <wlr/util/log.h>
+#include "interfaces/wlr_input_device.h"
 #include "types/wlr_keyboard.h"
 #include "util/array.h"
 #include "util/shm.h"

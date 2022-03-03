@@ -10,7 +10,6 @@
 #define WLR_BACKEND_HEADLESS_H
 
 #include <wlr/backend.h>
-#include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_output.h>
 
 /**

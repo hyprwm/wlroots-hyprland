@@ -4,6 +4,8 @@
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/types/wlr_switch.h>
 
+#include "interfaces/wlr_input_device.h"
+
 void wlr_switch_init(struct wlr_switch *switch_device,
 		const struct wlr_switch_impl *impl, const char *name) {
 	wlr_input_device_init(&switch_device->base, WLR_INPUT_DEVICE_SWITCH, name);

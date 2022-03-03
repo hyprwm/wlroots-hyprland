@@ -20,6 +20,7 @@
 
 #include "pointer-gestures-unstable-v1-client-protocol.h"
 #include "relative-pointer-unstable-v1-client-protocol.h"
+#include "interfaces/wlr_input_device.h"
 #include "backend/wayland.h"
 #include "util/signal.h"
 #include "util/time.h"
