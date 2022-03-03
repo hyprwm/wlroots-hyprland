@@ -151,11 +151,13 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 		wl_list_remove(&toplevel->parent_unmap.link);
 	}
 	
-	toplevel->parent = parent;
-	if (parent) {
+	if (parent && parent->base->mapped) {
+		toplevel->parent = parent;
 		toplevel->parent_unmap.notify = handle_parent_unmap;
 		wl_signal_add(&toplevel->parent->base->events.unmap,
-				&toplevel->parent_unmap);
+			&toplevel->parent_unmap);
+	} else {
+		toplevel->parent = NULL;
 	}
 
 	wlr_signal_emit_safe(&toplevel->events.set_parent, NULL);
