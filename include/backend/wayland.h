@@ -8,6 +8,7 @@
 
 #include <wlr/backend/wayland.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/render/drm_format_set.h>
 
@@ -112,23 +113,29 @@ struct wlr_wl_pointer {
 };
 
 struct wlr_wl_seat {
+	char *name;
 	struct wl_seat *wl_seat;
 
-	struct wl_list link; // wlr_wl_backend.seats
-	char *name;
+	struct wlr_wl_backend *backend;
+
+	struct wl_keyboard *wl_keyboard;
+	struct wlr_keyboard wlr_keyboard;
+
 	struct wl_touch *touch;
 	struct wl_pointer *pointer;
-	struct wl_keyboard *keyboard;
 
-	struct wlr_wl_backend *backend;
 	struct wlr_wl_pointer *active_pointer;
+
+	struct wl_list link; // wlr_wl_backend.seats
 };
 
 struct wlr_wl_backend *get_wl_backend_from_backend(struct wlr_backend *backend);
 void update_wl_output_cursor(struct wlr_wl_output *output);
 struct wlr_wl_pointer *pointer_get_wl(struct wlr_pointer *wlr_pointer);
+
+void init_seat_keyboard(struct wlr_wl_seat *seat);
+
 void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
-void create_wl_keyboard(struct wlr_wl_seat *seat);
 void create_wl_touch(struct wlr_wl_seat *seat);
 struct wlr_wl_input_device *create_wl_input_device(
 	struct wlr_wl_seat *seat, enum wlr_input_device_type type);
@@ -138,6 +145,7 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev);
 void destroy_wl_buffer(struct wlr_wl_buffer *buffer);
 
 extern const struct wl_seat_listener seat_listener;
+
 extern const struct wlr_tablet_pad_impl tablet_pad_impl;
 extern const struct wlr_tablet_impl tablet_impl;
 

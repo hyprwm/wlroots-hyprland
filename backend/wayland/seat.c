@@ -26,9 +26,6 @@
 #include "util/time.h"
 
 static const struct wlr_pointer_impl pointer_impl;
-static const struct wlr_keyboard_impl keyboard_impl = {
-	.name = "wl-keyboard",
-};
 static const struct wlr_touch_impl touch_impl;
 
 static struct wlr_wl_pointer *output_get_pointer(
@@ -223,31 +220,27 @@ static void keyboard_handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
 
 static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, struct wl_surface *surface, struct wl_array *keys) {
-	struct wlr_input_device *dev = data;
-
-	uint32_t time = get_current_time_msec();
+	struct wlr_keyboard *keyboard = data;
 
 	uint32_t *keycode_ptr;
 	wl_array_for_each(keycode_ptr, keys) {
 		struct wlr_event_keyboard_key event = {
 			.keycode = *keycode_ptr,
 			.state = WL_KEYBOARD_KEY_STATE_PRESSED,
-			.time_msec = time,
+			.time_msec = get_current_time_msec(),
 			.update_state = false,
 		};
-		wlr_keyboard_notify_key(dev->keyboard, &event);
+		wlr_keyboard_notify_key(keyboard, &event);
 	}
 }
 
 static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, struct wl_surface *surface) {
-	struct wlr_input_device *dev = data;
+	struct wlr_keyboard *keyboard = data;
 
-	uint32_t time = get_current_time_msec();
-
-	size_t num_keycodes = dev->keyboard->num_keycodes;
+	size_t num_keycodes = keyboard->num_keycodes;
 	uint32_t pressed[num_keycodes + 1];
-	memcpy(pressed, dev->keyboard->keycodes,
+	memcpy(pressed, keyboard->keycodes,
 		num_keycodes * sizeof(uint32_t));
 
 	for (size_t i = 0; i < num_keycodes; ++i) {
@@ -256,17 +249,16 @@ static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
 		struct wlr_event_keyboard_key event = {
 			.keycode = keycode,
 			.state = WL_KEYBOARD_KEY_STATE_RELEASED,
-			.time_msec = time,
+			.time_msec = get_current_time_msec(),
 			.update_state = false,
 		};
-		wlr_keyboard_notify_key(dev->keyboard, &event);
+		wlr_keyboard_notify_key(keyboard, &event);
 	}
 }
 
 static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
-	struct wlr_input_device *dev = data;
-	assert(dev && dev->keyboard);
+	struct wlr_keyboard *keyboard = data;
 
 	struct wlr_event_keyboard_key wlr_event = {
 		.keycode = key,
@@ -274,15 +266,14 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
 		.time_msec = time,
 		.update_state = false,
 	};
-	wlr_keyboard_notify_key(dev->keyboard, &wlr_event);
+	wlr_keyboard_notify_key(keyboard, &wlr_event);
 }
 
 static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
 		uint32_t mods_locked, uint32_t group) {
-	struct wlr_input_device *dev = data;
-	assert(dev && dev->keyboard);
-	wlr_keyboard_notify_modifiers(dev->keyboard, mods_depressed, mods_latched,
+	struct wlr_keyboard *keyboard = data;
+	wlr_keyboard_notify_modifiers(keyboard, mods_depressed, mods_latched,
 		mods_locked, group);
 }
 
@@ -299,6 +290,24 @@ static const struct wl_keyboard_listener keyboard_listener = {
 	.modifiers = keyboard_handle_modifiers,
 	.repeat_info = keyboard_handle_repeat_info
 };
+
+static const struct wlr_keyboard_impl keyboard_impl = {
+	.name = "wl-keyboard",
+};
+
+void init_seat_keyboard(struct wlr_wl_seat *seat) {
+	assert(seat->wl_keyboard);
+
+	char name[128] = {0};
+	snprintf(name, sizeof(name), "wayland-keyboard-%s", seat->name);
+
+	wlr_keyboard_init(&seat->wlr_keyboard, &keyboard_impl, name);
+	wl_keyboard_add_listener(seat->wl_keyboard, &keyboard_listener,
+		&seat->wlr_keyboard);
+
+	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+		&seat->wlr_keyboard.base);
+}
 
 static void touch_coordinates_to_absolute(struct wlr_wl_input_device *device,
 		wl_fixed_t x, wl_fixed_t y, double *sx, double *sy) {
@@ -420,10 +429,11 @@ void destroy_wl_seats(struct wlr_wl_backend *wl) {
 		if (seat->pointer) {
 			wl_pointer_destroy(seat->pointer);
 		}
-		if (seat->keyboard && !wl->started) {
-			// early termination will not be handled by input_device_destroy
-			wl_keyboard_destroy(seat->keyboard);
+		if (seat->wl_keyboard) {
+			wl_keyboard_release(seat->wl_keyboard);
+			wlr_keyboard_finish(&seat->wlr_keyboard);
 		}
+
 		free(seat->name);
 		assert(seat->wl_seat);
 		wl_seat_destroy(seat->wl_seat);
@@ -474,8 +484,9 @@ struct wlr_wl_input_device *create_wl_input_device(
 
 	switch (type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
-		type_name = "keyboard";
-		break;
+		wlr_log(WLR_ERROR, "can't create keyboard wlr_wl_input_device");
+		free(dev);
+		return NULL;
 	case WLR_INPUT_DEVICE_POINTER:
 		type_name = "pointer";
 		break;
@@ -550,8 +561,7 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 		struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
 		switch (wlr_dev->type) {
 		case WLR_INPUT_DEVICE_KEYBOARD:
-			wlr_keyboard_finish(wlr_dev->keyboard);
-			free(wlr_dev->keyboard);
+			wlr_log(WLR_ERROR, "wlr_wl_input_device has no keyboard");
 			break;
 		case WLR_INPUT_DEVICE_POINTER:
 			/* Owned by wlr_wl_pointer */
@@ -814,29 +824,6 @@ void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
 	wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
 }
 
-void create_wl_keyboard(struct wlr_wl_seat *seat) {
-	assert(seat->keyboard);
-	struct wl_keyboard *wl_keyboard = seat->keyboard;
-	struct wlr_wl_input_device *dev =
-		create_wl_input_device(seat, WLR_INPUT_DEVICE_KEYBOARD);
-	if (!dev) {
-		return;
-	}
-
-	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-	wlr_dev->keyboard = calloc(1, sizeof(*wlr_dev->keyboard));
-	if (!wlr_dev->keyboard) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
-		destroy_wl_input_device(dev);
-		return;
-	}
-
-	wlr_keyboard_init(wlr_dev->keyboard, &keyboard_impl, wlr_dev->name);
-
-	wl_keyboard_add_listener(wl_keyboard, &keyboard_listener, wlr_dev);
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input, wlr_dev);
-}
-
 void create_wl_touch(struct wlr_wl_seat *seat) {
 	assert(seat->touch);
 	struct wl_touch *wl_touch = seat->touch;
@@ -903,31 +890,23 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		seat->pointer = NULL;
 	}
 
-	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard == NULL) {
-		wlr_log(WLR_DEBUG, "seat %p offered keyboard", (void *)wl_seat);
+	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->wl_keyboard == NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' offering keyboard", seat->name);
 
 		struct wl_keyboard *wl_keyboard = wl_seat_get_keyboard(wl_seat);
-		seat->keyboard = wl_keyboard;
+		seat->wl_keyboard = wl_keyboard;
 
 		if (backend->started) {
-			create_wl_keyboard(seat);
+			init_seat_keyboard(seat);
 		}
 	}
-	if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard != NULL) {
-		wlr_log(WLR_DEBUG, "seat %p dropped keyboard", (void *)wl_seat);
+	if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->wl_keyboard != NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' dropping keyboard", seat->name);
 
-		struct wlr_wl_input_device *device, *tmp;
-		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->wlr_input_device.type != WLR_INPUT_DEVICE_KEYBOARD) {
-				continue;
-			}
+		wl_keyboard_release(seat->wl_keyboard);
+		wlr_keyboard_finish(&seat->wlr_keyboard);
 
-			if (device->seat != seat) {
-				continue;
-			}
-			destroy_wl_input_device(device);
-		}
-		assert(seat->keyboard == NULL); // free'ed by input_device_destroy
+		seat->wl_keyboard = NULL;
 	}
 
 	if ((caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch == NULL) {
