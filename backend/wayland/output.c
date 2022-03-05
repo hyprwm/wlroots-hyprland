@@ -436,7 +436,9 @@ void update_wl_output_cursor(struct wlr_wl_output *output) {
 	if (pointer) {
 		assert(pointer->output == output);
 		assert(output->enter_serial);
-		wl_pointer_set_cursor(pointer->wl_pointer, output->enter_serial,
+
+		struct wlr_wl_seat *seat = pointer->seat;
+		wl_pointer_set_cursor(seat->wl_pointer, output->enter_serial,
 			output->cursor.surface, output->cursor.hotspot_x,
 			output->cursor.hotspot_y);
 	}
@@ -582,8 +584,8 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 
 	struct wlr_wl_seat *seat;
 	wl_list_for_each(seat, &backend->seats, link) {
-		if (seat->pointer) {
-			create_wl_pointer(seat, output);
+		if (seat->wl_pointer) {
+			create_pointer(seat, output);
 		}
 	}
 

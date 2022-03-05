@@ -89,7 +89,6 @@ struct wlr_wl_output {
 struct wlr_wl_input_device {
 	struct wlr_input_device wlr_input_device;
 	struct wl_list link;
-	uint32_t fingers;
 
 	struct wlr_wl_backend *backend;
 	struct wlr_wl_seat *seat;
@@ -99,17 +98,16 @@ struct wlr_wl_input_device {
 struct wlr_wl_pointer {
 	struct wlr_pointer wlr_pointer;
 
-	struct wlr_wl_input_device *input_device;
-	struct wl_pointer *wl_pointer;
-	struct zwp_pointer_gesture_swipe_v1 *gesture_swipe;
-	struct zwp_pointer_gesture_pinch_v1 *gesture_pinch;
-	struct zwp_pointer_gesture_hold_v1 *gesture_hold;
-	struct zwp_relative_pointer_v1 *relative_pointer;
-	enum wlr_axis_source axis_source;
-	int32_t axis_discrete;
+	struct wlr_wl_seat *seat;
 	struct wlr_wl_output *output;
 
+	enum wlr_axis_source axis_source;
+	int32_t axis_discrete;
+	uint32_t fingers; // trackpad gesture
+
 	struct wl_listener output_destroy;
+
+	struct wl_list link;
 };
 
 struct wlr_wl_seat {
@@ -121,21 +119,29 @@ struct wlr_wl_seat {
 	struct wl_keyboard *wl_keyboard;
 	struct wlr_keyboard wlr_keyboard;
 
-	struct wl_touch *touch;
-	struct wl_pointer *pointer;
-
+	struct wl_pointer *wl_pointer;
 	struct wlr_wl_pointer *active_pointer;
+	struct wl_list pointers; // wlr_wl_pointer::link
+
+	struct zwp_pointer_gesture_swipe_v1 *gesture_swipe;
+	struct zwp_pointer_gesture_pinch_v1 *gesture_pinch;
+	struct zwp_pointer_gesture_hold_v1 *gesture_hold;
+	struct zwp_relative_pointer_v1 *relative_pointer;
+
+	struct wl_touch *touch;
 
 	struct wl_list link; // wlr_wl_backend.seats
 };
 
 struct wlr_wl_backend *get_wl_backend_from_backend(struct wlr_backend *backend);
 void update_wl_output_cursor(struct wlr_wl_output *output);
-struct wlr_wl_pointer *pointer_get_wl(struct wlr_pointer *wlr_pointer);
 
 void init_seat_keyboard(struct wlr_wl_seat *seat);
 
-void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
+void init_seat_pointer(struct wlr_wl_seat *seat);
+void finish_seat_pointer(struct wlr_wl_seat *seat);
+void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
+
 void create_wl_touch(struct wlr_wl_seat *seat);
 struct wlr_wl_input_device *create_wl_input_device(
 	struct wlr_wl_seat *seat, enum wlr_input_device_type type);
@@ -146,6 +152,7 @@ void destroy_wl_buffer(struct wlr_wl_buffer *buffer);
 
 extern const struct wl_seat_listener seat_listener;
 
+extern const struct wlr_pointer_impl wl_pointer_impl;
 extern const struct wlr_tablet_pad_impl tablet_pad_impl;
 extern const struct wlr_tablet_impl tablet_impl;
 

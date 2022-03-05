@@ -8,6 +8,7 @@ wlr_files += files(
 	'backend.c',
 	'output.c',
 	'seat.c',
+	'pointer.c',
 	'tablet_v2.c',
 )
 

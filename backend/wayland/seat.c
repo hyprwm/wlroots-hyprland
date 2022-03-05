@@ -11,207 +11,18 @@
 
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_output.h>
-#include <wlr/interfaces/wlr_pointer.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/interfaces/wlr_touch.h>
 #include <wlr/interfaces/wlr_tablet_tool.h>
 #include <wlr/interfaces/wlr_tablet_pad.h>
 #include <wlr/util/log.h>
 
-#include "pointer-gestures-unstable-v1-client-protocol.h"
-#include "relative-pointer-unstable-v1-client-protocol.h"
 #include "interfaces/wlr_input_device.h"
 #include "backend/wayland.h"
 #include "util/signal.h"
 #include "util/time.h"
 
-static const struct wlr_pointer_impl pointer_impl;
 static const struct wlr_touch_impl touch_impl;
-
-static struct wlr_wl_pointer *output_get_pointer(
-		struct wlr_wl_output *output,
-		const struct wl_pointer *wl_pointer) {
-	struct wlr_wl_input_device *dev;
-	wl_list_for_each(dev, &output->backend->devices, link) {
-		if (dev->wlr_input_device.type != WLR_INPUT_DEVICE_POINTER) {
-			continue;
-		}
-		struct wlr_wl_pointer *pointer =
-			pointer_get_wl(dev->wlr_input_device.pointer);
-		if (pointer->output == output && pointer->wl_pointer == wl_pointer) {
-			return pointer;
-		}
-	}
-
-	return NULL;
-}
-
-static void pointer_handle_enter(void *data, struct wl_pointer *wl_pointer,
-		uint32_t serial, struct wl_surface *surface, wl_fixed_t sx,
-		wl_fixed_t sy) {
-	struct wlr_wl_seat *seat = data;
-	if (surface == NULL) {
-		return;
-	}
-
-	struct wlr_wl_output *output = wl_surface_get_user_data(surface);
-	assert(output);
-	struct wlr_wl_pointer *pointer = output_get_pointer(output, wl_pointer);
-	seat->active_pointer = pointer;
-
-	// Manage cursor icon/rendering on output
-	struct wlr_wl_pointer *current_pointer = output->cursor.pointer;
-	if (current_pointer && current_pointer != pointer) {
-		wlr_log(WLR_INFO, "Ignoring seat %s pointer cursor in favor of seat %s",
-			seat->name, current_pointer->input_device->seat->name);
-		return;
-	}
-
-	output->enter_serial = serial;
-	output->cursor.pointer = pointer;
-	update_wl_output_cursor(output);
-}
-
-static void pointer_handle_leave(void *data, struct wl_pointer *wl_pointer,
-		uint32_t serial, struct wl_surface *surface) {
-	struct wlr_wl_seat *seat = data;
-	if (surface == NULL) {
-		return;
-	}
-
-	struct wlr_wl_output *output = wl_surface_get_user_data(surface);
-	assert(output);
-
-	if (seat->active_pointer != NULL &&
-			seat->active_pointer->output == output) {
-		seat->active_pointer = NULL;
-	}
-
-	if (output->cursor.pointer == seat->active_pointer) {
-		output->enter_serial = 0;
-		output->cursor.pointer = NULL;
-	}
-}
-
-static void pointer_handle_motion(void *data, struct wl_pointer *wl_pointer,
-		uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	struct wlr_output *wlr_output = &pointer->output->wlr_output;
-	struct wlr_event_pointer_motion_absolute event = {
-		.device = &pointer->input_device->wlr_input_device,
-		.time_msec = time,
-		.x = wl_fixed_to_double(sx) / wlr_output->width,
-		.y = wl_fixed_to_double(sy) / wlr_output->height,
-	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.motion_absolute, &event);
-}
-
-static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
-		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	struct wlr_event_pointer_button event = {
-		.device = &pointer->input_device->wlr_input_device,
-		.button = button,
-		.state = state,
-		.time_msec = time,
-	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.button, &event);
-}
-
-static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
-		uint32_t time, uint32_t axis, wl_fixed_t value) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	struct wlr_event_pointer_axis event = {
-		.device = &pointer->input_device->wlr_input_device,
-		.delta = wl_fixed_to_double(value),
-		.delta_discrete = pointer->axis_discrete,
-		.orientation = axis,
-		.time_msec = time,
-		.source = pointer->axis_source,
-	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.axis, &event);
-
-	pointer->axis_discrete = 0;
-}
-
-static void pointer_handle_frame(void *data, struct wl_pointer *wl_pointer) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.frame,
-		&pointer->wlr_pointer);
-}
-
-static void pointer_handle_axis_source(void *data,
-		struct wl_pointer *wl_pointer, uint32_t axis_source) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	pointer->axis_source = axis_source;
-}
-
-static void pointer_handle_axis_stop(void *data, struct wl_pointer *wl_pointer,
-		uint32_t time, uint32_t axis) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	struct wlr_event_pointer_axis event = {
-		.device = &pointer->input_device->wlr_input_device,
-		.delta = 0,
-		.delta_discrete = 0,
-		.orientation = axis,
-		.time_msec = time,
-		.source = pointer->axis_source,
-	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.axis, &event);
-}
-
-static void pointer_handle_axis_discrete(void *data,
-		struct wl_pointer *wl_pointer, uint32_t axis, int32_t discrete) {
-	struct wlr_wl_seat *seat = data;
-	struct wlr_wl_pointer *pointer = seat->active_pointer;
-	if (pointer == NULL) {
-		return;
-	}
-
-	pointer->axis_discrete = discrete;
-}
-
-static const struct wl_pointer_listener pointer_listener = {
-	.enter = pointer_handle_enter,
-	.leave = pointer_handle_leave,
-	.motion = pointer_handle_motion,
-	.button = pointer_handle_button,
-	.axis = pointer_handle_axis,
-	.frame = pointer_handle_frame,
-	.axis_source = pointer_handle_axis_source,
-	.axis_stop = pointer_handle_axis_stop,
-	.axis_discrete = pointer_handle_axis_discrete,
-};
 
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t format, int32_t fd, uint32_t size) {
@@ -426,8 +237,8 @@ void destroy_wl_seats(struct wlr_wl_backend *wl) {
 		if (seat->touch) {
 			wl_touch_destroy(seat->touch);
 		}
-		if (seat->pointer) {
-			wl_pointer_destroy(seat->pointer);
+		if (seat->wl_pointer) {
+			finish_seat_pointer(seat);
 		}
 		if (seat->wl_keyboard) {
 			wl_keyboard_release(seat->wl_keyboard);
@@ -455,7 +266,7 @@ bool wlr_input_device_is_wl(struct wlr_input_device *dev) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
 		return dev->keyboard->impl == &keyboard_impl;
 	case WLR_INPUT_DEVICE_POINTER:
-		return dev->pointer->impl == &pointer_impl;
+		return dev->pointer->impl == &wl_pointer_impl;
 	case WLR_INPUT_DEVICE_TOUCH:
 		return dev->touch->impl == &touch_impl;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
@@ -488,8 +299,9 @@ struct wlr_wl_input_device *create_wl_input_device(
 		free(dev);
 		return NULL;
 	case WLR_INPUT_DEVICE_POINTER:
-		type_name = "pointer";
-		break;
+		wlr_log(WLR_ERROR, "can't create pointer wlr_wl_input_device");
+		free(dev);
+		return NULL;
 	case WLR_INPUT_DEVICE_TOUCH:
 		type_name = "touch";
 		break;
@@ -513,43 +325,6 @@ struct wlr_wl_input_device *create_wl_input_device(
 	return dev;
 }
 
-struct wlr_wl_pointer *pointer_get_wl(struct wlr_pointer *wlr_pointer) {
-	assert(wlr_pointer->impl == &pointer_impl);
-	return (struct wlr_wl_pointer *)wlr_pointer;
-}
-
-static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
-	struct wlr_wl_pointer *pointer = pointer_get_wl(wlr_pointer);
-
-	if (pointer->output->cursor.pointer == pointer) {
-		pointer->output->cursor.pointer = NULL;
-	}
-
-	struct wlr_wl_seat *seat = pointer->input_device->seat;
-	if (seat->active_pointer == pointer) {
-		seat->active_pointer = NULL;
-	}
-
-	// pointer->wl_pointer belongs to the wlr_wl_seat
-
-	if (pointer->gesture_swipe != NULL) {
-		zwp_pointer_gesture_swipe_v1_destroy(pointer->gesture_swipe);
-	}
-	if (pointer->gesture_pinch != NULL) {
-		zwp_pointer_gesture_pinch_v1_destroy(pointer->gesture_pinch);
-	}
-	if (pointer->gesture_hold != NULL) {
-		zwp_pointer_gesture_hold_v1_destroy(pointer->gesture_hold);
-	}
-	if (pointer->relative_pointer != NULL) {
-		zwp_relative_pointer_v1_destroy(pointer->relative_pointer);
-	}
-
-	wlr_pointer_finish(&pointer->wlr_pointer);
-	wl_list_remove(&pointer->output_destroy.link);
-	free(pointer);
-}
-
 void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 	/**
 	 * TODO remove the redundant wlr_input_device from wlr_wl_input_device
@@ -564,8 +339,7 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 			wlr_log(WLR_ERROR, "wlr_wl_input_device has no keyboard");
 			break;
 		case WLR_INPUT_DEVICE_POINTER:
-			/* Owned by wlr_wl_pointer */
-			pointer_destroy(wlr_dev->pointer);
+			wlr_log(WLR_ERROR, "wlr_wl_input_device has no pointer");
 			break;
 		case WLR_INPUT_DEVICE_SWITCH:
 			wlr_switch_finish(wlr_dev->switch_device);
@@ -586,242 +360,6 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 	}
 	wl_list_remove(&dev->link);
 	free(dev);
-}
-
-static void gesture_swipe_begin(void *data,
-		struct zwp_pointer_gesture_swipe_v1 *zwp_pointer_gesture_swipe_v1,
-		uint32_t serial, uint32_t time,
-		struct wl_surface *surface, uint32_t fingers) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_swipe_begin wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.fingers = fingers,
-	};
-	input_device->fingers = fingers;
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.swipe_begin, &wlr_event);
-}
-
-static void gesture_swipe_update(void *data,
-		struct zwp_pointer_gesture_swipe_v1 *zwp_pointer_gesture_swipe_v1,
-		uint32_t time, wl_fixed_t dx, wl_fixed_t dy) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_swipe_update wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.fingers = input_device->fingers,
-		.dx = wl_fixed_to_double(dx),
-		.dy = wl_fixed_to_double(dy),
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.swipe_update, &wlr_event);
-}
-
-static void gesture_swipe_end(void *data,
-		struct zwp_pointer_gesture_swipe_v1 *zwp_pointer_gesture_swipe_v1,
-		uint32_t serial, uint32_t time, int32_t cancelled) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_swipe_end wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.cancelled = cancelled,
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.swipe_end, &wlr_event);
-}
-
-static const struct zwp_pointer_gesture_swipe_v1_listener gesture_swipe_impl = {
-	.begin = gesture_swipe_begin,
-	.update = gesture_swipe_update,
-	.end = gesture_swipe_end,
-};
-
-static void gesture_pinch_begin(void *data,
-		struct zwp_pointer_gesture_pinch_v1 *zwp_pointer_gesture_pinch_v1,
-		uint32_t serial, uint32_t time,
-		struct wl_surface *surface, uint32_t fingers) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_pinch_begin wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.fingers = fingers,
-	};
-	input_device->fingers = fingers;
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.pinch_begin, &wlr_event);
-}
-
-static void gesture_pinch_update(void *data,
-		struct zwp_pointer_gesture_pinch_v1 *zwp_pointer_gesture_pinch_v1,
-		uint32_t time, wl_fixed_t dx, wl_fixed_t dy, wl_fixed_t scale, wl_fixed_t rotation) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_pinch_update wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.fingers = input_device->fingers,
-		.dx = wl_fixed_to_double(dx),
-		.dy = wl_fixed_to_double(dy),
-		.scale = wl_fixed_to_double(scale),
-		.rotation = wl_fixed_to_double(rotation),
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.pinch_update, &wlr_event);
-}
-
-static void gesture_pinch_end(void *data,
-		struct zwp_pointer_gesture_pinch_v1 *zwp_pointer_gesture_pinch_v1,
-		uint32_t serial, uint32_t time, int32_t cancelled) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_pinch_end wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.cancelled = cancelled,
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.pinch_end, &wlr_event);
-}
-
-static const struct zwp_pointer_gesture_pinch_v1_listener gesture_pinch_impl = {
-	.begin = gesture_pinch_begin,
-	.update = gesture_pinch_update,
-	.end = gesture_pinch_end,
-};
-
-static void gesture_hold_begin(void *data,
-		struct zwp_pointer_gesture_hold_v1 *zwp_pointer_gesture_hold_v1,
-		uint32_t serial, uint32_t time,
-		struct wl_surface *surface, uint32_t fingers) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_hold_begin wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.fingers = fingers,
-	};
-	input_device->fingers = fingers;
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.hold_begin, &wlr_event);
-}
-
-static void gesture_hold_end(void *data,
-		struct zwp_pointer_gesture_hold_v1 *zwp_pointer_gesture_hold_v1,
-		uint32_t serial, uint32_t time, int32_t cancelled) {
-	struct wlr_wl_input_device *input_device = (struct wlr_wl_input_device *)data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	struct wlr_event_pointer_hold_end wlr_event = {
-		.device = wlr_dev,
-		.time_msec = time,
-		.cancelled = cancelled,
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.hold_end, &wlr_event);
-}
-
-static const struct zwp_pointer_gesture_hold_v1_listener gesture_hold_impl = {
-	.begin = gesture_hold_begin,
-	.end = gesture_hold_end,
-};
-
-static void relative_pointer_handle_relative_motion(void *data,
-		struct zwp_relative_pointer_v1 *relative_pointer, uint32_t utime_hi,
-		uint32_t utime_lo, wl_fixed_t dx, wl_fixed_t dy, wl_fixed_t dx_unaccel,
-		wl_fixed_t dy_unaccel) {
-	struct wlr_wl_input_device *input_device = data;
-	struct wlr_input_device *wlr_dev = &input_device->wlr_input_device;
-	if (pointer_get_wl(wlr_dev->pointer) != input_device->seat->active_pointer) {
-		return;
-	}
-
-	uint64_t time_usec = (uint64_t)utime_hi << 32 | utime_lo;
-
-	struct wlr_event_pointer_motion wlr_event = {
-		.device = wlr_dev,
-		.time_msec = (uint32_t)(time_usec / 1000),
-		.delta_x = wl_fixed_to_double(dx),
-		.delta_y = wl_fixed_to_double(dy),
-		.unaccel_dx = wl_fixed_to_double(dx_unaccel),
-		.unaccel_dy = wl_fixed_to_double(dy_unaccel),
-	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.motion, &wlr_event);
-}
-
-static const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
-	.relative_motion = relative_pointer_handle_relative_motion,
-};
-
-
-static void pointer_handle_output_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_wl_pointer *pointer =
-		wl_container_of(listener, pointer, output_destroy);
-	destroy_wl_input_device(pointer->input_device);
-}
-
-void create_wl_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
-	assert(seat->pointer);
-	struct wl_pointer *wl_pointer = seat->pointer;
-	struct wlr_wl_backend *backend = output->backend;
-
-	if (output_get_pointer(output, wl_pointer)) {
-		wlr_log(WLR_DEBUG,
-			"Pointer for seat %s and output %s already exists (ignoring)",
-			seat->name, output->wlr_output.name);
-		return;
-	}
-
-	struct wlr_wl_pointer *pointer = calloc(1, sizeof(struct wlr_wl_pointer));
-	if (pointer == NULL) {
-		wlr_log(WLR_ERROR, "Allocation failed");
-		return;
-	}
-	pointer->wl_pointer = wl_pointer;
-	pointer->output = output;  // we need output to map absolute coordinates onto
-
-	struct wlr_wl_input_device *dev =
-		create_wl_input_device(seat, WLR_INPUT_DEVICE_POINTER);
-	if (dev == NULL) {
-		free(pointer);
-		wlr_log(WLR_ERROR, "Allocation failed");
-		return;
-	}
-	pointer->input_device = dev;
-
-	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-	wlr_dev->pointer = &pointer->wlr_pointer;
-	wlr_dev->output_name = strdup(output->wlr_output.name);
-
-	wlr_pointer_init(&pointer->wlr_pointer, &pointer_impl, wlr_dev->name);
-
-	wl_signal_add(&output->wlr_output.events.destroy, &pointer->output_destroy);
-	pointer->output_destroy.notify = pointer_handle_output_destroy;
-
-	if (backend->zwp_pointer_gestures_v1) {
-		uint32_t version = zwp_pointer_gestures_v1_get_version(
-				backend->zwp_pointer_gestures_v1);
-
-		pointer->gesture_swipe = zwp_pointer_gestures_v1_get_swipe_gesture(
-				backend->zwp_pointer_gestures_v1, wl_pointer);
-		zwp_pointer_gesture_swipe_v1_add_listener(pointer->gesture_swipe, &gesture_swipe_impl, dev);
-		pointer->gesture_pinch = zwp_pointer_gestures_v1_get_pinch_gesture(
-				backend->zwp_pointer_gestures_v1, wl_pointer);
-		zwp_pointer_gesture_pinch_v1_add_listener(pointer->gesture_pinch, &gesture_pinch_impl, dev);
-
-		if (version >= ZWP_POINTER_GESTURES_V1_GET_HOLD_GESTURE) {
-			pointer->gesture_hold = zwp_pointer_gestures_v1_get_hold_gesture(
-					backend->zwp_pointer_gestures_v1, wl_pointer);
-			zwp_pointer_gesture_hold_v1_add_listener(pointer->gesture_hold, &gesture_hold_impl, dev);
-		}
-	}
-
-	if (backend->zwp_relative_pointer_manager_v1) {
-		pointer->relative_pointer =
-			zwp_relative_pointer_manager_v1_get_relative_pointer(
-			backend->zwp_relative_pointer_manager_v1, wl_pointer);
-		zwp_relative_pointer_v1_add_listener(pointer->relative_pointer,
-			&relative_pointer_listener, dev);
-	}
-
-	wl_pointer_add_listener(wl_pointer, &pointer_listener, seat);
-	wlr_signal_emit_safe(&backend->backend.events.new_input, wlr_dev);
 }
 
 void create_wl_touch(struct wlr_wl_seat *seat) {
@@ -852,42 +390,15 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	struct wlr_wl_seat *seat = data;
 	struct wlr_wl_backend *backend = seat->backend;
 
-	if ((caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer == NULL) {
-		wlr_log(WLR_DEBUG, "seat %p offered pointer", (void *)wl_seat);
+	if ((caps & WL_SEAT_CAPABILITY_POINTER) && seat->wl_pointer == NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' offering pointer", seat->name);
 
-		struct wl_pointer *wl_pointer = wl_seat_get_pointer(wl_seat);
-		seat->pointer = wl_pointer;
-
-		struct wlr_wl_output *output;
-		wl_list_for_each(output, &backend->outputs, link) {
-			create_wl_pointer(seat, output);
-		}
+		seat->wl_pointer = wl_seat_get_pointer(wl_seat);
+		init_seat_pointer(seat);
 	}
-	if (!(caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer != NULL) {
-		wlr_log(WLR_DEBUG, "seat %p dropped pointer", (void *)wl_seat);
-
-		struct wl_pointer *wl_pointer = seat->pointer;
-
-		struct wlr_wl_input_device *device, *tmp;
-		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->wlr_input_device.type != WLR_INPUT_DEVICE_POINTER) {
-				continue;
-			}
-			struct wlr_wl_pointer *pointer =
-				pointer_get_wl(device->wlr_input_device.pointer);
-			if (pointer->wl_pointer != wl_pointer) {
-				continue;
-			}
-			wlr_log(WLR_DEBUG, "dropping pointer %s",
-				pointer->input_device->wlr_input_device.name);
-			struct wlr_wl_output *output = pointer->output;
-			destroy_wl_input_device(device);
-			assert(seat->active_pointer != pointer);
-			assert(output->cursor.pointer != pointer);
-		}
-
-		wl_pointer_release(seat->pointer);
-		seat->pointer = NULL;
+	if (!(caps & WL_SEAT_CAPABILITY_POINTER) && seat->wl_pointer != NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' dropping pointer", seat->name);
+		finish_seat_pointer(seat);
 	}
 
 	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->wl_keyboard == NULL) {
