@@ -70,6 +70,11 @@ struct wlr_xdg_positioner {
 	struct wlr_xdg_positioner_rules rules;
 };
 
+struct wlr_xdg_popup_configure {
+	struct wlr_box geometry;
+	struct wlr_xdg_positioner_rules rules;
+};
+
 struct wlr_xdg_popup {
 	struct wlr_xdg_surface *base;
 	struct wl_list link;
@@ -79,11 +84,11 @@ struct wlr_xdg_popup {
 	struct wlr_surface *parent;
 	struct wlr_seat *seat;
 
+	struct wlr_xdg_popup_configure scheduled;
+
 	// Position of the popup relative to the upper left corner of the window
 	// geometry of the parent surface
 	struct wlr_box geometry;
-
-	struct wlr_xdg_positioner_rules positioner_rules;
 
 	struct wl_list grab_link; // wlr_xdg_popup_grab.popups
 };
@@ -173,7 +178,10 @@ struct wlr_xdg_surface_configure {
 	struct wl_list link; // wlr_xdg_surface.configure_list
 	uint32_t serial;
 
-	struct wlr_xdg_toplevel_configure *toplevel_configure;
+	union {
+		struct wlr_xdg_toplevel_configure *toplevel_configure;
+		struct wlr_xdg_popup_configure *popup_configure;
+	};
 };
 
 struct wlr_xdg_surface_state {

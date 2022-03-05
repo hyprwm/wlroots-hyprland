@@ -107,9 +107,11 @@ static void xdg_surface_handle_ack_configure(struct wl_client *client,
 		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 		handle_xdg_toplevel_ack_configure(surface->toplevel,
-				configure->toplevel_configure);
+			configure->toplevel_configure);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
+		handle_xdg_popup_ack_configure(surface->popup,
+			configure->popup_configure);
 		break;
 	}
 
@@ -145,11 +147,8 @@ static void surface_send_configure(void *user_data) {
 			send_xdg_toplevel_configure(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		xdg_popup_send_configure(surface->popup->resource,
-			surface->popup->geometry.x,
-			surface->popup->geometry.y,
-			surface->popup->geometry.width,
-			surface->popup->geometry.height);
+		configure->popup_configure =
+			send_xdg_popup_configure(surface->popup);
 		break;
 	}
 

@@ -4,6 +4,30 @@
 #include "types/wlr_xdg_shell.h"
 #include "util/signal.h"
 
+void handle_xdg_popup_ack_configure(
+		struct wlr_xdg_popup *popup,
+		struct wlr_xdg_popup_configure *configure) {
+	popup->geometry = configure->geometry;
+}
+
+struct wlr_xdg_popup_configure *send_xdg_popup_configure(
+		struct wlr_xdg_popup *popup) {
+	struct wlr_xdg_popup_configure *configure =
+		calloc(1, sizeof(*configure));
+	if (configure == NULL) {
+		wl_resource_post_no_memory(popup->resource);
+		return NULL;
+	}
+	*configure = popup->scheduled;
+
+	struct wlr_box *geometry = &configure->geometry;
+	xdg_popup_send_configure(popup->resource,
+		geometry->x, geometry->y,
+		geometry->width, geometry->height);
+
+	return configure;
+}
+
 static void xdg_popup_grab_end(struct wlr_xdg_popup_grab *popup_grab) {
 	struct wlr_xdg_popup *popup, *tmp;
 	wl_list_for_each_safe(popup, tmp, &popup_grab->popups, grab_link) {
@@ -348,10 +372,9 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 
 	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 
-	memcpy(&surface->popup->positioner_rules,
-		&positioner->rules, sizeof(positioner->rules));
 	wlr_xdg_positioner_rules_get_geometry(
-		&positioner->rules, &surface->popup->geometry);
+		&positioner->rules, &surface->popup->scheduled.geometry);
+	surface->popup->scheduled.rules = positioner->rules;
 
 	if (parent) {
 		surface->popup->parent = parent->surface;
@@ -443,6 +466,7 @@ void wlr_xdg_popup_unconstrain_from_box(struct wlr_xdg_popup *popup,
 		.width = toplevel_space_box->width,
 		.height = toplevel_space_box->height,
 	};
-	wlr_xdg_positioner_rules_unconstrain_box(&popup->positioner_rules,
-		&popup_constraint, &popup->geometry);
+	wlr_xdg_positioner_rules_unconstrain_box(&popup->scheduled.rules,
+		&popup_constraint, &popup->scheduled.geometry);
+	wlr_xdg_surface_schedule_configure(popup->base);
 }
