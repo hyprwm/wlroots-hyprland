@@ -10,6 +10,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_touch.h>
 #include <wlr/render/drm_format_set.h>
 
 struct wlr_wl_backend {
@@ -128,7 +129,8 @@ struct wlr_wl_seat {
 	struct zwp_pointer_gesture_hold_v1 *gesture_hold;
 	struct zwp_relative_pointer_v1 *relative_pointer;
 
-	struct wl_touch *touch;
+	struct wl_touch *wl_touch;
+	struct wlr_touch wlr_touch;
 
 	struct wl_list link; // wlr_wl_backend.seats
 };
@@ -142,7 +144,6 @@ void init_seat_pointer(struct wlr_wl_seat *seat);
 void finish_seat_pointer(struct wlr_wl_seat *seat);
 void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
 
-void create_wl_touch(struct wlr_wl_seat *seat);
 struct wlr_wl_input_device *create_wl_input_device(
 	struct wlr_wl_seat *seat, enum wlr_input_device_type type);
 bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl);

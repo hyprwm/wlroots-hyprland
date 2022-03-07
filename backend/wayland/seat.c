@@ -21,8 +21,6 @@
 #include "util/signal.h"
 #include "util/time.h"
 
-static const struct wlr_touch_impl touch_impl;
-
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t format, int32_t fd, uint32_t size) {
 	close(fd);
@@ -119,11 +117,17 @@ void init_seat_keyboard(struct wlr_wl_seat *seat) {
 		&seat->wlr_keyboard.base);
 }
 
-static void touch_coordinates_to_absolute(struct wlr_wl_input_device *device,
+static void touch_coordinates_to_absolute(struct wlr_wl_seat *seat,
 		wl_fixed_t x, wl_fixed_t y, double *sx, double *sy) {
-	// TODO: each output needs its own touch
+	/**
+	 * TODO: multi-output touch support
+	 * Although the wayland backend supports multi-output pointers, the support
+	 * for multi-output touch has been left on the side for simplicity reasons.
+	 * If this is a feature you want/need, please open an issue on the wlroots
+	 * tracker here https://gitlab.freedesktop.org/wlroots/wlroots/-/issues
+	 */
 	struct wlr_wl_output *output, *tmp;
-	wl_list_for_each_safe(output, tmp, &device->backend->outputs, link) {
+	wl_list_for_each_safe(output, tmp, &seat->backend->outputs, link) {
 		*sx = wl_fixed_to_double(x) / output->wlr_output.width;
 		*sy = wl_fixed_to_double(y) / output->wlr_output.height;
 		return; // Choose the first output in the list
@@ -135,56 +139,46 @@ static void touch_coordinates_to_absolute(struct wlr_wl_input_device *device,
 static void touch_handle_down(void *data, struct wl_touch *wl_touch,
 		uint32_t serial, uint32_t time, struct wl_surface *surface,
 		int32_t id, wl_fixed_t x, wl_fixed_t y) {
-	struct wlr_wl_input_device *device = data;
-	assert(device && device->wlr_input_device.touch);
+	struct wlr_wl_seat *seat = data;
 
-	double sx, sy;
-	touch_coordinates_to_absolute(device, x, y, &sx, &sy);
 	struct wlr_event_touch_down event = {
-		.device = &device->wlr_input_device,
+		.device = &seat->wlr_touch.base,
 		.time_msec = time,
 		.touch_id = id,
-		.x = sx,
-		.y = sy
 	};
-	wlr_signal_emit_safe(&device->wlr_input_device.touch->events.down, &event);
+	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
+	wlr_signal_emit_safe(&seat->wlr_touch.events.down, &event);
 }
 
 static void touch_handle_up(void *data, struct wl_touch *wl_touch,
 		uint32_t serial, uint32_t time, int32_t id) {
-	struct wlr_wl_input_device *device = data;
-	assert(device && device->wlr_input_device.touch);
+	struct wlr_wl_seat *seat = data;
 
 	struct wlr_event_touch_up event = {
-		.device = &device->wlr_input_device,
+		.device = &seat->wlr_touch.base,
 		.time_msec = time,
 		.touch_id = id,
 	};
-	wlr_signal_emit_safe(&device->wlr_input_device.touch->events.up, &event);
+	wlr_signal_emit_safe(&seat->wlr_touch.events.up, &event);
 }
 
 static void touch_handle_motion(void *data, struct wl_touch *wl_touch,
 		uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) {
-	struct wlr_wl_input_device *device = data;
-	assert(device && device->wlr_input_device.touch);
+	struct wlr_wl_seat *seat = data;
+	struct wlr_input_device *device = &seat->wlr_touch.base;
 
-	double sx, sy;
-	touch_coordinates_to_absolute(device, x, y, &sx, &sy);
 	struct wlr_event_touch_motion event = {
-		.device = &device->wlr_input_device,
+		.device = device,
 		.time_msec = time,
 		.touch_id = id,
-		.x = sx,
-		.y = sy
 	};
-	wlr_signal_emit_safe(&device->wlr_input_device.touch->events.motion, &event);
+	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
+	wlr_signal_emit_safe(&seat->wlr_touch.events.motion, &event);
 }
 
 static void touch_handle_frame(void *data, struct wl_touch *wl_touch) {
-	struct wlr_wl_input_device *device = data;
-	assert(device && device->wlr_input_device.touch);
-
-	wlr_signal_emit_safe(&device->wlr_input_device.touch->events.frame, NULL);
+	struct wlr_wl_seat *seat = data;
+	wlr_signal_emit_safe(&seat->wlr_touch.events.frame, NULL);
 }
 
 static void touch_handle_cancel(void *data, struct wl_touch *wl_touch) {
@@ -211,6 +205,23 @@ static const struct wl_touch_listener touch_listener = {
 	.orientation = touch_handle_orientation,
 };
 
+static const struct wlr_touch_impl touch_impl = {
+	.name = "wl-touch",
+};
+
+static void init_seat_touch(struct wlr_wl_seat *seat) {
+	assert(seat->wl_touch);
+
+	char name[128] = {0};
+	snprintf(name, sizeof(name), "wayland-touch-%s", seat->name);
+
+	wlr_touch_init(&seat->wlr_touch, &touch_impl, name);
+
+	wl_touch_add_listener(seat->wl_touch, &touch_listener, seat);
+	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+		&seat->wlr_touch.base);
+}
+
 static struct wlr_wl_input_device *get_wl_input_device_from_input_device(
 		struct wlr_input_device *wlr_dev) {
 	assert(wlr_input_device_is_wl(wlr_dev));
@@ -233,8 +244,9 @@ bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
 void destroy_wl_seats(struct wlr_wl_backend *wl) {
 	struct wlr_wl_seat *seat, *tmp_seat;
 	wl_list_for_each_safe(seat, tmp_seat, &wl->seats, link) {
-		if (seat->touch) {
-			wl_touch_destroy(seat->touch);
+		if (seat->wl_touch) {
+			wl_touch_release(seat->wl_touch);
+			wlr_touch_finish(&seat->wlr_touch);
 		}
 		if (seat->wl_pointer) {
 			finish_seat_pointer(seat);
@@ -302,8 +314,9 @@ struct wlr_wl_input_device *create_wl_input_device(
 		free(dev);
 		return NULL;
 	case WLR_INPUT_DEVICE_TOUCH:
-		type_name = "touch";
-		break;
+		wlr_log(WLR_ERROR, "can't create touch wlr_wl_input_device");
+		free(dev);
+		return NULL;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
 		type_name = "tablet-tool";
 		break;
@@ -350,8 +363,7 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 			free(wlr_dev->tablet);
 			break;
 		case WLR_INPUT_DEVICE_TOUCH:
-			wlr_touch_finish(wlr_dev->touch);
-			free(wlr_dev->touch);
+			wlr_log(WLR_ERROR, "wlr_wl_input_device has no touch");
 			break;
 		default:
 			break;
@@ -359,29 +371,6 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 	}
 	wl_list_remove(&dev->link);
 	free(dev);
-}
-
-void create_wl_touch(struct wlr_wl_seat *seat) {
-	assert(seat->touch);
-	struct wl_touch *wl_touch = seat->touch;
-	struct wlr_wl_input_device *dev =
-		create_wl_input_device(seat, WLR_INPUT_DEVICE_TOUCH);
-	if (!dev) {
-		return;
-	}
-
-	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-
-	wlr_dev->touch = calloc(1, sizeof(*wlr_dev->touch));
-	if (!wlr_dev->touch) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
-		destroy_wl_input_device(dev);
-		return;
-	}
-	wlr_touch_init(wlr_dev->touch, &touch_impl, wlr_dev->name);
-
-	wl_touch_add_listener(wl_touch, &touch_listener, dev);
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input, wlr_dev);
 }
 
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
@@ -419,26 +408,18 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		seat->wl_keyboard = NULL;
 	}
 
-	if ((caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch == NULL) {
-		wlr_log(WLR_DEBUG, "seat %p offered touch", (void *)wl_seat);
+	if ((caps & WL_SEAT_CAPABILITY_TOUCH) && seat->wl_touch == NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' offering touch", seat->name);
 
-		seat->touch = wl_seat_get_touch(wl_seat);
-		if (backend->started) {
-			create_wl_touch(seat);
-		}
+		seat->wl_touch = wl_seat_get_touch(wl_seat);
+		init_seat_touch(seat);
 	}
-	if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch != NULL) {
-		wlr_log(WLR_DEBUG, "seat %p dropped touch", (void *)wl_seat);
+	if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && seat->wl_touch != NULL) {
+		wlr_log(WLR_DEBUG, "seat '%s' dropping touch", seat->name);
 
-		struct wlr_wl_input_device *device, *tmp;
-		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->wlr_input_device.type == WLR_INPUT_DEVICE_TOUCH) {
-				destroy_wl_input_device(device);
-			}
-		}
-
-		wl_touch_release(seat->touch);
-		seat->touch = NULL;
+		wl_touch_release(seat->wl_touch);
+		wlr_touch_finish(&seat->wlr_touch);
+		seat->wl_touch = NULL;
 	}
 }
 
