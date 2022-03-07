@@ -11,7 +11,6 @@
 
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/interfaces/wlr_output.h>
-#include <wlr/interfaces/wlr_switch.h>
 #include <wlr/interfaces/wlr_touch.h>
 #include <wlr/interfaces/wlr_tablet_tool.h>
 #include <wlr/interfaces/wlr_tablet_pad.h>
@@ -311,9 +310,10 @@ struct wlr_wl_input_device *create_wl_input_device(
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		type_name = "tablet-pad";
 		break;
-	case WLR_INPUT_DEVICE_SWITCH:
-		type_name = "switch";
-		break;
+	default:
+		wlr_log(WLR_ERROR, "device not handled");
+		free(dev);
+		return NULL;
 	}
 
 	size_t name_size = 8 + strlen(type_name) + strlen(seat->name) + 1;
@@ -341,9 +341,6 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 		case WLR_INPUT_DEVICE_POINTER:
 			wlr_log(WLR_ERROR, "wlr_wl_input_device has no pointer");
 			break;
-		case WLR_INPUT_DEVICE_SWITCH:
-			wlr_switch_finish(wlr_dev->switch_device);
-			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 			wlr_tablet_pad_finish(wlr_dev->tablet_pad);
 			free(wlr_dev->tablet_pad);
@@ -355,6 +352,8 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 		case WLR_INPUT_DEVICE_TOUCH:
 			wlr_touch_finish(wlr_dev->touch);
 			free(wlr_dev->touch);
+			break;
+		default:
 			break;
 		}
 	}
