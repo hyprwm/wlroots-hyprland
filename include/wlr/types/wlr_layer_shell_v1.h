@@ -178,4 +178,11 @@ struct wlr_surface *wlr_layer_surface_v1_popup_surface_at(
 		struct wlr_layer_surface_v1 *surface, double sx, double sy,
 		double *sub_x, double *sub_y);
 
+/** Get the corresponding wlr_layer_surface_v1 from a resource.
+ *
+ * Aborts if the resource doesn't have the correct type.
+ */
+struct wlr_layer_surface_v1 *wlr_layer_surface_v1_from_resource(
+		struct wl_resource *resource);
+
 #endif
