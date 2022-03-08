@@ -222,6 +222,8 @@ static void init_seat_touch(struct wlr_wl_seat *seat) {
 		&seat->wlr_touch.base);
 }
 
+static const struct wl_seat_listener seat_listener;
+
 bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
 	struct wlr_wl_seat *seat = calloc(1, sizeof(struct wlr_wl_seat));
 	if (!seat) {
@@ -336,7 +338,7 @@ static void seat_handle_name(void *data, struct wl_seat *wl_seat,
 	seat->name = strdup(name);
 }
 
-const struct wl_seat_listener seat_listener = {
+static const struct wl_seat_listener seat_listener = {
 	.capabilities = seat_handle_capabilities,
 	.name = seat_handle_name,
 };

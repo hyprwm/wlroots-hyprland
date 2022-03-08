@@ -151,8 +151,6 @@ bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl);
 void destroy_wl_seats(struct wlr_wl_backend *wl);
 void destroy_wl_buffer(struct wlr_wl_buffer *buffer);
 
-extern const struct wl_seat_listener seat_listener;
-
 extern const struct wlr_pointer_impl wl_pointer_impl;
 extern const struct wlr_tablet_pad_impl wl_tablet_pad_impl;
 extern const struct wlr_tablet_impl wl_tablet_impl;
