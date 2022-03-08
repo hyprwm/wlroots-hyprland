@@ -21,7 +21,6 @@ struct wlr_wl_backend {
 	/* local state */
 	bool started;
 	struct wl_display *local_display;
-	struct wl_list devices;
 	struct wl_list outputs;
 	int drm_fd;
 	struct wl_list buffers; // wlr_wl_buffer.link
@@ -89,15 +88,6 @@ struct wlr_wl_output {
 	} cursor;
 };
 
-struct wlr_wl_input_device {
-	struct wlr_input_device wlr_input_device;
-	struct wl_list link;
-
-	struct wlr_wl_backend *backend;
-	struct wlr_wl_seat *seat;
-	void *resource;
-};
-
 struct wlr_wl_pointer {
 	struct wlr_pointer wlr_pointer;
 
@@ -157,11 +147,8 @@ void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
 void init_seat_tablet(struct wlr_wl_seat *seat);
 void finish_seat_tablet(struct wlr_wl_seat *seat);
 
-struct wlr_wl_input_device *create_wl_input_device(
-	struct wlr_wl_seat *seat, enum wlr_input_device_type type);
 bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl);
 void destroy_wl_seats(struct wlr_wl_backend *wl);
-void destroy_wl_input_device(struct wlr_wl_input_device *dev);
 void destroy_wl_buffer(struct wlr_wl_buffer *buffer);
 
 extern const struct wl_seat_listener seat_listener;

@@ -441,11 +441,6 @@ static void backend_destroy(struct wlr_backend *backend) {
 		wlr_output_destroy(&output->wlr_output);
 	}
 
-	struct wlr_wl_input_device *input_device, *tmp_input_device;
-	wl_list_for_each_safe(input_device, tmp_input_device, &wl->devices, link) {
-		destroy_wl_input_device(input_device);
-	}
-
 	struct wlr_wl_buffer *buffer, *tmp_buffer;
 	wl_list_for_each_safe(buffer, tmp_buffer, &wl->buffers, link) {
 		destroy_wl_buffer(buffer);
@@ -538,7 +533,6 @@ struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
 	wlr_backend_init(&wl->backend, &backend_impl);
 
 	wl->local_display = display;
-	wl_list_init(&wl->devices);
 	wl_list_init(&wl->outputs);
 	wl_list_init(&wl->seats);
 	wl_list_init(&wl->buffers);

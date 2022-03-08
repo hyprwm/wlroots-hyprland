@@ -14,9 +14,9 @@
 #include <wlr/interfaces/wlr_touch.h>
 #include <wlr/interfaces/wlr_tablet_tool.h>
 #include <wlr/interfaces/wlr_tablet_pad.h>
+#include <wlr/types/wlr_input_device.h>
 #include <wlr/util/log.h>
 
-#include "interfaces/wlr_input_device.h"
 #include "backend/wayland.h"
 #include "util/signal.h"
 #include "util/time.h"
@@ -222,12 +222,6 @@ static void init_seat_touch(struct wlr_wl_seat *seat) {
 		&seat->wlr_touch.base);
 }
 
-static struct wlr_wl_input_device *get_wl_input_device_from_input_device(
-		struct wlr_input_device *wlr_dev) {
-	assert(wlr_input_device_is_wl(wlr_dev));
-	return (struct wlr_wl_input_device *)wlr_dev;
-}
-
 bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
 	struct wlr_wl_seat *seat = calloc(1, sizeof(struct wlr_wl_seat));
 	if (!seat) {
@@ -268,13 +262,6 @@ void destroy_wl_seats(struct wlr_wl_backend *wl) {
 	}
 }
 
-static struct wlr_wl_seat *input_device_get_seat(struct wlr_input_device *wlr_dev) {
-	struct wlr_wl_input_device *dev =
-		get_wl_input_device_from_input_device(wlr_dev);
-	assert(dev->seat);
-	return dev->seat;
-}
-
 bool wlr_input_device_is_wl(struct wlr_input_device *dev) {
 	switch (dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
@@ -290,90 +277,6 @@ bool wlr_input_device_is_wl(struct wlr_input_device *dev) {
 	default:
 		return false;
 	}
-}
-
-struct wlr_wl_input_device *create_wl_input_device(
-		struct wlr_wl_seat *seat, enum wlr_input_device_type type) {
-	struct wlr_wl_input_device *dev =
-		calloc(1, sizeof(struct wlr_wl_input_device));
-	if (dev == NULL) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
-		return NULL;
-	}
-	dev->backend = seat->backend;
-	dev->seat = seat;
-
-	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-
-	const char *type_name = "unknown";
-
-	switch (type) {
-	case WLR_INPUT_DEVICE_KEYBOARD:
-		wlr_log(WLR_ERROR, "can't create keyboard wlr_wl_input_device");
-		free(dev);
-		return NULL;
-	case WLR_INPUT_DEVICE_POINTER:
-		wlr_log(WLR_ERROR, "can't create pointer wlr_wl_input_device");
-		free(dev);
-		return NULL;
-	case WLR_INPUT_DEVICE_TOUCH:
-		wlr_log(WLR_ERROR, "can't create touch wlr_wl_input_device");
-		free(dev);
-		return NULL;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		wlr_log(WLR_ERROR, "can't create tablet tool wlr_wl_input_device");
-		free(dev);
-		return NULL;
-	case WLR_INPUT_DEVICE_TABLET_PAD:
-		wlr_log(WLR_ERROR, "can't create tablet pad wlr_wl_input_device");
-		free(dev);
-		return NULL;
-	default:
-		wlr_log(WLR_ERROR, "device not handled");
-		free(dev);
-		return NULL;
-	}
-
-	size_t name_size = 8 + strlen(type_name) + strlen(seat->name) + 1;
-	char name[name_size];
-	(void) snprintf(name, name_size, "wayland-%s-%s", type_name, seat->name);
-
-	wlr_input_device_init(wlr_dev, type, name);
-	wl_list_insert(&seat->backend->devices, &dev->link);
-	return dev;
-}
-
-void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
-	/**
-	 * TODO remove the redundant wlr_input_device from wlr_wl_input_device
-	 * wlr_wl_input_device::wlr_input_device is not owned by its input device
-	 * type, which means we have 2 wlr_input_device to cleanup
-	 */
-	wlr_input_device_finish(&dev->wlr_input_device);
-	if (dev->wlr_input_device._device) {
-		struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
-		switch (wlr_dev->type) {
-		case WLR_INPUT_DEVICE_KEYBOARD:
-			wlr_log(WLR_ERROR, "wlr_wl_input_device has no keyboard");
-			break;
-		case WLR_INPUT_DEVICE_POINTER:
-			wlr_log(WLR_ERROR, "wlr_wl_input_device has no pointer");
-			break;
-		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_log(WLR_ERROR, "wlr_wl_input_device has no tablet pad");
-			break;
-		case WLR_INPUT_DEVICE_TABLET_TOOL:
-			wlr_log(WLR_ERROR, "wlr_wl_input_device has no tablet_tool");
-			break;
-		case WLR_INPUT_DEVICE_TOUCH:
-			wlr_log(WLR_ERROR, "wlr_wl_input_device has no touch");
-			break;
-		default:
-			break;
-		}
-	}
-	wl_list_remove(&dev->link);
-	free(dev);
 }
 
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
@@ -437,7 +340,3 @@ const struct wl_seat_listener seat_listener = {
 	.capabilities = seat_handle_capabilities,
 	.name = seat_handle_name,
 };
-
-struct wl_seat *wlr_wl_input_device_get_seat(struct wlr_input_device *wlr_dev) {
-	return input_device_get_seat(wlr_dev)->wl_seat;
-}
