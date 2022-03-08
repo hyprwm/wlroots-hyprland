@@ -25,5 +25,4 @@ void wlr_input_device_finish(struct wlr_input_device *wlr_device) {
 	wl_list_remove(&wlr_device->events.destroy.listener_list);
 
 	free(wlr_device->name);
-	free(wlr_device->output_name);
 }

@@ -20,6 +20,8 @@ struct wlr_touch {
 
 	const struct wlr_touch_impl *impl;
 
+	char *output_name;
+
 	struct {
 		struct wl_signal down; // struct wlr_event_touch_down
 		struct wl_signal up; // struct wlr_event_touch_up

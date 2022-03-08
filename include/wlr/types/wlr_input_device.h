@@ -31,7 +31,6 @@ struct wlr_input_device {
 	char *name;
 	// Or 0 if not applicable to this device
 	double width_mm, height_mm;
-	char *output_name;
 
 	/* wlr_input_device.type determines which of these is valid */
 	union {

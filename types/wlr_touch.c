@@ -21,4 +21,6 @@ void wlr_touch_init(struct wlr_touch *touch,
 
 void wlr_touch_finish(struct wlr_touch *touch) {
 	wlr_input_device_finish(&touch->base);
+
+	free(touch->output_name);
 }

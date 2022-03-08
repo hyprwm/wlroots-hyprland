@@ -217,6 +217,13 @@ static void init_seat_touch(struct wlr_wl_seat *seat) {
 
 	wlr_touch_init(&seat->wlr_touch, &touch_impl, name);
 
+	struct wlr_wl_output *output;
+	wl_list_for_each(output, &seat->backend->outputs, link) {
+		/* Multi-output touch not supproted */
+		seat->wlr_touch.output_name = strdup(output->wlr_output.name);
+		break;
+	}
+
 	wl_touch_add_listener(seat->wl_touch, &touch_listener, seat);
 	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
 		&seat->wlr_touch.base);
