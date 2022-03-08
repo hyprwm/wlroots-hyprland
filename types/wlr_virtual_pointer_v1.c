@@ -199,8 +199,6 @@ static void virtual_pointer_destroy_resource(struct wl_resource *resource) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&pointer->events.destroy, pointer);
-
 	wlr_pointer_finish(&pointer->pointer);
 
 	wl_resource_set_user_data(pointer->resource, NULL);
@@ -278,7 +276,6 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 	}
 
 	virtual_pointer->resource = pointer_resource;
-	wl_signal_init(&virtual_pointer->events.destroy);
 
 	wl_list_insert(&manager->virtual_pointers, &virtual_pointer->link);
 	wlr_signal_emit_safe(&manager->events.new_virtual_pointer, &event);

@@ -35,10 +35,6 @@ struct wlr_virtual_pointer_v1 {
 	bool axis_valid[2];
 
 	struct wl_list link;
-
-	struct {
-		struct wl_signal destroy; // struct wlr_virtual_pointer_v1*
-	} events;
 };
 
 struct wlr_virtual_pointer_v1_new_pointer_event {
