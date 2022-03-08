@@ -418,7 +418,7 @@ static bool backend_start(struct wlr_backend *backend) {
 		}
 
 		if (wl->tablet_manager) {
-			wl_add_tablet_seat(wl->tablet_manager, seat);
+			init_seat_tablet(seat);
 		}
 	}
 

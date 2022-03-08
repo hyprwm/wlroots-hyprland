@@ -255,6 +255,9 @@ void destroy_wl_seats(struct wlr_wl_backend *wl) {
 			wl_keyboard_release(seat->wl_keyboard);
 			wlr_keyboard_finish(&seat->wlr_keyboard);
 		}
+		if (seat->zwp_tablet_seat_v2) {
+			finish_seat_tablet(seat);
+		}
 
 		free(seat->name);
 		assert(seat->wl_seat);
@@ -281,9 +284,9 @@ bool wlr_input_device_is_wl(struct wlr_input_device *dev) {
 	case WLR_INPUT_DEVICE_TOUCH:
 		return dev->touch->impl == &touch_impl;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		return dev->tablet->impl == &tablet_impl;
+		return dev->tablet->impl == &wl_tablet_impl;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
-		return dev->tablet_pad->impl == &tablet_pad_impl;
+		return dev->tablet_pad->impl == &wl_tablet_pad_impl;
 	default:
 		return false;
 	}
@@ -318,11 +321,13 @@ struct wlr_wl_input_device *create_wl_input_device(
 		free(dev);
 		return NULL;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		type_name = "tablet-tool";
-		break;
+		wlr_log(WLR_ERROR, "can't create tablet tool wlr_wl_input_device");
+		free(dev);
+		return NULL;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
-		type_name = "tablet-pad";
-		break;
+		wlr_log(WLR_ERROR, "can't create tablet pad wlr_wl_input_device");
+		free(dev);
+		return NULL;
 	default:
 		wlr_log(WLR_ERROR, "device not handled");
 		free(dev);
@@ -355,12 +360,10 @@ void destroy_wl_input_device(struct wlr_wl_input_device *dev) {
 			wlr_log(WLR_ERROR, "wlr_wl_input_device has no pointer");
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_tablet_pad_finish(wlr_dev->tablet_pad);
-			free(wlr_dev->tablet_pad);
+			wlr_log(WLR_ERROR, "wlr_wl_input_device has no tablet pad");
 			break;
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
-			wlr_tablet_finish(wlr_dev->tablet);
-			free(wlr_dev->tablet);
+			wlr_log(WLR_ERROR, "wlr_wl_input_device has no tablet_tool");
 			break;
 		case WLR_INPUT_DEVICE_TOUCH:
 			wlr_log(WLR_ERROR, "wlr_wl_input_device has no touch");
