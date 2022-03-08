@@ -320,11 +320,12 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&device->tablet_pad->events.ring, &pstate->ring);
 		wl_list_insert(&sample->tablet_pads, &pstate->link);
 		break;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		sample->width_mm = device->width_mm == 0 ?
-			20 : device->width_mm;
-		sample->height_mm = device->height_mm == 0 ?
-			10 : device->height_mm;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:;
+		struct wlr_tablet *tablet = device->tablet;
+		sample->width_mm = tablet->width_mm == 0 ?
+			20 : tablet->width_mm;
+		sample->height_mm = tablet->height_mm == 0 ?
+			10 : tablet->height_mm;
 
 		struct tablet_tool_state *tstate = calloc(sizeof(struct tablet_tool_state), 1);
 		tstate->device = device;
@@ -343,7 +344,6 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		break;
 	}
 }
-
 
 int main(int argc, char *argv[]) {
 	wlr_log_init(WLR_DEBUG, NULL);

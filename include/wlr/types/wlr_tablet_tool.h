@@ -64,6 +64,8 @@ struct wlr_tablet {
 
 	const struct wlr_tablet_impl *impl;
 
+	double width_mm, height_mm;
+
 	struct {
 		struct wl_signal axis;
 		struct wl_signal proximity;
