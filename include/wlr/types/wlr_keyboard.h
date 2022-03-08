@@ -89,7 +89,6 @@ struct wlr_keyboard {
 		struct wl_signal modifiers;
 		struct wl_signal keymap;
 		struct wl_signal repeat_info;
-		struct wl_signal destroy;
 	} events;
 
 	void *data;

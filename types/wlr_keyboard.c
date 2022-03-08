@@ -124,7 +124,6 @@ void wlr_keyboard_init(struct wlr_keyboard *kb,
 	wl_signal_init(&kb->events.modifiers);
 	wl_signal_init(&kb->events.keymap);
 	wl_signal_init(&kb->events.repeat_info);
-	wl_signal_init(&kb->events.destroy);
 
 	kb->keymap_fd = -1;
 
@@ -146,8 +145,6 @@ void wlr_keyboard_finish(struct wlr_keyboard *kb) {
 		};
 		wlr_keyboard_notify_key(kb, &event);  // updates num_keycodes
 	}
-
-	wlr_signal_emit_safe(&kb->events.destroy, kb);
 
 	wlr_input_device_finish(&kb->base);
 

@@ -279,7 +279,7 @@ bool wlr_keyboard_group_add_keyboard(struct wlr_keyboard_group *group,
 	wl_signal_add(&keyboard->events.repeat_info, &device->repeat_info);
 	device->repeat_info.notify = handle_keyboard_repeat_info;
 
-	wl_signal_add(&keyboard->events.destroy, &device->destroy);
+	wl_signal_add(&keyboard->base.events.destroy, &device->destroy);
 	device->destroy.notify = handle_keyboard_destroy;
 
 	struct wlr_keyboard *group_kb = &group->keyboard;
