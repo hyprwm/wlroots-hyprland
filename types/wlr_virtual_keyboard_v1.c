@@ -109,8 +109,6 @@ static void virtual_keyboard_destroy_resource(struct wl_resource *resource) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&keyboard->events.destroy, keyboard);
-
 	wlr_keyboard_finish(&keyboard->keyboard);
 
 	wl_resource_set_user_data(keyboard->resource, NULL);
@@ -171,7 +169,6 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 
 	virtual_keyboard->resource = keyboard_resource;
 	virtual_keyboard->seat = seat_client->seat;
-	wl_signal_init(&virtual_keyboard->events.destroy);
 
 	wl_list_insert(&manager->virtual_keyboards, &virtual_keyboard->link);
 
