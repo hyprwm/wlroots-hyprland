@@ -510,14 +510,14 @@ static void handle_pointer_hold_end(struct wl_listener *listener, void *data) {
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_up *event = data;
+	struct wlr_touch_up_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_up);
 	wlr_signal_emit_safe(&device->cursor->events.touch_up, event);
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_down *event = data;
+	struct wlr_touch_down_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_down);
 
@@ -530,7 +530,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_motion *event = data;
+	struct wlr_touch_motion_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_motion);
 
@@ -543,7 +543,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 }
 
 static void handle_touch_cancel(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_cancel *event = data;
+	struct wlr_touch_cancel_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_cancel);
 	wlr_signal_emit_safe(&device->cursor->events.touch_cancel, event);

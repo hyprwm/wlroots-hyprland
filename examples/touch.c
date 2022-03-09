@@ -93,7 +93,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 }
 
 static void touch_down_notify(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_motion *event = data;
+	struct wlr_touch_motion_event *event = data;
 	struct touch_state *tstate = wl_container_of(listener, tstate, down);
 	struct sample_state *sample = tstate->sample;
 	struct touch_point *point = calloc(1, sizeof(struct touch_point));
@@ -104,7 +104,7 @@ static void touch_down_notify(struct wl_listener *listener, void *data) {
 }
 
 static void touch_up_notify(struct wl_listener *listener, void *data ) {
-	struct wlr_event_touch_up *event = data;
+	struct wlr_touch_up_event *event = data;
 	struct touch_state *tstate = wl_container_of(listener, tstate, up);
 	struct sample_state *sample = tstate->sample;
 	struct touch_point *point, *tmp;
@@ -117,7 +117,7 @@ static void touch_up_notify(struct wl_listener *listener, void *data ) {
 }
 
 static void touch_motion_notify(struct wl_listener *listener, void *data) {
-	struct wlr_event_touch_motion *event = data;
+	struct wlr_touch_motion_event *event = data;
 	struct touch_state *tstate = wl_container_of(listener, tstate, motion);
 	struct sample_state *sample = tstate->sample;
 	struct touch_point *point;

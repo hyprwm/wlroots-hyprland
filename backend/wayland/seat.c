@@ -140,40 +140,43 @@ static void touch_handle_down(void *data, struct wl_touch *wl_touch,
 		uint32_t serial, uint32_t time, struct wl_surface *surface,
 		int32_t id, wl_fixed_t x, wl_fixed_t y) {
 	struct wlr_wl_seat *seat = data;
+	struct wlr_touch *touch = &seat->wlr_touch;
 
-	struct wlr_event_touch_down event = {
-		.device = &seat->wlr_touch.base,
+	struct wlr_touch_down_event event = {
+		.touch = touch,
 		.time_msec = time,
 		.touch_id = id,
 	};
 	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
-	wlr_signal_emit_safe(&seat->wlr_touch.events.down, &event);
+	wlr_signal_emit_safe(&touch->events.down, &event);
 }
 
 static void touch_handle_up(void *data, struct wl_touch *wl_touch,
 		uint32_t serial, uint32_t time, int32_t id) {
 	struct wlr_wl_seat *seat = data;
+	struct wlr_touch *touch = &seat->wlr_touch;
 
-	struct wlr_event_touch_up event = {
-		.device = &seat->wlr_touch.base,
+	struct wlr_touch_up_event event = {
+		.touch = touch,
 		.time_msec = time,
 		.touch_id = id,
 	};
-	wlr_signal_emit_safe(&seat->wlr_touch.events.up, &event);
+	wlr_signal_emit_safe(&touch->events.up, &event);
 }
 
 static void touch_handle_motion(void *data, struct wl_touch *wl_touch,
 		uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) {
 	struct wlr_wl_seat *seat = data;
-	struct wlr_input_device *device = &seat->wlr_touch.base;
+	struct wlr_touch *touch = &seat->wlr_touch;
 
-	struct wlr_event_touch_motion event = {
-		.device = device,
+	struct wlr_touch_motion_event event = {
+		.touch = touch,
 		.time_msec = time,
 		.touch_id = id,
 	};
+
 	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
-	wlr_signal_emit_safe(&seat->wlr_touch.events.motion, &event);
+	wlr_signal_emit_safe(&touch->events.motion, &event);
 }
 
 static void touch_handle_frame(void *data, struct wl_touch *wl_touch) {

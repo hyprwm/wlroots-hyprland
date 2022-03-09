@@ -168,7 +168,7 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sample_state *sample = wl_container_of(listener, sample, touch_up);
-	struct wlr_event_touch_up *event = data;
+	struct wlr_touch_up_event  *event = data;
 
 	struct touch_point *point, *tmp;
 	wl_list_for_each_safe(point, tmp, &sample->touch_points, link) {
@@ -178,25 +178,25 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	warp_to_touch(sample, event->device);
+	warp_to_touch(sample, &event->touch->base);
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sample_state *sample = wl_container_of(listener, sample, touch_down);
-	struct wlr_event_touch_down *event = data;
+	struct wlr_touch_down_event  *event = data;
 	struct touch_point *point = calloc(1, sizeof(struct touch_point));
 	point->touch_id = event->touch_id;
 	point->x = event->x;
 	point->y = event->y;
 	wl_list_insert(&sample->touch_points, &point->link);
 
-	warp_to_touch(sample, event->device);
+	warp_to_touch(sample, &event->touch->base);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, touch_motion);
-	struct wlr_event_touch_motion *event = data;
+	struct wlr_touch_motion_event  *event = data;
 
 	struct touch_point *point;
 	wl_list_for_each(point, &sample->touch_points, link) {
@@ -207,7 +207,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	warp_to_touch(sample, event->device);
+	warp_to_touch(sample, &event->touch->base);
 }
 
 static void handle_touch_cancel(struct wl_listener *listener, void *data) {

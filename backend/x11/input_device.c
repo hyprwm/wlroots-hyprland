@@ -70,8 +70,8 @@ static void send_pointer_position_event(struct wlr_x11_output *output,
 
 static void send_touch_down_event(struct wlr_x11_output *output,
 		int16_t x, int16_t y, int32_t touch_id, xcb_timestamp_t time) {
-	struct wlr_event_touch_down ev = {
-		.device = &output->touch.base,
+	struct wlr_touch_down_event ev = {
+		.touch = &output->touch,
 		.time_msec = time,
 		.x = (double)x / output->wlr_output.width,
 		.y = (double)y / output->wlr_output.height,
@@ -83,8 +83,8 @@ static void send_touch_down_event(struct wlr_x11_output *output,
 
 static void send_touch_motion_event(struct wlr_x11_output *output,
 		int16_t x, int16_t y, int32_t touch_id, xcb_timestamp_t time) {
-	struct wlr_event_touch_motion ev = {
-		.device = &output->touch.base,
+	struct wlr_touch_motion_event ev = {
+		.touch = &output->touch,
 		.time_msec = time,
 		.x = (double)x / output->wlr_output.width,
 		.y = (double)y / output->wlr_output.height,
@@ -96,8 +96,8 @@ static void send_touch_motion_event(struct wlr_x11_output *output,
 
 static void send_touch_up_event(struct wlr_x11_output *output,
 		int32_t touch_id, xcb_timestamp_t time) {
-	struct wlr_event_touch_up ev = {
-		.device = &output->touch.base,
+	struct wlr_touch_up_event ev = {
+		.touch = &output->touch,
 		.time_msec = time,
 		.touch_id = touch_id,
 	};
