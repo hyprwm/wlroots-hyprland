@@ -31,8 +31,8 @@ static void send_key_event(struct wlr_x11_backend *x11, uint32_t key,
 
 static void send_button_event(struct wlr_x11_output *output, uint32_t key,
 		enum wlr_button_state st, xcb_timestamp_t time) {
-	struct wlr_event_pointer_button ev = {
-		.device = &output->pointer.base,
+	struct wlr_pointer_button_event ev = {
+		.pointer = &output->pointer,
 		.time_msec = time,
 		.button = key,
 		.state = st,
@@ -43,8 +43,8 @@ static void send_button_event(struct wlr_x11_output *output, uint32_t key,
 
 static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 		xcb_timestamp_t time) {
-	struct wlr_event_pointer_axis ev = {
-		.device = &output->pointer.base,
+	struct wlr_pointer_axis_event ev = {
+		.pointer = &output->pointer,
 		.time_msec = time,
 		.source = WLR_AXIS_SOURCE_WHEEL,
 		.orientation = WLR_AXIS_ORIENTATION_VERTICAL,
@@ -58,8 +58,8 @@ static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 
 static void send_pointer_position_event(struct wlr_x11_output *output,
 		int16_t x, int16_t y, xcb_timestamp_t time) {
-	struct wlr_event_pointer_motion_absolute ev = {
-		.device = &output->pointer.base,
+	struct wlr_pointer_motion_absolute_event ev = {
+		.pointer = &output->pointer,
 		.time_msec = time,
 		.x = (double)x / output->wlr_output.width,
 		.y = (double)y / output->wlr_output.height,

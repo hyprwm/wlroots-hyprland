@@ -88,8 +88,8 @@ static void pointer_handle_motion(void *data, struct wl_pointer *wl_pointer,
 	}
 
 	struct wlr_output *wlr_output = &pointer->output->wlr_output;
-	struct wlr_event_pointer_motion_absolute event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_motion_absolute_event event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.x = wl_fixed_to_double(sx) / wlr_output->width,
 		.y = wl_fixed_to_double(sy) / wlr_output->height,
@@ -105,8 +105,8 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct wlr_event_pointer_button event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_button_event event = {
+		.pointer = &pointer->wlr_pointer,
 		.button = button,
 		.state = state,
 		.time_msec = time,
@@ -122,8 +122,8 @@ static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct wlr_event_pointer_axis event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_axis_event event = {
+		.pointer = &pointer->wlr_pointer,
 		.delta = wl_fixed_to_double(value),
 		.delta_discrete = pointer->axis_discrete,
 		.orientation = axis,
@@ -165,8 +165,8 @@ static void pointer_handle_axis_stop(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct wlr_event_pointer_axis event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_axis_event event = {
+		.pointer = &pointer->wlr_pointer,
 		.delta = 0,
 		.delta_discrete = 0,
 		.orientation = axis,
@@ -211,8 +211,8 @@ static void gesture_swipe_begin(void *data,
 
 	pointer->fingers = fingers;
 
-	struct wlr_event_pointer_swipe_begin wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_swipe_begin_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.fingers = fingers,
 	};
@@ -228,8 +228,8 @@ static void gesture_swipe_update(void *data,
 		return;
 	}
 
-	struct wlr_event_pointer_swipe_update wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_swipe_update_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.fingers = pointer->fingers,
 		.dx = wl_fixed_to_double(dx),
@@ -247,8 +247,8 @@ static void gesture_swipe_end(void *data,
 		return;
 	}
 
-	struct wlr_event_pointer_swipe_end wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_swipe_end_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
@@ -273,8 +273,8 @@ static void gesture_pinch_begin(void *data,
 
 	pointer->fingers = fingers;
 
-	struct wlr_event_pointer_pinch_begin wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_pinch_begin_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.fingers = pointer->fingers,
 	};
@@ -292,8 +292,8 @@ static void gesture_pinch_update(void *data,
 		return;
 	}
 
-	struct wlr_event_pointer_pinch_update wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_pinch_update_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.fingers = pointer->fingers,
 		.dx = wl_fixed_to_double(dx),
@@ -313,8 +313,8 @@ static void gesture_pinch_end(void *data,
 		return;
 	}
 
-	struct wlr_event_pointer_pinch_end wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_pinch_end_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
@@ -339,8 +339,8 @@ static void gesture_hold_begin(void *data,
 
 	pointer->fingers = fingers;
 
-	struct wlr_event_pointer_hold_begin wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_hold_begin_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.fingers = fingers,
 	};
@@ -356,8 +356,8 @@ static void gesture_hold_end(void *data,
 		return;
 	}
 
-	struct wlr_event_pointer_hold_end wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_hold_end_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
@@ -381,8 +381,8 @@ static void relative_pointer_handle_relative_motion(void *data,
 
 	uint64_t time_usec = (uint64_t)utime_hi << 32 | utime_lo;
 
-	struct wlr_event_pointer_motion wlr_event = {
-		.device = &pointer->wlr_pointer.base,
+	struct wlr_pointer_motion_event wlr_event = {
+		.pointer = &pointer->wlr_pointer,
 		.time_msec = (uint32_t)(time_usec / 1000),
 		.delta_x = wl_fixed_to_double(dx),
 		.delta_y = wl_fixed_to_double(dy),

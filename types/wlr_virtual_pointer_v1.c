@@ -29,9 +29,8 @@ static void virtual_pointer_motion(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
-	struct wlr_event_pointer_motion event = {
-		.device = wlr_dev,
+	struct wlr_pointer_motion_event event = {
+		.pointer = &pointer->pointer,
 		.time_msec = time,
 		.delta_x = wl_fixed_to_double(dx),
 		.delta_y = wl_fixed_to_double(dy),
@@ -52,14 +51,13 @@ static void virtual_pointer_motion_absolute(struct wl_client *client,
 	if (x_extent == 0 || y_extent == 0) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
-	struct wlr_event_pointer_motion_absolute event = {
-		.device = wlr_dev,
+	struct wlr_pointer_motion_absolute_event event = {
+		.pointer = &pointer->pointer,
 		.time_msec = time,
 		.x = (double)x / x_extent,
 		.y = (double)y / y_extent,
 	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.motion_absolute, &event);
+	wlr_signal_emit_safe(&pointer->pointer.events.motion_absolute, &event);
 }
 
 static void virtual_pointer_button(struct wl_client *client,
@@ -70,14 +68,13 @@ static void virtual_pointer_button(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
-	struct wlr_event_pointer_button event = {
-		.device = wlr_dev,
+	struct wlr_pointer_button_event event = {
+		.pointer = &pointer->pointer,
 		.time_msec = time,
 		.button = button,
 		.state = state ? WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED
 	};
-	wlr_signal_emit_safe(&wlr_dev->pointer->events.button, &event);
+	wlr_signal_emit_safe(&pointer->pointer.events.button, &event);
 }
 
 static void virtual_pointer_axis(struct wl_client *client,
@@ -94,10 +91,9 @@ static void virtual_pointer_axis(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
 	pointer->axis = axis;
 	pointer->axis_valid[pointer->axis] = true;
-	pointer->axis_event[pointer->axis].device = wlr_dev;
+	pointer->axis_event[pointer->axis].pointer = &pointer->pointer;
 	pointer->axis_event[pointer->axis].time_msec = time;
 	pointer->axis_event[pointer->axis].orientation = axis;
 	pointer->axis_event[pointer->axis].delta = wl_fixed_to_double(value);
@@ -140,8 +136,7 @@ static void virtual_pointer_axis_source(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
-	pointer->axis_event[pointer->axis].device = wlr_dev;
+	pointer->axis_event[pointer->axis].pointer = &pointer->pointer;
 	pointer->axis_event[pointer->axis].source = source;
 }
 
@@ -158,10 +153,9 @@ static void virtual_pointer_axis_stop(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
 	pointer->axis = axis;
 	pointer->axis_valid[pointer->axis] = true;
-	pointer->axis_event[pointer->axis].device = wlr_dev;
+	pointer->axis_event[pointer->axis].pointer = &pointer->pointer;
 	pointer->axis_event[pointer->axis].time_msec = time;
 	pointer->axis_event[pointer->axis].orientation = axis;
 	pointer->axis_event[pointer->axis].delta = 0;
@@ -182,10 +176,9 @@ static void virtual_pointer_axis_discrete(struct wl_client *client,
 	if (pointer == NULL) {
 		return;
 	}
-	struct wlr_input_device *wlr_dev = &pointer->pointer.base;
 	pointer->axis = axis;
 	pointer->axis_valid[pointer->axis] = true;
-	pointer->axis_event[pointer->axis].device = wlr_dev;
+	pointer->axis_event[pointer->axis].pointer = &pointer->pointer;
 	pointer->axis_event[pointer->axis].time_msec = time;
 	pointer->axis_event[pointer->axis].orientation = axis;
 	pointer->axis_event[pointer->axis].delta = wl_fixed_to_double(value);

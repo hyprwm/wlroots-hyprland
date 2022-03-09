@@ -30,7 +30,7 @@ struct wlr_virtual_pointer_v1 {
 	struct wlr_pointer pointer;
 	struct wl_resource *resource;
 	/* Vertical and horizontal */
-	struct wlr_event_pointer_axis axis_event[2];
+	struct wlr_pointer_axis_event axis_event[2];
 	enum wl_pointer_axis axis;
 	bool axis_valid[2];
 

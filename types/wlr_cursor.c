@@ -431,7 +431,7 @@ static struct wlr_output *get_mapped_output(struct wlr_cursor_device *cursor_dev
 
 static void handle_pointer_motion_absolute(struct wl_listener *listener,
 		void *data) {
-	struct wlr_event_pointer_motion_absolute *event = data;
+	struct wlr_pointer_motion_absolute_event *event = data;
 	struct wlr_cursor_device *device =
 		wl_container_of(listener, device, motion_absolute);
 
@@ -444,14 +444,14 @@ static void handle_pointer_motion_absolute(struct wl_listener *listener,
 }
 
 static void handle_pointer_button(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_button *event = data;
+	struct wlr_pointer_button_event *event = data;
 	struct wlr_cursor_device *device =
 		wl_container_of(listener, device, button);
 	wlr_signal_emit_safe(&device->cursor->events.button, event);
 }
 
 static void handle_pointer_axis(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_axis *event = data;
+	struct wlr_pointer_axis_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, axis);
 	wlr_signal_emit_safe(&device->cursor->events.axis, event);
 }
@@ -462,49 +462,49 @@ static void handle_pointer_frame(struct wl_listener *listener, void *data) {
 }
 
 static void handle_pointer_swipe_begin(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_swipe_begin *event = data;
+	struct wlr_pointer_swipe_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_begin);
 	wlr_signal_emit_safe(&device->cursor->events.swipe_begin, event);
 }
 
 static void handle_pointer_swipe_update(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_swipe_update *event = data;
+	struct wlr_pointer_swipe_update_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_update);
 	wlr_signal_emit_safe(&device->cursor->events.swipe_update, event);
 }
 
 static void handle_pointer_swipe_end(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_swipe_end *event = data;
+	struct wlr_pointer_swipe_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_end);
 	wlr_signal_emit_safe(&device->cursor->events.swipe_end, event);
 }
 
 static void handle_pointer_pinch_begin(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_pinch_begin *event = data;
+	struct wlr_pointer_pinch_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_begin);
 	wlr_signal_emit_safe(&device->cursor->events.pinch_begin, event);
 }
 
 static void handle_pointer_pinch_update(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_pinch_update *event = data;
+	struct wlr_pointer_pinch_update_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_update);
 	wlr_signal_emit_safe(&device->cursor->events.pinch_update, event);
 }
 
 static void handle_pointer_pinch_end(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_pinch_end *event = data;
+	struct wlr_pointer_pinch_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_end);
 	wlr_signal_emit_safe(&device->cursor->events.pinch_end, event);
 }
 
 static void handle_pointer_hold_begin(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_hold_begin *event = data;
+	struct wlr_pointer_hold_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, hold_begin);
 	wlr_signal_emit_safe(&device->cursor->events.hold_begin, event);
 }
 
 static void handle_pointer_hold_end(struct wl_listener *listener, void *data) {
-	struct wlr_event_pointer_hold_end *event = data;
+	struct wlr_pointer_hold_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, hold_end);
 	wlr_signal_emit_safe(&device->cursor->events.hold_end, event);
 }

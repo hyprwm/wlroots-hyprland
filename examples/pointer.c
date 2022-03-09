@@ -112,8 +112,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, cursor_motion);
-	struct wlr_event_pointer_motion *event = data;
-	wlr_cursor_move(sample->cursor, event->device, event->delta_x,
+	struct wlr_pointer_motion_event *event = data;
+	wlr_cursor_move(sample->cursor, &event->pointer->base, event->delta_x,
 			event->delta_y);
 }
 
@@ -121,19 +121,19 @@ static void handle_cursor_motion_absolute(struct wl_listener *listener,
 		void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, cursor_motion_absolute);
-	struct wlr_event_pointer_motion_absolute *event = data;
+	struct wlr_pointer_motion_absolute_event *event = data;
 
 	sample->cur_x = event->x;
 	sample->cur_y = event->y;
 
-	wlr_cursor_warp_absolute(sample->cursor, event->device, sample->cur_x,
-		sample->cur_y);
+	wlr_cursor_warp_absolute(sample->cursor, &event->pointer->base,
+		sample->cur_x, sample->cur_y);
 }
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, cursor_button);
-	struct wlr_event_pointer_button *event = data;
+	struct wlr_pointer_button_event *event = data;
 
 	float (*color)[4];
 	if (event->state == WLR_BUTTON_RELEASED) {
@@ -150,7 +150,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, cursor_axis);
-	struct wlr_event_pointer_axis *event = data;
+	struct wlr_pointer_axis_event *event = data;
 
 	for (size_t i = 0; i < 3; ++i) {
 		sample->default_color[i] += event->delta > 0 ? -0.05f : 0.05f;

@@ -45,22 +45,22 @@ struct wlr_pointer {
 	void *data;
 };
 
-struct wlr_event_pointer_motion {
-	struct wlr_input_device *device;
+struct wlr_pointer_motion_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	double delta_x, delta_y;
 	double unaccel_dx, unaccel_dy;
 };
 
-struct wlr_event_pointer_motion_absolute {
-	struct wlr_input_device *device;
+struct wlr_pointer_motion_absolute_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	// From 0..1
 	double x, y;
 };
 
-struct wlr_event_pointer_button {
-	struct wlr_input_device *device;
+struct wlr_pointer_button_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t button;
 	enum wlr_button_state state;
@@ -78,8 +78,8 @@ enum wlr_axis_orientation {
 	WLR_AXIS_ORIENTATION_HORIZONTAL,
 };
 
-struct wlr_event_pointer_axis {
-	struct wlr_input_device *device;
+struct wlr_pointer_axis_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	enum wlr_axis_source source;
 	enum wlr_axis_orientation orientation;
@@ -87,14 +87,14 @@ struct wlr_event_pointer_axis {
 	int32_t delta_discrete;
 };
 
-struct wlr_event_pointer_swipe_begin {
-	struct wlr_input_device *device;
+struct wlr_pointer_swipe_begin_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t fingers;
 };
 
-struct wlr_event_pointer_swipe_update {
-	struct wlr_input_device *device;
+struct wlr_pointer_swipe_update_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t fingers;
 	// Relative coordinates of the logical center of the gesture
@@ -102,20 +102,20 @@ struct wlr_event_pointer_swipe_update {
 	double dx, dy;
 };
 
-struct wlr_event_pointer_swipe_end {
-	struct wlr_input_device *device;
+struct wlr_pointer_swipe_end_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	bool cancelled;
 };
 
-struct wlr_event_pointer_pinch_begin {
-	struct wlr_input_device *device;
+struct wlr_pointer_pinch_begin_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t fingers;
 };
 
-struct wlr_event_pointer_pinch_update {
-	struct wlr_input_device *device;
+struct wlr_pointer_pinch_update_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t fingers;
 	// Relative coordinates of the logical center of the gesture
@@ -127,20 +127,20 @@ struct wlr_event_pointer_pinch_update {
 	double rotation;
 };
 
-struct wlr_event_pointer_pinch_end {
-	struct wlr_input_device *device;
+struct wlr_pointer_pinch_end_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	bool cancelled;
 };
 
-struct wlr_event_pointer_hold_begin {
-	struct wlr_input_device *device;
+struct wlr_pointer_hold_begin_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t fingers;
 };
 
-struct wlr_event_pointer_hold_end {
-	struct wlr_input_device *device;
+struct wlr_pointer_hold_end_event {
+	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	bool cancelled;
 };

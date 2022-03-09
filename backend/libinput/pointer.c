@@ -29,8 +29,8 @@ void handle_pointer_motion(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_pointer *pevent =
 		libinput_event_get_pointer_event(event);
-	struct wlr_event_pointer_motion wlr_event = { 0 };
-	wlr_event.device = &pointer->base;
+	struct wlr_pointer_motion_event wlr_event = { 0 };
+	wlr_event.pointer = pointer;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
 	wlr_event.delta_x = libinput_event_pointer_get_dx(pevent);
@@ -45,8 +45,8 @@ void handle_pointer_motion_abs(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_pointer *pevent =
 		libinput_event_get_pointer_event(event);
-	struct wlr_event_pointer_motion_absolute wlr_event = { 0 };
-	wlr_event.device = &pointer->base;
+	struct wlr_pointer_motion_absolute_event wlr_event = { 0 };
+	wlr_event.pointer = pointer;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
 	wlr_event.x = libinput_event_pointer_get_absolute_x_transformed(pevent, 1);
@@ -59,8 +59,8 @@ void handle_pointer_button(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_pointer *pevent =
 		libinput_event_get_pointer_event(event);
-	struct wlr_event_pointer_button wlr_event = { 0 };
-	wlr_event.device = &pointer->base;
+	struct wlr_pointer_button_event wlr_event = { 0 };
+	wlr_event.pointer = pointer;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
 	wlr_event.button = libinput_event_pointer_get_button(pevent);
@@ -80,8 +80,8 @@ void handle_pointer_axis(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_pointer *pevent =
 		libinput_event_get_pointer_event(event);
-	struct wlr_event_pointer_axis wlr_event = { 0 };
-	wlr_event.device = &pointer->base;
+	struct wlr_pointer_axis_event wlr_event = { 0 };
+	wlr_event.pointer = pointer;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
 	switch (libinput_event_pointer_get_axis_source(pevent)) {
@@ -126,8 +126,8 @@ void handle_pointer_swipe_begin(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_swipe_begin wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_swipe_begin_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.fingers = libinput_event_gesture_get_finger_count(gevent),
@@ -139,8 +139,8 @@ void handle_pointer_swipe_update(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_swipe_update wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_swipe_update_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.fingers = libinput_event_gesture_get_finger_count(gevent),
@@ -154,8 +154,8 @@ void handle_pointer_swipe_end(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_swipe_end wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_swipe_end_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.cancelled = libinput_event_gesture_get_cancelled(gevent),
@@ -167,8 +167,8 @@ void handle_pointer_pinch_begin(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_pinch_begin wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_pinch_begin_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.fingers = libinput_event_gesture_get_finger_count(gevent),
@@ -180,8 +180,8 @@ void handle_pointer_pinch_update(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_pinch_update wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_pinch_update_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.fingers = libinput_event_gesture_get_finger_count(gevent),
@@ -197,8 +197,8 @@ void handle_pointer_pinch_end(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_pinch_end wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_pinch_end_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.cancelled = libinput_event_gesture_get_cancelled(gevent),
@@ -210,8 +210,8 @@ void handle_pointer_hold_begin(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_hold_begin wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_hold_begin_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.fingers = libinput_event_gesture_get_finger_count(gevent),
@@ -223,8 +223,8 @@ void handle_pointer_hold_end(struct libinput_event *event,
 		struct wlr_pointer *pointer) {
 	struct libinput_event_gesture *gevent =
 		libinput_event_get_gesture_event(event);
-	struct wlr_event_pointer_hold_end wlr_event = {
-		.device = &pointer->base,
+	struct wlr_pointer_hold_end_event wlr_event = {
+		.pointer = pointer,
 		.time_msec =
 			usec_to_msec(libinput_event_gesture_get_time_usec(gevent)),
 		.cancelled = libinput_event_gesture_get_cancelled(gevent),
