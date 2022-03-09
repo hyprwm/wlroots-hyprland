@@ -58,7 +58,7 @@ struct wlr_tablet_pad_group {
 	unsigned int mode_count;
 };
 
-struct wlr_event_tablet_pad_button {
+struct wlr_tablet_pad_button_event {
 	uint32_t time_msec;
 	uint32_t button;
 	enum wlr_button_state state;
@@ -71,7 +71,7 @@ enum wlr_tablet_pad_ring_source {
 	WLR_TABLET_PAD_RING_SOURCE_FINGER,
 };
 
-struct wlr_event_tablet_pad_ring {
+struct wlr_tablet_pad_ring_event {
 	uint32_t time_msec;
 	enum wlr_tablet_pad_ring_source source;
 	uint32_t ring;
@@ -84,7 +84,7 @@ enum wlr_tablet_pad_strip_source {
 	WLR_TABLET_PAD_STRIP_SOURCE_FINGER,
 };
 
-struct wlr_event_tablet_pad_strip {
+struct wlr_tablet_pad_strip_event {
 	uint32_t time_msec;
 	enum wlr_tablet_pad_strip_source source;
 	uint32_t strip;

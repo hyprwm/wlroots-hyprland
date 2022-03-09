@@ -185,7 +185,7 @@ static void tablet_tool_button_notify(struct wl_listener *listener, void *data) 
 
 static void tablet_pad_button_notify(struct wl_listener *listener, void *data) {
 	struct tablet_pad_state *pstate = wl_container_of(listener, pstate, button);
-	struct wlr_event_tablet_pad_button *event = data;
+	struct wlr_tablet_pad_button_event *event = data;
 	struct sample_state *sample = pstate->sample;
 	float default_color[4] = { 0.5, 0.5, 0.5, 1.0 };
 	if (event->state == WLR_BUTTON_RELEASED) {
@@ -203,7 +203,7 @@ static void tablet_pad_button_notify(struct wl_listener *listener, void *data) {
 
 static void tablet_pad_ring_notify(struct wl_listener *listener, void *data) {
 	struct tablet_pad_state *pstate = wl_container_of(listener, pstate, ring);
-	struct wlr_event_tablet_pad_ring *event = data;
+	struct wlr_tablet_pad_ring_event *event = data;
 	struct sample_state *sample = pstate->sample;
 	if (event->position != -1) {
 		sample->ring = -(event->position * (M_PI / 180.0));

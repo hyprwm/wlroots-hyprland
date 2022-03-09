@@ -99,7 +99,7 @@ static void handle_tablet_pad_ring_frame(void *data,
 		uint32_t time) {
 	struct tablet_pad_ring *ring = data;
 
-	struct wlr_event_tablet_pad_ring evt = {
+	struct wlr_tablet_pad_ring_event evt = {
 		.time_msec = time,
 		.source = ring->source,
 		.ring = ring->index,
@@ -152,7 +152,7 @@ static void handle_tablet_pad_strip_frame(void *data,
 		uint32_t time) {
 	struct tablet_pad_strip *strip = data;
 
-	struct wlr_event_tablet_pad_strip evt = {
+	struct wlr_tablet_pad_strip_event evt = {
 		.time_msec = time,
 		.source = strip->source,
 		.strip = strip->index,
@@ -337,7 +337,7 @@ static void handle_tablet_pad_button(void *data,
 		struct zwp_tablet_pad_v2 *zwp_tablet_pad_v2,
 		uint32_t time, uint32_t button, uint32_t state) {
 	struct wlr_wl_seat *seat = data;
-	struct wlr_event_tablet_pad_button evt = {
+	struct wlr_tablet_pad_button_event evt = {
 		.time_msec = time,
 		.button = button,
 		.state = state,

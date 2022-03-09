@@ -145,7 +145,7 @@ void handle_tablet_pad_button(struct libinput_event *event,
 		struct wlr_tablet_pad *tablet_pad) {
 	struct libinput_event_tablet_pad *pevent =
 		libinput_event_get_tablet_pad_event(event);
-	struct wlr_event_tablet_pad_button wlr_event = { 0 };
+	struct wlr_tablet_pad_button_event wlr_event = { 0 };
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_pad_get_time_usec(pevent));
 	wlr_event.button = libinput_event_tablet_pad_get_button_number(pevent);
@@ -167,7 +167,7 @@ void handle_tablet_pad_ring(struct libinput_event *event,
 		struct wlr_tablet_pad *tablet_pad) {
 	struct libinput_event_tablet_pad *pevent =
 		libinput_event_get_tablet_pad_event(event);
-	struct wlr_event_tablet_pad_ring wlr_event = { 0 };
+	struct wlr_tablet_pad_ring_event wlr_event = { 0 };
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_pad_get_time_usec(pevent));
 	wlr_event.ring = libinput_event_tablet_pad_get_ring_number(pevent);
@@ -188,7 +188,7 @@ void handle_tablet_pad_strip(struct libinput_event *event,
 		struct wlr_tablet_pad *tablet_pad) {
 	struct libinput_event_tablet_pad *pevent =
 		libinput_event_get_tablet_pad_event(event);
-	struct wlr_event_tablet_pad_strip wlr_event = { 0 };
+	struct wlr_tablet_pad_strip_event wlr_event = { 0 };
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_pad_get_time_usec(pevent));
 	wlr_event.strip = libinput_event_tablet_pad_get_strip_number(pevent);
