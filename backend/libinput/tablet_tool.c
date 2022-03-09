@@ -130,9 +130,8 @@ void handle_tablet_tool_axis(struct libinput_event *event,
 	struct tablet_tool *tool =
 		get_tablet_tool(dev, libinput_event_tablet_tool_get_tool(tevent));
 
-	struct wlr_event_tablet_tool_axis wlr_event = { 0 };
-
-	wlr_event.device = &wlr_tablet->base;
+	struct wlr_tablet_tool_axis_event wlr_event = { 0 };
+	wlr_event.tablet = wlr_tablet;
 	wlr_event.tool = &tool->wlr_tool;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_tool_get_time_usec(tevent));
@@ -185,9 +184,9 @@ void handle_tablet_tool_proximity(struct libinput_event *event,
 	struct tablet_tool *tool =
 		get_tablet_tool(dev, libinput_event_tablet_tool_get_tool(tevent));
 
-	struct wlr_event_tablet_tool_proximity wlr_event = { 0 };
+	struct wlr_tablet_tool_proximity_event wlr_event = { 0 };
+	wlr_event.tablet = wlr_tablet;
 	wlr_event.tool = &tool->wlr_tool;
-	wlr_event.device = &wlr_tablet->base;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_tool_get_time_usec(tevent));
 	wlr_event.x = libinput_event_tablet_tool_get_x_transformed(tevent, 1);
@@ -227,8 +226,8 @@ void handle_tablet_tool_tip(struct libinput_event *event,
 	struct tablet_tool *tool =
 		get_tablet_tool(dev, libinput_event_tablet_tool_get_tool(tevent));
 
-	struct wlr_event_tablet_tool_tip wlr_event = { 0 };
-	wlr_event.device = &wlr_tablet->base;
+	struct wlr_tablet_tool_tip_event wlr_event = { 0 };
+	wlr_event.tablet = wlr_tablet;
 	wlr_event.tool = &tool->wlr_tool;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_tool_get_time_usec(tevent));
@@ -255,8 +254,8 @@ void handle_tablet_tool_button(struct libinput_event *event,
 	struct tablet_tool *tool =
 		get_tablet_tool(dev, libinput_event_tablet_tool_get_tool(tevent));
 
-	struct wlr_event_tablet_tool_button wlr_event = { 0 };
-	wlr_event.device = &wlr_tablet->base;
+	struct wlr_tablet_tool_button_event wlr_event = { 0 };
+	wlr_event.tablet = wlr_tablet;
 	wlr_event.tool = &tool->wlr_tool;
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_tablet_tool_get_time_usec(tevent));

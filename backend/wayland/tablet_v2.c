@@ -582,8 +582,8 @@ static void handle_tablet_tool_button(void *data,
 	struct wlr_wl_seat *seat = tool->seat;
 	struct wlr_tablet *tablet = &seat->wlr_tablet;
 
-	struct wlr_event_tablet_tool_button evt = {
-		.device = &tablet->base,
+	struct wlr_tablet_tool_button_event evt = {
+		.tablet = tablet,
 		.tool = &seat->wlr_tablet_tool,
 		.time_msec = get_current_time_msec(),
 		.button = button,
@@ -620,8 +620,8 @@ static void handle_tablet_tool_frame(void *data,
 	struct wlr_tablet *tablet = &seat->wlr_tablet;
 
 	if (tool->is_in) {
-		struct wlr_event_tablet_tool_proximity evt = {
-			.device = &tablet->base,
+		struct wlr_tablet_tool_proximity_event evt = {
+			.tablet = tablet,
 			.tool = &seat->wlr_tablet_tool,
 			.time_msec = time,
 			.x = tool->x,
@@ -633,8 +633,8 @@ static void handle_tablet_tool_frame(void *data,
 	}
 
 	{
-		struct wlr_event_tablet_tool_axis evt = {
-			.device = &tablet->base,
+		struct wlr_tablet_tool_axis_event evt = {
+			.tablet = tablet,
 			.tool = &seat->wlr_tablet_tool,
 			.time_msec = time,
 			.updated_axes = 0,
@@ -696,8 +696,8 @@ static void handle_tablet_tool_frame(void *data,
 	 * Downside: Here we have the frame time, if we sent right away, we
 	 * need to generate the time */
 	if (tool->is_down) {
-		struct wlr_event_tablet_tool_tip evt = {
-			.device = &tablet->base,
+		struct wlr_tablet_tool_tip_event evt = {
+			.tablet = tablet,
 			.tool = &seat->wlr_tablet_tool,
 			.time_msec = time,
 			.x = tool->x,
@@ -709,8 +709,8 @@ static void handle_tablet_tool_frame(void *data,
 	}
 
 	if (tool->is_up) {
-		struct wlr_event_tablet_tool_tip evt = {
-			.device = &tablet->base,
+		struct wlr_tablet_tool_tip_event evt = {
+			.tablet = tablet,
 			.tool = &seat->wlr_tablet_tool,
 			.time_msec = time,
 			.x = tool->x,
@@ -722,8 +722,8 @@ static void handle_tablet_tool_frame(void *data,
 	}
 
 	if (tool->is_out) {
-		struct wlr_event_tablet_tool_proximity evt = {
-			.device = &tablet->base,
+		struct wlr_tablet_tool_proximity_event evt = {
+			.tablet = tablet,
 			.tool = &seat->wlr_tablet_tool,
 			.time_msec = time,
 			.x = tool->x,

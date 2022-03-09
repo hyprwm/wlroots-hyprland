@@ -136,7 +136,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 
 static void tablet_tool_axis_notify(struct wl_listener *listener, void *data) {
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, axis);
-	struct wlr_event_tablet_tool_axis *event = data;
+	struct wlr_tablet_tool_axis_event *event = data;
 	struct sample_state *sample = tstate->sample;
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
 		sample->x = event->x;
@@ -160,14 +160,14 @@ static void tablet_tool_axis_notify(struct wl_listener *listener, void *data) {
 
 static void tablet_tool_proximity_notify(struct wl_listener *listener, void *data) {
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, proximity);
-	struct wlr_event_tablet_tool_proximity *event = data;
+	struct wlr_tablet_tool_proximity_event *event = data;
 	struct sample_state *sample = tstate->sample;
 	sample->proximity = event->state == WLR_TABLET_TOOL_PROXIMITY_IN;
 }
 
 static void tablet_tool_button_notify(struct wl_listener *listener, void *data) {
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, button);
-	struct wlr_event_tablet_tool_button *event = data;
+	struct wlr_tablet_tool_button_event *event = data;
 	struct sample_state *sample = tstate->sample;
 	if (event->state == WLR_BUTTON_RELEASED) {
 		sample->button = false;

@@ -556,7 +556,7 @@ static void handle_touch_frame(struct wl_listener *listener, void *data) {
 }
 
 static void handle_tablet_tool_tip(struct wl_listener *listener, void *data) {
-	struct wlr_event_tablet_tool_tip *event = data;
+	struct wlr_tablet_tool_tip_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, tablet_tool_tip);
 
@@ -569,7 +569,7 @@ static void handle_tablet_tool_tip(struct wl_listener *listener, void *data) {
 }
 
 static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
-	struct wlr_event_tablet_tool_axis *event = data;
+	struct wlr_tablet_tool_axis_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, tablet_tool_axis);
 
@@ -605,7 +605,7 @@ static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
 
 static void handle_tablet_tool_button(struct wl_listener *listener,
 		void *data) {
-	struct wlr_event_tablet_tool_button *event = data;
+	struct wlr_tablet_tool_button *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, tablet_tool_button);
 	wlr_signal_emit_safe(&device->cursor->events.tablet_tool_button, event);
@@ -613,7 +613,7 @@ static void handle_tablet_tool_button(struct wl_listener *listener,
 
 static void handle_tablet_tool_proximity(struct wl_listener *listener,
 		void *data) {
-	struct wlr_event_tablet_tool_proximity *event = data;
+	struct wlr_tablet_tool_proximity_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, tablet_tool_proximity);
 

@@ -217,11 +217,11 @@ static void handle_touch_cancel(struct wl_listener *listener, void *data) {
 static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
 	struct sample_state *sample =
 		wl_container_of(listener, sample, tablet_tool_axis);
-	struct wlr_event_tablet_tool_axis *event = data;
+	struct wlr_tablet_tool_axis_event *event = data;
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
 			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		wlr_cursor_warp_absolute(sample->cursor,
-				event->device, event->x, event->y);
+		wlr_cursor_warp_absolute(sample->cursor, &event->tablet->base,
+			event->x, event->y);
 	}
 }
 
