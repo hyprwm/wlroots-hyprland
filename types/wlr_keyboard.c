@@ -61,7 +61,7 @@ bool keyboard_modifier_update(struct wlr_keyboard *keyboard) {
 }
 
 void keyboard_key_update(struct wlr_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_keyboard_key_event *event) {
 	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		set_add(keyboard->keycodes, &keyboard->num_keycodes,
 			WLR_KEYBOARD_KEYS_CAP, event->keycode);
@@ -92,7 +92,7 @@ void wlr_keyboard_notify_modifiers(struct wlr_keyboard *keyboard,
 }
 
 void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_keyboard_key_event *event) {
 	keyboard_key_update(keyboard, event);
 	wlr_signal_emit_safe(&keyboard->events.key, event);
 
@@ -137,7 +137,7 @@ void wlr_keyboard_finish(struct wlr_keyboard *kb) {
 	size_t orig_num_keycodes = kb->num_keycodes;
 	for (size_t i = 0; i < orig_num_keycodes; ++i) {
 		assert(kb->num_keycodes == orig_num_keycodes - i);
-		struct wlr_event_keyboard_key event = {
+		struct wlr_keyboard_key_event event = {
 			.time_msec = get_current_time_msec(),
 			.keycode = kb->keycodes[orig_num_keycodes - i - 1],
 			.update_state = false,

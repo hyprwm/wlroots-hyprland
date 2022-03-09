@@ -228,7 +228,7 @@ static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
 static void keyboard_key_notify(struct wl_listener *listener, void *data) {
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, key);
 	struct sample_state *sample = keyboard->state;
-	struct wlr_event_keyboard_key *event = data;
+	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
 	int nsyms = xkb_state_key_get_syms(keyboard->device->keyboard->xkb_state,

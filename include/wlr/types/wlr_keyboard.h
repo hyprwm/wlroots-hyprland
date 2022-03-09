@@ -94,7 +94,7 @@ struct wlr_keyboard {
 	void *data;
 };
 
-struct wlr_event_keyboard_key {
+struct wlr_keyboard_key_event {
 	uint32_t time_msec;
 	uint32_t keycode;
 	bool update_state; // if backend doesn't update modifiers on its own

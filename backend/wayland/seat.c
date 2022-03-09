@@ -32,7 +32,7 @@ static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
 
 	uint32_t *keycode_ptr;
 	wl_array_for_each(keycode_ptr, keys) {
-		struct wlr_event_keyboard_key event = {
+		struct wlr_keyboard_key_event event = {
 			.keycode = *keycode_ptr,
 			.state = WL_KEYBOARD_KEY_STATE_PRESSED,
 			.time_msec = get_current_time_msec(),
@@ -54,7 +54,7 @@ static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
 	for (size_t i = 0; i < num_keycodes; ++i) {
 		uint32_t keycode = pressed[i];
 
-		struct wlr_event_keyboard_key event = {
+		struct wlr_keyboard_key_event event = {
 			.keycode = keycode,
 			.state = WL_KEYBOARD_KEY_STATE_RELEASED,
 			.time_msec = get_current_time_msec(),
@@ -68,7 +68,7 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
 	struct wlr_keyboard *keyboard = data;
 
-	struct wlr_event_keyboard_key wlr_event = {
+	struct wlr_keyboard_key_event wlr_event = {
 		.keycode = key,
 		.state = state,
 		.time_msec = time,

@@ -26,7 +26,7 @@ void wlr_keyboard_init(struct wlr_keyboard *keyboard,
 void wlr_keyboard_finish(struct wlr_keyboard *keyboard);
 
 void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event);
+		struct wlr_keyboard_key_event *event);
 void wlr_keyboard_notify_modifiers(struct wlr_keyboard *keyboard,
 		uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked,
 		uint32_t group);

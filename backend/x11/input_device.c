@@ -20,7 +20,7 @@
 
 static void send_key_event(struct wlr_x11_backend *x11, uint32_t key,
 		enum wl_keyboard_key_state st, xcb_timestamp_t time) {
-	struct wlr_event_keyboard_key ev = {
+	struct wlr_keyboard_key_event ev = {
 		.time_msec = time,
 		.keycode = key,
 		.state = st,

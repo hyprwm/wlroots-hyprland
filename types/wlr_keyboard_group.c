@@ -69,7 +69,7 @@ struct wlr_keyboard_group *wlr_keyboard_group_from_wlr_keyboard(
 }
 
 static bool process_key(struct keyboard_group_device *group_device,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_keyboard_key_event *event) {
 	struct wlr_keyboard_group *group = group_device->keyboard->group;
 
 	struct keyboard_group_key *key, *tmp;
@@ -188,7 +188,7 @@ static void refresh_state(struct keyboard_group_device *device,
 	for (size_t i = 0; i < device->keyboard->num_keycodes; i++) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
-		struct wlr_event_keyboard_key event = {
+		struct wlr_keyboard_key_event event = {
 			.time_msec = (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000,
 			.keycode = device->keyboard->keycodes[i],
 			.update_state = true,

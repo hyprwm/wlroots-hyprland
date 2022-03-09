@@ -78,7 +78,7 @@ static void virtual_keyboard_key(struct wl_client *client,
 			"Cannot send a keypress before defining a keymap");
 		return;
 	}
-	struct wlr_event_keyboard_key event = {
+	struct wlr_keyboard_key_event event = {
 		.time_msec = time,
 		.keycode = key,
 		.update_state = false,
