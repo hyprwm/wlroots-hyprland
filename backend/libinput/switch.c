@@ -29,8 +29,7 @@ void handle_switch_toggle(struct libinput_event *event,
 		struct wlr_switch *wlr_switch) {
 	struct libinput_event_switch *sevent =
 		libinput_event_get_switch_event	(event);
-	struct wlr_event_switch_toggle wlr_event = { 0 };
-	wlr_event.device = &wlr_switch->base;
+	struct wlr_switch_toggle_event wlr_event = { 0 };
 	switch (libinput_event_switch_get_switch(sevent)) {
 	case LIBINPUT_SWITCH_LID:
 		wlr_event.switch_type = WLR_SWITCH_TYPE_LID;
