@@ -836,8 +836,8 @@ static void handle_tablet_name(void *data, struct zwp_tablet_v2 *zwp_tablet_v2,
 	struct wlr_wl_input_device *dev = data;
 	struct wlr_tablet *tablet = dev->wlr_input_device.tablet;
 
-	free(tablet->name);
-	tablet->name = strdup(name);
+	free(tablet->base.name);
+	tablet->base.name = strdup(name);
 }
 
 static void handle_tablet_id(void *data, struct zwp_tablet_v2 *zwp_tablet_v2,

@@ -71,7 +71,6 @@ struct wlr_tablet {
 		struct wl_signal button;
 	} events;
 
-	char *name;
 	struct wl_array paths; // char *
 
 	void *data;
