@@ -647,7 +647,7 @@ XcursorLibraryPath (void)
 	}
 	else {
 		env_var = getenv("XDG_DATA_HOME");
-		if (env_var) {
+		if (env_var && env_var[0] == '/') {
 			pathlen = strlen(env_var) +
 				strlen(CURSORDIR ":" XCURSORPATH) + 1;
 			path = malloc(pathlen);
