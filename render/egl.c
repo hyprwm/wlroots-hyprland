@@ -440,6 +440,7 @@ static EGLDeviceEXT get_egl_device_from_drm_fd(struct wlr_egl *egl,
 		}
 	}
 
+	drmFreeDevice(&device);
 	free(devices);
 
 	return egl_device;
