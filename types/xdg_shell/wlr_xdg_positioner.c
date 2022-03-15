@@ -343,13 +343,10 @@ static bool xdg_positioner_rules_unconstrain_by_slide(
 		struct constraint_offsets *offsets) {
 	uint32_t gravity = xdg_positioner_gravity_to_wlr_edges(rules->gravity);
 
-	// We can only slide if there is gravity on this axis
 	bool slide_x = (offsets->left > 0 || offsets->right > 0) &&
-		(rules->constraint_adjustment & XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X) &&
-		(gravity & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT));
+		(rules->constraint_adjustment & XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X);
 	bool slide_y = (offsets->top > 0 || offsets->bottom > 0) &&
-		(rules->constraint_adjustment & XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y) &&
-		(gravity & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM));
+		(rules->constraint_adjustment & XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y);
 
 	if (!slide_x && !slide_y) {
 		return false;
@@ -363,9 +360,13 @@ static bool xdg_positioner_rules_unconstrain_by_slide(
 			// the box is bigger than the anchor rect and completely includes it.
 			// In this case, the second slide will fail immediately, so simply
 			// slide towards the direction of the gravity.
+			// Note that the protocol doesn't specify the behavior when there is no
+			// gravity on the axis (which is what e.g. GTK tooltips use). In this
+			// case, fall back to sliding the box to the right/bottom, which is what
+			// GTK X11 popup adjustment code does.
 			if (gravity & WLR_EDGE_LEFT) {
 				box->x -= offsets->right;
-			} else if (gravity & WLR_EDGE_RIGHT) {
+			} else {
 				box->x += offsets->left;
 			}
 		} else {
@@ -386,7 +387,7 @@ static bool xdg_positioner_rules_unconstrain_by_slide(
 		if (offsets->top > 0 && offsets->bottom > 0) {
 			if (gravity & WLR_EDGE_TOP) {
 				box->y -= offsets->bottom;
-			} else if (gravity & WLR_EDGE_BOTTOM) {
+			} else {
 				box->y += offsets->top;
 			}
 		} else {
