@@ -70,6 +70,8 @@ static bool output_commit(struct wlr_output *wlr_output) {
 		wlr_output_send_present(wlr_output, &present_event);
 	}
 
+	wl_event_source_timer_update(output->frame_timer, output->frame_delay);
+
 	return true;
 }
 
@@ -93,7 +95,6 @@ bool wlr_output_is_headless(struct wlr_output *wlr_output) {
 static int signal_frame(void *data) {
 	struct wlr_headless_output *output = data;
 	wlr_output_send_frame(&output->wlr_output);
-	wl_event_source_timer_update(output->frame_timer, output->frame_delay);
 	return 0;
 }
 
