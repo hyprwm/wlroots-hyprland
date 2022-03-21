@@ -76,10 +76,11 @@ struct wlr_scene {
 
 	struct wl_list outputs; // wlr_scene_output.link
 
-	// private state
-
 	// May be NULL
 	struct wlr_presentation *presentation;
+
+	// private state
+
 	struct wl_listener presentation_destroy;
 };
 
