@@ -118,11 +118,10 @@ static void handle_keyboard_destroy(struct wl_listener *listener, void *data) {
 }
 
 void wlr_seat_set_keyboard(struct wlr_seat *seat,
-		struct wlr_input_device *device) {
+		struct wlr_keyboard *keyboard) {
 	// TODO call this on device key event before the event reaches the
 	// compositor and set a pending keyboard and then send the new keyboard
 	// state on the next keyboard notify event.
-	struct wlr_keyboard *keyboard = (device ? device->keyboard : NULL);
 	if (seat->keyboard_state.keyboard == keyboard) {
 		return;
 	}
@@ -135,16 +134,15 @@ void wlr_seat_set_keyboard(struct wlr_seat *seat,
 	}
 
 	if (keyboard) {
-		assert(device->type == WLR_INPUT_DEVICE_KEYBOARD);
 		seat->keyboard_state.keyboard = keyboard;
 
-		wl_signal_add(&device->events.destroy,
+		wl_signal_add(&keyboard->base.events.destroy,
 			&seat->keyboard_state.keyboard_destroy);
 		seat->keyboard_state.keyboard_destroy.notify = handle_keyboard_destroy;
-		wl_signal_add(&device->keyboard->events.keymap,
+		wl_signal_add(&keyboard->events.keymap,
 			&seat->keyboard_state.keyboard_keymap);
 		seat->keyboard_state.keyboard_keymap.notify = handle_keyboard_keymap;
-		wl_signal_add(&device->keyboard->events.repeat_info,
+		wl_signal_add(&keyboard->events.repeat_info,
 			&seat->keyboard_state.keyboard_repeat_info);
 		seat->keyboard_state.keyboard_repeat_info.notify =
 			handle_keyboard_repeat_info;

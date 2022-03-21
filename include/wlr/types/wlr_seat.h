@@ -474,7 +474,7 @@ bool wlr_seat_pointer_has_grab(struct wlr_seat *seat);
 /**
  * Set this keyboard as the active keyboard for the seat.
  */
-void wlr_seat_set_keyboard(struct wlr_seat *seat, struct wlr_input_device *dev);
+void wlr_seat_set_keyboard(struct wlr_seat *seat, struct wlr_keyboard *keyboard);
 
 /**
  * Get the active keyboard for the seat.
