@@ -269,6 +269,14 @@ uint32_t wlr_seat_pointer_send_button(struct wlr_seat *wlr_seat, uint32_t time,
 	return serial;
 }
 
+static void send_axis_value120(struct wl_resource *resource, uint32_t time,
+		enum wlr_axis_orientation orientation, double value,
+		int32_t value_discrete) {
+	wl_pointer_send_axis_value120(resource, orientation, value_discrete);
+	wl_pointer_send_axis(resource, time, orientation,
+		wl_fixed_from_double(value));
+}
+
 void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		enum wlr_axis_orientation orientation, double value,
 		int32_t value_discrete, enum wlr_axis_source source) {
@@ -298,14 +306,18 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 			wl_pointer_send_axis_source(resource, source);
 		}
 		if (value) {
-			if (value_discrete &&
-					version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
-				wl_pointer_send_axis_discrete(resource, orientation,
+			if (value_discrete) {
+				if (version >= WL_POINTER_AXIS_VALUE120_SINCE_VERSION) {
+					send_axis_value120(resource, time, orientation, value,
+						value_discrete);
+				} else if (version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
+					wl_pointer_send_axis_discrete(resource, orientation,
 					value_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+				}
+			} else {
+				wl_pointer_send_axis(resource, time, orientation,
+					wl_fixed_from_double(value));
 			}
-
-			wl_pointer_send_axis(resource, time, orientation,
-				wl_fixed_from_double(value));
 		} else if (version >= WL_POINTER_AXIS_STOP_SINCE_VERSION) {
 			wl_pointer_send_axis_stop(resource, time, orientation);
 		}
