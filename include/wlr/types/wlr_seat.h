@@ -54,6 +54,19 @@ struct wlr_seat_client {
 	// for use by wlr_seat_client_{next_serial,validate_event_serial}
 	struct wlr_serial_ringset serials;
 	bool needs_touch_frame;
+
+	// When the client doesn't support high-resolution scroll, accumulate deltas
+	// until we can notify a discrete event.
+	// Some mice have a free spinning wheel, making possible to lock the wheel
+	// when the accumulator value is not 0. To avoid synchronization issues
+	// between the mouse wheel and the accumulators, store the last delta and
+	// when the scroll direction changes, reset the accumulator.
+	// Indexed by wlr_axis_orientation.
+	struct {
+		int32_t acc_discrete[2];
+		int32_t last_discrete[2];
+		double acc_axis[2];
+	} value120;
 };
 
 struct wlr_touch_point {

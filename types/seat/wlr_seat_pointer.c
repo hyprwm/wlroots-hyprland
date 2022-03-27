@@ -269,6 +269,48 @@ uint32_t wlr_seat_pointer_send_button(struct wlr_seat *wlr_seat, uint32_t time,
 	return serial;
 }
 
+static bool should_reset_value120_accumulators(int32_t current, int32_t last) {
+	if (last == 0) {
+		return true;
+	}
+
+	return (current < 0 && last > 0) || (current > 0 && last < 0);
+}
+
+static void update_value120_accumulators(struct wlr_seat_client *client,
+		enum wlr_axis_orientation orientation,
+		double value, int32_t value_discrete) {
+	int32_t *acc_discrete = &client->value120.acc_discrete[orientation];
+	int32_t *last_discrete = &client->value120.last_discrete[orientation];
+	double *acc_axis = &client->value120.acc_axis[orientation];
+	if (should_reset_value120_accumulators(value_discrete, *last_discrete)) {
+		*acc_discrete = 0;
+		*acc_axis = 0;
+	}
+	*acc_discrete += value_discrete;
+	*last_discrete = value_discrete;
+	*acc_axis += value;
+}
+
+static void send_axis_discrete(struct wlr_seat_client *client,
+		struct wl_resource *resource, uint32_t time,
+		enum wlr_axis_orientation orientation, double value,
+		int32_t value_discrete) {
+	int32_t *acc_discrete = &client->value120.acc_discrete[orientation];
+	double *acc_axis = &client->value120.acc_axis[orientation];
+
+	if (abs(*acc_discrete) < WLR_POINTER_AXIS_DISCRETE_STEP) {
+		return;
+	}
+
+	wl_pointer_send_axis_discrete(resource, orientation,
+		*acc_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+	wl_pointer_send_axis(resource, time, orientation,
+		wl_fixed_from_double(*acc_axis));
+	*acc_discrete %= WLR_POINTER_AXIS_DISCRETE_STEP;
+	*acc_axis = 0;
+}
+
 static void send_axis_value120(struct wl_resource *resource, uint32_t time,
 		enum wlr_axis_orientation orientation, double value,
 		int32_t value_discrete) {
@@ -294,6 +336,8 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		send_source = true;
 	}
 
+	update_value120_accumulators(client, orientation, value, value_discrete);
+
 	struct wl_resource *resource;
 	wl_resource_for_each(resource, &client->pointers) {
 		if (wlr_seat_client_from_pointer_resource(resource) == NULL) {
@@ -311,8 +355,8 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 					send_axis_value120(resource, time, orientation, value,
 						value_discrete);
 				} else if (version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
-					wl_pointer_send_axis_discrete(resource, orientation,
-					value_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
+					send_axis_discrete(client, resource, time, orientation,
+						value, value_discrete);
 				}
 			} else {
 				wl_pointer_send_axis(resource, time, orientation,
