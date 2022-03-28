@@ -271,6 +271,8 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_node *parent
 
 struct wlr_scene_surface *wlr_scene_surface_from_node(struct wlr_scene_node *node);
 
+struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node);
+
 /**
  * Add a node displaying a solid-colored rectangle to the scene-graph.
  */
