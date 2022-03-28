@@ -169,7 +169,7 @@ symbols_file = 'wlroots.syms'
 symbols_flag = '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(), symbols_file)
 lib_wlr = library(
 	meson.project_name(), wlr_files,
-	soversion: soversion,
+	soversion: soversion.to_string(),
 	dependencies: wlr_deps,
 	include_directories: [wlr_inc, proto_inc],
 	install: true,
