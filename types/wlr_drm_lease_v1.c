@@ -621,10 +621,18 @@ static void handle_backend_destroy(struct wl_listener *listener, void *data) {
 
 static void drm_lease_device_v1_create(struct wlr_drm_lease_v1_manager *manager,
 		struct wlr_backend *backend) {
-	assert(backend);
+	struct wlr_drm_backend *drm_backend = get_drm_backend_from_backend(backend);
 
-	struct wlr_drm_backend *drm_backend =
-			get_drm_backend_from_backend(backend);
+	// Make sure we can get a non-master FD for the DRM backend. On some setups
+	// we don't have the permission for this.
+	int fd = wlr_drm_backend_get_non_master_fd(backend);
+	if (fd < 0) {
+		wlr_log(WLR_INFO, "Skipping %s: failed to get read-only DRM FD",
+			drm_backend->name);
+		return;
+	}
+	close(fd);
+
 	wlr_log(WLR_DEBUG, "Creating wlr_drm_lease_device_v1 for %s",
 			drm_backend->name);
 
