@@ -3,6 +3,47 @@
 
 #include <wlr/render/egl.h>
 
+struct wlr_egl {
+	EGLDisplay display;
+	EGLContext context;
+	EGLDeviceEXT device; // may be EGL_NO_DEVICE_EXT
+	struct gbm_device *gbm_device;
+
+	struct {
+		// Display extensions
+		bool KHR_image_base;
+		bool EXT_image_dma_buf_import;
+		bool EXT_image_dma_buf_import_modifiers;
+		bool IMG_context_priority;
+
+		// Device extensions
+		bool EXT_device_drm;
+		bool EXT_device_drm_render_node;
+
+		// Client extensions
+		bool EXT_device_query;
+		bool KHR_platform_gbm;
+		bool EXT_platform_device;
+	} exts;
+
+	struct {
+		PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT;
+		PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+		PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
+		PFNEGLQUERYWAYLANDBUFFERWL eglQueryWaylandBufferWL;
+		PFNEGLQUERYDMABUFFORMATSEXTPROC eglQueryDmaBufFormatsEXT;
+		PFNEGLQUERYDMABUFMODIFIERSEXTPROC eglQueryDmaBufModifiersEXT;
+		PFNEGLDEBUGMESSAGECONTROLKHRPROC eglDebugMessageControlKHR;
+		PFNEGLQUERYDISPLAYATTRIBEXTPROC eglQueryDisplayAttribEXT;
+		PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT;
+		PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT;
+	} procs;
+
+	bool has_modifiers;
+	struct wlr_drm_format_set dmabuf_texture_formats;
+	struct wlr_drm_format_set dmabuf_render_formats;
+};
+
 struct wlr_egl_context {
 	EGLDisplay display;
 	EGLContext context;
