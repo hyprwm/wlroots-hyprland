@@ -17,8 +17,8 @@ project(
 # between minor releases.
 soversion = 11
 
-little_endian = host_machine.endian() == 'little'
-big_endian = host_machine.endian() == 'big'
+little_endian = target_machine.endian() == 'little'
+big_endian = target_machine.endian() == 'big'
 
 add_project_arguments([
 	'-DWLR_USE_UNSTABLE',
