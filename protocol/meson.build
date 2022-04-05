@@ -22,6 +22,7 @@ protocols = {
 	'drm-lease-v1': wl_protocol_dir / 'staging/drm-lease/drm-lease-v1.xml',
 	'ext-idle-notify-v1': wl_protocol_dir / 'staging/ext-idle-notify/ext-idle-notify-v1.xml',
 	'ext-session-lock-v1': wl_protocol_dir / 'staging/ext-session-lock/ext-session-lock-v1.xml',
+	'fractional-scale-v1': wl_protocol_dir / 'staging/fractional-scale/fractional-scale-v1.xml',
 	'single-pixel-buffer-v1': wl_protocol_dir / 'staging/single-pixel-buffer/single-pixel-buffer-v1.xml',
 	'xdg-activation-v1': wl_protocol_dir / 'staging/xdg-activation/xdg-activation-v1.xml',
 	'xwayland-shell-v1': wl_protocol_dir / 'staging/xwayland-shell/xwayland-shell-v1.xml',

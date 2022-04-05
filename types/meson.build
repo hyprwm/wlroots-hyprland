@@ -73,6 +73,7 @@ wlr_files += files(
 	'wlr_shm.c',
 	'wlr_single_pixel_buffer_v1.c',
 	'wlr_subcompositor.c',
+	'wlr_fractional_scale_v1.c',
 	'wlr_switch.c',
 	'wlr_tablet_pad.c',
 	'wlr_tablet_tool.c',
