@@ -46,20 +46,17 @@ enum wlr_scene_node_type {
 	WLR_SCENE_NODE_BUFFER,
 };
 
-struct wlr_scene_node_state {
-	struct wl_list link; // wlr_scene_node_state.children
-
-	struct wl_list children; // wlr_scene_node_state.link
-
-	bool enabled;
-	int x, y; // relative to parent
-};
-
 /** A node is an object in the scene. */
 struct wlr_scene_node {
 	enum wlr_scene_node_type type;
 	struct wlr_scene_tree *parent;
-	struct wlr_scene_node_state state;
+
+	struct wl_list link; // wlr_scene_node.children
+
+	struct wl_list children; // wlr_scene_node.link
+
+	bool enabled;
+	int x, y; // relative to parent
 
 	struct {
 		struct wl_signal destroy;
