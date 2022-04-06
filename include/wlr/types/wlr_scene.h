@@ -226,14 +226,6 @@ struct wlr_scene_node *wlr_scene_node_at(struct wlr_scene_node *node,
  */
 struct wlr_scene *wlr_scene_create(void);
 /**
- * Manually render the scene-graph on an output. The compositor needs to call
- * wlr_renderer_begin before and wlr_renderer_end after calling this function.
- * Damage is given in output-buffer-local coordinates and can be set to NULL to
- * disable damage tracking.
- */
-void wlr_scene_render_output(struct wlr_scene *scene, struct wlr_output *output,
-	int lx, int ly, pixman_region32_t *damage);
-/**
  * Handle presentation feedback for all surfaces in the scene, assuming that
  * scene outputs and the scene rendering functions are used.
  *
