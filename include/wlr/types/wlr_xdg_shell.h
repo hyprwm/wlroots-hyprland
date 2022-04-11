@@ -147,8 +147,16 @@ struct wlr_xdg_toplevel {
 	char *app_id;
 
 	struct {
+		// Note: as per xdg-shell protocol, the compositor has to
+		// handle state requests by sending a configure event,
+		// even if it didn't actually change the state. Therefore,
+		// every compositor implementing xdg-shell support *must*
+		// listen to these signals and schedule a configure event
+		// immediately or at some time in the future; not doing so
+		// is a protocol violation.
 		struct wl_signal request_maximize;
 		struct wl_signal request_fullscreen;
+
 		struct wl_signal request_minimize;
 		struct wl_signal request_move;
 		struct wl_signal request_resize;

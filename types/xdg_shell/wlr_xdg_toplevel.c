@@ -320,7 +320,6 @@ static void xdg_toplevel_handle_set_maximized(struct wl_client *client,
 		wlr_xdg_toplevel_from_resource(resource);
 	toplevel->requested.maximized = true;
 	wlr_signal_emit_safe(&toplevel->events.request_maximize, NULL);
-	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
 static void xdg_toplevel_handle_unset_maximized(struct wl_client *client,
@@ -329,7 +328,6 @@ static void xdg_toplevel_handle_unset_maximized(struct wl_client *client,
 		wlr_xdg_toplevel_from_resource(resource);
 	toplevel->requested.maximized = false;
 	wlr_signal_emit_safe(&toplevel->events.request_maximize, NULL);
-	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
 static void handle_fullscreen_output_destroy(struct wl_listener *listener,
@@ -369,7 +367,6 @@ static void xdg_toplevel_handle_set_fullscreen(struct wl_client *client,
 	store_fullscreen_requested(toplevel, true, output);
 
 	wlr_signal_emit_safe(&toplevel->events.request_fullscreen, NULL);
-	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
 static void xdg_toplevel_handle_unset_fullscreen(struct wl_client *client,
@@ -380,7 +377,6 @@ static void xdg_toplevel_handle_unset_fullscreen(struct wl_client *client,
 	store_fullscreen_requested(toplevel, false, NULL);
 
 	wlr_signal_emit_safe(&toplevel->events.request_fullscreen, NULL);
-	wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
 static void xdg_toplevel_handle_set_minimized(struct wl_client *client,
