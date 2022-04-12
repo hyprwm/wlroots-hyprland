@@ -28,10 +28,17 @@ struct wlr_output_layout;
 struct wlr_xdg_surface;
 struct wlr_layer_surface_v1;
 
+struct wlr_scene_node;
 struct wlr_scene_buffer;
+
+typedef void (*wlr_scene_node_iterator_func_t)(struct wlr_scene_node *node,
+	int sx, int sy, void *data);
 
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy);
+
+typedef void (*wlr_scene_buffer_iterator_func_t)(
+	struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
 
 enum wlr_scene_node_type {
 	WLR_SCENE_NODE_ROOT,
@@ -176,9 +183,6 @@ struct wlr_scene_layer_surface_v1 {
 	struct wl_listener layer_surface_unmap;
 };
 
-typedef void (*wlr_scene_node_iterator_func_t)(struct wlr_scene_node *node,
-	int sx, int sy, void *data);
-
 /**
  * Immediately destroy the scene-graph node.
  */
@@ -224,12 +228,12 @@ void wlr_scene_node_reparent(struct wlr_scene_node *node,
  */
 bool wlr_scene_node_coords(struct wlr_scene_node *node, int *lx, int *ly);
 /**
- * Call `iterator` on each surface in the scene-graph, with the surface's
+ * Call `iterator` on each buffer in the scene-graph, with the buffer's
  * position in layout coordinates. The function is called from root to leaves
  * (in rendering order).
  */
-void wlr_scene_node_for_each_surface(struct wlr_scene_node *node,
-	wlr_surface_iterator_func_t iterator, void *user_data);
+void wlr_scene_node_for_each_buffer(struct wlr_scene_node *node,
+	wlr_scene_buffer_iterator_func_t iterator, void *user_data);
 /**
  * Find the topmost node in this scene-graph that contains the point at the
  * given layout-local coordinates. (For surface nodes, this means accepting
@@ -373,12 +377,12 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output);
 void wlr_scene_output_send_frame_done(struct wlr_scene_output *scene_output,
 	struct timespec *now);
 /**
- * Call `iterator` on each surface in the scene-graph visible on the output,
- * with the surface's position in layout coordinates. The function is called
+ * Call `iterator` on each buffer in the scene-graph visible on the output,
+ * with the buffer's position in layout coordinates. The function is called
  * from root to leaves (in rendering order).
  */
-void wlr_scene_output_for_each_surface(struct wlr_scene_output *scene_output,
-	wlr_surface_iterator_func_t iterator, void *user_data);
+void wlr_scene_output_for_each_buffer(struct wlr_scene_output *scene_output,
+	wlr_scene_buffer_iterator_func_t iterator, void *user_data);
 /**
  * Get a scene-graph output from a wlr_output.
  *
