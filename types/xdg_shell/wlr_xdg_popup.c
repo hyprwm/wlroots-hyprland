@@ -8,6 +8,7 @@ void handle_xdg_popup_ack_configure(
 		struct wlr_xdg_popup *popup,
 		struct wlr_xdg_popup_configure *configure) {
 	popup->pending.geometry = configure->geometry;
+	popup->pending.reactive = configure->rules.reactive;
 }
 
 struct wlr_xdg_popup_configure *send_xdg_popup_configure(

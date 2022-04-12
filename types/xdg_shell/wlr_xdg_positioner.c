@@ -95,6 +95,34 @@ static void xdg_positioner_handle_set_offset(struct wl_client *client,
 	positioner->rules.offset.y = y;
 }
 
+static void xdg_positioner_handle_set_reactive(
+		struct wl_client *client, struct wl_resource *resource) {
+	struct wlr_xdg_positioner *positioner =
+		wlr_xdg_positioner_from_resource(resource);
+
+	positioner->rules.reactive = true;
+}
+
+static void xdg_positioner_handle_set_parent_configure(
+		struct wl_client *client, struct wl_resource *resource,
+		uint32_t serial) {
+	struct wlr_xdg_positioner *positioner =
+		wlr_xdg_positioner_from_resource(resource);
+
+	positioner->rules.has_parent_configure_serial = true;
+	positioner->rules.parent_configure_serial = serial;
+}
+
+static void xdg_positioner_handle_set_parent_size(struct wl_client *client,
+		struct wl_resource *resource,
+		int32_t parent_width, int32_t parent_height) {
+	struct wlr_xdg_positioner *positioner =
+		wlr_xdg_positioner_from_resource(resource);
+
+	positioner->rules.parent_size.width = parent_width;
+	positioner->rules.parent_size.height = parent_height;
+}
+
 static void xdg_positioner_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	wl_resource_destroy(resource);
@@ -110,6 +138,9 @@ static const struct xdg_positioner_interface
 	.set_constraint_adjustment =
 		xdg_positioner_handle_set_constraint_adjustment,
 	.set_offset = xdg_positioner_handle_set_offset,
+	.set_reactive = xdg_positioner_handle_set_reactive,
+	.set_parent_size = xdg_positioner_handle_set_parent_size,
+	.set_parent_configure = xdg_positioner_handle_set_parent_configure,
 };
 
 static void xdg_positioner_handle_resource_destroy(

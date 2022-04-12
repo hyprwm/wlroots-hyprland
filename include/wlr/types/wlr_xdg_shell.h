@@ -56,9 +56,14 @@ struct wlr_xdg_positioner_rules {
 	enum xdg_positioner_gravity gravity;
 	enum xdg_positioner_constraint_adjustment constraint_adjustment;
 
+	bool reactive;
+
+	bool has_parent_configure_serial;
+	uint32_t parent_configure_serial;
+
 	struct {
 		int32_t width, height;
-	} size;
+	} size, parent_size;
 
 	struct {
 		int32_t x, y;
@@ -74,6 +79,8 @@ struct wlr_xdg_popup_state {
 	// Position of the popup relative to the upper left corner of
 	// the window geometry of the parent surface
 	struct wlr_box geometry;
+
+	bool reactive;
 };
 
 struct wlr_xdg_popup_configure {
