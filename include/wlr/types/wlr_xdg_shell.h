@@ -70,6 +70,12 @@ struct wlr_xdg_positioner {
 	struct wlr_xdg_positioner_rules rules;
 };
 
+struct wlr_xdg_popup_state {
+	// Position of the popup relative to the upper left corner of
+	// the window geometry of the parent surface
+	struct wlr_box geometry;
+};
+
 struct wlr_xdg_popup_configure {
 	struct wlr_box geometry;
 	struct wlr_xdg_positioner_rules rules;
@@ -86,9 +92,7 @@ struct wlr_xdg_popup {
 
 	struct wlr_xdg_popup_configure scheduled;
 
-	// Position of the popup relative to the upper left corner of the window
-	// geometry of the parent surface
-	struct wlr_box geometry;
+	struct wlr_xdg_popup_state current, pending;
 
 	struct wl_list grab_link; // wlr_xdg_popup_grab.popups
 };

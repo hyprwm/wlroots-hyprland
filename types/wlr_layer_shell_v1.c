@@ -552,16 +552,15 @@ void wlr_layer_surface_v1_for_each_surface(struct wlr_layer_surface_v1 *surface,
 
 void wlr_layer_surface_v1_for_each_popup_surface(struct wlr_layer_surface_v1 *surface,
 		wlr_surface_iterator_func_t iterator, void *user_data){
-	struct wlr_xdg_popup *popup_state;
-	wl_list_for_each(popup_state, &surface->popups, link) {
-		struct wlr_xdg_surface *popup = popup_state->base;
-		if (!popup->configured || !popup->mapped) {
+	struct wlr_xdg_popup *popup;
+	wl_list_for_each(popup, &surface->popups, link) {
+		if (!popup->base->configured || !popup->base->mapped) {
 			continue;
 		}
 
 		double popup_sx, popup_sy;
-		popup_sx = popup->popup->geometry.x - popup->current.geometry.x;
-		popup_sy = popup->popup->geometry.y - popup->current.geometry.y;
+		popup_sx = popup->current.geometry.x - popup->base->current.geometry.x;
+		popup_sy = popup->current.geometry.y - popup->base->current.geometry.y;
 
 		struct layer_surface_iterator_data data = {
 			.user_iterator = iterator,
@@ -569,7 +568,8 @@ void wlr_layer_surface_v1_for_each_popup_surface(struct wlr_layer_surface_v1 *su
 			.x = popup_sx, .y = popup_sy,
 		};
 
-		wlr_xdg_surface_for_each_surface(popup, layer_surface_iterator, &data);
+		wlr_xdg_surface_for_each_surface(popup->base,
+			layer_surface_iterator, &data);
 	}
 }
 
@@ -587,20 +587,18 @@ struct wlr_surface *wlr_layer_surface_v1_surface_at(
 struct wlr_surface *wlr_layer_surface_v1_popup_surface_at(
 		struct wlr_layer_surface_v1 *surface, double sx, double sy,
 		double *sub_x, double *sub_y) {
-	struct wlr_xdg_popup *popup_state;
-	wl_list_for_each(popup_state, &surface->popups, link) {
-		struct wlr_xdg_surface *popup = popup_state->base;
-		if (!popup->mapped) {
+	struct wlr_xdg_popup *popup;
+	wl_list_for_each(popup, &surface->popups, link) {
+		if (!popup->base->mapped) {
 			continue;
 		}
 
-		double popup_sx = popup_state->geometry.x - popup->current.geometry.x;
-		double popup_sy = popup_state->geometry.y - popup->current.geometry.y;
+		double popup_sx, popup_sy;
+		popup_sx = popup->current.geometry.x - popup->base->current.geometry.x;
+		popup_sy = popup->current.geometry.y - popup->base->current.geometry.y;
 
-		struct wlr_surface *sub = wlr_xdg_surface_surface_at(popup,
-			sx - popup_sx,
-			sy - popup_sy,
-			sub_x, sub_y);
+		struct wlr_surface *sub = wlr_xdg_surface_surface_at(
+			popup->base, sx - popup_sx, sy - popup_sy, sub_x, sub_y);
 		if (sub != NULL) {
 			return sub;
 		}

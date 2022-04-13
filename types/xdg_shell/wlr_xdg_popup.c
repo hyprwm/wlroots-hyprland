@@ -7,7 +7,7 @@
 void handle_xdg_popup_ack_configure(
 		struct wlr_xdg_popup *popup,
 		struct wlr_xdg_popup_configure *configure) {
-	popup->geometry = configure->geometry;
+	popup->pending.geometry = configure->geometry;
 }
 
 struct wlr_xdg_popup_configure *send_xdg_popup_configure(
@@ -238,7 +238,10 @@ void handle_xdg_popup_committed(struct wlr_xdg_popup *popup) {
 	if (!popup->committed) {
 		wlr_xdg_surface_schedule_configure(popup->base);
 		popup->committed = true;
+		return;
 	}
+
+	popup->current = popup->pending;
 }
 
 static const struct xdg_popup_interface xdg_popup_implementation;
@@ -440,8 +443,8 @@ void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,
 			wlr_xdg_surface_from_wlr_surface(parent);
 
 		if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-			popup_sx += xdg_surface->popup->geometry.x;
-			popup_sy += xdg_surface->popup->geometry.y;
+			popup_sx += xdg_surface->popup->current.geometry.x;
+			popup_sy += xdg_surface->popup->current.geometry.y;
 			parent = xdg_surface->popup->parent;
 		} else {
 			popup_sx += xdg_surface->current.geometry.x;
