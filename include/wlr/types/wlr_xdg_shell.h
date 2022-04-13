@@ -86,6 +86,9 @@ struct wlr_xdg_popup_state {
 struct wlr_xdg_popup_configure {
 	struct wlr_box geometry;
 	struct wlr_xdg_positioner_rules rules;
+
+	bool has_reposition_token;
+	uint32_t reposition_token;
 };
 
 struct wlr_xdg_popup {
@@ -100,6 +103,10 @@ struct wlr_xdg_popup {
 	struct wlr_xdg_popup_configure scheduled;
 
 	struct wlr_xdg_popup_state current, pending;
+
+	struct {
+		struct wl_signal reposition;
+	} events;
 
 	struct wl_list grab_link; // wlr_xdg_popup_grab.popups
 };

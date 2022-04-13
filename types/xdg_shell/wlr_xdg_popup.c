@@ -21,6 +21,12 @@ struct wlr_xdg_popup_configure *send_xdg_popup_configure(
 	}
 	*configure = popup->scheduled;
 
+	if (popup->scheduled.has_reposition_token) {
+		popup->scheduled.has_reposition_token = false;
+		xdg_popup_send_repositioned(popup->resource,
+			popup->scheduled.reposition_token);
+	}
+
 	struct wlr_box *geometry = &configure->geometry;
 	xdg_popup_send_configure(popup->resource,
 		geometry->x, geometry->y,
@@ -295,6 +301,28 @@ static void xdg_popup_handle_grab(struct wl_client *client,
 		&popup_grab->touch_grab);
 }
 
+static void xdg_popup_handle_reposition(
+		struct wl_client *client, struct wl_resource *resource,
+		struct wl_resource *positioner_resource, uint32_t token) {
+	struct wlr_xdg_popup *popup =
+		wlr_xdg_popup_from_resource(resource);
+	if (!popup) {
+		return;
+	}
+
+	struct wlr_xdg_positioner *positioner =
+		wlr_xdg_positioner_from_resource(positioner_resource);
+	wlr_xdg_positioner_rules_get_geometry(
+		&positioner->rules, &popup->scheduled.geometry);
+	popup->scheduled.rules = positioner->rules;
+	popup->scheduled.has_reposition_token = true;
+	popup->scheduled.reposition_token = token;
+
+	wlr_xdg_surface_schedule_configure(popup->base);
+
+	wlr_signal_emit_safe(&popup->events.reposition, NULL);
+}
+
 static void xdg_popup_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	struct wlr_xdg_popup *popup =
@@ -313,6 +341,7 @@ static void xdg_popup_handle_destroy(struct wl_client *client,
 static const struct xdg_popup_interface xdg_popup_implementation = {
 	.destroy = xdg_popup_handle_destroy,
 	.grab = xdg_popup_handle_grab,
+	.reposition = xdg_popup_handle_reposition,
 };
 
 static void xdg_popup_handle_resource_destroy(struct wl_resource *resource) {
@@ -380,6 +409,8 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		&positioner->rules, &surface->popup->scheduled.geometry);
 	surface->popup->scheduled.rules = positioner->rules;
 
+	wl_signal_init(&surface->popup->events.reposition);
+
 	if (parent) {
 		surface->popup->parent = parent->surface;
 		wl_list_insert(&parent->popups, &surface->popup->link);
@@ -407,7 +438,7 @@ void unmap_xdg_popup(struct wlr_xdg_popup *popup) {
 			if (grab->seat->touch_state.grab == &grab->touch_grab) {
 				wlr_seat_touch_end_grab(grab->seat);
 			}
-			
+
 			destroy_xdg_popup_grab(grab);
 		}
 
