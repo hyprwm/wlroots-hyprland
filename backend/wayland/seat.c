@@ -259,7 +259,10 @@ void destroy_wl_seats(struct wlr_wl_backend *wl) {
 		}
 		if (seat->wl_keyboard) {
 			wl_keyboard_release(seat->wl_keyboard);
-			wlr_keyboard_finish(&seat->wlr_keyboard);
+
+			if (seat->backend->started) {
+				wlr_keyboard_finish(&seat->wlr_keyboard);
+			}
 		}
 		if (seat->zwp_tablet_seat_v2) {
 			finish_seat_tablet(seat);
