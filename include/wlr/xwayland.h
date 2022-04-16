@@ -15,6 +15,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_seat.h>
 #include <xcb/xcb.h>
+#include <xcb/xcb_icccm.h>
 
 struct wlr_xwm;
 struct wlr_xwayland_cursor;
@@ -96,30 +97,6 @@ enum wlr_xwayland_surface_decorations {
 	WLR_XWAYLAND_SURFACE_DECORATIONS_NO_TITLE = 2,
 };
 
-struct wlr_xwayland_surface_hints {
-	uint32_t flags;
-	uint32_t input;
-	int32_t initial_state;
-	xcb_pixmap_t icon_pixmap;
-	xcb_window_t icon_window;
-	int32_t icon_x, icon_y;
-	xcb_pixmap_t icon_mask;
-	xcb_window_t window_group;
-};
-
-struct wlr_xwayland_surface_size_hints {
-	uint32_t flags;
-	int32_t x, y;
-	int32_t width, height;
-	int32_t min_width, min_height;
-	int32_t max_width, max_height;
-	int32_t width_inc, height_inc;
-	int32_t base_width, base_height;
-	int32_t min_aspect_num, min_aspect_den;
-	int32_t max_aspect_num, max_aspect_den;
-	uint32_t win_gravity;
-};
-
 /**
  * This represents the input focus described as follows:
  *
@@ -176,9 +153,8 @@ struct wlr_xwayland_surface {
 	size_t protocols_len;
 
 	uint32_t decorations;
-	struct wlr_xwayland_surface_hints *hints;
-	uint32_t hints_urgency;
-	struct wlr_xwayland_surface_size_hints *size_hints;
+	xcb_icccm_wm_hints_t *hints;
+	xcb_size_hints_t *size_hints;
 
 	bool pinging;
 	struct wl_event_source *ping_timer;
