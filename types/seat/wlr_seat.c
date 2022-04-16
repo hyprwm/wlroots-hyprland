@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
 #include "util/global.h"
@@ -142,6 +143,20 @@ static void seat_handle_bind(struct wl_client *client, void *_wlr_seat,
 		wl_signal_init(&seat_client->events.destroy);
 
 		wl_list_insert(&wlr_seat->clients, &seat_client->link);
+
+		struct wlr_surface *pointer_focus =
+			wlr_seat->pointer_state.focused_surface;
+		if (pointer_focus != NULL &&
+				wl_resource_get_client(pointer_focus->resource) == client) {
+			wlr_seat->pointer_state.focused_client = seat_client;
+		}
+
+		struct wlr_surface *keyboard_focus =
+			wlr_seat->keyboard_state.focused_surface;
+		if (keyboard_focus != NULL &&
+				wl_resource_get_client(keyboard_focus->resource) == client) {
+			wlr_seat->keyboard_state.focused_client = seat_client;
+		}
 	}
 
 	wl_resource_set_implementation(wl_resource, &seat_impl,
