@@ -29,6 +29,8 @@ struct wlr_xwayland_cursor {
 static void handle_server_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland *xwayland =
 		wl_container_of(listener, xwayland, server_destroy);
+	// Server is being destroyed so avoid destroying it once again.
+	xwayland->server = NULL;
 	wlr_xwayland_destroy(xwayland);
 }
 
