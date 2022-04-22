@@ -13,7 +13,7 @@ If you already have your own merge request habits, feel free to use them. If you
 don't, however, allow me to make a suggestion: feature branches pulled from
 upstream. Try this:
 
-1. Fork wlroots
+1. Fork wlroots (make the fork public to allow the CI to run)
 2. `git clone git@gitlab.freedesktop.org:<username>/wlroots.git && cd wlroots`
 3. `git remote add upstream https://gitlab.freedesktop.org/wlroots/wlroots.git`
 
