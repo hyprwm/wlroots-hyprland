@@ -117,6 +117,14 @@ struct wlr_scene_buffer {
 		struct wl_signal output_present; // struct wlr_scene_output
 	} events;
 
+	/**
+	 * The output that the largest area of this buffer is displayed on.
+	 * This may be NULL if the buffer is not currently displayed on any
+	 * outputs. This is the output that should be used for frame callbacks,
+	 * presentation feedback, etc.
+	 */
+	struct wlr_scene_output *primary_output;
+
 	// private state
 
 	uint64_t active_outputs;
