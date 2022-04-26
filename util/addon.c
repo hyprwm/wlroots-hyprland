@@ -1,8 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-
-#include "wlr/util/addon.h"
+#include <wlr/util/addon.h>
 
 void wlr_addon_set_init(struct wlr_addon_set *set) {
 	wl_list_init(&set->addons);
