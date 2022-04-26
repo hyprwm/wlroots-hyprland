@@ -325,7 +325,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 
 		wl_keyboard_release(seat->wl_keyboard);
 		wlr_keyboard_finish(&seat->wlr_keyboard);
-		memset(&seat->wlr_keyboard, 0, sizeof(seat->wlr_keyboard));
+
 		seat->wl_keyboard = NULL;
 	}
 
@@ -340,7 +340,6 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 
 		wl_touch_release(seat->wl_touch);
 		wlr_touch_finish(&seat->wlr_touch);
-		memset(&seat->wlr_touch, 0, sizeof(seat->wlr_touch));
 		seat->wl_touch = NULL;
 	}
 }
