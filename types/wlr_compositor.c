@@ -583,6 +583,8 @@ struct wlr_surface *wlr_surface_from_resource(struct wl_resource *resource) {
 }
 
 static void surface_state_init(struct wlr_surface_state *state) {
+	memset(state, 0, sizeof(*state));
+
 	state->scale = 1;
 	state->transform = WL_OUTPUT_TRANSFORM_NORMAL;
 

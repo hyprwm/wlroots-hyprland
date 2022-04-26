@@ -8,6 +8,7 @@
 
 void wlr_switch_init(struct wlr_switch *switch_device,
 		const struct wlr_switch_impl *impl, const char *name) {
+	memset(switch_device, 0, sizeof(*switch_device));
 	wlr_input_device_init(&switch_device->base, WLR_INPUT_DEVICE_SWITCH, name);
 	switch_device->base.switch_device = switch_device;
 

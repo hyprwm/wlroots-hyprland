@@ -18,6 +18,7 @@
 void wlr_allocator_init(struct wlr_allocator *alloc,
 		const struct wlr_allocator_interface *impl, uint32_t buffer_caps) {
 	assert(impl && impl->destroy && impl->create_buffer);
+	memset(alloc, 0, sizeof(*alloc));
 	alloc->impl = impl;
 	alloc->buffer_caps = buffer_caps;
 	wl_signal_init(&alloc->events.destroy);

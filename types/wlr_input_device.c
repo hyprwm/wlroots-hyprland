@@ -7,6 +7,7 @@
 
 void wlr_input_device_init(struct wlr_input_device *dev,
 		enum wlr_input_device_type type, const char *name) {
+	memset(dev, 0, sizeof(*dev));
 	dev->type = type;
 	dev->name = strdup(name);
 	dev->vendor = 0;

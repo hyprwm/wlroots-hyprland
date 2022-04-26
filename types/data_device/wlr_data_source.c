@@ -15,6 +15,7 @@ void wlr_data_source_init(struct wlr_data_source *source,
 		const struct wlr_data_source_impl *impl) {
 	assert(impl->send);
 
+	memset(source, 0, sizeof(*source));
 	source->impl = impl;
 	wl_array_init(&source->mime_types);
 	wl_signal_init(&source->events.destroy);

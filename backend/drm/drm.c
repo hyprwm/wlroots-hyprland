@@ -380,6 +380,7 @@ static bool drm_crtc_page_flip(struct wlr_drm_connector *conn,
 static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		struct wlr_drm_connector *conn,
 		const struct wlr_output_state *base) {
+	memset(state, 0, sizeof(*state));
 	state->base = base;
 	state->modeset = base->committed &
 		(WLR_OUTPUT_STATE_ENABLED | WLR_OUTPUT_STATE_MODE);

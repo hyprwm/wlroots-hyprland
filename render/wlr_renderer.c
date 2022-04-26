@@ -39,6 +39,8 @@ void wlr_renderer_init(struct wlr_renderer *renderer,
 	assert(impl->render_quad_with_matrix);
 	assert(impl->get_shm_texture_formats);
 	assert(impl->get_render_buffer_caps);
+
+	memset(renderer, 0, sizeof(*renderer));
 	renderer->impl = impl;
 
 	wl_signal_init(&renderer->events.destroy);

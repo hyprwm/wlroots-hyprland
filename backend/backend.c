@@ -36,7 +36,7 @@
 
 void wlr_backend_init(struct wlr_backend *backend,
 		const struct wlr_backend_impl *impl) {
-	assert(backend);
+	memset(backend, 0, sizeof(*backend));
 	backend->impl = impl;
 	wl_signal_init(&backend->events.destroy);
 	wl_signal_init(&backend->events.new_input);

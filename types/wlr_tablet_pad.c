@@ -9,6 +9,7 @@
 
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
 		const struct wlr_tablet_pad_impl *impl, const char *name) {
+	memset(pad, 0, sizeof(*pad));
 	wlr_input_device_init(&pad->base, WLR_INPUT_DEVICE_TABLET_PAD, name);
 	pad->base.tablet_pad = pad;
 

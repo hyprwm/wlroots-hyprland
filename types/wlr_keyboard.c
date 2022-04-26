@@ -116,6 +116,7 @@ void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
 
 void wlr_keyboard_init(struct wlr_keyboard *kb,
 		const struct wlr_keyboard_impl *impl, const char *name) {
+	memset(kb, 0, sizeof(*kb));
 	wlr_input_device_init(&kb->base, WLR_INPUT_DEVICE_KEYBOARD, name);
 	kb->base.keyboard = kb;
 

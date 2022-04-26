@@ -377,6 +377,8 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	if (impl->set_cursor || impl->move_cursor) {
 		assert(impl->set_cursor && impl->move_cursor);
 	}
+
+	memset(output, 0, sizeof(*output));
 	output->backend = backend;
 	output->impl = impl;
 	output->display = display;

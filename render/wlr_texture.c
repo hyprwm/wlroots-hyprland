@@ -1,12 +1,14 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wlr/render/interface.h>
 #include <wlr/render/wlr_texture.h>
 #include "types/wlr_buffer.h"
 
 void wlr_texture_init(struct wlr_texture *texture,
 		const struct wlr_texture_impl *impl, uint32_t width, uint32_t height) {
+	memset(texture, 0, sizeof(*texture));
 	texture->impl = impl;
 	texture->width = width;
 	texture->height = height;

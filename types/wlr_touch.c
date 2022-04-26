@@ -8,6 +8,7 @@
 
 void wlr_touch_init(struct wlr_touch *touch,
 		const struct wlr_touch_impl *impl, const char *name) {
+	memset(touch, 0, sizeof(*touch));
 	wlr_input_device_init(&touch->base, WLR_INPUT_DEVICE_TOUCH, name);
 	touch->base.touch = touch;
 
