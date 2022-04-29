@@ -36,18 +36,25 @@ struct wlr_output_layout {
 	void *data;
 };
 
-struct wlr_output_layout_output_state;
-
 struct wlr_output_layout_output {
+	struct wlr_output_layout *layout;
+
 	struct wlr_output *output;
+
 	int x, y;
 	struct wl_list link;
-	struct wlr_output_layout_output_state *state;
 
-	struct wlr_addon addon;
+	bool auto_configured;
+
 	struct {
 		struct wl_signal destroy;
 	} events;
+
+	// private state
+
+	struct wlr_addon addon;
+
+	struct wl_listener commit;
 };
 
 struct wlr_output_layout *wlr_output_layout_create(void);
