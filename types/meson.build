@@ -30,6 +30,7 @@ wlr_files += files(
 	'wlr_buffer.c',
 	'wlr_compositor.c',
 	'wlr_cursor.c',
+	'wlr_damage_ring.c',
 	'wlr_data_control_v1.c',
 	'wlr_drm.c',
 	'wlr_export_dmabuf_v1.c',
