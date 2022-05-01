@@ -448,16 +448,20 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 			xcb_dri3_query_version(x11->xcb, 1, 2);
 		xcb_dri3_query_version_reply_t *dri3_reply =
 			xcb_dri3_query_version_reply(x11->xcb, dri3_cookie, NULL);
-		if (dri3_reply && dri3_reply->major_version >= 1) {
-			x11->have_dri3 = true;
-			x11->dri3_major_version = dri3_reply->major_version;
-			x11->dri3_minor_version = dri3_reply->minor_version;
+		if (dri3_reply) {
+			if (dri3_reply->major_version >= 1) {
+				x11->have_dri3 = true;
+				x11->dri3_major_version = dri3_reply->major_version;
+				x11->dri3_minor_version = dri3_reply->minor_version;
+			} else {
+				wlr_log(WLR_INFO, "X11 does not support required DRI3 version "
+					"(has %"PRIu32".%"PRIu32", want 1.0)",
+					dri3_reply->major_version, dri3_reply->minor_version);
+			}
+			free(dri3_reply);
 		} else {
-			wlr_log(WLR_INFO, "X11 does not support required DRI3 version "
-				"(has %"PRIu32".%"PRIu32", want 1.0)",
-				dri3_reply->major_version, dri3_reply->minor_version);
+			wlr_log(WLR_INFO, "X11 does not support required DRi3 version");
 		}
-		free(dri3_reply);
 	} else {
 		wlr_log(WLR_INFO, "X11 does not support DRI3 extension");
 	}
