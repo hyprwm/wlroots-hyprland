@@ -128,6 +128,18 @@ static const struct wlr_pixel_format_info pixel_format_info[] = {
 		.bpp = 64,
 		.has_alpha = true,
 	},
+	{
+		.drm_format = DRM_FORMAT_XBGR16161616,
+		.opaque_substitute = DRM_FORMAT_INVALID,
+		.bpp = 64,
+		.has_alpha = false,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR16161616,
+		.opaque_substitute = DRM_FORMAT_XBGR16161616,
+		.bpp = 64,
+		.has_alpha = true,
+	},
 };
 
 static const size_t pixel_format_info_size =

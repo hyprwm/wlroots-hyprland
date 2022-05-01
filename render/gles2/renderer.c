@@ -765,6 +765,9 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 	renderer->exts.OES_texture_half_float_linear =
 		check_gl_ext(exts_str, "GL_OES_texture_half_float_linear");
 
+	renderer->exts.EXT_texture_norm16 =
+		check_gl_ext(exts_str, "GL_EXT_texture_norm16");
+
 	if (check_gl_ext(exts_str, "GL_KHR_debug")) {
 		renderer->exts.KHR_debug = true;
 		load_gl_proc(&renderer->procs.glDebugMessageCallbackKHR,

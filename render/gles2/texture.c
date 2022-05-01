@@ -210,6 +210,11 @@ static struct wlr_texture *gles2_texture_from_pixels(
 	texture->has_alpha = fmt->has_alpha;
 	texture->drm_format = fmt->drm_format;
 
+	GLint internal_format = fmt->gl_internalformat;
+	if (!internal_format) {
+		internal_format = fmt->gl_format;
+	}
+
 	struct wlr_egl_context prev_ctx;
 	wlr_egl_save_context(&prev_ctx);
 	wlr_egl_make_current(renderer->egl);
@@ -222,7 +227,7 @@ static struct wlr_texture *gles2_texture_from_pixels(
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride / (drm_fmt->bpp / 8));
-	glTexImage2D(GL_TEXTURE_2D, 0, fmt->gl_format, width, height, 0,
+	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
 		fmt->gl_format, fmt->gl_type, data);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 0);
 

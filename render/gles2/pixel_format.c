@@ -93,6 +93,20 @@ static const struct wlr_gles2_pixel_format formats[] = {
 		.gl_type = GL_HALF_FLOAT_OES,
 		.has_alpha = true,
 	},
+	{
+		.drm_format = DRM_FORMAT_XBGR16161616,
+		.gl_internalformat = GL_RGBA16_EXT,
+		.gl_format = GL_RGBA,
+		.gl_type = GL_UNSIGNED_SHORT,
+		.has_alpha = false,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR16161616,
+		.gl_internalformat = GL_RGBA16_EXT,
+		.gl_format = GL_RGBA,
+		.gl_type = GL_UNSIGNED_SHORT,
+		.has_alpha = true,
+	},
 #endif
 };
 
@@ -110,6 +124,10 @@ bool is_gles2_pixel_format_supported(const struct wlr_gles2_renderer *renderer,
 	}
 	if (format->gl_type == GL_HALF_FLOAT_OES
 			&& !renderer->exts.OES_texture_half_float_linear) {
+		return false;
+	}
+	if (format->gl_type == GL_UNSIGNED_SHORT
+			&& !renderer->exts.EXT_texture_norm16) {
 		return false;
 	}
 	/*
