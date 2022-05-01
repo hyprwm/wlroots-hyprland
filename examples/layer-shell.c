@@ -124,9 +124,10 @@ static void draw(void) {
 
 	glViewport(0, 0, width, height);
 	if (buttons) {
-		glClearColor(1, 1, 1, alpha);
+		glClearColor(alpha, alpha, alpha, alpha);
 	} else {
-		glClearColor(demo.color[0], demo.color[1], demo.color[2], alpha);
+		glClearColor(demo.color[0] * alpha, demo.color[1] * alpha,
+			demo.color[2] * alpha, alpha);
 	}
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -151,7 +152,8 @@ static void draw_popup(void) {
 
 	eglMakeCurrent(egl_display, popup_egl_surface, popup_egl_surface, egl_context);
 	glViewport(0, 0, popup_width, popup_height);
-	glClearColor(popup_red, 0.5f, 0.5f, popup_alpha);
+	glClearColor(popup_red * popup_alpha, 0.5f * popup_alpha,
+		0.5f * popup_alpha, popup_alpha);
 	popup_alpha += alpha_mod;
 	if (popup_alpha < 0.01 || popup_alpha >= 1.0f) {
 		alpha_mod *= -1.0;
