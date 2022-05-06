@@ -1314,7 +1314,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			size_t edid_len = 0;
 			uint8_t *edid = get_drm_prop_blob(drm->fd,
 				wlr_conn->id, wlr_conn->props.edid, &edid_len);
-			parse_edid(&wlr_conn->output, edid_len, edid);
+			parse_edid(wlr_conn, edid_len, edid);
 			free(edid);
 
 			char *subconnector = NULL;
