@@ -140,8 +140,16 @@ struct wlr_xdg_toplevel_state {
 	uint32_t min_width, min_height;
 };
 
+enum wlr_xdg_toplevel_wm_capabilities {
+	WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU = 1 << 0,
+	WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE = 1 << 1,
+	WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN = 1 << 2,
+	WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE = 1 << 3,
+};
+
 enum wlr_xdg_toplevel_configure_field {
 	WLR_XDG_TOPLEVEL_CONFIGURE_BOUNDS = 1 << 0,
+	WLR_XDG_TOPLEVEL_CONFIGURE_WM_CAPABILITIES = 1 << 1,
 };
 
 struct wlr_xdg_toplevel_configure {
@@ -152,6 +160,7 @@ struct wlr_xdg_toplevel_configure {
 	struct {
 		uint32_t width, height;
 	} bounds;
+	uint32_t wm_capabilities; // enum wlr_xdg_toplevel_wm_capabilities
 };
 
 struct wlr_xdg_toplevel_requested {
@@ -393,6 +402,14 @@ uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
  */
 uint32_t wlr_xdg_toplevel_set_bounds(struct wlr_xdg_toplevel *toplevel,
 		int32_t width, int32_t height);
+
+/**
+ * Configure the window manager capabilities for this toplevel. `caps` is a
+ * bitfield of `enum wlr_xdg_toplevel_wm_capabilities`. Returns the associated
+ * configure serial.
+ */
+uint32_t wlr_xdg_toplevel_set_wm_capabilities(struct wlr_xdg_toplevel *toplevel,
+		uint32_t caps);
 
 /**
  * Request that this toplevel closes.

@@ -39,6 +39,31 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 			configure->bounds.width, configure->bounds.height);
 	}
 
+	if ((configure->fields & WLR_XDG_TOPLEVEL_CONFIGURE_WM_CAPABILITIES) &&
+			version >= XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION) {
+		size_t caps_len = 0;
+		uint32_t caps[32];
+		if (configure->wm_capabilities & WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU) {
+			caps[caps_len++] = XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU;
+		}
+		if (configure->wm_capabilities & WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE) {
+			caps[caps_len++] = XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE;
+		}
+		if (configure->wm_capabilities & WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN) {
+			caps[caps_len++] = XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN;
+		}
+		if (configure->wm_capabilities & WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE) {
+			caps[caps_len++] = XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
+		}
+		assert(caps_len <= sizeof(caps) / sizeof(caps[0]));
+
+		struct wl_array caps_array = {
+			.size = caps_len * sizeof(caps[0]),
+			.data = caps,
+		};
+		xdg_toplevel_send_wm_capabilities(toplevel->resource, &caps_array);
+	}
+
 	size_t nstates = 0;
 	uint32_t states[32];
 	if (configure->maximized) {
@@ -97,6 +122,16 @@ void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 		// is added
 		wlr_xdg_surface_schedule_configure(toplevel->base);
 		toplevel->added = true;
+
+		if (toplevel->base->client->shell->version >=
+				XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION) {
+			// The first configure event must carry WM capabilities
+			wlr_xdg_toplevel_set_wm_capabilities(toplevel,
+				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU |
+				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
+				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
+				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE);
+		}
 		return;
 	}
 
@@ -522,5 +557,14 @@ uint32_t wlr_xdg_toplevel_set_bounds(struct wlr_xdg_toplevel *toplevel,
 	toplevel->scheduled.fields |= WLR_XDG_TOPLEVEL_CONFIGURE_BOUNDS;
 	toplevel->scheduled.bounds.width = width;
 	toplevel->scheduled.bounds.height = height;
+	return wlr_xdg_surface_schedule_configure(toplevel->base);
+}
+
+uint32_t wlr_xdg_toplevel_set_wm_capabilities(struct wlr_xdg_toplevel *toplevel,
+		uint32_t caps) {
+	assert(toplevel->base->client->shell->version >=
+		XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION);
+	toplevel->scheduled.fields |= WLR_XDG_TOPLEVEL_CONFIGURE_WM_CAPABILITIES;
+	toplevel->scheduled.wm_capabilities = caps;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);
 }
