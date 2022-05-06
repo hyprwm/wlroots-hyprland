@@ -31,6 +31,14 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	}
 	*configure = toplevel->scheduled;
 
+	uint32_t version = wl_resource_get_version(toplevel->resource);
+
+	if ((configure->fields & WLR_XDG_TOPLEVEL_CONFIGURE_BOUNDS) &&
+			version >= XDG_TOPLEVEL_CONFIGURE_BOUNDS_SINCE_VERSION) {
+		xdg_toplevel_send_configure_bounds(toplevel->resource,
+			configure->bounds.width, configure->bounds.height);
+	}
+
 	size_t nstates = 0;
 	uint32_t states[32];
 	if (configure->maximized) {
@@ -46,8 +54,7 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 		states[nstates++] = XDG_TOPLEVEL_STATE_ACTIVATED;
 	}
 	if (configure->tiled) {
-		if (wl_resource_get_version(toplevel->resource) >=
-				XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION) {
+		if (version >= XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION) {
 			const struct {
 				enum wlr_edges edge;
 				enum xdg_toplevel_state state;
@@ -78,6 +85,8 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	};
 	xdg_toplevel_send_configure(toplevel->resource,
 		width, height, &wl_states);
+
+	toplevel->scheduled.fields = 0;
 
 	return configure;
 }
@@ -499,5 +508,16 @@ uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled) {
 	assert(toplevel->base->client->shell->version >= 2);
 	toplevel->scheduled.tiled = tiled;
+	return wlr_xdg_surface_schedule_configure(toplevel->base);
+}
+
+uint32_t wlr_xdg_toplevel_set_bounds(struct wlr_xdg_toplevel *toplevel,
+		int32_t width, int32_t height) {
+	assert(toplevel->base->client->shell->version >=
+		XDG_TOPLEVEL_CONFIGURE_BOUNDS_SINCE_VERSION);
+	assert(width >= 0 && height >= 0);
+	toplevel->scheduled.fields |= WLR_XDG_TOPLEVEL_CONFIGURE_BOUNDS;
+	toplevel->scheduled.bounds.width = width;
+	toplevel->scheduled.bounds.height = height;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);
 }

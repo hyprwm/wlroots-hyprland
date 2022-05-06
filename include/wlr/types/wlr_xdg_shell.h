@@ -137,10 +137,18 @@ struct wlr_xdg_toplevel_state {
 	uint32_t min_width, min_height;
 };
 
+enum wlr_xdg_toplevel_configure_field {
+	WLR_XDG_TOPLEVEL_CONFIGURE_BOUNDS = 1 << 0,
+};
+
 struct wlr_xdg_toplevel_configure {
+	uint32_t fields; // enum wlr_xdg_toplevel_configure_field
 	bool maximized, fullscreen, resizing, activated;
 	uint32_t tiled; // enum wlr_edges
 	uint32_t width, height;
+	struct {
+		uint32_t width, height;
+	} bounds;
 };
 
 struct wlr_xdg_toplevel_requested {
@@ -375,6 +383,13 @@ uint32_t wlr_xdg_toplevel_set_resizing(struct wlr_xdg_toplevel *toplevel,
  */
 uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled_edges);
+
+/**
+ * Configure the recommended bounds for the client's window geometry size.
+ * Returns the associated configure serial.
+ */
+uint32_t wlr_xdg_toplevel_set_bounds(struct wlr_xdg_toplevel *toplevel,
+		int32_t width, int32_t height);
 
 /**
  * Request that this toplevel closes.
