@@ -176,12 +176,21 @@ static void surface_finalize_pending(struct wlr_surface *surface) {
 	if (!pending->viewport.has_src &&
 			(pending->buffer_width % pending->scale != 0 ||
 			pending->buffer_height % pending->scale != 0)) {
-		// TODO: send WL_SURFACE_ERROR_INVALID_SIZE error once this issue is
-		// resolved:
+		// TODO: send WL_SURFACE_ERROR_INVALID_SIZE error to cursor surfaces
+		// once this issue is resolved:
 		// https://gitlab.freedesktop.org/wayland/wayland/-/issues/194
-		wlr_log(WLR_DEBUG, "Client bug: submitted a buffer whose size (%dx%d) "
-			"is not divisible by scale (%d)", pending->buffer_width,
-			pending->buffer_height, pending->scale);
+		if (!surface->role
+				|| strcmp(surface->role->name, "wl_pointer-cursor") == 0
+				|| strcmp(surface->role->name, "wp_tablet_tool-cursor") == 0) {
+			wlr_log(WLR_DEBUG, "Client bug: submitted a buffer whose size (%dx%d) "
+				"is not divisible by scale (%d)", pending->buffer_width,
+				pending->buffer_height, pending->scale);
+		} else {
+			wl_resource_post_error(surface->resource,
+				WL_SURFACE_ERROR_INVALID_SIZE,
+				"Buffer size (%dx%d) is not divisible by scale (%d)",
+				pending->buffer_width, pending->buffer_height, pending->scale);
+		}
 	}
 
 	if (pending->viewport.has_dst) {
