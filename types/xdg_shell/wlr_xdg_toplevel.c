@@ -31,39 +31,19 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	}
 	*configure = toplevel->scheduled;
 
-	struct wl_array states;
-	wl_array_init(&states);
+	size_t nstates = 0;
+	uint32_t states[32];
 	if (configure->maximized) {
-		uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-		if (!s) {
-			wlr_log(WLR_ERROR, "Could not allocate state for maximized xdg_toplevel");
-			goto error_out;
-		}
-		*s = XDG_TOPLEVEL_STATE_MAXIMIZED;
+		states[nstates++] = XDG_TOPLEVEL_STATE_MAXIMIZED;
 	}
 	if (configure->fullscreen) {
-		uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-		if (!s) {
-			wlr_log(WLR_ERROR, "Could not allocate state for fullscreen xdg_toplevel");
-			goto error_out;
-		}
-		*s = XDG_TOPLEVEL_STATE_FULLSCREEN;
+		states[nstates++] = XDG_TOPLEVEL_STATE_FULLSCREEN;
 	}
 	if (configure->resizing) {
-		uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-		if (!s) {
-			wlr_log(WLR_ERROR, "Could not allocate state for resizing xdg_toplevel");
-			goto error_out;
-		}
-		*s = XDG_TOPLEVEL_STATE_RESIZING;
+		states[nstates++] = XDG_TOPLEVEL_STATE_RESIZING;
 	}
 	if (configure->activated) {
-		uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-		if (!s) {
-			wlr_log(WLR_ERROR, "Could not allocate state for activated xdg_toplevel");
-			goto error_out;
-		}
-		*s = XDG_TOPLEVEL_STATE_ACTIVATED;
+		states[nstates++] = XDG_TOPLEVEL_STATE_ACTIVATED;
 	}
 	if (configure->tiled) {
 		if (wl_resource_get_version(toplevel->resource) >=
@@ -82,40 +62,24 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 				if ((configure->tiled & tiled[i].edge) == 0) {
 					continue;
 				}
-
-				uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-				if (!s) {
-					wlr_log(WLR_ERROR,
-						"Could not allocate state for tiled xdg_toplevel");
-					goto error_out;
-				}
-				*s = tiled[i].state;
+				states[nstates++] = tiled[i].state;
 			}
 		} else if (!configure->maximized) {
-			// This version doesn't support tiling, best we can do is make the
-			// toplevel maximized
-			uint32_t *s = wl_array_add(&states, sizeof(uint32_t));
-			if (!s) {
-				wlr_log(WLR_ERROR,
-					"Could not allocate state for maximized xdg_toplevel");
-				goto error_out;
-			}
-			*s = XDG_TOPLEVEL_STATE_MAXIMIZED;
+			states[nstates++] = XDG_TOPLEVEL_STATE_MAXIMIZED;
 		}
 	}
+	assert(nstates <= sizeof(states) / sizeof(states[0]));
 
 	uint32_t width = configure->width;
 	uint32_t height = configure->height;
-	xdg_toplevel_send_configure(toplevel->resource, width, height, &states);
+	struct wl_array wl_states = {
+		.size = nstates * sizeof(states[0]),
+		.data = states,
+	};
+	xdg_toplevel_send_configure(toplevel->resource,
+		width, height, &wl_states);
 
-	wl_array_release(&states);
 	return configure;
-
-error_out:
-	wl_array_release(&states);
-	free(configure);
-	wl_resource_post_no_memory(toplevel->resource);
-	return NULL;
 }
 
 void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
