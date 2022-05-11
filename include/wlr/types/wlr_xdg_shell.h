@@ -17,6 +17,7 @@
 
 struct wlr_xdg_shell {
 	struct wl_global *global;
+	uint32_t version;
 	struct wl_list clients;
 	struct wl_list popup_grabs;
 	uint32_t ping_timeout;
@@ -263,7 +264,11 @@ struct wlr_xdg_toplevel_show_window_menu_event {
 	uint32_t x, y;
 };
 
-struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display);
+/**
+ * Create the xdg_wm_base global with the specified version.
+ */
+struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display,
+	uint32_t version);
 
 /** Get the corresponding wlr_xdg_surface from a resource.
  *

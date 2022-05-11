@@ -114,7 +114,7 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 	if (toplevel->parent) {
 		wl_list_remove(&toplevel->parent_unmap.link);
 	}
-	
+
 	if (parent && parent->base->mapped) {
 		toplevel->parent = parent;
 		toplevel->parent_unmap.notify = handle_parent_unmap;
@@ -497,6 +497,7 @@ uint32_t wlr_xdg_toplevel_set_resizing(struct wlr_xdg_toplevel *toplevel,
 
 uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled) {
+	assert(toplevel->base->client->shell->version >= 2);
 	toplevel->scheduled.tiled = tiled;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);
 }

@@ -137,20 +137,24 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	free(xdg_shell);
 }
 
-struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display) {
+struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display,
+		uint32_t version) {
+	assert(version <= WM_BASE_VERSION);
+
 	struct wlr_xdg_shell *xdg_shell =
 		calloc(1, sizeof(struct wlr_xdg_shell));
 	if (!xdg_shell) {
 		return NULL;
 	}
 
+	xdg_shell->version = version;
 	xdg_shell->ping_timeout = 10000;
 
 	wl_list_init(&xdg_shell->clients);
 	wl_list_init(&xdg_shell->popup_grabs);
 
 	struct wl_global *global = wl_global_create(display,
-		&xdg_wm_base_interface, WM_BASE_VERSION, xdg_shell, xdg_shell_bind);
+		&xdg_wm_base_interface, version, xdg_shell, xdg_shell_bind);
 	if (!global) {
 		free(xdg_shell);
 		return NULL;

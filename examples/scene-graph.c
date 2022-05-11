@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 	struct wlr_compositor *compositor =
 		wlr_compositor_create(server.display, server.renderer);
 
-	wlr_xdg_shell_create(server.display);
+	wlr_xdg_shell_create(server.display, 2);
 
 	server.new_output.notify = server_handle_new_output;
 	wl_signal_add(&server.backend->events.new_output, &server.new_output);
