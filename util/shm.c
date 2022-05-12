@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <wlr/config.h>
@@ -72,6 +73,14 @@ bool allocate_shm_file_pair(size_t size, int *rw_fd_ptr, int *ro_fd_ptr) {
 	}
 
 	shm_unlink(name);
+
+	// Make sure the file cannot be re-opened in read-write mode (e.g. via
+	// "/proc/self/fd/" on Linux)
+	if (fchmod(rw_fd, 0) != 0) {
+		close(rw_fd);
+		close(ro_fd);
+		return false;
+	}
 
 	int ret;
 	do {
