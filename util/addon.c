@@ -12,7 +12,6 @@ void wlr_addon_set_init(struct wlr_addon_set *set) {
 void wlr_addon_set_finish(struct wlr_addon_set *set) {
 	struct wlr_addon *addon, *tmp;
 	wl_list_for_each_safe(addon, tmp, &set->addons, link) {
-		wlr_addon_finish(addon);
 		addon->impl->destroy(addon);
 	}
 }
@@ -34,7 +33,6 @@ void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
 
 void wlr_addon_finish(struct wlr_addon *addon) {
 	wl_list_remove(&addon->link);
-	wl_list_init(&addon->link);
 }
 
 struct wlr_addon *wlr_addon_find(struct wlr_addon_set *set, const void *owner,

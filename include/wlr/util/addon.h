@@ -20,6 +20,7 @@ struct wlr_addon;
 
 struct wlr_addon_interface {
 	const char *name;
+	// Has to call wlr_addon_finish()
 	void (*destroy)(struct wlr_addon *addon);
 };
 
@@ -34,10 +35,10 @@ void wlr_addon_set_init(struct wlr_addon_set *set);
 void wlr_addon_set_finish(struct wlr_addon_set *set);
 
 void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
-		const void *owner, const struct wlr_addon_interface *impl);
+	const void *owner, const struct wlr_addon_interface *impl);
 void wlr_addon_finish(struct wlr_addon *addon);
 
 struct wlr_addon *wlr_addon_find(struct wlr_addon_set *set, const void *owner,
-		const struct wlr_addon_interface *impl);
+	const struct wlr_addon_interface *impl);
 
 #endif
