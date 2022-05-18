@@ -90,6 +90,14 @@ noreturn static void exec_xwayland(struct wlr_xwayland_server *server,
 	server->options.no_touch_pointer_emulation = false;
 #endif
 
+#if HAVE_XWAYLAND_FORCE_XRANDR_EMULATION
+	if (server->options.force_xrandr_emulation) {
+		argv[i++] = "-force-xrandr-emulation";
+	}
+#else
+	server->options.force_xrandr_emulation = false;
+#endif
+
 	argv[i++] = NULL;
 
 	assert(i < sizeof(argv) / sizeof(argv[0]));

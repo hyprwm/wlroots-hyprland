@@ -24,6 +24,7 @@ struct wlr_xwayland_server_options {
 	bool lazy;
 	bool enable_wm;
 	bool no_touch_pointer_emulation;
+	bool force_xrandr_emulation;
 	int terminate_delay; // in seconds, 0 to terminate immediately
 };
 
