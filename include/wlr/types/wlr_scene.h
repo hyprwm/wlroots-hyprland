@@ -111,8 +111,14 @@ struct wlr_scene_buffer {
 	// May be NULL
 	struct wlr_buffer *buffer;
 
+	struct {
+		struct wl_signal output_enter; // struct wlr_scene_output
+		struct wl_signal output_leave; // struct wlr_scene_output
+	} events;
+
 	// private state
 
+	uint64_t active_outputs;
 	struct wlr_texture *texture;
 	struct wlr_fbox src_box;
 	int dst_width, dst_height;
@@ -132,6 +138,7 @@ struct wlr_scene_output {
 
 	// private state
 
+	uint8_t index;
 	bool prev_scanout;
 };
 
