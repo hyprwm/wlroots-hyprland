@@ -51,9 +51,7 @@ struct wlr_scene_node {
 	enum wlr_scene_node_type type;
 	struct wlr_scene_tree *parent;
 
-	struct wl_list link; // wlr_scene_node.children
-
-	struct wl_list children; // wlr_scene_node.link
+	struct wl_list link; // wlr_scene_tree.children
 
 	bool enabled;
 	int x, y; // relative to parent
@@ -76,6 +74,8 @@ enum wlr_scene_debug_damage_option {
 /** A sub-tree in the scene-graph. */
 struct wlr_scene_tree {
     struct wlr_scene_node node;
+
+    struct wl_list children; // wlr_scene_node.link
 };
 
 /** The root scene-graph node. */
