@@ -107,6 +107,8 @@ struct wlr_scene_rect {
 /** A scene-graph node displaying a buffer */
 struct wlr_scene_buffer {
 	struct wlr_scene_node node;
+
+	// May be NULL
 	struct wlr_buffer *buffer;
 
 	// private state
@@ -267,6 +269,8 @@ void wlr_scene_rect_set_color(struct wlr_scene_rect *rect, const float color[sta
 
 /**
  * Add a node displaying a buffer to the scene-graph.
+ *
+ * If the buffer is NULL, this node will not be displayed.
  */
 struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_node *parent,
 	struct wlr_buffer *buffer);
