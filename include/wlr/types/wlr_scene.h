@@ -276,6 +276,14 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_node *parent,
 	struct wlr_buffer *buffer);
 
 /**
+ * Sets the buffer's backing buffer.
+ *
+ * If the buffer is NULL, the buffer node will not be displayed.
+ */
+void wlr_scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
+	struct wlr_buffer *buffer);
+
+/**
  * Set the source rectangle describing the region of the buffer which will be
  * sampled to render this node. This allows cropping the buffer.
  *
