@@ -304,6 +304,15 @@ void wlr_scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
 	struct wlr_buffer *buffer);
 
 /**
+ * Sets the buffer's backing buffer with a custom damage region.
+ *
+ * The damage region is in buffer-local coordinates. If the region is NULL,
+ * the whole buffer node will be damaged.
+ */
+void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buffer,
+	struct wlr_buffer *buffer, pixman_region32_t *region);
+
+/**
  * Set the source rectangle describing the region of the buffer which will be
  * sampled to render this node. This allows cropping the buffer.
  *
