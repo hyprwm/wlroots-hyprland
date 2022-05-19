@@ -28,6 +28,11 @@ struct wlr_output_layout;
 struct wlr_xdg_surface;
 struct wlr_layer_surface_v1;
 
+struct wlr_scene_buffer;
+
+typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
+	struct wlr_scene_buffer *buffer, int sx, int sy);
+
 enum wlr_scene_node_type {
 	WLR_SCENE_NODE_ROOT,
 	WLR_SCENE_NODE_TREE,
@@ -117,6 +122,9 @@ struct wlr_scene_buffer {
 		struct wl_signal output_present; // struct wlr_scene_output
 		struct wl_signal frame_done; // struct timespec
 	} events;
+
+	// May be NULL
+	wlr_scene_buffer_point_accepts_input_func_t point_accepts_input;
 
 	/**
 	 * The output that the largest area of this buffer is displayed on.
