@@ -99,7 +99,7 @@ static void surface_handle_commit(struct wl_listener *listener, void *data) {
 
 static void surface_handle_destroy(struct wl_listener *listener, void *data) {
 	struct surface *surface = wl_container_of(listener, surface, destroy);
-	wlr_scene_node_destroy(&surface->scene_surface->node);
+	wlr_scene_node_destroy(&surface->scene_surface->buffer->node);
 	wlr_scene_node_destroy(&surface->border->node);
 	wl_list_remove(&surface->destroy.link);
 	wl_list_remove(&surface->link);
@@ -129,7 +129,7 @@ static void server_handle_new_surface(struct wl_listener *listener,
 	surface->scene_surface =
 		wlr_scene_surface_create(&server->scene->node, wlr_surface);
 
-	wlr_scene_node_set_position(&surface->scene_surface->node,
+	wlr_scene_node_set_position(&surface->scene_surface->buffer->node,
 			pos + border_width, pos + border_width);
 }
 

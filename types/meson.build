@@ -8,6 +8,7 @@ wlr_files += files(
 	'output/render.c',
 	'output/transform.c',
 	'scene/subsurface_tree.c',
+	'scene/surface.c',
 	'scene/wlr_scene.c',
 	'scene/output_layout.c',
 	'scene/xdg_shell.c',

@@ -43,7 +43,6 @@ typedef void (*wlr_scene_buffer_iterator_func_t)(
 enum wlr_scene_node_type {
 	WLR_SCENE_NODE_ROOT,
 	WLR_SCENE_NODE_TREE,
-	WLR_SCENE_NODE_SURFACE,
 	WLR_SCENE_NODE_RECT,
 	WLR_SCENE_NODE_BUFFER,
 };
@@ -93,21 +92,17 @@ struct wlr_scene_tree {
 
 /** A scene-graph node displaying a single surface. */
 struct wlr_scene_surface {
-	struct wlr_scene_node node;
+	struct wlr_scene_buffer *buffer;
 	struct wlr_surface *surface;
-
-	/**
-	 * The output that the largest area of this surface is displayed on.
-	 * This may be NULL if the surface is not currently displayed on any
-	 * outputs. This is the output that should be used for frame callbacks,
-	 * presentation feedback, etc.
-	 */
-	struct wlr_output *primary_output;
 
 	// private state
 
-	int prev_width, prev_height;
+	struct wlr_addon addon;
 
+	struct wl_listener output_enter;
+	struct wl_listener output_leave;
+	struct wl_listener output_present;
+	struct wl_listener frame_done;
 	struct wl_listener surface_destroy;
 	struct wl_listener surface_commit;
 };
@@ -276,9 +271,14 @@ struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_node *parent);
 struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_node *parent,
 	struct wlr_surface *surface);
 
-struct wlr_scene_surface *wlr_scene_surface_from_node(struct wlr_scene_node *node);
-
 struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node);
+
+/**
+ * If this buffer is backed by a surface, then the wlr_scene_surface is
+ * returned. If not, NULL will be returned.
+ */
+struct wlr_scene_surface *wlr_scene_surface_from_buffer(
+	struct wlr_scene_buffer *scene_buffer);
 
 /**
  * Add a node displaying a solid-colored rectangle to the scene-graph.
