@@ -140,6 +140,9 @@ struct wlr_scene_output {
 
 	uint8_t index;
 	bool prev_scanout;
+
+	struct wl_listener output_commit;
+	struct wl_listener output_mode;
 };
 
 /** A layer shell scene helper */
