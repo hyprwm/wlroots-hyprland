@@ -68,6 +68,8 @@ struct wlr_scene_node {
 	} events;
 
 	void *data;
+
+	struct wlr_addon_set addons;
 };
 
 /** The root scene-graph node. */
