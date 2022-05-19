@@ -115,6 +115,7 @@ struct wlr_scene_buffer {
 		struct wl_signal output_enter; // struct wlr_scene_output
 		struct wl_signal output_leave; // struct wlr_scene_output
 		struct wl_signal output_present; // struct wlr_scene_output
+		struct wl_signal frame_done; // struct timespec
 	} events;
 
 	/**
@@ -318,6 +319,12 @@ void wlr_scene_buffer_set_dest_size(struct wlr_scene_buffer *scene_buffer,
  */
 void wlr_scene_buffer_set_transform(struct wlr_scene_buffer *scene_buffer,
 	enum wl_output_transform transform);
+
+/**
+ * Calls the buffer's frame_done signal.
+ */
+void wlr_scene_buffer_send_frame_done(struct wlr_scene_buffer *scene_buffer,
+	struct timespec *now);
 
 /**
  * Add a viewport for the specified output to the scene-graph.
