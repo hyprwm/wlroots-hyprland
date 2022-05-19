@@ -114,6 +114,7 @@ struct wlr_scene_buffer {
 	struct {
 		struct wl_signal output_enter; // struct wlr_scene_output
 		struct wl_signal output_leave; // struct wlr_scene_output
+		struct wl_signal output_present; // struct wlr_scene_output
 	} events;
 
 	// private state
