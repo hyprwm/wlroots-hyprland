@@ -45,6 +45,12 @@ wlroots reads these environment variables
 * *WLR_RENDERER_ALLOW_SOFTWARE*: allows the gles2 renderer to use software
   rendering
 
+## scenes
+
+* *WLR_SCENE_DEBUG_DAMAGE*: specifies debug options for screen damage related
+tasks for compositors that use scenes. (available options: NONE, RERENDER,
+HIGHLIGHT)
+
 # Generic
 
 * *DISPLAY*: if set probe X11 backend in `wlr_backend_autocreate`

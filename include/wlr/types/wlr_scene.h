@@ -71,6 +71,12 @@ struct wlr_scene_node {
 	struct wlr_addon_set addons;
 };
 
+enum wlr_scene_debug_damage_option {
+	WLR_SCENE_DEBUG_DAMAGE_NONE,
+	WLR_SCENE_DEBUG_DAMAGE_RERENDER,
+	WLR_SCENE_DEBUG_DAMAGE_HIGHLIGHT
+};
+
 /** The root scene-graph node. */
 struct wlr_scene {
 	struct wlr_scene_node node;
@@ -83,6 +89,8 @@ struct wlr_scene {
 	// private state
 
 	struct wl_listener presentation_destroy;
+
+	enum wlr_scene_debug_damage_option debug_damage_option;
 };
 
 /** A sub-tree in the scene-graph. */
