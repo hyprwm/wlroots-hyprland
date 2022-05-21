@@ -32,9 +32,6 @@ struct wlr_layer_surface_v1;
 struct wlr_scene_node;
 struct wlr_scene_buffer;
 
-typedef void (*wlr_scene_node_iterator_func_t)(struct wlr_scene_node *node,
-	int sx, int sy, void *data);
-
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy);
 
