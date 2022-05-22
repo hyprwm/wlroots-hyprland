@@ -22,6 +22,7 @@
 #include <pixman.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_damage_ring.h>
 
 struct wlr_output;
 struct wlr_output_layout;
@@ -160,7 +161,7 @@ struct wlr_scene_output {
 	struct wlr_scene *scene;
 	struct wlr_addon addon;
 
-	struct wlr_output_damage *damage;
+	struct wlr_damage_ring damage_ring;
 
 	int x, y;
 
@@ -175,6 +176,7 @@ struct wlr_scene_output {
 
 	struct wl_listener output_commit;
 	struct wl_listener output_mode;
+	struct wl_listener output_needs_frame;
 };
 
 /** A layer shell scene helper */
