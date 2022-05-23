@@ -91,6 +91,7 @@ struct wlr_scene {
 	struct wl_listener presentation_destroy;
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
+	struct wl_list damage_highlight_regions;
 };
 
 /** A sub-tree in the scene-graph. */
