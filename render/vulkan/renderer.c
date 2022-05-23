@@ -42,8 +42,12 @@ static bool default_debug = true;
 
 static const struct wlr_renderer_impl renderer_impl;
 
+bool wlr_renderer_is_vk(struct wlr_renderer *wlr_renderer) {
+	return wlr_renderer->impl == &renderer_impl;
+}
+
 struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *wlr_renderer) {
-	assert(wlr_renderer->impl == &renderer_impl);
+	assert(wlr_renderer_is_vk(wlr_renderer));
 	return (struct wlr_vk_renderer *)wlr_renderer;
 }
 
@@ -1816,4 +1820,36 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	}
 
 	return vulkan_renderer_create_for_device(dev);
+}
+
+VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer)
+{
+	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
+	return vk_renderer->dev->instance->instance;
+}
+
+VkPhysicalDevice wlr_vk_renderer_get_physical_device(struct wlr_renderer *renderer)
+{
+	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
+	return vk_renderer->dev->phdev;
+}
+
+VkDevice wlr_vk_renderer_get_device(struct wlr_renderer *renderer)
+{
+	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
+	return vk_renderer->dev->dev;
+}
+
+uint32_t wlr_vk_renderer_get_queue_family(struct wlr_renderer *renderer)
+{
+	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
+	return vk_renderer->dev->queue_family;
+}
+
+void wlr_vk_renderer_get_current_image_attribs(struct wlr_renderer *renderer,
+		struct wlr_vk_image_attribs *attribs) {
+	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
+	attribs->image = vk_renderer->current_render_buffer->image;
+	attribs->format = vk_renderer->current_render_buffer->render_setup->render_format;
+	attribs->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }

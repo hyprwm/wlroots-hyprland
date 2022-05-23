@@ -283,8 +283,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 	};
 
-	VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
 	res = vkCreateImage(dev, &img_info, NULL, &texture->image);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkCreateImage failed", res);
@@ -362,7 +360,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	VkDescriptorImageInfo ds_img_info = {
 		.imageView = texture->image_view,
-		.imageLayout = layout,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 
 	VkWriteDescriptorSet ds_write = {
@@ -770,4 +768,13 @@ struct wlr_texture *vulkan_texture_from_buffer(struct wlr_renderer *wlr_renderer
 	} else {
 		return NULL;
 	}
+}
+
+void wlr_vk_texture_get_image_attribs(struct wlr_texture *texture,
+		struct wlr_vk_image_attribs *attribs) {
+	struct wlr_vk_texture *vk_texture = vulkan_get_texture(texture);
+	attribs->image = vk_texture->image;
+	attribs->format = vk_texture->format->vk_format;
+	attribs->layout = vk_texture->transitioned ?
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
 }
