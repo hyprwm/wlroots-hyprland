@@ -767,13 +767,13 @@ static void manager_send_head(struct wlr_output_manager_v1 *manager,
 			output->phys_width, output->phys_height);
 	}
 
-	if (version >= ZWLR_OUTPUT_HEAD_V1_MAKE_SINCE_VERSION && output->make[0] != '\0') {
+	if (version >= ZWLR_OUTPUT_HEAD_V1_MAKE_SINCE_VERSION && output->make != NULL) {
 		zwlr_output_head_v1_send_make(head_resource, output->make);
 	}
-	if (version >= ZWLR_OUTPUT_HEAD_V1_MODEL_SINCE_VERSION && output->model[0] != '\0') {
+	if (version >= ZWLR_OUTPUT_HEAD_V1_MODEL_SINCE_VERSION && output->model != NULL) {
 		zwlr_output_head_v1_send_model(head_resource, output->model);
 	}
-	if (version >= ZWLR_OUTPUT_HEAD_V1_SERIAL_NUMBER_SINCE_VERSION && output->serial[0] != '\0') {
+	if (version >= ZWLR_OUTPUT_HEAD_V1_SERIAL_NUMBER_SINCE_VERSION && output->serial != NULL) {
 		zwlr_output_head_v1_send_serial_number(head_resource, output->serial);
 	}
 

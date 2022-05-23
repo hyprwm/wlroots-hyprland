@@ -17,9 +17,20 @@
 
 static void send_geometry(struct wl_resource *resource) {
 	struct wlr_output *output = wlr_output_from_resource(resource);
+
+	const char *make = output->make;
+	if (make == NULL) {
+		make = "Unknown";
+	}
+
+	const char *model = output->model;
+	if (model == NULL) {
+		model = "Unknown";
+	}
+
 	wl_output_send_geometry(resource, 0, 0,
 		output->phys_width, output->phys_height, output->subpixel,
-		output->make, output->model, output->transform);
+		make, model, output->transform);
 }
 
 static void send_current_mode(struct wl_resource *resource) {

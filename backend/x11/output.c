@@ -33,12 +33,19 @@ static void parse_xcb_setup(struct wlr_output *output,
 		xcb_connection_t *xcb) {
 	const xcb_setup_t *xcb_setup = xcb_get_setup(xcb);
 
-	snprintf(output->make, sizeof(output->make), "%.*s",
-			xcb_setup_vendor_length(xcb_setup),
-			xcb_setup_vendor(xcb_setup));
-	snprintf(output->model, sizeof(output->model), "%"PRIu16".%"PRIu16,
-			xcb_setup->protocol_major_version,
-			xcb_setup->protocol_minor_version);
+	output->make = calloc(1, xcb_setup_vendor_length(xcb_setup) + 1);
+	if (output->make == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		return;
+	}
+	memcpy(output->make, xcb_setup_vendor(xcb_setup),
+		xcb_setup_vendor_length(xcb_setup));
+
+	char model[64];
+	snprintf(model, sizeof(model), "%"PRIu16".%"PRIu16,
+		xcb_setup->protocol_major_version,
+		xcb_setup->protocol_minor_version);
+	output->model = strdup(output->model);
 }
 
 static struct wlr_x11_output *get_x11_output_from_output(

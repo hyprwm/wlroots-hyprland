@@ -1,9 +1,11 @@
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <drm_fourcc.h>
 #include <drm_mode.h>
 #include <drm.h>
 #include <libudev.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wlr/util/log.h>
 #include "backend/drm/drm.h"
@@ -64,34 +66,40 @@ static const char *get_manufacturer(struct udev_hwdb *hwdb, uint16_t code) {
 void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data) {
 	struct wlr_output *output = &conn->output;
 
+	free(output->make);
+	free(output->model);
+	free(output->serial);
+	output->make = NULL;
+	output->model = NULL;
+	output->serial = NULL;
+
 	if (!data || len < 128) {
-		snprintf(output->make, sizeof(output->make), "Unknown");
-		snprintf(output->model, sizeof(output->model), "Unknown");
 		return;
 	}
 
 	uint16_t id = (data[8] << 8) | data[9];
-	snprintf(output->make, sizeof(output->make), "%s",
-		get_manufacturer(conn->backend->hwdb, id));
+	output->make = strdup(get_manufacturer(conn->backend->hwdb, id));
 
 	uint16_t model = data[10] | (data[11] << 8);
-	snprintf(output->model, sizeof(output->model), "0x%04X", model);
+	char model_str[32];
+	snprintf(model_str, sizeof(model_str), "0x%04" PRIX16, model);
 
 	uint32_t serial = data[12] | (data[13] << 8) | (data[14] << 8) | (data[15] << 8);
-	snprintf(output->serial, sizeof(output->serial), "0x%08X", serial);
+	char serial_str[32];
+	snprintf(serial_str, sizeof(serial_str), "0x%08" PRIX32, serial);
 
 	for (size_t i = 72; i <= 108; i += 18) {
 		uint16_t flag = (data[i] << 8) | data[i + 1];
 		if (flag == 0 && data[i + 3] == 0xFC) {
-			sprintf(output->model, "%.13s", &data[i + 5]);
+			snprintf(model_str, sizeof(model_str), "%.13s", &data[i + 5]);
 
 			// Monitor names are terminated by newline if they're too short
-			char *nl = strchr(output->model, '\n');
+			char *nl = strchr(model_str, '\n');
 			if (nl) {
 				*nl = '\0';
 			}
 		} else if (flag == 0 && data[i + 3] == 0xFF) {
-			sprintf(output->serial, "%.13s", &data[i + 5]);
+			snprintf(serial_str, sizeof(serial_str), "%.13s", &data[i + 5]);
 
 			// Monitor serial numbers are terminated by newline if they're too
 			// short
@@ -101,6 +109,9 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 			}
 		}
 	}
+
+	output->model = strdup(model_str);
+	output->serial = strdup(serial_str);
 }
 
 const char *conn_get_name(uint32_t type_id) {
