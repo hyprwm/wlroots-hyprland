@@ -4,8 +4,8 @@
 #include <wlr/render/drm_format_set.h>
 #include <wlr/types/wlr_output.h>
 
-void output_pending_resolution(struct wlr_output *output, int *width,
-	int *height);
+void output_pending_resolution(struct wlr_output *output,
+	const struct wlr_output_state *state, int *width, int *height);
 
 struct wlr_drm_format *output_pick_format(struct wlr_output *output,
 	const struct wlr_drm_format_set *display_formats, uint32_t format);

@@ -535,17 +535,17 @@ static void output_state_clear(struct wlr_output_state *state) {
 	state->committed = 0;
 }
 
-void output_pending_resolution(struct wlr_output *output, int *width,
-		int *height) {
-	if (output->pending.committed & WLR_OUTPUT_STATE_MODE) {
-		switch (output->pending.mode_type) {
+void output_pending_resolution(struct wlr_output *output,
+		const struct wlr_output_state *state, int *width, int *height) {
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		switch (state->mode_type) {
 		case WLR_OUTPUT_STATE_MODE_FIXED:
-			*width = output->pending.mode->width;
-			*height = output->pending.mode->height;
+			*width = state->mode->width;
+			*height = state->mode->height;
 			return;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			*width = output->pending.custom_mode.width;
-			*height = output->pending.custom_mode.height;
+			*width = state->custom_mode.width;
+			*height = state->custom_mode.height;
 			return;
 		}
 		abort();
@@ -583,7 +583,8 @@ static bool output_basic_test(struct wlr_output *output) {
 			// If the size doesn't match, reject buffer (scaling is not
 			// supported)
 			int pending_width, pending_height;
-			output_pending_resolution(output, &pending_width, &pending_height);
+			output_pending_resolution(output, &output->pending,
+				&pending_width, &pending_height);
 			if (output->pending.buffer->width != pending_width ||
 					output->pending.buffer->height != pending_height) {
 				wlr_log(WLR_DEBUG, "Direct scan-out buffer size mismatch");
@@ -616,7 +617,8 @@ static bool output_basic_test(struct wlr_output *output) {
 	if (enabled && (output->pending.committed & (WLR_OUTPUT_STATE_ENABLED |
 			WLR_OUTPUT_STATE_MODE))) {
 		int pending_width, pending_height;
-		output_pending_resolution(output, &pending_width, &pending_height);
+		output_pending_resolution(output, &output->pending,
+			&pending_width, &pending_height);
 		if (pending_width == 0 || pending_height == 0) {
 			wlr_log(WLR_DEBUG, "Tried to enable an output with a zero mode");
 			return false;

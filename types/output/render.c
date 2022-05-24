@@ -46,7 +46,7 @@ bool wlr_output_init_render(struct wlr_output *output,
 static bool output_create_swapchain(struct wlr_output *output,
 		bool allow_modifiers) {
 	int width, height;
-	output_pending_resolution(output, &width, &height);
+	output_pending_resolution(output, &output->pending, &width, &height);
 
 	struct wlr_allocator *allocator = output->allocator;
 	assert(allocator != NULL);
@@ -154,7 +154,7 @@ static bool output_attach_empty_buffer(struct wlr_output *output) {
 	}
 
 	int width, height;
-	output_pending_resolution(output, &width, &height);
+	output_pending_resolution(output, &output->pending, &width, &height);
 
 	struct wlr_renderer *renderer = output->renderer;
 	wlr_renderer_begin(renderer, width, height);
