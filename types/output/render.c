@@ -44,9 +44,9 @@ bool wlr_output_init_render(struct wlr_output *output,
  * If set to false, the swapchain's format is guaranteed to not use modifiers.
  */
 static bool output_create_swapchain(struct wlr_output *output,
-		bool allow_modifiers) {
+		const struct wlr_output_state *state, bool allow_modifiers) {
 	int width, height;
-	output_pending_resolution(output, &output->pending, &width, &height);
+	output_pending_resolution(output, state, &width, &height);
 
 	struct wlr_allocator *allocator = output->allocator;
 	assert(allocator != NULL);
@@ -99,10 +99,10 @@ static bool output_create_swapchain(struct wlr_output *output,
 }
 
 static bool output_attach_back_buffer(struct wlr_output *output,
-		int *buffer_age) {
+		struct wlr_output_state *state, int *buffer_age) {
 	assert(output->back_buffer == NULL);
 
-	if (!output_create_swapchain(output, true)) {
+	if (!output_create_swapchain(output, state, true)) {
 		return false;
 	}
 
@@ -138,23 +138,29 @@ void output_clear_back_buffer(struct wlr_output *output) {
 	output->back_buffer = NULL;
 }
 
-bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
-	if (!output_attach_back_buffer(output, buffer_age)) {
+static bool output_attach_render(struct wlr_output *output,
+		struct wlr_output_state *state, int *buffer_age) {
+	if (!output_attach_back_buffer(output, state, buffer_age)) {
 		return false;
 	}
-	wlr_output_attach_buffer(output, output->back_buffer);
+	output_state_attach_buffer(state, output->back_buffer);
 	return true;
 }
 
-static bool output_attach_empty_buffer(struct wlr_output *output) {
-	assert(!(output->pending.committed & WLR_OUTPUT_STATE_BUFFER));
+bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
+	return output_attach_render(output, &output->pending, buffer_age);
+}
 
-	if (!wlr_output_attach_render(output, NULL)) {
+static bool output_attach_empty_buffer(struct wlr_output *output,
+		struct wlr_output_state *state) {
+	assert(!(state->committed & WLR_OUTPUT_STATE_BUFFER));
+
+	if (!output_attach_render(output, state, NULL)) {
 		return false;
 	}
 
 	int width, height;
-	output_pending_resolution(output, &output->pending, &width, &height);
+	output_pending_resolution(output, state, &width, &height);
 
 	struct wlr_renderer *renderer = output->renderer;
 	wlr_renderer_begin(renderer, width, height);
@@ -164,42 +170,41 @@ static bool output_attach_empty_buffer(struct wlr_output *output) {
 	return true;
 }
 
-bool output_ensure_buffer(struct wlr_output *output) {
+bool output_ensure_buffer(struct wlr_output *output,
+		struct wlr_output_state *state) {
 	// If we're lighting up an output or changing its mode, make sure to
 	// provide a new buffer
 	bool needs_new_buffer = false;
-	if ((output->pending.committed & WLR_OUTPUT_STATE_ENABLED) &&
-			output->pending.enabled) {
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && state->enabled) {
 		needs_new_buffer = true;
 	}
-	if (output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		needs_new_buffer = true;
 	}
-	if (output->pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		needs_new_buffer = true;
 	}
-	if (!needs_new_buffer ||
-			(output->pending.committed & WLR_OUTPUT_STATE_BUFFER)) {
+	if (!needs_new_buffer || (state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 		return true;
 	}
 
 	// If the backend doesn't necessarily need a new buffer on modeset, don't
 	// bother allocating one.
-	if (!output->impl->test || output->impl->test(output, &output->pending)) {
+	if (!output->impl->test || output->impl->test(output, state)) {
 		return true;
 	}
 
 	wlr_log(WLR_DEBUG, "Attaching empty buffer to output for modeset");
 
-	if (!output_attach_empty_buffer(output)) {
+	if (!output_attach_empty_buffer(output, state)) {
 		goto error;
 	}
-	if (!output->impl->test || output->impl->test(output, &output->pending)) {
+	if (!output->impl->test || output->impl->test(output, state)) {
 		return true;
 	}
 
 	output_clear_back_buffer(output);
-	output->pending.committed &= ~WLR_OUTPUT_STATE_BUFFER;
+	state->committed &= ~WLR_OUTPUT_STATE_BUFFER;
 
 	if (output->swapchain->format->len == 0) {
 		return false;
@@ -209,20 +214,20 @@ bool output_ensure_buffer(struct wlr_output *output) {
 	// modifiers to see if that makes a difference.
 	wlr_log(WLR_DEBUG, "Output modeset test failed, retrying without modifiers");
 
-	if (!output_create_swapchain(output, false)) {
+	if (!output_create_swapchain(output, state, false)) {
 		return false;
 	}
-	if (!output_attach_empty_buffer(output)) {
+	if (!output_attach_empty_buffer(output, state)) {
 		goto error;
 	}
-	if (!output->impl->test(output, &output->pending)) {
+	if (!output->impl->test(output, state)) {
 		goto error;
 	}
 	return true;
 
 error:
 	output_clear_back_buffer(output);
-	output->pending.committed &= ~WLR_OUTPUT_STATE_BUFFER;
+	state->committed &= ~WLR_OUTPUT_STATE_BUFFER;
 	return false;
 }
 
@@ -291,7 +296,7 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
 		return DRM_FORMAT_INVALID;
 	}
 
-	if (!output_attach_back_buffer(output, NULL)) {
+	if (!output_attach_back_buffer(output, &output->pending, NULL)) {
 		return false;
 	}
 

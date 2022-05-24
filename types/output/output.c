@@ -660,7 +660,7 @@ bool wlr_output_test(struct wlr_output *output) {
 	if (!output_basic_test(output)) {
 		return false;
 	}
-	if (!output_ensure_buffer(output)) {
+	if (!output_ensure_buffer(output, &output->pending)) {
 		return false;
 	}
 	if (!output->impl->test) {
@@ -681,7 +681,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 		return false;
 	}
 
-	if (!output_ensure_buffer(output)) {
+	if (!output_ensure_buffer(output, &output->pending)) {
 		return false;
 	}
 
@@ -804,11 +804,16 @@ void wlr_output_rollback(struct wlr_output *output) {
 	output_state_clear(&output->pending);
 }
 
+void output_state_attach_buffer(struct wlr_output_state *state,
+		struct wlr_buffer *buffer) {
+	output_state_clear_buffer(state);
+	state->committed |= WLR_OUTPUT_STATE_BUFFER;
+	state->buffer = wlr_buffer_lock(buffer);
+}
+
 void wlr_output_attach_buffer(struct wlr_output *output,
 		struct wlr_buffer *buffer) {
-	output_state_clear_buffer(&output->pending);
-	output->pending.committed |= WLR_OUTPUT_STATE_BUFFER;
-	output->pending.buffer = wlr_buffer_lock(buffer);
+	output_state_attach_buffer(&output->pending, buffer);
 }
 
 void wlr_output_send_frame(struct wlr_output *output) {
