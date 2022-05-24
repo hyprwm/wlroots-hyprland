@@ -703,6 +703,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 	struct wlr_output_event_precommit pre_event = {
 		.output = output,
 		.when = &now,
+		.state = &output->pending,
 	};
 	wlr_signal_emit_safe(&output->events.precommit, &pre_event);
 

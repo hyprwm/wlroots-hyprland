@@ -47,9 +47,11 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 static void output_handle_precommit(struct wl_listener *listener, void *data) {
 	struct wlr_output_damage *output_damage =
 		wl_container_of(listener, output_damage, output_precommit);
+	const struct wlr_output_event_precommit *event = data;
+	const struct wlr_output_state *state = event->state;
 	struct wlr_output *output = output_damage->output;
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		// TODO: find a better way to access this info without a precommit
 		// handler
 		output_damage->pending_attach_render = output->back_buffer != NULL;

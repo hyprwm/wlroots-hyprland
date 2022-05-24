@@ -40,16 +40,18 @@ static struct screencopy_damage *screencopy_damage_find(
 	return NULL;
 }
 
-static void screencopy_damage_accumulate(struct screencopy_damage *damage) {
+static void screencopy_damage_accumulate(struct screencopy_damage *damage,
+		const struct wlr_output_state *state) {
 	struct pixman_region32 *region = &damage->damage;
 	struct wlr_output *output = damage->output;
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_DAMAGE) {
+	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
 		// If the compositor submitted damage, copy it over
-		pixman_region32_union(region, region, &output->pending.damage);
+		pixman_region32_union(region, region,
+			(pixman_region32_t *) &state->damage);
 		pixman_region32_intersect_rect(region, region, 0, 0,
 			output->width, output->height);
-	} else if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	} else if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		// If the compositor did not submit damage but did submit a buffer
 		// damage everything
 		pixman_region32_union_rect(region, region, 0, 0,
@@ -61,7 +63,8 @@ static void screencopy_damage_handle_output_precommit(
 		struct wl_listener *listener, void *data) {
 	struct screencopy_damage *damage =
 		wl_container_of(listener, damage, output_precommit);
-	screencopy_damage_accumulate(damage);
+	const struct wlr_output_event_precommit *event = data;
+	screencopy_damage_accumulate(damage, event->state);
 }
 
 static void screencopy_damage_destroy(struct screencopy_damage *damage) {
