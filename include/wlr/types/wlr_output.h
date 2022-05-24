@@ -428,6 +428,8 @@ bool wlr_output_commit(struct wlr_output *output);
 void wlr_output_rollback(struct wlr_output *output);
 bool wlr_output_test_state(struct wlr_output *output,
 	const struct wlr_output_state *state);
+bool wlr_output_commit_state(struct wlr_output *output,
+	const struct wlr_output_state *state);
 /**
  * Manually schedules a `frame` event. If a `frame` event is already pending,
  * it is a no-op.

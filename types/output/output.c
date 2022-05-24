@@ -397,6 +397,12 @@ static void output_state_finish(struct wlr_output_state *state) {
 	free(state->gamma_lut);
 }
 
+static void output_state_move(struct wlr_output_state *dst,
+		struct wlr_output_state *src) {
+	*dst = *src;
+	output_state_init(src);
+}
+
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 		const struct wlr_output_impl *impl, struct wl_display *display) {
 	assert(impl->commit);
@@ -673,7 +679,7 @@ bool wlr_output_test_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	bool had_buffer = state->committed & WLR_OUTPUT_STATE_BUFFER;
 
-	// Duplicate the satte because we might mutate it in output_ensure_buffer
+	// Duplicate the state because we might mutate it in output_ensure_buffer
 	struct wlr_output_state pending = *state;
 	if (!output_basic_test(output, &pending)) {
 		return false;
@@ -696,17 +702,20 @@ bool wlr_output_test(struct wlr_output *output) {
 	return wlr_output_test_state(output, &output->pending);
 }
 
-bool wlr_output_commit(struct wlr_output *output) {
-	if (!output_basic_test(output, &output->pending)) {
+bool wlr_output_commit_state(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	if (!output_basic_test(output, state)) {
 		wlr_log(WLR_ERROR, "Basic output test failed for %s", output->name);
 		return false;
 	}
 
-	if (!output_ensure_buffer(output, &output->pending)) {
+	// Duplicate the state because we might mutate it in output_ensure_buffer
+	struct wlr_output_state pending = *state;
+	if (!output_ensure_buffer(output, &pending)) {
 		return false;
 	}
 
-	if ((output->pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
+	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
 			output->idle_frame != NULL) {
 		wl_event_source_remove(output->idle_frame);
 		output->idle_frame = NULL;
@@ -718,7 +727,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 	struct wlr_output_event_precommit pre_event = {
 		.output = output,
 		.when = &now,
-		.state = &output->pending,
+		.state = &pending,
 	};
 	wlr_signal_emit_safe(&output->events.precommit, &pre_event);
 
@@ -727,19 +736,18 @@ bool wlr_output_commit(struct wlr_output *output) {
 	// implicit rendering synchronization point. The backend needs it to avoid
 	// displaying a buffer when asynchronous GPU work isn't finished.
 	struct wlr_buffer *back_buffer = NULL;
-	if ((output->pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
+	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
 			output->back_buffer != NULL) {
 		back_buffer = wlr_buffer_lock(output->back_buffer);
 		output_clear_back_buffer(output);
 	}
 
-	if (!output->impl->commit(output, &output->pending)) {
+	if (!output->impl->commit(output, &pending)) {
 		wlr_buffer_unlock(back_buffer);
-		output_state_clear(&output->pending);
 		return false;
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
 		struct wlr_output_cursor *cursor;
 		wl_list_for_each(cursor, &output->cursors, link) {
 			if (!cursor->enabled || !cursor->visible || cursor->surface == NULL) {
@@ -749,27 +757,27 @@ bool wlr_output_commit(struct wlr_output *output) {
 		}
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
-		output->render_format = output->pending.render_format;
+	if (pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+		output->render_format = pending.render_format;
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
-		output->subpixel = output->pending.subpixel;
+	if (pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		output->subpixel = pending.subpixel;
 	}
 
 	output->commit_seq++;
 
-	bool scale_updated = output->pending.committed & WLR_OUTPUT_STATE_SCALE;
+	bool scale_updated = pending.committed & WLR_OUTPUT_STATE_SCALE;
 	if (scale_updated) {
-		output->scale = output->pending.scale;
+		output->scale = pending.scale;
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_TRANSFORM) {
-		output->transform = output->pending.transform;
+	if (pending.committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		output->transform = pending.transform;
 		output_update_matrix(output);
 	}
 
-	bool geometry_updated = output->pending.committed &
+	bool geometry_updated = pending.committed &
 		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM |
 		WLR_OUTPUT_STATE_SUBPIXEL);
 	if (geometry_updated || scale_updated) {
@@ -786,15 +794,14 @@ bool wlr_output_commit(struct wlr_output *output) {
 	}
 
 	// Destroy the swapchains when an output is disabled
-	if ((output->pending.committed & WLR_OUTPUT_STATE_ENABLED) &&
-			!output->pending.enabled) {
+	if ((pending.committed & WLR_OUTPUT_STATE_ENABLED) && !pending.enabled) {
 		wlr_swapchain_destroy(output->swapchain);
 		output->swapchain = NULL;
 		wlr_swapchain_destroy(output->cursor_swapchain);
 		output->cursor_swapchain = NULL;
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
 		output->frame_pending = true;
 		output->needs_frame = false;
 	}
@@ -803,12 +810,9 @@ bool wlr_output_commit(struct wlr_output *output) {
 		wlr_swapchain_set_buffer_submitted(output->swapchain, back_buffer);
 	}
 
-	uint32_t committed = output->pending.committed;
-	output_state_clear(&output->pending);
-
 	struct wlr_output_event_commit event = {
 		.output = output,
-		.committed = committed,
+		.committed = pending.committed,
 		.when = &now,
 		.buffer = back_buffer,
 	};
@@ -819,6 +823,15 @@ bool wlr_output_commit(struct wlr_output *output) {
 	}
 
 	return true;
+}
+
+bool wlr_output_commit(struct wlr_output *output) {
+	// Make sure the pending state is cleared before the output is committed
+	struct wlr_output_state state = {0};
+	output_state_move(&state, &output->pending);
+	bool ok = wlr_output_commit_state(output, &state);
+	output_state_finish(&state);
+	return ok;
 }
 
 void wlr_output_rollback(struct wlr_output *output) {
