@@ -1,4 +1,5 @@
-version_array = meson.project_version().split('.')
+version_base = meson.project_version().split('-')[0]
+version_array = version_base.split('.')
 version_data = configuration_data()
 version_data.set_quoted('WLR_VERSION_STR', meson.project_version())
 version_data.set('WLR_VERSION_MAJOR', version_array[0])
