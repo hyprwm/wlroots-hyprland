@@ -555,8 +555,9 @@ void output_pending_resolution(struct wlr_output *output,
 	}
 }
 
-static bool output_basic_test(struct wlr_output *output) {
-	if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+static bool output_basic_test(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (output->frame_pending) {
 			wlr_log(WLR_DEBUG, "Tried to commit a buffer while a frame is pending");
 			return false;
@@ -583,24 +584,24 @@ static bool output_basic_test(struct wlr_output *output) {
 			// If the size doesn't match, reject buffer (scaling is not
 			// supported)
 			int pending_width, pending_height;
-			output_pending_resolution(output, &output->pending,
+			output_pending_resolution(output, state,
 				&pending_width, &pending_height);
-			if (output->pending.buffer->width != pending_width ||
-					output->pending.buffer->height != pending_height) {
+			if (state->buffer->width != pending_width ||
+					state->buffer->height != pending_height) {
 				wlr_log(WLR_DEBUG, "Direct scan-out buffer size mismatch");
 				return false;
 			}
 		}
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		struct wlr_allocator *allocator = output->allocator;
 		assert(allocator != NULL);
 
 		const struct wlr_drm_format_set *display_formats =
 			wlr_output_get_primary_formats(output, allocator->buffer_caps);
 		struct wlr_drm_format *format = output_pick_format(output, display_formats,
-			output->pending.render_format);
+			state->render_format);
 		if (format == NULL) {
 			wlr_log(WLR_ERROR, "Failed to pick primary buffer format for output");
 			return false;
@@ -610,14 +611,14 @@ static bool output_basic_test(struct wlr_output *output) {
 	}
 
 	bool enabled = output->enabled;
-	if (output->pending.committed & WLR_OUTPUT_STATE_ENABLED) {
-		enabled = output->pending.enabled;
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		enabled = state->enabled;
 	}
 
-	if (enabled && (output->pending.committed & (WLR_OUTPUT_STATE_ENABLED |
+	if (enabled && (state->committed & (WLR_OUTPUT_STATE_ENABLED |
 			WLR_OUTPUT_STATE_MODE))) {
 		int pending_width, pending_height;
-		output_pending_resolution(output, &output->pending,
+		output_pending_resolution(output, state,
 			&pending_width, &pending_height);
 		if (pending_width == 0 || pending_height == 0) {
 			wlr_log(WLR_DEBUG, "Tried to enable an output with a zero mode");
@@ -625,27 +626,27 @@ static bool output_basic_test(struct wlr_output *output) {
 		}
 	}
 
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		wlr_log(WLR_DEBUG, "Tried to commit a buffer on a disabled output");
 		return false;
 	}
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_MODE) {
 		wlr_log(WLR_DEBUG, "Tried to modeset a disabled output");
 		return false;
 	}
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
 		wlr_log(WLR_DEBUG, "Tried to enable adaptive sync on a disabled output");
 		return false;
 	}
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		wlr_log(WLR_DEBUG, "Tried to set format for a disabled output");
 		return false;
 	}
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
 		wlr_log(WLR_DEBUG, "Tried to set the gamma lut on a disabled output");
 		return false;
 	}
-	if (!enabled && output->pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+	if (!enabled && state->committed & WLR_OUTPUT_STATE_SUBPIXEL) {
 		wlr_log(WLR_DEBUG, "Tried to set the subpixel layout on a disabled output");
 		return false;
 	}
@@ -653,30 +654,35 @@ static bool output_basic_test(struct wlr_output *output) {
 	return true;
 }
 
-bool wlr_output_test(struct wlr_output *output) {
-	bool had_buffer = output->pending.committed & WLR_OUTPUT_STATE_BUFFER;
-	bool success;
+bool wlr_output_test_state(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	bool had_buffer = state->committed & WLR_OUTPUT_STATE_BUFFER;
 
-	if (!output_basic_test(output)) {
+	// Duplicate the satte because we might mutate it in output_ensure_buffer
+	struct wlr_output_state pending = *state;
+	if (!output_basic_test(output, &pending)) {
 		return false;
 	}
-	if (!output_ensure_buffer(output, &output->pending)) {
+	if (!output_ensure_buffer(output, &pending)) {
 		return false;
 	}
 	if (!output->impl->test) {
 		return true;
 	}
 
-	success = output->impl->test(output, &output->pending);
-
+	bool success = output->impl->test(output, &pending);
 	if (!had_buffer) {
 		output_clear_back_buffer(output);
 	}
 	return success;
 }
 
+bool wlr_output_test(struct wlr_output *output) {
+	return wlr_output_test_state(output, &output->pending);
+}
+
 bool wlr_output_commit(struct wlr_output *output) {
-	if (!output_basic_test(output)) {
+	if (!output_basic_test(output, &output->pending)) {
 		wlr_log(WLR_ERROR, "Basic output test failed for %s", output->name);
 		return false;
 	}
