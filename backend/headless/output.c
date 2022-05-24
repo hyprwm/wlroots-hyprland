@@ -29,40 +29,41 @@ static bool output_set_custom_mode(struct wlr_headless_output *output,
 	return true;
 }
 
-static bool output_test(struct wlr_output *wlr_output) {
-	uint32_t unsupported =
-		wlr_output->pending.committed & ~SUPPORTED_OUTPUT_STATE;
+static bool output_test(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
+	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
-		assert(wlr_output->pending.mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
 	}
 
 	return true;
 }
 
-static bool output_commit(struct wlr_output *wlr_output) {
+static bool output_commit(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
 	struct wlr_headless_output *output =
 		headless_output_from_output(wlr_output);
 
-	if (!output_test(wlr_output)) {
+	if (!output_test(wlr_output, state)) {
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		if (!output_set_custom_mode(output,
-				wlr_output->pending.custom_mode.width,
-				wlr_output->pending.custom_mode.height,
-				wlr_output->pending.custom_mode.refresh)) {
+				state->custom_mode.width,
+				state->custom_mode.height,
+				state->custom_mode.refresh)) {
 			return false;
 		}
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		struct wlr_output_event_present present_event = {
 			.commit_seq = wlr_output->commit_seq + 1,
 			.presented = true,

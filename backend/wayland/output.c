@@ -240,48 +240,49 @@ static struct wlr_wl_buffer *get_or_create_wl_buffer(struct wlr_wl_backend *wl,
 	return create_wl_buffer(wl, wlr_buffer);
 }
 
-static bool output_test(struct wlr_output *wlr_output) {
+static bool output_test(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
 	struct wlr_wl_output *output =
 		get_wl_output_from_output(wlr_output);
 
-	uint32_t unsupported =
-		wlr_output->pending.committed & ~SUPPORTED_OUTPUT_STATE;
+	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
-		assert(wlr_output->pending.mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
 	}
 
-	if ((wlr_output->pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
-			!test_buffer(output->backend, wlr_output->pending.buffer)) {
+	if ((state->committed & WLR_OUTPUT_STATE_BUFFER) &&
+			!test_buffer(output->backend, state->buffer)) {
 		return false;
 	}
 
 	return true;
 }
 
-static bool output_commit(struct wlr_output *wlr_output) {
+static bool output_commit(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
 	struct wlr_wl_output *output =
 		get_wl_output_from_output(wlr_output);
 
-	if (!output_test(wlr_output)) {
+	if (!output_test(wlr_output, state)) {
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		if (!output_set_custom_mode(wlr_output,
-				wlr_output->pending.custom_mode.width,
-				wlr_output->pending.custom_mode.height,
-				wlr_output->pending.custom_mode.refresh)) {
+				state->custom_mode.width,
+				state->custom_mode.height,
+				state->custom_mode.refresh)) {
 			return false;
 		}
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		struct wp_presentation_feedback *wp_feedback = NULL;
 		if (output->backend->presentation != NULL) {
 			wp_feedback = wp_presentation_feedback(output->backend->presentation,
@@ -289,8 +290,8 @@ static bool output_commit(struct wlr_output *wlr_output) {
 		}
 
 		pixman_region32_t *damage = NULL;
-		if (wlr_output->pending.committed & WLR_OUTPUT_STATE_DAMAGE) {
-			damage = &wlr_output->pending.damage;
+		if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
+			damage = (pixman_region32_t *) &state->damage;
 		}
 
 		if (output->frame_callback != NULL) {
@@ -301,7 +302,7 @@ static bool output_commit(struct wlr_output *wlr_output) {
 		output->frame_callback = wl_surface_frame(output->surface);
 		wl_callback_add_listener(output->frame_callback, &frame_listener, output);
 
-		struct wlr_buffer *wlr_buffer = wlr_output->pending.buffer;
+		struct wlr_buffer *wlr_buffer = state->buffer;
 		struct wlr_wl_buffer *buffer =
 			get_or_create_wl_buffer(output->backend, wlr_buffer);
 		if (buffer == NULL) {

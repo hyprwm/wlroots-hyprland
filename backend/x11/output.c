@@ -104,17 +104,17 @@ static void output_destroy(struct wlr_output *wlr_output) {
 	free(output);
 }
 
-static bool output_test(struct wlr_output *wlr_output) {
-	uint32_t unsupported =
-		wlr_output->pending.committed & ~SUPPORTED_OUTPUT_STATE;
+static bool output_test(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
+	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
-		assert(wlr_output->pending.mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
 	}
 
 	return true;
@@ -257,10 +257,11 @@ static struct wlr_x11_buffer *get_or_create_x11_buffer(
 	return create_x11_buffer(output, wlr_buffer);
 }
 
-static bool output_commit_buffer(struct wlr_x11_output *output) {
+static bool output_commit_buffer(struct wlr_x11_output *output,
+		const struct wlr_output_state *state) {
 	struct wlr_x11_backend *x11 = output->x11;
 
-	struct wlr_buffer *buffer = output->wlr_output.pending.buffer;
+	struct wlr_buffer *buffer = state->buffer;
 	struct wlr_x11_buffer *x11_buffer =
 		get_or_create_x11_buffer(output, buffer);
 	if (!x11_buffer) {
@@ -268,8 +269,9 @@ static bool output_commit_buffer(struct wlr_x11_output *output) {
 	}
 
 	xcb_xfixes_region_t region = XCB_NONE;
-	if (output->wlr_output.pending.committed & WLR_OUTPUT_STATE_DAMAGE) {
-		pixman_region32_union(&output->exposed, &output->exposed, &output->wlr_output.pending.damage);
+	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
+		pixman_region32_union(&output->exposed, &output->exposed,
+			(pixman_region32_t *) &state->damage);
 
 		int rects_len = 0;
 		pixman_box32_t *rects = pixman_region32_rectangles(&output->exposed, &rects_len);
@@ -315,26 +317,27 @@ error:
 	return false;
 }
 
-static bool output_commit(struct wlr_output *wlr_output) {
+static bool output_commit(struct wlr_output *wlr_output,
+		const struct wlr_output_state *state) {
 	struct wlr_x11_output *output = get_x11_output_from_output(wlr_output);
 	struct wlr_x11_backend *x11 = output->x11;
 
-	if (!output_test(wlr_output)) {
+	if (!output_test(wlr_output, state)) {
 		return false;
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		if (!output_set_custom_mode(wlr_output,
-				wlr_output->pending.custom_mode.width,
-				wlr_output->pending.custom_mode.height,
-				wlr_output->pending.custom_mode.refresh)) {
+				state->custom_mode.width,
+				state->custom_mode.height,
+				state->custom_mode.refresh)) {
 			return false;
 		}
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED &&
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED &&
 			x11->atoms.variable_refresh != XCB_ATOM_NONE) {
-		if (wlr_output->pending.adaptive_sync_enabled) {
+		if (state->adaptive_sync_enabled) {
 			uint32_t enabled = 1;
 			xcb_change_property(x11->xcb, XCB_PROP_MODE_REPLACE, output->win,
 				x11->atoms.variable_refresh, XCB_ATOM_CARDINAL, 32, 1,
@@ -347,8 +350,8 @@ static bool output_commit(struct wlr_output *wlr_output) {
 		}
 	}
 
-	if (wlr_output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!output_commit_buffer(output)) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		if (!output_commit_buffer(output, state)) {
 			return false;
 		}
 	}

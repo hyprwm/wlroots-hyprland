@@ -459,24 +459,24 @@ static bool drm_connector_set_pending_fb(struct wlr_drm_connector *conn,
 
 static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn);
 
-static bool drm_connector_test(struct wlr_output *output) {
+static bool drm_connector_test(struct wlr_output *output,
+		const struct wlr_output_state *state) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
 
 	if (!conn->backend->session->active) {
 		return false;
 	}
 
-	uint32_t unsupported = output->pending.committed & ~SUPPORTED_OUTPUT_STATE;
+	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
 	}
 
-	if ((output->pending.committed & WLR_OUTPUT_STATE_ENABLED) &&
-			output->pending.enabled) {
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && state->enabled) {
 		if (output->current_mode == NULL &&
-				!(output->pending.committed & WLR_OUTPUT_STATE_MODE)) {
+				!(state->committed & WLR_OUTPUT_STATE_MODE)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"Can't enable an output without a mode");
 			return false;
@@ -484,12 +484,12 @@ static bool drm_connector_test(struct wlr_output *output) {
 	}
 
 	struct wlr_drm_connector_state pending = {0};
-	drm_connector_state_init(&pending, conn, &output->pending);
+	drm_connector_state_init(&pending, conn, state);
 
 	if (pending.active) {
-		if ((output->pending.committed &
+		if ((state->committed &
 				(WLR_OUTPUT_STATE_ENABLED | WLR_OUTPUT_STATE_MODE)) &&
-				!(output->pending.committed & WLR_OUTPUT_STATE_BUFFER)) {
+				!(state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"Can't enable an output without a buffer");
 			return false;
@@ -514,7 +514,7 @@ static bool drm_connector_test(struct wlr_output *output) {
 		return true;
 	}
 
-	if (output->pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (!drm_connector_set_pending_fb(conn, pending.base)) {
 			return false;
 		}
@@ -597,14 +597,15 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	return true;
 }
 
-static bool drm_connector_commit(struct wlr_output *output) {
+static bool drm_connector_commit(struct wlr_output *output,
+		const struct wlr_output_state *state) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
 
-	if (!drm_connector_test(output)) {
+	if (!drm_connector_test(output, state)) {
 		return false;
 	}
 
-	return drm_connector_commit_state(conn, &output->pending);
+	return drm_connector_commit_state(conn, state);
 }
 
 size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,

@@ -54,18 +54,18 @@ struct wlr_output_impl {
 	 */
 	void (*destroy)(struct wlr_output *output);
 	/**
-	 * Check that the pending output state is a valid configuration.
+	 * Check that the supplied output state is a valid configuration.
 	 *
 	 * If this function returns true, commit can only fail due to a runtime
 	 * error.
 	 */
-	bool (*test)(struct wlr_output *output);
+	bool (*test)(struct wlr_output *output, const struct wlr_output_state *state);
 	/**
-	 * Commit the pending output state.
+	 * Commit the supplied output state.
 	 *
 	 * If a buffer has been attached, a frame event is scheduled.
 	 */
-	bool (*commit)(struct wlr_output *output);
+	bool (*commit)(struct wlr_output *output, const struct wlr_output_state *state);
 	/**
 	 * Get the maximum number of gamma LUT elements for each channel.
 	 *

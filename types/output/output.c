@@ -665,7 +665,7 @@ bool wlr_output_test(struct wlr_output *output) {
 		return true;
 	}
 
-	success = output->impl->test(output);
+	success = output->impl->test(output, &output->pending);
 
 	if (!had_buffer) {
 		output_clear_back_buffer(output);
@@ -709,7 +709,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 		output_clear_back_buffer(output);
 	}
 
-	if (!output->impl->commit(output)) {
+	if (!output->impl->commit(output, &output->pending)) {
 		wlr_buffer_unlock(back_buffer);
 		output_state_clear(&output->pending);
 		return false;

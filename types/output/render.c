@@ -185,7 +185,7 @@ bool output_ensure_buffer(struct wlr_output *output) {
 
 	// If the backend doesn't necessarily need a new buffer on modeset, don't
 	// bother allocating one.
-	if (!output->impl->test || output->impl->test(output)) {
+	if (!output->impl->test || output->impl->test(output, &output->pending)) {
 		return true;
 	}
 
@@ -194,7 +194,7 @@ bool output_ensure_buffer(struct wlr_output *output) {
 	if (!output_attach_empty_buffer(output)) {
 		goto error;
 	}
-	if (!output->impl->test || output->impl->test(output)) {
+	if (!output->impl->test || output->impl->test(output, &output->pending)) {
 		return true;
 	}
 
@@ -215,7 +215,7 @@ bool output_ensure_buffer(struct wlr_output *output) {
 	if (!output_attach_empty_buffer(output)) {
 		goto error;
 	}
-	if (!output->impl->test(output)) {
+	if (!output->impl->test(output, &output->pending)) {
 		goto error;
 	}
 	return true;
