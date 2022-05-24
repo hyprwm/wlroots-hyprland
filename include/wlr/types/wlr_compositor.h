@@ -147,7 +147,7 @@ struct wlr_surface {
 		struct wl_signal destroy;
 	} events;
 
-	struct wl_list current_outputs; // wlr_surface_output::link
+	struct wl_list current_outputs; // wlr_surface_output.link
 
 	struct wlr_addon_set addons;
 	void *data;
@@ -243,9 +243,10 @@ void wlr_surface_send_frame_done(struct wlr_surface *surface,
 void wlr_surface_get_extends(struct wlr_surface *surface, struct wlr_box *box);
 
 /**
- * Get the wlr_surface corresponding to a wl_surface resource. This asserts
- * that the resource is a valid wl_surface resource created by wlroots and
- * will never return NULL.
+ * Get the struct wlr_surface corresponding to a wl_surface resource.
+ *
+ * This asserts that the resource is a valid wl_surface resource created by
+ * wlroots and will never return NULL.
  */
 struct wlr_surface *wlr_surface_from_resource(struct wl_resource *resource);
 
@@ -281,7 +282,7 @@ void wlr_surface_get_buffer_source_box(struct wlr_surface *surface,
  * Acquire a lock for the pending surface state.
  *
  * The state won't be committed before the caller releases the lock. Instead,
- * the state becomes cached. The caller needs to use wlr_surface_unlock_cached
+ * the state becomes cached. The caller needs to use wlr_surface_unlock_cached()
  * to release the lock.
  *
  * Returns a surface commit sequence number for the cached state.

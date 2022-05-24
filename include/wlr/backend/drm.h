@@ -48,8 +48,9 @@ bool wlr_output_is_drm(struct wlr_output *output);
 uint32_t wlr_drm_connector_get_id(struct wlr_output *output);
 
 /**
- * Tries to open non-master DRM FD. The compositor must not call `drmSetMaster`
+ * Tries to open non-master DRM FD. The compositor must not call drmSetMaster()
  * on the returned FD.
+ *
  * Returns a valid opened DRM FD, or -1 on error.
  */
 int wlr_drm_backend_get_non_master_fd(struct wlr_backend *backend);
@@ -71,7 +72,7 @@ struct wlr_drm_lease *wlr_drm_create_lease(struct wlr_output **outputs,
 void wlr_drm_lease_terminate(struct wlr_drm_lease *lease);
 
 /**
- * Add mode to the list of available modes
+ * Add mode to the list of available modes.
  */
 typedef struct _drmModeModeInfo drmModeModeInfo;
 struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,

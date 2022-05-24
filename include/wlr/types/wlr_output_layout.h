@@ -18,10 +18,10 @@ struct wlr_box;
 
 /**
  * Helper to arrange outputs in a 2D coordinate space. The output effective
- * resolution is used, see wlr_output_effective_resolution.
+ * resolution is used, see wlr_output_effective_resolution().
  *
  * Outputs added to the output layout are automatically exposed to clients (see
- * wlr_output_create_global). They are no longer exposed when removed from the
+ * wlr_output_create_global()). They are no longer exposed when removed from the
  * layout.
  */
 struct wlr_output_layout {
@@ -115,7 +115,7 @@ void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 * sensible location in the layout. The coordinates of the output in the layout
 * may adjust dynamically when the layout changes. If the output is already in
 * the layout, it will become auto configured. If the position of the output is
-* set such as with `wlr_output_layout_move()`, the output will become manually
+* set such as with wlr_output_layout_move(), the output will become manually
 * configured.
 */
 void wlr_output_layout_add_auto(struct wlr_output_layout *layout,

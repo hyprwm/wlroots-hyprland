@@ -39,7 +39,7 @@ struct wlr_text_input_v3_state {
 
 	// Tracks which features were used in the current commit.
 	// Useful in the enabling commit, where usage means support.
-	uint32_t features; // OR'ed wlr_text_input_v3_features
+	uint32_t features; // bitfield of enum wlr_text_input_v3_features
 };
 
 struct wlr_text_input_v3 {
@@ -52,7 +52,7 @@ struct wlr_text_input_v3 {
 	bool pending_enabled;
 	bool current_enabled;
 	// supported in the current text input, more granular than surface
-	uint32_t active_features; // OR'ed wlr_text_input_v3_features
+	uint32_t active_features; // bitfield of enum wlr_text_input_v3_features
 
 	struct wl_list link;
 
@@ -60,22 +60,22 @@ struct wlr_text_input_v3 {
 	struct wl_listener seat_destroy;
 
 	struct {
-		struct wl_signal enable; // (struct wlr_text_input_v3*)
-		struct wl_signal commit; // (struct wlr_text_input_v3*)
-		struct wl_signal disable; // (struct wlr_text_input_v3*)
-		struct wl_signal destroy; // (struct wlr_text_input_v3*)
+		struct wl_signal enable; // struct wlr_text_input_v3 *
+		struct wl_signal commit; // struct wlr_text_input_v3 *
+		struct wl_signal disable; // struct wlr_text_input_v3 *
+		struct wl_signal destroy; // struct wlr_text_input_v3 *
 	} events;
 };
 
 struct wlr_text_input_manager_v3 {
 	struct wl_global *global;
-	struct wl_list text_inputs; // struct wlr_text_input_v3::resource::link
+	struct wl_list text_inputs; // struct wlr_text_input_v3.resource.link
 
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal text_input; // (struct wlr_text_input_v3*)
-		struct wl_signal destroy; // (struct wlr_input_method_manager_v3*)
+		struct wl_signal text_input; // struct wlr_text_input_v3 *
+		struct wl_signal destroy; // struct wlr_input_method_manager_v3 *
 	} events;
 };
 

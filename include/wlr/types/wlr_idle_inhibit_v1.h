@@ -24,7 +24,7 @@
  */
 
 struct wlr_idle_inhibit_manager_v1 {
-	struct wl_list inhibitors; // wlr_idle_inhibit_inhibitor_v1::link
+	struct wl_list inhibitors; // wlr_idle_inhibit_inhibitor_v1.link
 	struct wl_global *global;
 
 	struct wl_listener display_destroy;
@@ -42,7 +42,7 @@ struct wlr_idle_inhibitor_v1 {
 	struct wl_resource *resource;
 	struct wl_listener surface_destroy;
 
-	struct wl_list link; // wlr_idle_inhibit_manager_v1::inhibitors;
+	struct wl_list link; // wlr_idle_inhibit_manager_v1.inhibitors
 
 	struct {
 		struct wl_signal destroy;

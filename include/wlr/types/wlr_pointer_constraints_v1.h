@@ -53,7 +53,7 @@ struct wlr_pointer_constraint_v1 {
 	struct wl_listener surface_destroy;
 	struct wl_listener seat_destroy;
 
-	struct wl_list link; // wlr_pointer_constraints_v1::constraints
+	struct wl_list link; // wlr_pointer_constraints_v1.constraints
 
 	struct {
 		/**
@@ -69,13 +69,13 @@ struct wlr_pointer_constraint_v1 {
 
 struct wlr_pointer_constraints_v1 {
 	struct wl_global *global;
-	struct wl_list constraints; // wlr_pointer_constraint_v1::link
+	struct wl_list constraints; // wlr_pointer_constraint_v1.link
 
 	struct {
 		/**
 		 * Called when a new pointer constraint is created.
 		 *
-		 * data: struct wlr_pointer_constraint_v1 *
+		 * The data pointer is a struct wlr_pointer_constraint_v1.
 		 */
 		struct wl_signal new_constraint;
 	} events;

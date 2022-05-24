@@ -16,9 +16,9 @@
 struct wlr_output_manager_v1 {
 	struct wl_display *display;
 	struct wl_global *global;
-	struct wl_list resources; // wl_resource_get_link
+	struct wl_list resources; // wl_resource_get_link()
 
-	struct wl_list heads; // wlr_output_head_v1::link
+	struct wl_list heads; // wlr_output_head_v1.link
 	uint32_t serial;
 	bool current_configuration_dirty;
 
@@ -33,8 +33,8 @@ struct wlr_output_manager_v1 {
 		 * event data). That is, the compositor is responsible for destroying
 		 * the configuration.
 		 */
-		struct wl_signal apply; // wlr_output_configuration_v1
-		struct wl_signal test; // wlr_output_configuration_v1
+		struct wl_signal apply; // struct wlr_output_configuration_v1
+		struct wl_signal test; // struct wlr_output_configuration_v1
 
 		struct wl_signal destroy;
 	} events;
@@ -61,16 +61,16 @@ struct wlr_output_head_v1_state {
 struct wlr_output_head_v1 {
 	struct wlr_output_head_v1_state state;
 	struct wlr_output_manager_v1 *manager;
-	struct wl_list link; // wlr_output_manager_v1::heads
+	struct wl_list link; // wlr_output_manager_v1.heads
 
-	struct wl_list resources; // wl_resource_get_link
-	struct wl_list mode_resources; // wl_resource_get_link
+	struct wl_list resources; // wl_resource_get_link()
+	struct wl_list mode_resources; // wl_resource_get_link()
 
 	struct wl_listener output_destroy;
 };
 
 struct wlr_output_configuration_v1 {
-	struct wl_list heads; // wlr_output_configuration_head_v1::link
+	struct wl_list heads; // wlr_output_configuration_head_v1.link
 
 	// client state
 	struct wlr_output_manager_v1 *manager;
@@ -83,7 +83,7 @@ struct wlr_output_configuration_v1 {
 struct wlr_output_configuration_head_v1 {
 	struct wlr_output_head_v1_state state;
 	struct wlr_output_configuration_v1 *config;
-	struct wl_list link; // wlr_output_configuration_v1::heads
+	struct wl_list link; // wlr_output_configuration_v1.heads
 
 	// client state
 	struct wl_resource *resource; // can be NULL if finalized or disabled
@@ -93,7 +93,7 @@ struct wlr_output_configuration_head_v1 {
 
 /**
  * Create a new output manager. The compositor is responsible for calling
- * `wlr_output_manager_v1_set_configuration` whenever the current output
+ * wlr_output_manager_v1_set_configuration() whenever the current output
  * configuration changes.
  */
 struct wlr_output_manager_v1 *wlr_output_manager_v1_create(
@@ -111,8 +111,8 @@ void wlr_output_manager_v1_set_configuration(
 
 /**
  * Create a new, empty output configuration. Compositors should add current head
- * status with `wlr_output_configuration_head_v1_create`. They can then call
- * `wlr_output_manager_v1_set_configuration`.
+ * status with wlr_output_configuration_head_v1_create(). They can then call
+ * wlr_output_manager_v1_set_configuration().
  */
 struct wlr_output_configuration_v1 *wlr_output_configuration_v1_create(void);
 void wlr_output_configuration_v1_destroy(

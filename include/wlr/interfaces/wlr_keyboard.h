@@ -21,7 +21,7 @@ void wlr_keyboard_init(struct wlr_keyboard *keyboard,
 	const struct wlr_keyboard_impl *impl, const char *name);
 
 /**
- * Cleans up all of the resources owned by wlr_keyboard.
+ * Cleans up all of the resources owned by the struct wlr_keyboard.
  */
 void wlr_keyboard_finish(struct wlr_keyboard *keyboard);
 

@@ -14,7 +14,7 @@
 
 struct wlr_primary_selection_v1_device_manager {
 	struct wl_global *global;
-	struct wl_list devices; // wlr_primary_selection_v1_device::link
+	struct wl_list devices; // wlr_primary_selection_v1_device.link
 
 	struct wl_listener display_destroy;
 
@@ -31,10 +31,10 @@ struct wlr_primary_selection_v1_device_manager {
 struct wlr_primary_selection_v1_device {
 	struct wlr_primary_selection_v1_device_manager *manager;
 	struct wlr_seat *seat;
-	struct wl_list link; // wlr_primary_selection_v1_device_manager::devices
-	struct wl_list resources; // wl_resource_get_link
+	struct wl_list link; // wlr_primary_selection_v1_device_manager.devices
+	struct wl_list resources; // wl_resource_get_link()
 
-	struct wl_list offers; // wl_resource_get_link
+	struct wl_list offers; // wl_resource_get_link()
 
 	struct wl_listener seat_destroy;
 	struct wl_listener seat_focus_change;

@@ -31,16 +31,16 @@ struct wlr_buffer_resource_interface {
 /**
  * Initialize a buffer. This function should be called by producers. The
  * initialized buffer is referenced: once the producer is done with the buffer
- * they should call wlr_buffer_drop.
+ * they should call wlr_buffer_drop().
  */
 void wlr_buffer_init(struct wlr_buffer *buffer,
 	const struct wlr_buffer_impl *impl, int width, int height);
 
 /**
- * Allows the registration of a wl_resource implementation.
+ * Allows the registration of a struct wl_resource implementation.
  *
- * The matching function will be called for the wl_resource when creating a
- * wlr_buffer from a wl_resource.
+ * The matching function will be called for the struct wl_resource when creating
+ * a struct wlr_buffer from a struct wl_resource.
  */
 void wlr_buffer_register_resource_interface(
 	const struct wlr_buffer_resource_interface *iface);

@@ -15,7 +15,7 @@
 struct wlr_xdg_foreign_v2 {
 	struct {
 		struct wl_global *global;
-		struct wl_list objects; // wlr_xdg_exported_v2::link or wlr_xdg_imported_v2::link
+		struct wl_list objects; // wlr_xdg_exported_v2.link or wlr_xdg_imported_v2.link
 	} exporter, importer;
 
 	struct wl_listener foreign_registry_destroy;
@@ -36,7 +36,7 @@ struct wlr_xdg_exported_v2 {
 	struct wl_resource *resource;
 	struct wl_listener xdg_surface_unmap;
 
-	struct wl_list link; // wlr_xdg_foreign_v2::exporter::objects
+	struct wl_list link; // wlr_xdg_foreign_v2.exporter.objects
 };
 
 struct wlr_xdg_imported_v2 {
@@ -44,7 +44,7 @@ struct wlr_xdg_imported_v2 {
 	struct wl_listener exported_destroyed;
 
 	struct wl_resource *resource;
-	struct wl_list link; // wlr_xdg_foreign_v2::importer::objects
+	struct wl_list link; // wlr_xdg_foreign_v2.importer.objects
 	struct wl_list children;
 };
 
@@ -52,7 +52,7 @@ struct wlr_xdg_imported_child_v2 {
 	struct wlr_xdg_imported_v2 *imported;
 	struct wlr_surface *surface;
 
-	struct wl_list link; // wlr_xdg_imported_v2::children
+	struct wl_list link; // wlr_xdg_imported_v2.children
 
 	struct wl_listener xdg_surface_unmap;
 	struct wl_listener xdg_toplevel_set_parent;

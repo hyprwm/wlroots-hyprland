@@ -6,12 +6,12 @@
 
 struct wlr_output_power_manager_v1 {
 	struct wl_global *global;
-	struct wl_list output_powers; // wlr_output_power_v1::link
+	struct wl_list output_powers; // wlr_output_power_v1.link
 
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal set_mode; // wlr_output_power_v1_set_mode_event
+		struct wl_signal set_mode; // struct wlr_output_power_v1_set_mode_event
 		struct wl_signal destroy;
 	} events;
 
@@ -22,7 +22,7 @@ struct wlr_output_power_v1 {
 	struct wl_resource *resource;
 	struct wlr_output *output;
 	struct wlr_output_power_manager_v1 *manager;
-	struct wl_list link;
+	struct wl_list link; // wlr_output_power_manager_v1.output_powers
 
 	struct wl_listener output_destroy_listener;
 	struct wl_listener output_commit_listener;

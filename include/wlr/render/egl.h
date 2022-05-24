@@ -77,7 +77,7 @@ struct wlr_egl *wlr_egl_create_with_context(EGLDisplay display,
  * Make the EGL context current.
  *
  * Callers are expected to clear the current context when they are done by
- * calling wlr_egl_unset_current.
+ * calling wlr_egl_unset_current().
  */
 bool wlr_egl_make_current(struct wlr_egl *egl);
 

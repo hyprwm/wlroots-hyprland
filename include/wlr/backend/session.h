@@ -79,36 +79,33 @@ struct wlr_device_change_event {
  * This should not be called if another program is already in control
  * of the terminal (Xorg, another Wayland compositor, etc.).
  *
- * If libseat support is not enabled, or if a standalone backend is to be used,
- * then you must have CAP_SYS_ADMIN or be root. It is safe to drop privileges
- * after this is called.
- *
  * Returns NULL on error.
  */
 struct wlr_session *wlr_session_create(struct wl_display *disp);
 
 /*
  * Closes a previously opened session and restores the virtual terminal.
- * You should call wlr_session_close_file on each files you opened
- * with wlr_session_open_file before you call this.
+ * You should call wlr_session_close_file() on each files you opened
+ * with wlr_session_open_file() before you call this.
  */
 void wlr_session_destroy(struct wlr_session *session);
 
 /*
  * Opens the file at path.
- * This can only be used to open DRM or evdev (input) devices.
+ *
+ * This can only be used to open DRM or evdev (input) devices. Files opened via
+ * this function must be closed by calling wlr_session_close_file().
  *
  * When the session becomes inactive:
+ *
  * - DRM files lose their DRM master status
  * - evdev files become invalid and should be closed
- *
- * Returns -errno on error.
  */
 struct wlr_device *wlr_session_open_file(struct wlr_session *session,
 	const char *path);
 
 /*
- * Closes a file previously opened with wlr_session_open_file.
+ * Closes a file previously opened with wlr_session_open_file().
  */
 void wlr_session_close_file(struct wlr_session *session,
 	struct wlr_device *device);

@@ -26,7 +26,7 @@
 	WLR_OUTPUT_STATE_SUBPIXEL)
 
 /**
- * A backend implementation of wlr_output.
+ * A backend implementation of struct wlr_output.
  *
  * The commit function is mandatory. Other functions are optional.
  */
@@ -39,7 +39,7 @@ struct wlr_output_impl {
 	 * The hotspot indicates the offset that needs to be applied to the
 	 * top-left corner of the image to match the cursor position. In other
 	 * words, the image should be displayed at (x - hotspot_x, y - hotspot_y).
-	 * The hotspot is given in the texture's coordinate space.
+	 * The hotspot is given in the buffer's coordinate space.
 	 */
 	bool (*set_cursor)(struct wlr_output *output, struct wlr_buffer *buffer,
 		int hotspot_x, int hotspot_y);

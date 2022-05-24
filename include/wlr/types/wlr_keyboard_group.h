@@ -14,28 +14,28 @@
 
 struct wlr_keyboard_group {
 	struct wlr_keyboard keyboard;
-	struct wl_list devices; // keyboard_group_device::link
-	struct wl_list keys; // keyboard_group_key::link
+	struct wl_list devices; // keyboard_group_device.link
+	struct wl_list keys; // keyboard_group_key.link
 
 	struct {
-		/*
+		/**
 		 * Sent when a keyboard has entered the group with keys currently
 		 * pressed that are not pressed by any other keyboard in the group. The
-		 * data for this signal will be a wl_array containing the key codes.
-		 * This should be used to update the compositor's internal state.
+		 * data for this signal will be a struct wl_array containing the key
+		 * codes. This should be used to update the compositor's internal state.
 		 * Bindings should not be triggered based off of these key codes and
 		 * they should also not notify any surfaces of the key press.
 		 */
 		struct wl_signal enter;
 
-		/*
+		/**
 		 * Sent when a keyboard has left the group with keys currently pressed
 		 * that are not pressed by any other keyboard in the group. The data for
-		 * this signal will be a wl_array containing the key codes. This should
-		 * be used to update the compositor's internal state. Bindings should
-		 * not be triggered based off of these key codes. Additionally, surfaces
-		 * should only be notified if they received a corresponding key press
-		 * for the key code.
+		 * this signal will be a struct wl_array containing the key codes. This
+		 * should be used to update the compositor's internal state. Bindings
+		 * should not be triggered based off of these key codes. Additionally,
+		 * surfaces should only be notified if they received a corresponding key
+		 * press for the key code.
 		 */
 		struct wl_signal leave;
 	} events;

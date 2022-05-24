@@ -51,7 +51,7 @@ bool wlr_texture_write_pixels(struct wlr_texture *texture,
 	const void *data);
 
 /**
- * Destroys this wlr_texture.
+ * Destroys the texture.
  */
 void wlr_texture_destroy(struct wlr_texture *texture);
 

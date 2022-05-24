@@ -35,8 +35,8 @@ struct wlr_dmabuf_v1_buffer {
 bool wlr_dmabuf_v1_resource_is_buffer(struct wl_resource *buffer_resource);
 
 /**
- * Returns the wlr_dmabuf_buffer if the given resource was created
- * via the linux-dmabuf buffer protocol
+ * Returns the struct wlr_dmabuf_buffer if the given resource was created
+ * via the linux-dmabuf buffer protocol.
  */
 struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_from_buffer_resource(
 	struct wl_resource *buffer_resource);
@@ -72,7 +72,7 @@ struct wlr_linux_dmabuf_v1 {
 };
 
 /**
- * Create linux-dmabuf interface
+ * Create linux-dmabuf interface.
  */
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *display,
 	struct wlr_renderer *renderer);

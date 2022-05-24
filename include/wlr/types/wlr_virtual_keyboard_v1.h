@@ -14,12 +14,12 @@
 
 struct wlr_virtual_keyboard_manager_v1 {
 	struct wl_global *global;
-	struct wl_list virtual_keyboards; // struct wlr_virtual_keyboard_v1*
+	struct wl_list virtual_keyboards; // wlr_virtual_keyboard_v1.link
 
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_virtual_keyboard; // struct wlr_virtual_keyboard_v1*
+		struct wl_signal new_virtual_keyboard; // struct wlr_virtual_keyboard_v1 *
 		struct wl_signal destroy;
 	} events;
 };
@@ -30,7 +30,7 @@ struct wlr_virtual_keyboard_v1 {
 	struct wlr_seat *seat;
 	bool has_keymap;
 
-	struct wl_list link;
+	struct wl_list link; // wlr_virtual_keyboard_manager_v1.virtual_keyboards
 };
 
 struct wlr_virtual_keyboard_manager_v1* wlr_virtual_keyboard_manager_v1_create(

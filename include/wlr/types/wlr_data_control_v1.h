@@ -14,7 +14,7 @@
 
 struct wlr_data_control_manager_v1 {
 	struct wl_global *global;
-	struct wl_list devices; // wlr_data_control_device_v1::link
+	struct wl_list devices; // wlr_data_control_device_v1.link
 
 	struct {
 		struct wl_signal destroy;
@@ -27,7 +27,7 @@ struct wlr_data_control_manager_v1 {
 struct wlr_data_control_device_v1 {
 	struct wl_resource *resource;
 	struct wlr_data_control_manager_v1 *manager;
-	struct wl_list link; // wlr_data_control_manager_v1::devices
+	struct wl_list link; // wlr_data_control_manager_v1.devices
 
 	struct wlr_seat *seat;
 	struct wl_resource *selection_offer_resource; // current selection offer

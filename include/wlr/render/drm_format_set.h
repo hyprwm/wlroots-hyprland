@@ -51,7 +51,7 @@ struct wlr_drm_format_set {
 void wlr_drm_format_set_finish(struct wlr_drm_format_set *set);
 
 /**
- * Return a pointer to a member of this `wlr_drm_format_set` of format
+ * Return a pointer to a member of this struct wlr_drm_format_set of format
  * `format`, or NULL if none exists.
  */
 const struct wlr_drm_format *wlr_drm_format_set_get(

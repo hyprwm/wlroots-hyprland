@@ -27,8 +27,8 @@ struct wlr_shm_attributes {
 /**
  * Buffer capabilities.
  *
- * These bits indicate the features supported by a wlr_buffer. There is one bit
- * per function in wlr_buffer_impl.
+ * These bits indicate the features supported by a struct wlr_buffer. There is
+ * one bit per function in struct wlr_buffer_impl.
  */
 enum wlr_buffer_cap {
 	WLR_BUFFER_CAP_DATA_PTR = 1 << 0,
@@ -69,7 +69,7 @@ void wlr_buffer_drop(struct wlr_buffer *buffer);
 /**
  * Lock the buffer. This function should be called by consumers to make
  * sure the buffer can be safely read from. Once the consumer is done with the
- * buffer, they should call wlr_buffer_unlock.
+ * buffer, they should call wlr_buffer_unlock().
  */
 struct wlr_buffer *wlr_buffer_lock(struct wlr_buffer *buffer);
 /**
@@ -82,7 +82,7 @@ void wlr_buffer_unlock(struct wlr_buffer *buffer);
  * returns false.
  *
  * The returned DMA-BUF attributes are valid for the lifetime of the
- * wlr_buffer. The caller isn't responsible for cleaning up the DMA-BUF
+ * struct wlr_buffer. The caller isn't responsible for cleaning up the DMA-BUF
  * attributes.
  */
 bool wlr_buffer_get_dmabuf(struct wlr_buffer *buffer,
@@ -92,16 +92,16 @@ bool wlr_buffer_get_dmabuf(struct wlr_buffer *buffer,
  * memory, returns false.
  *
  * The returned shared memory attributes are valid for the lifetime of the
- * wlr_buffer. The caller isn't responsible for cleaning up the shared memory
- * attributes.
+ * struct wlr_buffer. The caller isn't responsible for cleaning up the shared
+ * memory attributes.
  */
 bool wlr_buffer_get_shm(struct wlr_buffer *buffer,
 	struct wlr_shm_attributes *attribs);
 /**
- * Transforms a wl_resource into a wlr_buffer and locks it. Once the caller is
- * done with the buffer, they must call wlr_buffer_unlock.
+ * Transforms a struct wl_resource into a struct wlr_buffer and locks it. Once
+ * the caller is done with the buffer, they must call wlr_buffer_unlock().
  *
- * The provided wl_resource must be a wl_buffer.
+ * The provided struct wl_resource must be a wl_buffer.
  */
 struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource);
 
@@ -126,7 +126,7 @@ enum wlr_buffer_data_ptr_access_flag {
  *
  * The returned pointer should be pointing to a valid memory region for the
  * operations specified in the flags. The returned pointer is only valid up to
- * the next buffer_end_data_ptr_access call.
+ * the next wlr_buffer_end_data_ptr_access() call.
  */
 bool wlr_buffer_begin_data_ptr_access(struct wlr_buffer *buffer, uint32_t flags,
 	void **data, uint32_t *format, size_t *stride);
@@ -157,8 +157,8 @@ struct wlr_client_buffer {
 };
 
 /**
- * Creates a wlr_client_buffer from a given wlr_buffer by creating a texture
- * from it, and copying its wl_resource.
+ * Creates a struct wlr_client_buffer from a given struct wlr_buffer by creating
+ * a texture from it, and copying its struct wl_resource.
  */
 struct wlr_client_buffer *wlr_client_buffer_create(struct wlr_buffer *buffer,
 	struct wlr_renderer *renderer);

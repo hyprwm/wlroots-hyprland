@@ -14,8 +14,8 @@
 #define WLR_XDG_FOREIGN_HANDLE_SIZE 37
 
 /**
- * wlr_xdg_foreign_registry is used for storing a list of exported surfaces with
- * the xdg-foreign family of protocols.
+ * struct wlr_xdg_foreign_registry is used for storing a list of exported
+ * surfaces with the xdg-foreign family of protocols.
  *
  * It can be used to allow interoperability between clients using different
  * versions of the protocol (if all versions use the same registry).
@@ -30,7 +30,7 @@ struct wlr_xdg_foreign_registry {
 };
 
 struct wlr_xdg_foreign_exported {
-	struct wl_list link; // wlr_xdg_foreign_registry::exported_surfaces
+	struct wl_list link; // wlr_xdg_foreign_registry.exported_surfaces
 	struct wlr_xdg_foreign_registry *registry;
 
 	struct wlr_surface *surface;
@@ -43,7 +43,7 @@ struct wlr_xdg_foreign_exported {
 };
 
 /**
- * Create an empty wlr_xdg_foreign_registry.
+ * Create an empty struct wlr_xdg_foreign_registry.
  *
  * It will be destroyed when the associated display is destroyed.
  */

@@ -17,7 +17,7 @@ struct wlr_fullscreen_shell_v1 {
 
 	struct {
 		struct wl_signal destroy;
-		// wlr_fullscreen_shell_v1_present_surface_event
+		// struct wlr_fullscreen_shell_v1_present_surface_event
 		struct wl_signal present_surface;
 	} events;
 

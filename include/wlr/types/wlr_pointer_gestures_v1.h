@@ -16,9 +16,9 @@ struct wlr_surface;
 
 struct wlr_pointer_gestures_v1 {
 	struct wl_global *global;
-	struct wl_list swipes; // wl_resource_get_link
-	struct wl_list pinches; // wl_resource_get_link
-	struct wl_list holds; // wl_resource_get_link
+	struct wl_list swipes; // wl_resource_get_link()
+	struct wl_list pinches; // wl_resource_get_link()
+	struct wl_list holds; // wl_resource_get_link()
 
 	struct wl_listener display_destroy;
 

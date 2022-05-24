@@ -15,7 +15,7 @@
 
 struct wlr_screencopy_manager_v1 {
 	struct wl_global *global;
-	struct wl_list frames; // wlr_screencopy_frame_v1::link
+	struct wl_list frames; // wlr_screencopy_frame_v1.link
 
 	struct wl_listener display_destroy;
 
@@ -35,7 +35,7 @@ struct wlr_screencopy_v1_client {
 struct wlr_screencopy_frame_v1 {
 	struct wl_resource *resource;
 	struct wlr_screencopy_v1_client *client;
-	struct wl_list link;
+	struct wl_list link; // wlr_screencopy_manager_v1.frames
 
 	enum wl_shm_format format;
 	uint32_t fourcc;

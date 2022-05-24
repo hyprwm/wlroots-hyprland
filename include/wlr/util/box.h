@@ -23,7 +23,7 @@
  *
  * The x and y coordinates are inclusive, and the width and height lengths are
  * exclusive. In other words, the box starts from the coordinates (x, y), and
- * goes up to but not including (x + width, y + height)
+ * goes up to but not including (x + width, y + height).
  */
 struct wlr_box {
 	int x, y;
@@ -33,7 +33,7 @@ struct wlr_box {
 /**
  * A floating-point box representing a rectangle region in a 2D space.
  *
- * wlr_fbox has the same semantics as wlr_box
+ * struct wlr_fbox has the same semantics as struct wlr_box.
  */
 struct wlr_fbox {
 	double x, y;
@@ -41,34 +41,35 @@ struct wlr_fbox {
 };
 
 /**
- * Finds the closest point within the box bounds
+ * Finds the closest point within the box bounds.
  *
- * Returns NAN if the box is empty
+ * Returns NAN if the box is empty.
  */
 void wlr_box_closest_point(const struct wlr_box *box, double x, double y,
 	double *dest_x, double *dest_y);
 
 /**
- * Gives the intersecting box between two wlr_box.
+ * Gives the intersecting box between two struct wlr_box.
  *
- * Returns an empty wlr_box if the provided wlr_box don't intersect.
+ * Returns an empty box if the provided boxes don't intersect.
  */
 bool wlr_box_intersection(struct wlr_box *dest, const struct wlr_box *box_a,
 	const struct wlr_box *box_b);
 
 /**
- * Verifies if a point is contained within the bounds of a given wlr_box.
+ * Verifies if a point is contained within the bounds of a given struct wlr_box.
  *
  * For example:
- *   - A point at (100, 50) is not contained in the box (0, 0, 100, 50).
- *   - A point at (10, 10) is contained in the box (10, 0, 50, 50).
+ *
+ * - A point at (100, 50) is not contained in the box (0, 0, 100, 50).
+ * - A point at (10, 10) is contained in the box (10, 0, 50, 50).
  */
 bool wlr_box_contains_point(const struct wlr_box *box, double x, double y);
 
 /**
  * Checks whether a box is empty or not.
  *
- * A wlr_box is considered empty if its width and/or height is zero or negative.
+ * A box is considered empty if its width and/or height is zero or negative.
  */
 bool wlr_box_empty(const struct wlr_box *box);
 
@@ -81,7 +82,7 @@ void wlr_box_transform(struct wlr_box *dest, const struct wlr_box *box,
 /**
  * Checks whether a box is empty or not.
  *
- * A wlr_box is considered empty if its width and/or height is zero or negative.
+ * A box is considered empty if its width and/or height is zero or negative.
  */
 bool wlr_fbox_empty(const struct wlr_fbox *box);
 

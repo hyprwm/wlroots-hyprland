@@ -23,8 +23,8 @@ struct wlr_backend_impl {
 };
 
 /**
- * Initializes common state on a wlr_backend and sets the implementation to the
- * provided wlr_backend_impl reference.
+ * Initializes common state on a struct wlr_backend and sets the implementation
+ * to the provided struct wlr_backend_impl reference.
  */
 void wlr_backend_init(struct wlr_backend *backend,
 		const struct wlr_backend_impl *impl);

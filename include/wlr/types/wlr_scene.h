@@ -258,7 +258,7 @@ struct wlr_scene *wlr_scene_create(void);
  * Handle presentation feedback for all surfaces in the scene, assuming that
  * scene outputs and the scene rendering functions are used.
  *
- * Asserts that a wlr_presentation hasn't already been set for the scene.
+ * Asserts that a struct wlr_presentation hasn't already been set for the scene.
  */
 void wlr_scene_set_presentation(struct wlr_scene *scene,
 	struct wlr_presentation *presentation);
@@ -273,7 +273,7 @@ struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_node *parent);
  *
  * The child sub-surfaces are ignored.
  *
- * wlr_surface_send_enter()/wlr_surface_send_leave() will be called
+ * wlr_surface_send_enter() and wlr_surface_send_leave() will be called
  * automatically based on the position of the surface and outputs in
  * the scene.
  */
@@ -283,7 +283,7 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_node *parent
 struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node);
 
 /**
- * If this buffer is backed by a surface, then the wlr_scene_surface is
+ * If this buffer is backed by a surface, then the struct wlr_scene_surface is
  * returned. If not, NULL will be returned.
  */
 struct wlr_scene_surface *wlr_scene_surface_from_buffer(
@@ -383,7 +383,7 @@ void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
 bool wlr_scene_output_commit(struct wlr_scene_output *scene_output);
 /**
  * Call wlr_surface_send_frame_done() on all surfaces in the scene rendered by
- * wlr_scene_output_commit() for which wlr_scene_surface->primary_output
+ * wlr_scene_output_commit() for which wlr_scene_surface.primary_output
  * matches the given scene_output.
  */
 void wlr_scene_output_send_frame_done(struct wlr_scene_output *scene_output,
@@ -396,7 +396,7 @@ void wlr_scene_output_send_frame_done(struct wlr_scene_output *scene_output,
 void wlr_scene_output_for_each_buffer(struct wlr_scene_output *scene_output,
 	wlr_scene_buffer_iterator_func_t iterator, void *user_data);
 /**
- * Get a scene-graph output from a wlr_output.
+ * Get a scene-graph output from a struct wlr_output.
  *
  * If the output hasn't been added to the scene-graph, returns NULL.
  */

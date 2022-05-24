@@ -11,11 +11,11 @@
 struct wlr_input_device;
 
 /**
- * Creates a new wlr_x11_backend. This backend will be created with no outputs;
- * you must use wlr_x11_output_create to add them.
+ * Creates a new X11 backend. This backend will be created with no outputs;
+ * you must use wlr_x11_output_create() to add them.
  *
  * The `x11_display` argument is the name of the X Display socket. Set
- * to NULL for the default behaviour of XOpenDisplay.
+ * to NULL for the default behaviour of XOpenDisplay().
  */
 struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 	const char *x11_display);
@@ -24,27 +24,27 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
  * Adds a new output to this backend. You may remove outputs by destroying them.
  * Note that if called before initializing the backend, this will return NULL
  * and your outputs will be created during initialization (and given to you via
- * the output_add signal).
+ * the new_output signal).
  */
 struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend);
 
 /**
- * True if the given backend is a wlr_x11_backend.
+ * Check whether this backend is an X11 backend.
  */
 bool wlr_backend_is_x11(struct wlr_backend *backend);
 
 /**
- * True if the given input device is a wlr_x11_input_device.
+ * Check whether this input device is an X11 input device.
  */
 bool wlr_input_device_is_x11(struct wlr_input_device *device);
 
 /**
- * True if the given output is a wlr_x11_output.
+ * Check whether this output device is an X11 output device.
  */
 bool wlr_output_is_x11(struct wlr_output *output);
 
 /**
- * Sets the title of a wlr_output which is an X11 window.
+ * Sets the title of a struct wlr_output which is an X11 window.
  */
 void wlr_x11_output_set_title(struct wlr_output *output, const char *title);
 

@@ -14,22 +14,25 @@
 
 struct wlr_backend_impl;
 
+/**
+ * A backend provides a set of input and output devices.
+ */
 struct wlr_backend {
 	const struct wlr_backend_impl *impl;
 
 	struct {
-		/** Raised when destroyed, passed the wlr_backend reference */
+		/** Raised when destroyed */
 		struct wl_signal destroy;
-		/** Raised when new inputs are added, passed the wlr_input_device */
+		/** Raised when new inputs are added, passed the struct wlr_input_device */
 		struct wl_signal new_input;
-		/** Raised when new outputs are added, passed the wlr_output */
+		/** Raised when new outputs are added, passed the struct wlr_output */
 		struct wl_signal new_output;
 	} events;
 };
 
 /**
  * Automatically initializes the most suitable backend given the environment.
- * Will always return a multibackend. The backend is created but not started.
+ * Will always return a multi-backend. The backend is created but not started.
  * Returns NULL on failure.
  */
 struct wlr_backend *wlr_backend_autocreate(struct wl_display *display);
@@ -41,11 +44,11 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display);
 bool wlr_backend_start(struct wlr_backend *backend);
 /**
  * Destroy the backend and clean up all of its resources. Normally called
- * automatically when the wl_display is destroyed.
+ * automatically when the struct wl_display is destroyed.
  */
 void wlr_backend_destroy(struct wlr_backend *backend);
 /**
- * Obtains the wlr_session reference from this backend if there is any.
+ * Obtains the struct wlr_session reference from this backend if there is any.
  * Might return NULL for backends that don't use a session.
  */
 struct wlr_session *wlr_backend_get_session(struct wlr_backend *backend);

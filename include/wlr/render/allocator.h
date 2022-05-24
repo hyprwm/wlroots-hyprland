@@ -37,7 +37,7 @@ struct wlr_allocator {
 };
 
 /**
- * Creates the adequate wlr_allocator given a backend and a renderer
+ * Creates the adequate struct wlr_allocator given a backend and a renderer.
  */
 struct wlr_allocator *wlr_allocator_autocreate(struct wlr_backend *backend,
 	struct wlr_renderer *renderer);
@@ -50,7 +50,7 @@ void wlr_allocator_destroy(struct wlr_allocator *alloc);
  * Allocate a new buffer.
  *
  * When the caller is done with it, they must unreference it by calling
- * wlr_buffer_drop.
+ * wlr_buffer_drop().
  *
  * The `format` passed in indicates the format to use and the list of
  * acceptable modifiers. The order in which modifiers are listed is not

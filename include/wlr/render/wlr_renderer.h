@@ -77,13 +77,13 @@ void wlr_render_quad_with_matrix(struct wlr_renderer *r,
 	const float color[static 4], const float matrix[static 9]);
 /**
  * Get the shared-memory formats supporting import usage. Buffers allocated
- * with a format from this list may be imported via wlr_texture_from_pixels.
+ * with a format from this list may be imported via wlr_texture_from_pixels().
  */
 const uint32_t *wlr_renderer_get_shm_texture_formats(
 	struct wlr_renderer *r, size_t *len);
 /**
  * Get the DMA-BUF formats supporting sampling usage. Buffers allocated with
- * a format from this list may be imported via wlr_texture_from_dmabuf.
+ * a format from this list may be imported via wlr_texture_from_dmabuf().
  */
 const struct wlr_drm_format_set *wlr_renderer_get_dmabuf_texture_formats(
 	struct wlr_renderer *renderer);
@@ -92,7 +92,7 @@ const struct wlr_drm_format_set *wlr_renderer_get_dmabuf_texture_formats(
  * bytes.
  *
  * If `flags` is not NULl, the caller indicates that it accepts frame flags
- * defined in `enum wlr_renderer_read_pixels_flags`.
+ * defined in enum wlr_renderer_read_pixels_flags.
  */
 bool wlr_renderer_read_pixels(struct wlr_renderer *r, uint32_t fmt,
 	uint32_t *flags, uint32_t stride, uint32_t width, uint32_t height,
@@ -107,7 +107,7 @@ bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
 	struct wl_display *wl_display);
 
 /**
- * Initializes wl_shm on the provided wl_display.
+ * Initializes wl_shm on the provided struct wl_display.
  */
 bool wlr_renderer_init_wl_shm(struct wlr_renderer *r,
 	struct wl_display *wl_display);
@@ -120,7 +120,9 @@ bool wlr_renderer_init_wl_shm(struct wlr_renderer *r,
 int wlr_renderer_get_drm_fd(struct wlr_renderer *r);
 
 /**
- * Destroys this wlr_renderer. Textures must be destroyed separately.
+ * Destroys the renderer.
+ *
+ * Textures must be destroyed separately.
  */
 void wlr_renderer_destroy(struct wlr_renderer *renderer);
 

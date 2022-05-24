@@ -23,14 +23,14 @@
  */
 
 struct wlr_keyboard_shortcuts_inhibit_manager_v1 {
-	// wlr_keyboard_shortcuts_inhibitor_v1::link
+	// wlr_keyboard_shortcuts_inhibitor_v1.link
 	struct wl_list inhibitors;
 	struct wl_global *global;
 
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_inhibitor;	// wlr_keyboard_shortcuts_inhibitor_v1
+		struct wl_signal new_inhibitor; // struct wlr_keyboard_shortcuts_inhibitor_v1
 		struct wl_signal destroy;
 	} events;
 
@@ -46,7 +46,7 @@ struct wlr_keyboard_shortcuts_inhibitor_v1 {
 	struct wl_listener surface_destroy;
 	struct wl_listener seat_destroy;
 
-	// wlr_keyboard_shortcuts_inhibit_manager_v1::inhibitors
+	// wlr_keyboard_shortcuts_inhibit_manager_v1.inhibitors
 	struct wl_list link;
 
 	struct {

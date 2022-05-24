@@ -43,7 +43,7 @@ struct wlr_data_offer {
 	struct wl_resource *resource;
 	struct wlr_data_source *source;
 	enum wlr_data_offer_type type;
-	struct wl_list link; // wlr_seat::{selection_offers,drag_offers}
+	struct wl_list link; // wlr_seat.{selection_offers,drag_offers}
 
 	uint32_t actions;
 	enum wl_data_device_manager_dnd_action preferred_action;
@@ -54,7 +54,7 @@ struct wlr_data_offer {
 
 /**
  * A data source implementation. Only the `send` function is mandatory. Refer to
- * the matching wl_data_source_* functions documentation to know what they do.
+ * the matching `wlr_data_source_*` functions documentation to know what they do.
  */
 struct wlr_data_source_impl {
 	void (*send)(struct wlr_data_source *source, const char *mime_type,
@@ -131,8 +131,8 @@ struct wlr_drag {
 
 	struct {
 		struct wl_signal focus;
-		struct wl_signal motion; // wlr_drag_motion_event
-		struct wl_signal drop; // wlr_drag_drop_event
+		struct wl_signal motion; // struct wlr_drag_motion_event
+		struct wl_signal drop; // struct wlr_drag_drop_event
 		struct wl_signal destroy;
 	} events;
 
@@ -155,7 +155,7 @@ struct wlr_drag_drop_event {
 };
 
 /**
- * Create a wl data device manager global for this display.
+ * Create a wl_data_device_manager global for this display.
  */
 struct wlr_data_device_manager *wlr_data_device_manager_create(
 	struct wl_display *display);
@@ -181,7 +181,7 @@ void wlr_seat_set_selection(struct wlr_seat *seat,
 
 /**
  * Creates a new drag. To request to start the drag, call
- * `wlr_seat_request_start_drag`.
+ * wlr_seat_request_start_drag().
  */
 struct wlr_drag *wlr_drag_create(struct wlr_seat_client *seat_client,
 	struct wlr_data_source *source, struct wlr_surface *icon_surface);
@@ -258,7 +258,7 @@ void wlr_data_source_dnd_finish(struct wlr_data_source *source);
  * Notifies the data source that a target accepts the drag with the specified
  * action.
  *
- * This shouldn't be called after `wlr_data_source_dnd_drop` unless the
+ * This shouldn't be called after wlr_data_source_dnd_drop() unless the
  * drag-and-drop operation ended in an "ask" action.
  */
 void wlr_data_source_dnd_action(struct wlr_data_source *source,

@@ -15,8 +15,8 @@
 struct wlr_foreign_toplevel_manager_v1 {
 	struct wl_event_loop *event_loop;
 	struct wl_global *global;
-	struct wl_list resources; // wl_resource_get_link
-	struct wl_list toplevels; // wlr_foreign_toplevel_handle_v1::link
+	struct wl_list resources; // wl_resource_get_link()
+	struct wl_list toplevels; // wlr_foreign_toplevel_handle_v1.link
 
 	struct wl_listener display_destroy;
 
@@ -35,7 +35,7 @@ enum wlr_foreign_toplevel_handle_v1_state {
 };
 
 struct wlr_foreign_toplevel_handle_v1_output {
-	struct wl_list link; // wlr_foreign_toplevel_handle_v1::outputs
+	struct wl_list link; // wlr_foreign_toplevel_handle_v1.outputs
 	struct wlr_output *output;
 	struct wlr_foreign_toplevel_handle_v1 *toplevel;
 
@@ -54,21 +54,21 @@ struct wlr_foreign_toplevel_handle_v1 {
 	char *title;
 	char *app_id;
 	struct wlr_foreign_toplevel_handle_v1 *parent;
-	struct wl_list outputs; // wlr_foreign_toplevel_v1_output
-	uint32_t state; // wlr_foreign_toplevel_v1_state
+	struct wl_list outputs; // wlr_foreign_toplevel_v1_output.link
+	uint32_t state; // enum wlr_foreign_toplevel_v1_state
 
 	struct {
-		// wlr_foreign_toplevel_handle_v1_maximized_event
+		// struct wlr_foreign_toplevel_handle_v1_maximized_event
 		struct wl_signal request_maximize;
-		//wlr_foreign_toplevel_handle_v1_minimized_event
+		// struct wlr_foreign_toplevel_handle_v1_minimized_event
 		struct wl_signal request_minimize;
-		//wlr_foreign_toplevel_handle_v1_activated_event
+		// struct wlr_foreign_toplevel_handle_v1_activated_event
 		struct wl_signal request_activate;
-		//wlr_foreign_toplevel_handle_v1_fullscreen_event
+		// struct wlr_foreign_toplevel_handle_v1_fullscreen_event
 		struct wl_signal request_fullscreen;
 		struct wl_signal request_close;
 
-		//wlr_foreign_toplevel_handle_v1_set_rectangle_event
+		// struct wlr_foreign_toplevel_handle_v1_set_rectangle_event
 		struct wl_signal set_rectangle;
 		struct wl_signal destroy;
 	} events;
@@ -108,12 +108,14 @@ struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager_v1_create(
 
 struct wlr_foreign_toplevel_handle_v1 *wlr_foreign_toplevel_handle_v1_create(
 	struct wlr_foreign_toplevel_manager_v1 *manager);
-/* Destroy the given toplevel handle, sending the closed event to any
+/**
+ * Destroy the given toplevel handle, sending the closed event to any
  * client. Also, if the destroyed toplevel is set as a parent of any
  * other valid toplevel, clients still holding a handle to both are
  * sent a parent signal with NULL parent. If this is not desired, the
  * caller should ensure that any child toplevels are destroyed before
- * the parent. */
+ * the parent.
+ */
 void wlr_foreign_toplevel_handle_v1_destroy(
 	struct wlr_foreign_toplevel_handle_v1 *toplevel);
 
@@ -136,11 +138,13 @@ void wlr_foreign_toplevel_handle_v1_set_activated(
 void wlr_foreign_toplevel_handle_v1_set_fullscreen(
 	struct wlr_foreign_toplevel_handle_v1* toplevel, bool fullscreen);
 
-/* Set the parent of a toplevel. If the parent changed from its previous
+/**
+ * Set the parent of a toplevel. If the parent changed from its previous
  * value, also sends a parent event to all clients that hold handles to
  * both toplevel and parent (no message is sent to clients that have
  * previously destroyed their parent handle). NULL is allowed as the
- * parent, meaning no parent exists. */
+ * parent, meaning no parent exists.
+ */
 void wlr_foreign_toplevel_handle_v1_set_parent(
 	struct wlr_foreign_toplevel_handle_v1 *toplevel,
 	struct wlr_foreign_toplevel_handle_v1 *parent);

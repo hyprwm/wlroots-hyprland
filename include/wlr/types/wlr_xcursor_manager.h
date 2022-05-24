@@ -23,9 +23,9 @@ struct wlr_xcursor_manager_theme {
 };
 
 /**
- * wlr_xcursor_manager dynamically loads xcursor themes at sizes necessary for
- * use on outputs at arbitrary scale factors. You should call
- * wlr_xcursor_manager_load for each output you will show your cursor on, with
+ * struct wlr_xcursor_manager dynamically loads xcursor themes at sizes necessary
+ * for use on outputs at arbitrary scale factors. You should call
+ * wlr_xcursor_manager_load() for each output you will show your cursor on, with
  * the scale factor parameter set to that output's scale factor.
  */
 struct wlr_xcursor_manager {
@@ -51,17 +51,17 @@ bool wlr_xcursor_manager_load(struct wlr_xcursor_manager *manager,
 
 /**
  * Retrieves a wlr_xcursor reference for the given cursor name at the given
- * scale factor, or NULL if this wlr_xcursor_manager has not loaded a cursor
- * theme at the requested scale.
+ * scale factor, or NULL if this struct wlr_xcursor_manager has not loaded a
+ * cursor theme at the requested scale.
  */
 struct wlr_xcursor *wlr_xcursor_manager_get_xcursor(
 	struct wlr_xcursor_manager *manager, const char *name, float scale);
 
 /**
- * Set a wlr_cursor's cursor image to the specified cursor name for all scale
- * factors. wlr_cursor will take over from this point and ensure the correct
- * cursor is used on each output, assuming a wlr_output_layout is attached to
- * it.
+ * Set a struct wlr_cursor's cursor image to the specified cursor name for all
+ * scale factors. struct wlr_cursor will take over from this point and ensure
+ * the correct cursor is used on each output, assuming a
+ * struct wlr_output_layout is attached to it.
  */
 void wlr_xcursor_manager_set_cursor_image(struct wlr_xcursor_manager *manager,
 	const char *name, struct wlr_cursor *cursor);

@@ -30,14 +30,14 @@ struct wlr_tablet_pad {
 		struct wl_signal button;
 		struct wl_signal ring;
 		struct wl_signal strip;
-		struct wl_signal attach_tablet; //struct wlr_tablet_tool
+		struct wl_signal attach_tablet; // struct wlr_tablet_tool
 	} events;
 
 	size_t button_count;
 	size_t ring_count;
 	size_t strip_count;
 
-	struct wl_list groups; // wlr_tablet_pad_group::link
+	struct wl_list groups; // wlr_tablet_pad_group.link
 	struct wl_array paths; // char *
 
 	void *data;

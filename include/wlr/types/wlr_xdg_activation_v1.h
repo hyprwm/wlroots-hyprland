@@ -45,7 +45,7 @@ struct wlr_xdg_activation_v1 {
 
 	struct {
 		struct wl_signal destroy;
-		struct wl_signal request_activate; // wlr_xdg_activation_v1_request_activate_event
+		struct wl_signal request_activate; // struct wlr_xdg_activation_v1_request_activate_event
 	} events;
 
 	// private state

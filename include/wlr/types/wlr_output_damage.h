@@ -29,9 +29,9 @@ struct wlr_box;
  * to submit a new frame.
  *
  * To render a new frame, compositors should call
- * `wlr_output_damage_attach_render`, render and call `wlr_output_commit`. No
+ * wlr_output_damage_attach_render(), render and call wlr_output_commit(). No
  * rendering should happen outside a `frame` event handler or before
- * `wlr_output_damage_attach_render`.
+ * wlr_output_damage_attach_render().
  */
 struct wlr_output_damage {
 	struct wlr_output *output;
@@ -64,7 +64,7 @@ void wlr_output_damage_destroy(struct wlr_output_damage *output_damage);
 /**
  * Attach the renderer's buffer to the output. Compositors must call this
  * function before rendering. After they are done rendering, they should call
- * `wlr_output_set_damage` and `wlr_output_commit` to submit the new frame.
+ * wlr_output_set_damage() and wlr_output_commit() to submit the new frame.
  *
  * `needs_frame` will be set to true if a frame should be submitted. `damage`
  * will be set to the region of the output that needs to be repainted, in

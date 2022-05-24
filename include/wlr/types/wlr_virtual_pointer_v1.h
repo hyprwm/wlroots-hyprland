@@ -16,12 +16,12 @@
 
 struct wlr_virtual_pointer_manager_v1 {
 	struct wl_global *global;
-	struct wl_list virtual_pointers; // struct wlr_virtual_pointer_v1*
+	struct wl_list virtual_pointers; // wlr_virtual_pointer_v1.link
 
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_virtual_pointer; // struct wlr_virtual_pointer_v1_new_pointer_event*
+		struct wl_signal new_virtual_pointer; // struct wlr_virtual_pointer_v1_new_pointer_event *
 		struct wl_signal destroy;
 	} events;
 };
@@ -34,7 +34,7 @@ struct wlr_virtual_pointer_v1 {
 	enum wl_pointer_axis axis;
 	bool axis_valid[2];
 
-	struct wl_list link;
+	struct wl_list link; // wlr_virtual_pointer_manager_v1.virtual_pointers
 };
 
 struct wlr_virtual_pointer_v1_new_pointer_event {

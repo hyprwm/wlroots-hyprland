@@ -23,11 +23,11 @@
  */
 struct wlr_relative_pointer_manager_v1 {
 	struct wl_global *global;
-	struct wl_list relative_pointers; // wlr_relative_pointer_v1::link
+	struct wl_list relative_pointers; // wlr_relative_pointer_v1.link
 
 	struct {
 		struct wl_signal destroy;
-		struct wl_signal new_relative_pointer; // wlr_relative_pointer_v1
+		struct wl_signal new_relative_pointer; // struct wlr_relative_pointer_v1
 	} events;
 
 	struct wl_listener display_destroy_listener;
@@ -45,7 +45,7 @@ struct wlr_relative_pointer_v1 {
 	struct wl_resource *resource;
 	struct wl_resource *pointer_resource;
 	struct wlr_seat *seat;
-	struct wl_list link; // wlr_relative_pointer_manager_v1::relative_pointers
+	struct wl_list link; // wlr_relative_pointer_manager_v1.relative_pointers
 
 	struct {
 		struct wl_signal destroy;
