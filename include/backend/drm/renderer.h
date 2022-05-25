@@ -19,10 +19,6 @@ struct wlr_drm_renderer {
 
 struct wlr_drm_surface {
 	struct wlr_drm_renderer *renderer;
-
-	uint32_t width;
-	uint32_t height;
-
 	struct wlr_swapchain *swapchain;
 };
 
@@ -40,7 +36,7 @@ bool init_drm_renderer(struct wlr_drm_backend *drm,
 void finish_drm_renderer(struct wlr_drm_renderer *renderer);
 
 bool init_drm_surface(struct wlr_drm_surface *surf,
-	struct wlr_drm_renderer *renderer, uint32_t width, uint32_t height,
+	struct wlr_drm_renderer *renderer, int width, int height,
 	const struct wlr_drm_format *drm_format);
 
 bool drm_fb_import(struct wlr_drm_fb **fb, struct wlr_drm_backend *drm,
