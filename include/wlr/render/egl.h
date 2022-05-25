@@ -9,9 +9,6 @@
 #ifndef WLR_RENDER_EGL_H
 #define WLR_RENDER_EGL_H
 
-#ifndef MESA_EGL_NO_X11_HEADERS
-#define MESA_EGL_NO_X11_HEADERS
-#endif
 #ifndef EGL_NO_X11
 #define EGL_NO_X11
 #endif
