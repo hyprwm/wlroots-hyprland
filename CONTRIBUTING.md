@@ -216,6 +216,19 @@ Try to keep the use of macros to a minimum, especially if a function can do the
 job.  If you do need to use them, try to keep them close to where they're being
 used and `#undef` them after.
 
+### Documentation
+
+* Documentation comments for declarations start with `/**` and end with `*/`.
+* Cross-reference other declarations by ending function names with `()`, and
+  writing `struct`, `union`, `enum` or `typedef` before types.
+* Document fields which can be NULL with a `// may be NULL` comment, optionally
+  with more details describing when this can happen.
+* Document the bits of a bitfield with a `// enum bar` comment.
+* Document the `data` argument of a `struct wl_signal` with a `// struct foo`
+  comment.
+* Document the contents and container of a `struct wl_list` with a
+  `// content.link` and `// container.list` comment.
+
 ### Example
 
 ```c
