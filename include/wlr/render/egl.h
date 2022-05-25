@@ -71,6 +71,22 @@ struct wlr_egl *wlr_egl_create_with_context(EGLDisplay display,
 	EGLContext context);
 
 /**
+ * Get the EGL display used by the struct wlr_egl.
+ *
+ * This is typically used by compositors which need to perform custom OpenGL
+ * operations.
+ */
+EGLDisplay wlr_egl_get_display(struct wlr_egl *egl);
+
+/**
+ * Get the EGL context used by the struct wlr_egl.
+ *
+ * This is typically used by compositors which need to perform custom OpenGL
+ * operations.
+ */
+EGLContext wlr_egl_get_context(struct wlr_egl *egl);
+
+/**
  * Make the EGL context current.
  *
  * Callers are expected to clear the current context when they are done by

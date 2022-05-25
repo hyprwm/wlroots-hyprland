@@ -583,6 +583,14 @@ void wlr_egl_destroy(struct wlr_egl *egl) {
 	free(egl);
 }
 
+EGLDisplay wlr_egl_get_display(struct wlr_egl *egl) {
+	return egl->display;
+}
+
+EGLContext wlr_egl_get_context(struct wlr_egl *egl) {
+	return egl->context;
+}
+
 bool wlr_egl_destroy_image(struct wlr_egl *egl, EGLImage image) {
 	if (!egl->exts.KHR_image_base) {
 		return false;
