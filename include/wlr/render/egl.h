@@ -28,6 +28,12 @@
 
 struct wlr_egl;
 
+/**
+ * Create a struct wlr_egl with an existing EGL display and context.
+ *
+ * This is typically used by compositors which want to customize EGL
+ * initialization.
+ */
 struct wlr_egl *wlr_egl_create_with_context(EGLDisplay display,
 	EGLContext context);
 
