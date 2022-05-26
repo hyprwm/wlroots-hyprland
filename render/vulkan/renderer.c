@@ -17,6 +17,7 @@
 #include <wlr/backend/interface.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 
+#include "render/dmabuf.h"
 #include "render/pixel_format.h"
 #include "render/vulkan.h"
 #include "render/vulkan/shaders/common.vert.h"
@@ -772,6 +773,49 @@ static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
+static bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
+		struct wlr_vk_command_buffer *cb) {
+	VkResult res;
+
+	if (!renderer->dev->implicit_sync_interop) {
+		// We have no choice but to block here sadly
+		return wait_command_buffer(cb, renderer);
+	}
+
+	struct wlr_dmabuf_attributes dmabuf = {0};
+	if (!wlr_buffer_get_dmabuf(renderer->current_render_buffer->wlr_buffer,
+			&dmabuf)) {
+		wlr_log(WLR_ERROR, "wlr_buffer_get_dmabuf failed");
+		return false;
+	}
+
+	// Note: vkGetSemaphoreFdKHR implicitly resets the semaphore
+	const VkSemaphoreGetFdInfoKHR get_fence_fd_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR,
+		.semaphore = cb->binary_semaphore,
+		.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+	};
+	int sync_file_fd = -1;
+	res = renderer->dev->api.getSemaphoreFdKHR(renderer->dev->dev,
+		&get_fence_fd_info, &sync_file_fd);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkGetSemaphoreFdKHR", res);
+		return false;
+	}
+
+	for (int i = 0; i < dmabuf.n_planes; i++) {
+		if (!dmabuf_import_sync_file(dmabuf.fd[i], DMA_BUF_SYNC_WRITE,
+				sync_file_fd)) {
+			close(sync_file_fd);
+			return false;
+		}
+	}
+
+	close(sync_file_fd);
+
+	return true;
+}
+
 static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	assert(renderer->current_render_buffer);
@@ -932,10 +976,35 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		return;
 	}
 
+	size_t render_signal_len = 1;
+	VkSemaphore render_signal[2] = { renderer->timeline_semaphore };
+	uint64_t render_signal_timeline_points[2] = { render_timeline_point };
+
+	if (renderer->dev->implicit_sync_interop) {
+		if (render_cb->binary_semaphore == VK_NULL_HANDLE) {
+			VkExportSemaphoreCreateInfo export_info = {
+				.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
+				.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+			};
+			VkSemaphoreCreateInfo semaphore_info = {
+				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+				.pNext = &export_info,
+			};
+			VkResult res = vkCreateSemaphore(renderer->dev->dev, &semaphore_info,
+				NULL, &render_cb->binary_semaphore);
+			if (res != VK_SUCCESS) {
+				wlr_vk_error("vkCreateSemaphore", res);
+				return;
+			}
+		}
+
+		render_signal[render_signal_len++] = render_cb->binary_semaphore;
+	}
+
 	VkTimelineSemaphoreSubmitInfoKHR render_timeline_submit_info = {
 		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &render_timeline_point,
+		.signalSemaphoreValueCount = render_signal_len,
+		.pSignalSemaphoreValues = render_signal_timeline_points,
 	};
 
 	VkSubmitInfo *render_sub = &submit_infos[submit_count];
@@ -943,8 +1012,8 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	render_sub->pNext = &render_timeline_submit_info;
 	render_sub->pCommandBuffers = &render_cb->vk;
 	render_sub->commandBufferCount = 1u;
-	render_sub->signalSemaphoreCount = 1;
-	render_sub->pSignalSemaphores = &renderer->timeline_semaphore,
+	render_sub->signalSemaphoreCount = render_signal_len;
+	render_sub->pSignalSemaphores = render_signal,
 	++submit_count;
 
 	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count,
@@ -967,10 +1036,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		wl_list_insert(&stage_cb->stage_buffers, &stage_buf->link);
 	}
 
-	// sadly this is required due to the current api/rendering model of wlr
-	// ideally we could use gpu and cpu in parallel (_without_ the
-	// implicit synchronization overhead and mess of opengl drivers)
-	if (!wait_command_buffer(render_cb, renderer)) {
+	if (!vulkan_sync_render_buffer(renderer, render_cb)) {
 		return;
 	}
 }
@@ -1173,6 +1239,9 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 			continue;
 		}
 		release_command_buffer_resources(cb, renderer);
+		if (cb->binary_semaphore != VK_NULL_HANDLE) {
+			vkDestroySemaphore(renderer->dev->dev, cb->binary_semaphore, NULL);
+		}
 	}
 
 	// stage.cb automatically freed with command pool

@@ -38,6 +38,8 @@ struct wlr_vk_device {
 
 	int drm_fd;
 
+	bool implicit_sync_interop;
+
 	// we only ever need one queue for rendering and transfer commands
 	uint32_t queue_family;
 	VkQueue queue;
@@ -46,6 +48,7 @@ struct wlr_vk_device {
 		PFN_vkGetMemoryFdPropertiesKHR getMemoryFdPropertiesKHR;
 		PFN_vkWaitSemaphoresKHR waitSemaphoresKHR;
 		PFN_vkGetSemaphoreCounterValueKHR getSemaphoreCounterValueKHR;
+		PFN_vkGetSemaphoreFdKHR getSemaphoreFdKHR;
 	} api;
 
 	uint32_t format_prop_count;
@@ -152,6 +155,9 @@ struct wlr_vk_command_buffer {
 	struct wl_list destroy_textures; // wlr_vk_texture.destroy_link
 	// Staging shared buffers to release after the command buffer completes
 	struct wl_list stage_buffers; // wlr_vk_shared_buffer.link
+
+	// For DMA-BUF implicit sync interop, may be NULL
+	VkSemaphore binary_semaphore;
 };
 
 #define VULKAN_COMMAND_BUFFERS_CAP 64

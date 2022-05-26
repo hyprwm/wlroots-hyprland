@@ -10,6 +10,7 @@
 #include <wlr/util/log.h>
 #include <wlr/version.h>
 #include <wlr/config.h>
+#include "render/dmabuf.h"
 #include "render/vulkan.h"
 
 #if defined(__linux__)
@@ -416,6 +417,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	// image_drm_format_modifier extensions.
 	const char *extensions[] = {
 		VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+		VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
 		VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, // or vulkan 1.2
 		VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
 		VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
@@ -453,6 +455,35 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		assert(graphics_found);
 	}
 
+	const VkPhysicalDeviceExternalSemaphoreInfo ext_semaphore_info = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
+		.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+	};
+	VkExternalSemaphoreProperties ext_semaphore_props = {
+		.sType = VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
+	};
+	vkGetPhysicalDeviceExternalSemaphoreProperties(phdev,
+		&ext_semaphore_info, &ext_semaphore_props);
+	bool exportable_semaphore = ext_semaphore_props.externalSemaphoreFeatures &
+		VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT;
+	if (!exportable_semaphore) {
+		wlr_log(WLR_DEBUG, "VkSemaphore is not exportable to a sync_file");
+	}
+
+	bool dmabuf_sync_file_import_export = dmabuf_check_sync_file_import_export();
+	if (!dmabuf_sync_file_import_export) {
+		wlr_log(WLR_DEBUG, "DMA-BUF sync_file import/export not supported");
+	}
+
+	dev->implicit_sync_interop =
+		exportable_semaphore && dmabuf_sync_file_import_export;
+	if (dev->implicit_sync_interop) {
+		wlr_log(WLR_DEBUG, "Implicit sync interop supported");
+	} else {
+		wlr_log(WLR_INFO, "Implicit sync interop not supported, "
+			"falling back to blocking");
+	}
+
 	const float prio = 1.f;
 	VkDeviceQueueCreateInfo qinfo = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -487,6 +518,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	load_device_proc(dev, "vkWaitSemaphoresKHR", &dev->api.waitSemaphoresKHR);
 	load_device_proc(dev, "vkGetSemaphoreCounterValueKHR",
 		&dev->api.getSemaphoreCounterValueKHR);
+	load_device_proc(dev, "vkGetSemaphoreFdKHR", &dev->api.getSemaphoreFdKHR);
 
 	// - check device format support -
 	size_t max_fmts;
