@@ -103,7 +103,8 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 
 			// Monitor serial numbers are terminated by newline if they're too
 			// short
-			char *nl = strchr(output->serial, '\n');
+			char* nl = strchr(serial_str, '\n');
+
 			if (nl) {
 				*nl = '\0';
 			}
