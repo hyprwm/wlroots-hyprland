@@ -45,7 +45,7 @@ static void parse_xcb_setup(struct wlr_output *output,
 	snprintf(model, sizeof(model), "%"PRIu16".%"PRIu16,
 		xcb_setup->protocol_major_version,
 		xcb_setup->protocol_minor_version);
-	output->model = strdup(output->model);
+	output->model = strdup(model);
 }
 
 static struct wlr_x11_output *get_x11_output_from_output(
