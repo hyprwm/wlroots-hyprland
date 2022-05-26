@@ -61,7 +61,8 @@ static void finish_drm_surface(struct wlr_drm_surface *surf) {
 bool init_drm_surface(struct wlr_drm_surface *surf,
 		struct wlr_drm_renderer *renderer, int width, int height,
 		const struct wlr_drm_format *drm_format) {
-	if (surf->swapchain->width == width && surf->swapchain->height == height) {
+	if (surf->swapchain != NULL && surf->swapchain->width == width &&
+			surf->swapchain->height == height) {
 		return true;
 	}
 
