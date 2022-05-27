@@ -377,9 +377,7 @@ bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
 		int32_t hotspot_x, int32_t hotspot_y) {
 	struct wlr_renderer *renderer = cursor->output->renderer;
 	if (!renderer) {
-		// if the backend has no renderer, we can't draw a cursor, but this is
-		// actually okay, for ex. with the noop backend
-		return true;
+		return false;
 	}
 
 	output_cursor_reset(cursor);
