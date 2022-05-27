@@ -48,8 +48,8 @@ wlroots reads these environment variables
 ## scenes
 
 * *WLR_SCENE_DEBUG_DAMAGE*: specifies debug options for screen damage related
-tasks for compositors that use scenes. (available options: NONE, RERENDER,
-HIGHLIGHT)
+  tasks for compositors that use scenes (available options: none, rerender,
+  highlight)
 
 # Generic
 
