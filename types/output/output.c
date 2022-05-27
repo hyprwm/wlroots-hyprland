@@ -382,6 +382,21 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	wlr_output_destroy_global(output);
 }
 
+static void output_state_init(struct wlr_output_state *state) {
+	memset(state, 0, sizeof(*state));
+	pixman_region32_init(&state->damage);
+}
+
+static void output_state_finish(struct wlr_output_state *state) {
+	wlr_buffer_unlock(state->buffer);
+	// struct wlr_buffer is ref'counted, so the pointer may remain valid after
+	// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
+	// reads it after output_state_finish().
+	state->buffer = NULL;
+	pixman_region32_fini(&state->damage);
+	free(state->gamma_lut);
+}
+
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 		const struct wlr_output_impl *impl, struct wl_display *display) {
 	assert(impl->commit);
@@ -411,7 +426,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.mode);
 	wl_signal_init(&output->events.description);
 	wl_signal_init(&output->events.destroy);
-	pixman_region32_init(&output->pending.damage);
+	output_state_init(&output->pending);
 
 	const char *no_hardware_cursors = getenv("WLR_NO_HARDWARE_CURSORS");
 	if (no_hardware_cursors != NULL && strcmp(no_hardware_cursors, "1") == 0) {
@@ -461,7 +476,7 @@ void wlr_output_destroy(struct wlr_output *output) {
 	free(output->name);
 	free(output->description);
 
-	pixman_region32_fini(&output->pending.damage);
+	output_state_finish(&output->pending);
 
 	if (output->impl && output->impl->destroy) {
 		output->impl->destroy(output);
