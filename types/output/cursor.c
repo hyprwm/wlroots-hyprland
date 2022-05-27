@@ -94,9 +94,6 @@ static void output_cursor_render(struct wlr_output_cursor *cursor,
 	assert(renderer);
 
 	struct wlr_texture *texture = cursor->texture;
-	if (cursor->surface != NULL) {
-		texture = wlr_surface_get_texture(cursor->surface);
-	}
 	if (texture == NULL) {
 		return;
 	}
@@ -176,9 +173,6 @@ void wlr_output_add_software_cursors_to_render_pass(struct wlr_output *output,
 		}
 
 		struct wlr_texture *texture = cursor->texture;
-		if (cursor->surface != NULL) {
-			texture = wlr_surface_get_texture(cursor->surface);
-		}
 		if (texture == NULL) {
 			continue;
 		}
@@ -232,14 +226,6 @@ static void output_cursor_reset(struct wlr_output_cursor *cursor) {
 	if (cursor->output->hardware_cursor != cursor) {
 		output_cursor_damage_whole(cursor);
 	}
-	if (cursor->surface != NULL) {
-		wl_list_remove(&cursor->surface_commit.link);
-		wl_list_remove(&cursor->surface_destroy.link);
-		if (cursor->visible) {
-			wlr_surface_send_leave(cursor->surface, cursor->output);
-		}
-		cursor->surface = NULL;
-	}
 }
 
 static void output_cursor_update_visible(struct wlr_output_cursor *cursor) {
@@ -252,19 +238,8 @@ static void output_cursor_update_visible(struct wlr_output_cursor *cursor) {
 	output_cursor_get_box(cursor, &cursor_box);
 
 	struct wlr_box intersection;
-	bool visible =
+	cursor->visible =
 		wlr_box_intersection(&intersection, &output_box, &cursor_box);
-
-	if (cursor->surface != NULL) {
-		if (cursor->visible && !visible) {
-			wlr_surface_send_leave(cursor->surface, cursor->output);
-		}
-		if (!cursor->visible && visible) {
-			wlr_surface_send_enter(cursor->surface, cursor->output);
-		}
-	}
-
-	cursor->visible = visible;
 }
 
 static struct wlr_drm_format *output_pick_cursor_format(struct wlr_output *output) {
@@ -290,11 +265,6 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	float scale = output->scale;
 	enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
 	struct wlr_texture *texture = cursor->texture;
-	if (cursor->surface != NULL) {
-		texture = wlr_surface_get_texture(cursor->surface);
-		scale = cursor->surface->current.scale;
-		transform = cursor->surface->current.transform;
-	}
 	if (texture == NULL) {
 		return NULL;
 	}
@@ -393,10 +363,6 @@ static bool output_cursor_attempt_hardware(struct wlr_output_cursor *cursor) {
 	}
 
 	struct wlr_texture *texture = cursor->texture;
-	if (cursor->surface != NULL) {
-		// TODO: try using the surface buffer directly
-		texture = wlr_surface_get_texture(cursor->surface);
-	}
 
 	// If the cursor was hidden or was a software cursor, the hardware
 	// cursor position is outdated
@@ -503,102 +469,6 @@ bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 	return true;
 }
 
-static void output_cursor_commit(struct wlr_output_cursor *cursor,
-		bool update_hotspot) {
-	if (cursor->output->hardware_cursor != cursor) {
-		output_cursor_damage_whole(cursor);
-	}
-
-	struct wlr_surface *surface = cursor->surface;
-	assert(surface != NULL);
-
-	// Some clients commit a cursor surface with a NULL buffer to hide it.
-	cursor->enabled = wlr_surface_has_buffer(surface);
-	cursor->width = surface->current.width * cursor->output->scale;
-	cursor->height = surface->current.height * cursor->output->scale;
-	output_cursor_update_visible(cursor);
-	if (update_hotspot) {
-		cursor->hotspot_x -= surface->current.dx * cursor->output->scale;
-		cursor->hotspot_y -= surface->current.dy * cursor->output->scale;
-	}
-
-	if (output_cursor_attempt_hardware(cursor)) {
-		return;
-	}
-
-	// Fallback to software cursor
-	output_cursor_damage_whole(cursor);
-}
-
-static void output_cursor_handle_commit(struct wl_listener *listener,
-		void *data) {
-	struct wlr_output_cursor *cursor =
-		wl_container_of(listener, cursor, surface_commit);
-	output_cursor_commit(cursor, true);
-}
-
-static void output_cursor_handle_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_output_cursor *cursor = wl_container_of(listener, cursor,
-		surface_destroy);
-	output_cursor_reset(cursor);
-}
-
-void wlr_output_cursor_set_surface(struct wlr_output_cursor *cursor,
-		struct wlr_surface *surface, int32_t hotspot_x, int32_t hotspot_y) {
-	hotspot_x *= cursor->output->scale;
-	hotspot_y *= cursor->output->scale;
-
-	if (surface && surface == cursor->surface) {
-		// Only update the hotspot: surface hasn't changed
-
-		if (cursor->output->hardware_cursor != cursor) {
-			output_cursor_damage_whole(cursor);
-		}
-		cursor->hotspot_x = hotspot_x;
-		cursor->hotspot_y = hotspot_y;
-		if (cursor->output->hardware_cursor != cursor) {
-			output_cursor_damage_whole(cursor);
-		} else {
-			struct wlr_buffer *buffer = cursor->output->cursor_front_buffer;
-
-			struct wlr_box hotspot = {
-				.x = cursor->hotspot_x,
-				.y = cursor->hotspot_y,
-			};
-			wlr_box_transform(&hotspot, &hotspot,
-				wlr_output_transform_invert(cursor->output->transform),
-				buffer ? buffer->width : 0, buffer ? buffer->height : 0);
-
-			output_set_hardware_cursor(cursor->output, buffer,
-				hotspot.x, hotspot.y);
-		}
-		return;
-	}
-
-	output_cursor_reset(cursor);
-
-	cursor->surface = surface;
-	cursor->hotspot_x = hotspot_x;
-	cursor->hotspot_y = hotspot_y;
-
-	if (surface != NULL) {
-		wl_signal_add(&surface->events.commit, &cursor->surface_commit);
-		wl_signal_add(&surface->events.destroy, &cursor->surface_destroy);
-
-		cursor->visible = false;
-		output_cursor_commit(cursor, false);
-	} else {
-		cursor->enabled = false;
-		cursor->width = 0;
-		cursor->height = 0;
-
-		if (cursor->output->hardware_cursor == cursor) {
-			output_set_hardware_cursor(cursor->output, NULL, 0, 0);
-		}
-	}
-}
-
 bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 		double x, double y) {
 	// Scale coordinates for the output
@@ -639,10 +509,6 @@ struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output) {
 		return NULL;
 	}
 	cursor->output = output;
-	wl_list_init(&cursor->surface_commit.link);
-	cursor->surface_commit.notify = output_cursor_handle_commit;
-	wl_list_init(&cursor->surface_destroy.link);
-	cursor->surface_destroy.notify = output_cursor_handle_destroy;
 	wl_list_insert(&output->cursors, &cursor->link);
 	cursor->visible = true; // default position is at (0, 0)
 	return cursor;

@@ -759,16 +759,6 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		return false;
 	}
 
-	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
-		struct wlr_output_cursor *cursor;
-		wl_list_for_each(cursor, &output->cursors, link) {
-			if (!cursor->enabled || !cursor->visible || cursor->surface == NULL) {
-				continue;
-			}
-			wlr_surface_send_frame_done(cursor->surface, &now);
-		}
-	}
-
 	if (pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		output->render_format = pending.render_format;
 	}

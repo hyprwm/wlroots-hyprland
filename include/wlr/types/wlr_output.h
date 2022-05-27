@@ -40,16 +40,9 @@ struct wlr_output_cursor {
 	bool visible;
 	uint32_t width, height;
 	int32_t hotspot_x, hotspot_y;
-	struct wl_list link;
-
-	// only when using a software cursor without a surface
 	struct wlr_texture *texture;
 	bool own_texture;
-
-	// only when using a cursor surface
-	struct wlr_surface *surface;
-	struct wl_listener surface_commit;
-	struct wl_listener surface_destroy;
+	struct wl_list link;
 };
 
 enum wlr_output_adaptive_sync_status {
@@ -550,8 +543,6 @@ struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output);
 bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
 	const uint8_t *pixels, int32_t stride, uint32_t width, uint32_t height,
 	int32_t hotspot_x, int32_t hotspot_y);
-void wlr_output_cursor_set_surface(struct wlr_output_cursor *cursor,
-	struct wlr_surface *surface, int32_t hotspot_x, int32_t hotspot_y);
 bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 	struct wlr_buffer *buffer, int32_t hotspot_x, int32_t hotspot_y);
 bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
