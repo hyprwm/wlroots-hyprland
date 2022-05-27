@@ -411,6 +411,50 @@ bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
 	return true;
 }
 
+bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
+		struct wlr_buffer *buffer, int32_t hotspot_x, int32_t hotspot_y) {
+	struct wlr_renderer *renderer = cursor->output->renderer;
+	if (!renderer) {
+		return false;
+	}
+
+	output_cursor_reset(cursor);
+
+	if (buffer != NULL) {
+		cursor->width = buffer->width;
+		cursor->height = buffer->height;
+	} else {
+		cursor->width = 0;
+		cursor->height = 0;
+	}
+
+	cursor->hotspot_x = hotspot_x;
+	cursor->hotspot_y = hotspot_y;
+
+	output_cursor_update_visible(cursor);
+
+	wlr_texture_destroy(cursor->texture);
+	cursor->texture = NULL;
+
+	cursor->enabled = false;
+	if (buffer != NULL) {
+		cursor->texture = wlr_texture_from_buffer(renderer, buffer);
+		if (cursor->texture == NULL) {
+			return false;
+		}
+		cursor->enabled = true;
+	}
+
+	if (output_cursor_attempt_hardware(cursor)) {
+		return true;
+	}
+
+	wlr_log(WLR_DEBUG, "Falling back to software cursor on output '%s'",
+		cursor->output->name);
+	output_cursor_damage_whole(cursor);
+	return true;
+}
+
 static void output_cursor_commit(struct wlr_output_cursor *cursor,
 		bool update_hotspot) {
 	if (cursor->output->hardware_cursor != cursor) {
