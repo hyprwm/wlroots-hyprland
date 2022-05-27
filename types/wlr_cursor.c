@@ -8,10 +8,12 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_touch.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
+#include "types/wlr_output.h"
 
 struct wlr_cursor_device {
 	struct wlr_cursor *cursor;
@@ -54,6 +56,15 @@ struct wlr_cursor_output_cursor {
 	struct wl_list link;
 
 	struct wl_listener layout_output_destroy;
+
+	// only when using a surface as the cursor image
+	struct wlr_surface *surface;
+	struct {
+		int32_t x, y;
+	} surface_hotspot;
+	struct wl_listener surface_commit;
+	struct wl_listener surface_destroy;
+	struct wl_listener output_commit;
 };
 
 struct wlr_cursor_state {
@@ -125,6 +136,9 @@ struct wlr_cursor *wlr_cursor_create(void) {
 
 static void output_cursor_destroy(
 		struct wlr_cursor_output_cursor *output_cursor) {
+	wl_list_remove(&output_cursor->surface_destroy.link);
+	wl_list_remove(&output_cursor->surface_commit.link);
+	wl_list_remove(&output_cursor->output_commit.link);
 	wl_list_remove(&output_cursor->layout_output_destroy.link);
 	wl_list_remove(&output_cursor->link);
 	wlr_output_cursor_destroy(output_cursor->output_cursor);
@@ -353,6 +367,42 @@ void wlr_cursor_move(struct wlr_cursor *cur, struct wlr_input_device *dev,
 	wlr_cursor_warp_closest(cur, dev, lx, ly);
 }
 
+static void cursor_output_cursor_reset_image(
+		struct wlr_cursor_output_cursor *output_cursor) {
+	if (output_cursor->surface != NULL) {
+		wlr_surface_send_leave(output_cursor->surface,
+			output_cursor->output_cursor->output);
+	}
+	wl_list_remove(&output_cursor->surface_destroy.link);
+	wl_list_remove(&output_cursor->surface_commit.link);
+	wl_list_remove(&output_cursor->output_commit.link);
+	wl_list_init(&output_cursor->surface_destroy.link);
+	wl_list_init(&output_cursor->surface_commit.link);
+	wl_list_init(&output_cursor->output_commit.link);
+	output_cursor->surface = NULL;
+}
+
+static void output_cursor_output_commit_surface(
+		struct wlr_cursor_output_cursor *output_cursor) {
+	struct wlr_surface *surface = output_cursor->surface;
+	struct wlr_output *output = output_cursor->output_cursor->output;
+	assert(output_cursor->surface != NULL);
+
+	struct wlr_texture *texture = wlr_surface_get_texture(surface);
+	int32_t hotspot_x = output_cursor->surface_hotspot.x * output->scale;
+	int32_t hotspot_y = output_cursor->surface_hotspot.y * output->scale;
+
+	output_cursor_set_texture(output_cursor->output_cursor, texture, false,
+		surface->current.scale, surface->current.transform,
+		hotspot_x, hotspot_y);
+
+	if (output_cursor->output_cursor->visible) {
+		wlr_surface_send_enter(surface, output);
+	} else {
+		wlr_surface_send_leave(surface, output);
+	}
+}
+
 void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 		int32_t stride, uint32_t width, uint32_t height, int32_t hotspot_x,
 		int32_t hotspot_y, float scale) {
@@ -363,17 +413,74 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 			continue;
 		}
 
+		cursor_output_cursor_reset_image(output_cursor);
 		wlr_output_cursor_set_image(output_cursor->output_cursor, pixels,
 			stride, width, height, hotspot_x, hotspot_y);
 	}
 }
 
+static void output_cursor_output_handle_surface_destroy(
+		struct wl_listener *listener, void *data) {
+	struct wlr_cursor_output_cursor *output_cursor =
+		wl_container_of(listener, output_cursor, surface_destroy);
+	assert(output_cursor->surface != NULL);
+	cursor_output_cursor_reset_image(output_cursor);
+}
+
+static void output_cursor_output_handle_surface_commit(
+		struct wl_listener *listener, void *data) {
+	struct wlr_cursor_output_cursor *output_cursor =
+		wl_container_of(listener, output_cursor, surface_commit);
+	struct wlr_surface *surface = output_cursor->surface;
+
+	output_cursor->surface_hotspot.x += surface->current.dx;
+	output_cursor->surface_hotspot.y += surface->current.dy;
+
+	output_cursor_output_commit_surface(output_cursor);
+}
+
+static void output_cursor_output_handle_output_commit(
+		struct wl_listener *listener, void *data) {
+	struct wlr_cursor_output_cursor *output_cursor =
+		wl_container_of(listener, output_cursor, output_commit);
+	const struct wlr_output_event_commit *event = data;
+	struct wlr_surface *surface = output_cursor->surface;
+	assert(surface != NULL);
+
+	if (output_cursor->output_cursor->visible &&
+			(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
+		wlr_surface_send_frame_done(output_cursor->surface, event->when);
+	}
+}
+
 void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
 		int32_t hotspot_x, int32_t hotspot_y) {
+	if (surface == NULL) {
+		wlr_cursor_set_image(cur, NULL, 0, 0, 0, 0, 0, 0);
+		return;
+	}
+
 	struct wlr_cursor_output_cursor *output_cursor;
 	wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
-		wlr_output_cursor_set_surface(output_cursor->output_cursor, surface,
-			hotspot_x, hotspot_y);
+		cursor_output_cursor_reset_image(output_cursor);
+
+		output_cursor->surface = surface;
+		output_cursor->surface_hotspot.x = hotspot_x;
+		output_cursor->surface_hotspot.y = hotspot_y;
+
+		wl_signal_add(&surface->events.destroy,
+			&output_cursor->surface_destroy);
+		output_cursor->surface_destroy.notify =
+			output_cursor_output_handle_surface_destroy;
+		wl_signal_add(&surface->events.commit,
+			&output_cursor->surface_commit);
+		output_cursor->surface_commit.notify =
+			output_cursor_output_handle_surface_commit;
+
+		wl_signal_add(&output_cursor->output_cursor->output->events.commit,
+			&output_cursor->output_commit);
+		output_cursor->output_commit.notify =
+			output_cursor_output_handle_output_commit;
 	}
 }
 
@@ -801,6 +908,10 @@ static void layout_add(struct wlr_cursor_state *state,
 		return;
 	}
 	output_cursor->cursor = state->cursor;
+
+	wl_list_init(&output_cursor->surface_destroy.link);
+	wl_list_init(&output_cursor->surface_commit.link);
+	wl_list_init(&output_cursor->output_commit.link);
 
 	output_cursor->output_cursor = wlr_output_cursor_create(l_output->output);
 	if (output_cursor->output_cursor == NULL) {
