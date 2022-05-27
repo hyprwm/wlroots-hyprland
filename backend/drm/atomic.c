@@ -1,10 +1,47 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
+#include <stdio.h>
 #include <wlr/util/log.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include "backend/drm/drm.h"
 #include "backend/drm/iface.h"
 #include "backend/drm/util.h"
+
+static char *atomic_commit_flags_str(uint32_t flags) {
+	const char *const l[] = {
+		(flags & DRM_MODE_PAGE_FLIP_EVENT) ? "PAGE_FLIP_EVENT" : NULL,
+		(flags & DRM_MODE_PAGE_FLIP_ASYNC) ? "PAGE_FLIP_ASYNC" : NULL,
+		(flags & DRM_MODE_ATOMIC_TEST_ONLY) ? "ATOMIC_TEST_ONLY" : NULL,
+		(flags & DRM_MODE_ATOMIC_NONBLOCK) ? "ATOMIC_NONBLOCK" : NULL,
+		(flags & DRM_MODE_ATOMIC_ALLOW_MODESET) ? "ATOMIC_ALLOW_MODESET" : NULL,
+	};
+
+	char *buf = NULL;
+	size_t size = 0;
+	FILE *f = open_memstream(&buf, &size);
+	if (f == NULL) {
+		return NULL;
+	}
+
+	for (size_t i = 0; i < sizeof(l) / sizeof(l[0]); i++) {
+		if (l[i] == NULL) {
+			continue;
+		}
+		if (ftell(f) > 0) {
+			fprintf(f, " | ");
+		}
+		fprintf(f, "%s", l[i]);
+	}
+
+	if (ftell(f) == 0) {
+		fprintf(f, "none");
+	}
+
+	fclose(f);
+
+	return buf;
+}
 
 struct atomic {
 	drmModeAtomicReq *req;
@@ -33,9 +70,11 @@ static bool atomic_commit(struct atomic *atom,
 	if (ret != 0) {
 		wlr_drm_conn_log_errno(conn,
 			(flags & DRM_MODE_ATOMIC_TEST_ONLY) ? WLR_DEBUG : WLR_ERROR,
-			"Atomic %s failed (%s)",
-			(flags & DRM_MODE_ATOMIC_TEST_ONLY) ? "test" : "commit",
-			(flags & DRM_MODE_ATOMIC_ALLOW_MODESET) ? "modeset" : "pageflip");
+			"Atomic commit failed");
+		char *flags_str = atomic_commit_flags_str(flags);
+		wlr_log(WLR_DEBUG, "(Atomic commit flags: %s)",
+			flags_str ? flags_str : "<error>");
+		free(flags_str);
 		return false;
 	}
 
