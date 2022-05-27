@@ -8,6 +8,7 @@
 #include <wlr/util/log.h>
 #include "render/allocator/allocator.h"
 #include "render/swapchain.h"
+#include "types/wlr_buffer.h"
 #include "types/wlr_output.h"
 #include "util/signal.h"
 
@@ -375,40 +376,16 @@ static bool output_cursor_attempt_hardware(struct wlr_output_cursor *cursor) {
 bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
 		const uint8_t *pixels, int32_t stride, uint32_t width, uint32_t height,
 		int32_t hotspot_x, int32_t hotspot_y) {
-	struct wlr_renderer *renderer = cursor->output->renderer;
-	if (!renderer) {
+	struct wlr_readonly_data_buffer *buffer =
+		readonly_data_buffer_create(DRM_FORMAT_ARGB8888, stride, width, height,
+		pixels);
+	if (buffer == NULL) {
 		return false;
 	}
-
-	output_cursor_reset(cursor);
-
-	cursor->width = width;
-	cursor->height = height;
-	cursor->hotspot_x = hotspot_x;
-	cursor->hotspot_y = hotspot_y;
-	output_cursor_update_visible(cursor);
-
-	wlr_texture_destroy(cursor->texture);
-	cursor->texture = NULL;
-
-	cursor->enabled = false;
-	if (pixels != NULL) {
-		cursor->texture = wlr_texture_from_pixels(renderer,
-			DRM_FORMAT_ARGB8888, stride, width, height, pixels);
-		if (cursor->texture == NULL) {
-			return false;
-		}
-		cursor->enabled = true;
-	}
-
-	if (output_cursor_attempt_hardware(cursor)) {
-		return true;
-	}
-
-	wlr_log(WLR_DEBUG, "Falling back to software cursor on output '%s'",
-		cursor->output->name);
-	output_cursor_damage_whole(cursor);
-	return true;
+	bool ok = wlr_output_cursor_set_buffer(cursor, &buffer->base,
+		hotspot_x, hotspot_y);
+	wlr_buffer_drop(&buffer->base);
+	return ok;
 }
 
 bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
