@@ -45,7 +45,7 @@ Install dependencies:
 * EGL and GLESv2 (optional, for the GLES2 renderer)
 * Vulkan loader, headers and glslang (optional, for the Vulkan renderer)
 * libdrm
-* GBM
+* GBM (optional, for the GBM allocator)
 * libinput (optional, for the libinput backend)
 * xkbcommon
 * udev

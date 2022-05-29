@@ -6,8 +6,9 @@
 #mesondefine WLR_HAS_X11_BACKEND
 
 #mesondefine WLR_HAS_GLES2_RENDERER
-
 #mesondefine WLR_HAS_VULKAN_RENDERER
+
+#mesondefine WLR_HAS_GBM_ALLOCATOR
 
 #mesondefine WLR_HAS_XWAYLAND
 

@@ -92,6 +92,7 @@ features = {
 	'xwayland': false,
 	'gles2-renderer': false,
 	'vulkan-renderer': false,
+	'gbm-allocator': false,
 }
 internal_features = {
 	'xcb-errors': false,
@@ -125,7 +126,6 @@ drm = dependency('libdrm',
 		'valgrind=false',
 	],
 )
-gbm = dependency('gbm', version: '>=17.1.0')
 xkbcommon = dependency('xkbcommon')
 udev = dependency('libudev')
 pixman = dependency('pixman-1')
@@ -136,7 +136,6 @@ wlr_files = []
 wlr_deps = [
 	wayland_server,
 	drm,
-	gbm,
 	xkbcommon,
 	udev,
 	pixman,
