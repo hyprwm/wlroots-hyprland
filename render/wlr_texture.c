@@ -71,13 +71,19 @@ struct wlr_texture *wlr_texture_from_buffer(struct wlr_renderer *renderer,
 	return renderer->impl->texture_from_buffer(renderer, buffer);
 }
 
-bool wlr_texture_write_pixels(struct wlr_texture *texture,
-		uint32_t stride, uint32_t width, uint32_t height,
-		uint32_t src_x, uint32_t src_y, uint32_t dst_x, uint32_t dst_y,
-		const void *data) {
-	if (!texture->impl->write_pixels) {
+bool wlr_texture_update_from_buffer(struct wlr_texture *texture,
+		struct wlr_buffer *buffer, pixman_region32_t *damage) {
+	if (!texture->impl->update_from_buffer) {
 		return false;
 	}
-	return texture->impl->write_pixels(texture, stride, width, height,
-		src_x, src_y, dst_x, dst_y, data);
+	if (texture->width != (uint32_t)buffer->width ||
+			texture->height != (uint32_t)buffer->height) {
+		return false;
+	}
+	const pixman_box32_t *extents = pixman_region32_extents(damage);
+	if (extents->x1 < 0 || extents->y1 < 0 || extents->x2 > buffer->width ||
+			extents->y2 > buffer->height) {
+		return false;
+	}
+	return texture->impl->update_from_buffer(texture, buffer, damage);
 }

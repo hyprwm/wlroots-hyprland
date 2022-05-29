@@ -136,12 +136,45 @@ static bool write_pixels(struct wlr_texture *wlr_texture,
 	return true;
 }
 
-static bool vulkan_texture_write_pixels(struct wlr_texture *wlr_texture,
-		uint32_t stride, uint32_t width, uint32_t height, uint32_t src_x,
-		uint32_t src_y, uint32_t dst_x, uint32_t dst_y, const void *vdata) {
-	return write_pixels(wlr_texture, stride, width, height, src_x, src_y,
-		dst_x, dst_y, vdata, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
+static bool vulkan_texture_update_from_buffer(struct wlr_texture *wlr_texture,
+		struct wlr_buffer *buffer, pixman_region32_t *damage) {
+	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
+
+	void *data;
+	uint32_t format;
+	size_t stride;
+	if (!wlr_buffer_begin_data_ptr_access(buffer,
+			WLR_BUFFER_DATA_PTR_ACCESS_READ, &data, &format, &stride)) {
+		return false;
+	}
+
+	bool ok = true;
+
+	if (format != texture->format->drm_format) {
+		ok = false;
+		goto out;
+	}
+
+	int rects_len = 0;
+	pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
+
+	for (int i = 0; i < rects_len; i++) {
+		pixman_box32_t rect = rects[i];
+		uint32_t width = rect.x2 - rect.x1;
+		uint32_t height = rect.y2 - rect.y1;
+
+		// TODO: only map memory once
+		ok = write_pixels(wlr_texture, stride, width, height, rect.x1, rect.y1,
+			rect.x1, rect.y1, data, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
+		if (!ok) {
+			goto out;
+		}
+	}
+
+out:
+	wlr_buffer_end_data_ptr_access(buffer);
+	return ok;
 }
 
 void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
@@ -191,7 +224,7 @@ static void vulkan_texture_unref(struct wlr_texture *wlr_texture) {
 }
 
 static const struct wlr_texture_impl texture_impl = {
-	.write_pixels = vulkan_texture_write_pixels,
+	.update_from_buffer = vulkan_texture_update_from_buffer,
 	.destroy = vulkan_texture_unref,
 };
 

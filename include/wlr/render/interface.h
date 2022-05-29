@@ -54,10 +54,8 @@ void wlr_renderer_init(struct wlr_renderer *renderer,
 	const struct wlr_renderer_impl *impl);
 
 struct wlr_texture_impl {
-	bool (*write_pixels)(struct wlr_texture *texture,
-		uint32_t stride, uint32_t width, uint32_t height,
-		uint32_t src_x, uint32_t src_y, uint32_t dst_x, uint32_t dst_y,
-		const void *data);
+	bool (*update_from_buffer)(struct wlr_texture *texture,
+		struct wlr_buffer *buffer, pixman_region32_t *damage);
 	void (*destroy)(struct wlr_texture *texture);
 };
 

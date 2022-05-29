@@ -285,14 +285,6 @@ struct wlr_client_buffer *wlr_client_buffer_create(struct wlr_buffer *buffer,
 	wl_signal_add(&buffer->events.destroy, &client_buffer->source_destroy);
 	client_buffer->source_destroy.notify = client_buffer_handle_source_destroy;
 
-	if (buffer_is_shm_client_buffer(buffer)) {
-		struct wlr_shm_client_buffer *shm_client_buffer =
-			shm_client_buffer_from_buffer(buffer);
-		client_buffer->shm_source_format = shm_client_buffer->format;
-	} else {
-		client_buffer->shm_source_format = DRM_FORMAT_INVALID;
-	}
-
 	// Ensure the buffer will be released before being destroyed
 	wlr_buffer_lock(&client_buffer->base);
 	wlr_buffer_drop(&client_buffer->base);
@@ -307,46 +299,7 @@ bool wlr_client_buffer_apply_damage(struct wlr_client_buffer *client_buffer,
 		return false;
 	}
 
-	if ((uint32_t)next->width != client_buffer->texture->width ||
-			(uint32_t)next->height != client_buffer->texture->height) {
-		return false;
-	}
-
-	if (client_buffer->shm_source_format == DRM_FORMAT_INVALID) {
-		// Uploading only damaged regions only works for wl_shm buffers and
-		// mutable textures (created from wl_shm buffer)
-		return false;
-	}
-
-	void *data;
-	uint32_t format;
-	size_t stride;
-	if (!wlr_buffer_begin_data_ptr_access(next, WLR_BUFFER_DATA_PTR_ACCESS_READ,
-			&data, &format, &stride)) {
-		return false;
-	}
-
-	if (format != client_buffer->shm_source_format) {
-		// Uploading to textures can't change the format
-		wlr_buffer_end_data_ptr_access(next);
-		return false;
-	}
-
-	int n;
-	pixman_box32_t *rects = pixman_region32_rectangles(damage, &n);
-	for (int i = 0; i < n; ++i) {
-		pixman_box32_t *r = &rects[i];
-		if (!wlr_texture_write_pixels(client_buffer->texture, stride,
-				r->x2 - r->x1, r->y2 - r->y1, r->x1, r->y1,
-				r->x1, r->y1, data)) {
-			wlr_buffer_end_data_ptr_access(next);
-			return false;
-		}
-	}
-
-	wlr_buffer_end_data_ptr_access(next);
-
-	return true;
+	return wlr_texture_update_from_buffer(client_buffer->texture, next, damage);
 }
 
 static const struct wlr_buffer_impl shm_client_buffer_impl;

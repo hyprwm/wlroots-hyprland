@@ -9,6 +9,7 @@
 #ifndef WLR_RENDER_WLR_TEXTURE_H
 #define WLR_RENDER_WLR_TEXTURE_H
 
+#include <pixman.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
 #include <wlr/render/dmabuf.h>
@@ -37,13 +38,17 @@ struct wlr_texture *wlr_texture_from_dmabuf(struct wlr_renderer *renderer,
 	struct wlr_dmabuf_attributes *attribs);
 
 /**
-  * Update a texture with raw pixels. The texture must be mutable, and the input
-  * data must have the same pixel format that the texture was created with.
+  * Update a texture with a struct wlr_buffer's contents.
+  *
+  * The update might be rejected (in case the texture is immutable, the buffer
+  * has an unsupported type/format, etc), so callers must be prepared to fall
+  * back to re-creating the texture from scratch via wlr_texture_from_buffer().
+  *
+  * The damage can be used by the renderer as an optimization: only the supplied
+  * region needs to be updated.
   */
-bool wlr_texture_write_pixels(struct wlr_texture *texture,
-	uint32_t stride, uint32_t width, uint32_t height,
-	uint32_t src_x, uint32_t src_y, uint32_t dst_x, uint32_t dst_y,
-	const void *data);
+bool wlr_texture_update_from_buffer(struct wlr_texture *texture,
+	struct wlr_buffer *buffer, pixman_region32_t *damage);
 
 /**
  * Destroys the texture.

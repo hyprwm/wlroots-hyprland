@@ -151,9 +151,6 @@ struct wlr_client_buffer {
 	// private state
 
 	struct wl_listener source_destroy;
-
-	// If the client buffer has been created from a wl_shm buffer
-	uint32_t shm_source_format;
 };
 
 /**
