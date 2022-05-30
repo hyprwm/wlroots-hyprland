@@ -41,7 +41,6 @@ typedef void (*wlr_scene_buffer_iterator_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
 
 enum wlr_scene_node_type {
-	WLR_SCENE_NODE_ROOT,
 	WLR_SCENE_NODE_TREE,
 	WLR_SCENE_NODE_RECT,
 	WLR_SCENE_NODE_BUFFER,
@@ -77,9 +76,14 @@ enum wlr_scene_debug_damage_option {
 	WLR_SCENE_DEBUG_DAMAGE_HIGHLIGHT
 };
 
+/** A sub-tree in the scene-graph. */
+struct wlr_scene_tree {
+    struct wlr_scene_node node;
+};
+
 /** The root scene-graph node. */
 struct wlr_scene {
-	struct wlr_scene_node node;
+	struct wlr_scene_tree tree;
 
 	struct wl_list outputs; // wlr_scene_output.link
 
@@ -92,11 +96,6 @@ struct wlr_scene {
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
 	struct wl_list damage_highlight_regions;
-};
-
-/** A sub-tree in the scene-graph. */
-struct wlr_scene_tree {
-	struct wlr_scene_node node;
 };
 
 /** A scene-graph node displaying a single surface. */
