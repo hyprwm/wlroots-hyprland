@@ -14,28 +14,17 @@
 static const struct zwp_relative_pointer_manager_v1_interface relative_pointer_manager_v1_impl;
 static const struct zwp_relative_pointer_v1_interface relative_pointer_v1_impl;
 
-
-/**
- * helper functions
- */
-
 struct wlr_relative_pointer_v1 *wlr_relative_pointer_v1_from_resource(struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource, &zwp_relative_pointer_v1_interface,
 		&relative_pointer_v1_impl));
 	return wl_resource_get_user_data(resource);
 }
 
-
 static struct wlr_relative_pointer_manager_v1 *relative_pointer_manager_from_resource(struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource, &zwp_relative_pointer_manager_v1_interface,
 		&relative_pointer_manager_v1_impl));
 	return wl_resource_get_user_data(resource);
 }
-
-
-/**
- * relative_pointer handler functions
- */
 
 static void relative_pointer_destroy(struct wlr_relative_pointer_v1 *relative_pointer) {
 	wlr_signal_emit_safe(&relative_pointer->events.destroy, relative_pointer);
@@ -56,7 +45,6 @@ static void relative_pointer_v1_handle_resource_destroy(struct wl_resource *reso
 	}
 	relative_pointer_destroy(relative_pointer);
 }
-
 
 static void relative_pointer_v1_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
@@ -83,10 +71,6 @@ static void relative_pointer_handle_pointer_destroy(struct wl_listener *listener
 
 	relative_pointer_destroy(relative_pointer);
 }
-
-/**
- * relative_pointer_manager handler functions
- */
 
 static void relative_pointer_manager_v1_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
@@ -150,7 +134,6 @@ static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_cl
 		relative_pointer, client);
 }
 
-
 static void relative_pointer_manager_v1_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_relative_pointer_manager_v1 *manager = data;
@@ -175,25 +158,14 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	free(manager);
 }
 
-
-/**
- * Implementations
- */
-
 static const struct zwp_relative_pointer_manager_v1_interface relative_pointer_manager_v1_impl = {
 	.destroy = relative_pointer_manager_v1_handle_destroy,
 	.get_relative_pointer = relative_pointer_manager_v1_handle_get_relative_pointer,
 };
 
-
 static const struct zwp_relative_pointer_v1_interface relative_pointer_v1_impl = {
 	.destroy = relative_pointer_v1_handle_destroy,
 };
-
-
-/**
- * Public functions
- */
 
 struct wlr_relative_pointer_manager_v1 *wlr_relative_pointer_manager_v1_create(struct wl_display *display) {
 	struct wlr_relative_pointer_manager_v1 *manager =
