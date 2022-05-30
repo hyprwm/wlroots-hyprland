@@ -74,8 +74,24 @@ static void relative_pointer_manager_v1_handle_destroy(struct wl_client *client,
 
 static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_client *client,
 		struct wl_resource *resource, uint32_t id, struct wl_resource *pointer) {
+	struct wlr_relative_pointer_manager_v1 *manager =
+		relative_pointer_manager_from_resource(resource);
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_pointer_resource(pointer);
+
+	struct wl_resource *relative_pointer_resource = wl_resource_create(client,
+		&zwp_relative_pointer_v1_interface, wl_resource_get_version(resource), id);
+	if (relative_pointer_resource == NULL) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(relative_pointer_resource, &relative_pointer_v1_impl,
+		NULL, relative_pointer_v1_handle_resource_destroy);
+
+	if (seat_client == NULL) {
+		// Leave the resource inert
+		return;
+	}
 
 	struct wlr_relative_pointer_v1 *relative_pointer =
 		calloc(1, sizeof(struct wlr_relative_pointer_v1));
@@ -84,36 +100,19 @@ static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_cl
 		return;
 	}
 
-	struct wl_resource *relative_pointer_resource = wl_resource_create(client,
-		&zwp_relative_pointer_v1_interface, wl_resource_get_version(resource), id);
-	if (relative_pointer_resource == NULL) {
-		free(relative_pointer);
-		wl_client_post_no_memory(client);
-		return;
-	}
-
 	relative_pointer->resource = relative_pointer_resource;
 	relative_pointer->pointer_resource = pointer;
 
-	if (seat_client) {
-		relative_pointer->seat = seat_client->seat;
-		wl_signal_add(&relative_pointer->seat->events.destroy,
-					  &relative_pointer->seat_destroy);
-		relative_pointer->seat_destroy.notify = relative_pointer_handle_seat_destroy;
-	} else {
-		wl_list_init(&relative_pointer->seat_destroy.link);
-	}
+	relative_pointer->seat = seat_client->seat;
+	wl_signal_add(&relative_pointer->seat->events.destroy,
+		&relative_pointer->seat_destroy);
+	relative_pointer->seat_destroy.notify = relative_pointer_handle_seat_destroy;
 
 	wl_signal_init(&relative_pointer->events.destroy);
 
-	wl_resource_set_implementation(relative_pointer_resource, &relative_pointer_v1_impl,
-		relative_pointer, relative_pointer_v1_handle_resource_destroy);
+	wl_resource_set_user_data(relative_pointer_resource, relative_pointer);
 
-	struct wlr_relative_pointer_manager_v1 *manager =
-		relative_pointer_manager_from_resource(resource);
-
-	wl_list_insert(&manager->relative_pointers,
-			&relative_pointer->link);
+	wl_list_insert(&manager->relative_pointers, &relative_pointer->link);
 
 	wl_resource_add_destroy_listener(relative_pointer->pointer_resource,
 			&relative_pointer->pointer_destroy);
