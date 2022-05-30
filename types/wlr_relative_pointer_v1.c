@@ -48,11 +48,6 @@ static void relative_pointer_v1_handle_resource_destroy(struct wl_resource *reso
 
 static void relative_pointer_v1_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
-	struct wlr_relative_pointer_v1 *relative_pointer =
-		wlr_relative_pointer_v1_from_resource(resource);
-	wlr_log(WLR_DEBUG, "relative_pointer_v1 %p released by client %p",
-		relative_pointer, client);
-
 	wl_resource_destroy(resource);
 }
 
@@ -75,9 +70,6 @@ static void relative_pointer_handle_pointer_destroy(struct wl_listener *listener
 static void relative_pointer_manager_v1_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	wl_resource_destroy(resource);
-
-	wlr_log(WLR_DEBUG, "relative_pointer_v1 manager unbound from client %p",
-		client);
 }
 
 static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_client *client,
@@ -129,9 +121,6 @@ static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_cl
 
 	wlr_signal_emit_safe(&manager->events.new_relative_pointer,
 		relative_pointer);
-
-	wlr_log(WLR_DEBUG, "relative_pointer_v1 %p created for client %p",
-		relative_pointer, client);
 }
 
 static void relative_pointer_manager_v1_bind(struct wl_client *wl_client, void *data,
