@@ -58,7 +58,7 @@ struct wlr_scene_node_state {
 /** A node is an object in the scene. */
 struct wlr_scene_node {
 	enum wlr_scene_node_type type;
-	struct wlr_scene_node *parent;
+	struct wlr_scene_tree *parent;
 	struct wlr_scene_node_state state;
 
 	struct {
@@ -178,7 +178,7 @@ struct wlr_scene_output {
 
 /** A layer shell scene helper */
 struct wlr_scene_layer_surface_v1 {
-	struct wlr_scene_node *node;
+	struct wlr_scene_tree *tree;
 	struct wlr_layer_surface_v1 *layer_surface;
 
 	// private state
@@ -226,7 +226,7 @@ void wlr_scene_node_lower_to_bottom(struct wlr_scene_node *node);
  * Move the node to another location in the tree.
  */
 void wlr_scene_node_reparent(struct wlr_scene_node *node,
-	struct wlr_scene_node *new_parent);
+	struct wlr_scene_tree *new_parent);
 /**
  * Get the node's layout-local coordinates.
  *
@@ -265,7 +265,7 @@ void wlr_scene_set_presentation(struct wlr_scene *scene,
 /**
  * Add a node displaying nothing but its children.
  */
-struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_node *parent);
+struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_tree *parent);
 
 /**
  * Add a node displaying a single surface to the scene-graph.
@@ -276,7 +276,7 @@ struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_node *parent);
  * automatically based on the position of the surface and outputs in
  * the scene.
  */
-struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_node *parent,
+struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent,
 	struct wlr_surface *surface);
 
 struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node);
@@ -291,7 +291,7 @@ struct wlr_scene_surface *wlr_scene_surface_from_buffer(
 /**
  * Add a node displaying a solid-colored rectangle to the scene-graph.
  */
-struct wlr_scene_rect *wlr_scene_rect_create(struct wlr_scene_node *parent,
+struct wlr_scene_rect *wlr_scene_rect_create(struct wlr_scene_tree *parent,
 		int width, int height, const float color[static 4]);
 
 /**
@@ -309,7 +309,7 @@ void wlr_scene_rect_set_color(struct wlr_scene_rect *rect, const float color[sta
  *
  * If the buffer is NULL, this node will not be displayed.
  */
-struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_node *parent,
+struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 	struct wlr_buffer *buffer);
 
 /**
@@ -415,8 +415,8 @@ bool wlr_scene_attach_output_layout(struct wlr_scene *scene,
  * Add a node displaying a surface and all of its sub-surfaces to the
  * scene-graph.
  */
-struct wlr_scene_node *wlr_scene_subsurface_tree_create(
-	struct wlr_scene_node *parent, struct wlr_surface *surface);
+struct wlr_scene_tree *wlr_scene_subsurface_tree_create(
+	struct wlr_scene_tree *parent, struct wlr_surface *surface);
 
 /**
  * Add a node displaying an xdg_surface and all of its sub-surfaces to the
@@ -425,8 +425,8 @@ struct wlr_scene_node *wlr_scene_subsurface_tree_create(
  * The origin of the returned scene-graph node will match the top-left corner
  * of the xdg_surface window geometry.
  */
-struct wlr_scene_node *wlr_scene_xdg_surface_create(
-	struct wlr_scene_node *parent, struct wlr_xdg_surface *xdg_surface);
+struct wlr_scene_tree *wlr_scene_xdg_surface_create(
+	struct wlr_scene_tree *parent, struct wlr_xdg_surface *xdg_surface);
 
 /**
  * Add a node displaying a layer_surface_v1 and all of its sub-surfaces to the
@@ -436,7 +436,7 @@ struct wlr_scene_node *wlr_scene_xdg_surface_create(
  * of the layer surface.
  */
 struct wlr_scene_layer_surface_v1 *wlr_scene_layer_surface_v1_create(
-	struct wlr_scene_node *parent, struct wlr_layer_surface_v1 *layer_surface);
+	struct wlr_scene_tree *parent, struct wlr_layer_surface_v1 *layer_surface);
 
 /**
  * Configure a layer_surface_v1, position its scene node in accordance to its
