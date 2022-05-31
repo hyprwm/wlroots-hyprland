@@ -406,8 +406,10 @@ struct wlr_scene_output *wlr_scene_get_scene_output(struct wlr_scene *scene,
 /**
  * Attach an output layout to a scene.
  *
- * Outputs in the output layout are automatically added to the scene. Any
- * change to the output layout is mirrored to the scene-graph outputs.
+ * Adding, removing, or repositioning an output in the output layout
+ * will respectively add, remove or reposition a corresponding
+ * scene-graph output. When the output layout is destroyed, scene-graph
+ * outputs which were created by this helper will be destroyed.
  */
 bool wlr_scene_attach_output_layout(struct wlr_scene *scene,
 	struct wlr_output_layout *output_layout);
