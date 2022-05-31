@@ -164,6 +164,10 @@ struct wlr_scene_output {
 
 	int x, y;
 
+	struct {
+		struct wl_signal destroy;
+	} events;
+
 	// private state
 
 	uint8_t index;
