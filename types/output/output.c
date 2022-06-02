@@ -677,22 +677,29 @@ static bool output_basic_test(struct wlr_output *output,
 
 bool wlr_output_test_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
-	bool had_buffer = state->committed & WLR_OUTPUT_STATE_BUFFER;
-
-	// Duplicate the state because we might mutate it in output_ensure_buffer
-	struct wlr_output_state pending = *state;
-	if (!output_basic_test(output, &pending)) {
-		return false;
-	}
-	if (!output_ensure_buffer(output, &pending)) {
+	if (!output_basic_test(output, state)) {
 		return false;
 	}
 	if (!output->impl->test) {
 		return true;
 	}
 
-	bool success = output->impl->test(output, &pending);
-	if (!had_buffer) {
+	bool new_back_buffer = false;
+	if (!output_ensure_buffer(output, state, &new_back_buffer)) {
+		return false;
+	}
+
+	// Create a shallow copy of the state with the new buffer
+	// potentially included to pass to the backend.
+	struct wlr_output_state copy = *state;
+	if (new_back_buffer) {
+		assert((copy.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
+		copy.committed |= WLR_OUTPUT_STATE_BUFFER;
+		copy.buffer = output->back_buffer;
+	}
+
+	bool success = output->impl->test(output, &copy);
+	if (new_back_buffer) {
 		output_clear_back_buffer(output);
 	}
 	return success;
@@ -710,11 +717,21 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		return false;
 	}
 
-	// Duplicate the state because we might mutate it in output_ensure_buffer
-	struct wlr_output_state pending = *state;
-	if (!output_ensure_buffer(output, &pending)) {
+	bool new_back_buffer = false;
+	if (!output_ensure_buffer(output, state, &new_back_buffer)) {
 		output_clear_back_buffer(output);
 		return false;
+	}
+
+	// Create a shallow copy of the state with the new back buffer
+	// potentially included to pass to the backend.
+	struct wlr_output_state pending = *state;
+	if (new_back_buffer) {
+		assert((pending.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
+		pending.committed |= WLR_OUTPUT_STATE_BUFFER;
+		// Lock the buffer to ensure it stays valid past the
+		// output_clear_back_buffer() call below.
+		pending.buffer = wlr_buffer_lock(output->back_buffer);
 	}
 
 	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
@@ -746,6 +763,9 @@ bool wlr_output_commit_state(struct wlr_output *output,
 
 	if (!output->impl->commit(output, &pending)) {
 		wlr_buffer_unlock(back_buffer);
+		if (new_back_buffer) {
+			wlr_buffer_unlock(pending.buffer);
+		}
 		return false;
 	}
 
@@ -820,8 +840,9 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	};
 	wlr_signal_emit_safe(&output->events.commit, &event);
 
-	if (back_buffer != NULL) {
-		wlr_buffer_unlock(back_buffer);
+	wlr_buffer_unlock(back_buffer);
+	if (new_back_buffer) {
+		wlr_buffer_unlock(pending.buffer);
 	}
 
 	return true;

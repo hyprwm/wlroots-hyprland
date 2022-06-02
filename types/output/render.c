@@ -99,7 +99,7 @@ static bool output_create_swapchain(struct wlr_output *output,
 }
 
 static bool output_attach_back_buffer(struct wlr_output *output,
-		struct wlr_output_state *state, int *buffer_age) {
+		const struct wlr_output_state *state, int *buffer_age) {
 	assert(output->back_buffer == NULL);
 
 	if (!output_create_swapchain(output, state, true)) {
@@ -151,11 +151,11 @@ bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
 	return output_attach_render(output, &output->pending, buffer_age);
 }
 
-static bool output_attach_empty_buffer(struct wlr_output *output,
-		struct wlr_output_state *state) {
+static bool output_attach_empty_back_buffer(struct wlr_output *output,
+		const struct wlr_output_state *state) {
 	assert(!(state->committed & WLR_OUTPUT_STATE_BUFFER));
 
-	if (!output_attach_render(output, state, NULL)) {
+	if (!output_attach_back_buffer(output, state, NULL)) {
 		return false;
 	}
 
@@ -170,8 +170,28 @@ static bool output_attach_empty_buffer(struct wlr_output *output,
 	return true;
 }
 
+static bool output_test_with_back_buffer(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	assert(output->impl->test != NULL);
+
+	// Create a shallow copy of the state with the empty back buffer included
+	// to pass to the backend.
+	struct wlr_output_state copy = *state;
+	assert((copy.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
+	copy.committed |= WLR_OUTPUT_STATE_BUFFER;
+	assert(output->back_buffer != NULL);
+	copy.buffer = output->back_buffer;
+
+	return output->impl->test(output, &copy);
+}
+
+// This function may attach a new, empty back buffer if necessary.
+// If so, the new_back_buffer out parameter will be set to true.
 bool output_ensure_buffer(struct wlr_output *output,
-		struct wlr_output_state *state) {
+		const struct wlr_output_state *state,
+		bool *new_back_buffer) {
+	assert(*new_back_buffer == false);
+
 	// If we're lighting up an output or changing its mode, make sure to
 	// provide a new buffer
 	bool needs_new_buffer = false;
@@ -196,15 +216,16 @@ bool output_ensure_buffer(struct wlr_output *output,
 
 	wlr_log(WLR_DEBUG, "Attaching empty buffer to output for modeset");
 
-	if (!output_attach_empty_buffer(output, state)) {
-		goto error;
+	if (!output_attach_empty_back_buffer(output, state)) {
+		return false;
 	}
-	if (!output->impl->test || output->impl->test(output, state)) {
+
+	if (output_test_with_back_buffer(output, state)) {
+		*new_back_buffer = true;
 		return true;
 	}
 
 	output_clear_back_buffer(output);
-	state->committed &= ~WLR_OUTPUT_STATE_BUFFER;
 
 	if (output->swapchain->format->len == 0) {
 		return false;
@@ -217,17 +238,18 @@ bool output_ensure_buffer(struct wlr_output *output,
 	if (!output_create_swapchain(output, state, false)) {
 		return false;
 	}
-	if (!output_attach_empty_buffer(output, state)) {
-		goto error;
-	}
-	if (!output->impl->test(output, state)) {
-		goto error;
-	}
-	return true;
 
-error:
+	if (!output_attach_empty_back_buffer(output, state)) {
+		return false;
+	}
+
+	if (output_test_with_back_buffer(output, state)) {
+		*new_back_buffer = true;
+		return true;
+	}
+
 	output_clear_back_buffer(output);
-	state->committed &= ~WLR_OUTPUT_STATE_BUFFER;
+
 	return false;
 }
 
