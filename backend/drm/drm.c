@@ -477,7 +477,7 @@ static bool drm_connector_test(struct wlr_output *output,
 		return false;
 	}
 
-	if ((state->committed & ~COMMIT_OUTPUT_STATE) == 0) {
+	if ((state->committed & COMMIT_OUTPUT_STATE) == 0) {
 		// This commit doesn't change the KMS state
 		return true;
 	}
@@ -568,7 +568,7 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		return false;
 	}
 
-	if ((base->committed & ~COMMIT_OUTPUT_STATE) == 0) {
+	if ((base->committed & COMMIT_OUTPUT_STATE) == 0) {
 		// This commit doesn't change the KMS state
 		return true;
 	}
