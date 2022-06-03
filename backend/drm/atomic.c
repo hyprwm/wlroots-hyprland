@@ -280,6 +280,10 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		atomic_add(&atom, conn->id, conn->props.link_status,
 			DRM_MODE_LINK_STATUS_GOOD);
 	}
+	if (active && conn->props.content_type != 0) {
+		atomic_add(&atom, conn->id, conn->props.content_type,
+			DRM_MODE_CONTENT_TYPE_GRAPHICS);
+	}
 	atomic_add(&atom, crtc->id, crtc->props.mode_id, mode_id);
 	atomic_add(&atom, crtc->id, crtc->props.active, active);
 	if (active) {
