@@ -76,7 +76,7 @@ static const struct format formats[] = {
 	{DRM_FORMAT_ABGR8888, false},
 };
 
-static bool find_render_node(char *node, size_t maxlen) {
+static bool find_render_node(char *node, size_t node_size) {
 	bool r = false;
 	drmDevice *devices[64];
 
@@ -87,8 +87,7 @@ static bool find_render_node(char *node, size_t maxlen) {
 			continue;
 		}
 
-		strncpy(node, dev->nodes[DRM_NODE_RENDER], maxlen - 1);
-		node[maxlen - 1] = '\0';
+		snprintf(node, node_size, "%s", dev->nodes[DRM_NODE_RENDER]);
 		r = true;
 		break;
 	}
