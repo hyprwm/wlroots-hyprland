@@ -244,15 +244,15 @@ static void text_input_handle_done(void *data,
 		buffer[strlen(buffer) - delete_before] = '\0';
 	}
 
-	char *commit_string = current.commit;
+	const char *commit_string = current.commit;
 	if (!commit_string) {
 		commit_string = "";
 	}
-	char *old_buffer = buffer;
-	buffer = calloc(strlen(buffer) + strlen(commit_string) + 1, sizeof(char)); // realloc may fail anyway
-	strcpy(buffer, old_buffer);
-	free(old_buffer);
-	strcat(buffer, commit_string);
+	size_t new_size = strlen(buffer) + strlen(commit_string) + 1;
+	char *new_buffer = calloc(new_size, sizeof(char)); // realloc may fail anyway
+	snprintf(new_buffer, new_size, "%s%s", buffer, commit_string);
+	free(buffer);
+	buffer = new_buffer;
 
 	send_status_update(zwp_text_input_v3);
 	show_status();
