@@ -706,12 +706,14 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	if (!output_basic_test(output, state)) {
 		wlr_log(WLR_ERROR, "Basic output test failed for %s", output->name);
+		output_clear_back_buffer(output);
 		return false;
 	}
 
 	// Duplicate the state because we might mutate it in output_ensure_buffer
 	struct wlr_output_state pending = *state;
 	if (!output_ensure_buffer(output, &pending)) {
+		output_clear_back_buffer(output);
 		return false;
 	}
 
