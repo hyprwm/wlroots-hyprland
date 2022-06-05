@@ -21,7 +21,7 @@
 
 #define HIGHLIGHT_DAMAGE_FADEOUT_TIME 250
 
-static struct wlr_scene_tree *scene_tree_from_node(struct wlr_scene_node *node) {
+struct wlr_scene_tree *wlr_scene_tree_from_node(struct wlr_scene_node *node) {
 	assert(node->type == WLR_SCENE_NODE_TREE);
 	struct wlr_scene_tree *tree = wl_container_of(node, tree, node);
 	return tree;
@@ -44,7 +44,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_from_node(
 struct wlr_scene *scene_node_get_root(struct wlr_scene_node *node) {
 	struct wlr_scene_tree *tree;
 	if (node->type == WLR_SCENE_NODE_TREE) {
-		tree = scene_tree_from_node(node);
+		tree = wlr_scene_tree_from_node(node);
 	} else {
 		tree = node->parent;
 	}
@@ -112,7 +112,7 @@ void wlr_scene_node_destroy(struct wlr_scene_node *node) {
 		wlr_buffer_unlock(scene_buffer->buffer);
 		pixman_region32_fini(&scene_buffer->opaque_region);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 
 		if (scene_tree == &scene->tree) {
 			assert(!node->parent);
@@ -197,7 +197,7 @@ static bool _scene_nodes_in_box(struct wlr_scene_node *node, struct wlr_box *box
 
 	switch (node->type) {
 	case WLR_SCENE_NODE_TREE:;
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each_reverse(child, &scene_tree->children, link) {
 			if (_scene_nodes_in_box(child, box, iterator, user_data, lx + child->x, ly + child->y)) {
@@ -455,7 +455,7 @@ static void scene_node_visibility(struct wlr_scene_node *node,
 	}
 
 	if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_visibility(child, visible);
@@ -473,7 +473,7 @@ static void scene_node_bounds(struct wlr_scene_node *node,
 	}
 
 	if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_bounds(child, x + child->x, y + child->y, visible);
@@ -990,7 +990,7 @@ static void scene_node_for_each_scene_buffer(struct wlr_scene_node *node,
 		struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
 		user_iterator(scene_buffer, lx, ly, user_data);
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_for_each_scene_buffer(child, lx, ly, user_iterator, user_data);
@@ -1185,7 +1185,7 @@ static const struct wlr_addon_interface output_addon_impl = {
 static void scene_node_output_update(struct wlr_scene_node *node,
 		struct wl_list *outputs, struct wlr_scene_output *ignore) {
 	if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_output_update(child, outputs, ignore);
@@ -1792,7 +1792,7 @@ static void scene_node_send_frame_done(struct wlr_scene_node *node,
 			wlr_scene_buffer_send_frame_done(scene_buffer, now);
 		}
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_send_frame_done(child, scene_output, now);
@@ -1827,7 +1827,7 @@ static void scene_output_for_each_scene_buffer(const struct wlr_box *output_box,
 			user_iterator(scene_buffer, lx, ly, user_data);
 		}
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = scene_tree_from_node(node);
+		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_output_for_each_scene_buffer(output_box, child, lx, ly,
