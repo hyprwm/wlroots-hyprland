@@ -317,6 +317,10 @@ struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_tree *parent);
 struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent,
 	struct wlr_surface *surface);
 
+/**
+ * If this node represents a wlr_scene_buffer, that buffer will be returned. It
+ * is not legal to feed a node that does not represent a wlr_scene_buffer.
+ */
 struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node);
 
 /**
