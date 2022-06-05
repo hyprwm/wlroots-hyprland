@@ -2,9 +2,6 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#include "tablet-unstable-v2-protocol.h"
-#include "util/array.h"
-#include "util/time.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <types/wlr_tablet_v2.h>
@@ -13,6 +10,10 @@
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
+#include "util/array.h"
+#include "util/signal.h"
+#include "util/time.h"
+#include "tablet-unstable-v2-protocol.h"
 
 static const struct wlr_tablet_tool_v2_grab_interface default_tool_grab_interface;
 
@@ -46,7 +47,7 @@ static void handle_tablet_tool_v2_set_cursor(struct wl_client *client,
 		.seat_client = tool->seat->seat_client,
 	};
 
-	wl_signal_emit(&tool->tool->events.set_cursor, &evt);
+	wlr_signal_emit_safe(&tool->tool->events.set_cursor, &evt);
 }
 
 static void handle_tablet_tool_v2_destroy(struct wl_client *client,

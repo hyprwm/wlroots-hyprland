@@ -64,7 +64,7 @@ void wlr_buffer_unlock(struct wlr_buffer *buffer) {
 	buffer->n_locks--;
 
 	if (buffer->n_locks == 0) {
-		wl_signal_emit(&buffer->events.release, NULL);
+		wlr_signal_emit_safe(&buffer->events.release, NULL);
 	}
 
 	buffer_consider_destroy(buffer);
