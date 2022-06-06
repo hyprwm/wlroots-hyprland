@@ -29,7 +29,7 @@ bool wlr_dmabuf_attributes_copy(struct wlr_dmabuf_attributes *dst,
 
 error:
 	for (int j = 0; j < i; j++) {
-		close(dst->fd[i]);
+		close(dst->fd[j]);
 		dst->fd[j] = -1;
 	}
 	dst->n_planes = 0;
