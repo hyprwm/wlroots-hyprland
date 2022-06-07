@@ -116,7 +116,7 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 	}
 
 	output->model = strdup(model_str);
-	if (output->serial[0] != '\0') {
+	if (serial_str[0] != '\0') {
 		output->serial = strdup(serial_str);
 	}
 }
