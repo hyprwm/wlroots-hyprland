@@ -141,4 +141,16 @@ struct wlr_output_configuration_head_v1 *
 	wlr_output_configuration_head_v1_create(
 	struct wlr_output_configuration_v1 *config, struct wlr_output *output);
 
+/**
+ * Apply the head state on the supplied struct wlr_output_state.
+ *
+ * Compositors can then pass the resulting struct wlr_output_state to
+ * wlr_output_commit_state() or wlr_output_test_state().
+ *
+ * The position needs to be applied manually by the caller.
+ */
+void wlr_output_head_v1_state_apply(
+	const struct wlr_output_head_v1_state *head_state,
+	struct wlr_output_state *output_state);
+
 #endif

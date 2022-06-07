@@ -907,3 +907,25 @@ void wlr_output_manager_v1_set_configuration(
 	}
 	manager->current_configuration_dirty = false;
 }
+
+void wlr_output_head_v1_state_apply(
+		const struct wlr_output_head_v1_state *head_state,
+		struct wlr_output_state *output_state) {
+	wlr_output_state_set_enabled(output_state, head_state->enabled);
+
+	if (!head_state->enabled) {
+		return;
+	}
+
+	if (head_state->mode != NULL) {
+		wlr_output_state_set_mode(output_state, head_state->mode);
+	} else {
+		wlr_output_state_set_custom_mode(output_state,
+			head_state->custom_mode.width,
+			head_state->custom_mode.height,
+			head_state->custom_mode.refresh);
+	}
+
+	wlr_output_state_set_scale(output_state, head_state->scale);
+	wlr_output_state_set_transform(output_state, head_state->transform);
+}
