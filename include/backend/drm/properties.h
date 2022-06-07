@@ -21,6 +21,7 @@ union wlr_drm_connector_props {
 		uint32_t non_desktop;
 		uint32_t panel_orientation; // not guaranteed to exist
 		uint32_t content_type; // not guaranteed to exist
+		uint32_t max_bpc; // not guaranteed to exist
 
 		// atomic-modesetting only
 
@@ -75,5 +76,8 @@ bool get_drm_plane_props(int fd, uint32_t id, union wlr_drm_plane_props *out);
 bool get_drm_prop(int fd, uint32_t obj, uint32_t prop, uint64_t *ret);
 void *get_drm_prop_blob(int fd, uint32_t obj, uint32_t prop, size_t *ret_len);
 char *get_drm_prop_enum(int fd, uint32_t obj, uint32_t prop);
+
+bool introspect_drm_prop_range(int fd, uint32_t prop_id,
+	uint64_t *min, uint64_t *max);
 
 #endif

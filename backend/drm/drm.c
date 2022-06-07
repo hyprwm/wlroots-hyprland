@@ -1317,6 +1317,14 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 				wlr_conn->output.non_desktop = non_desktop;
 			}
 
+			wlr_conn->max_bpc = 0;
+			if (wlr_conn->props.max_bpc != 0) {
+				if (!introspect_drm_prop_range(drm->fd, wlr_conn->props.max_bpc,
+						NULL, &wlr_conn->max_bpc)) {
+					wlr_log(WLR_ERROR, "Failed to introspect 'max bpc' property");
+				}
+			}
+
 			size_t edid_len = 0;
 			uint8_t *edid = get_drm_prop_blob(drm->fd,
 				wlr_conn->id, wlr_conn->props.edid, &edid_len);

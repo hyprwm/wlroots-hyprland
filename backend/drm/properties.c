@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -26,6 +27,7 @@ static const struct prop_info connector_info[] = {
 	{ "PATH", INDEX(path) },
 	{ "content type", INDEX(content_type) },
 	{ "link-status", INDEX(link_status) },
+	{ "max bpc", INDEX(max_bpc) },
 	{ "non-desktop", INDEX(non_desktop) },
 	{ "panel orientation", INDEX(panel_orientation) },
 	{ "subconnector", INDEX(subconnector) },
@@ -180,4 +182,29 @@ char *get_drm_prop_enum(int fd, uint32_t obj, uint32_t prop_id) {
 	drmModeFreeProperty(prop);
 
 	return str;
+}
+
+bool introspect_drm_prop_range(int fd, uint32_t prop_id,
+		uint64_t *min, uint64_t *max) {
+	drmModePropertyRes *prop = drmModeGetProperty(fd, prop_id);
+	if (!prop) {
+		return false;
+	}
+
+	if (drmModeGetPropertyType(prop) != DRM_MODE_PROP_RANGE) {
+		drmModeFreeProperty(prop);
+		return false;
+	}
+
+	assert(prop->count_values == 2);
+
+	if (min != NULL) {
+		*min = prop->values[0];
+	}
+	if (max != NULL) {
+		*max = prop->values[1];
+	}
+
+	drmModeFreeProperty(prop);
+	return true;
 }

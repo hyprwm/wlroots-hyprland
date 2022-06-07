@@ -284,6 +284,9 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		atomic_add(&atom, conn->id, conn->props.content_type,
 			DRM_MODE_CONTENT_TYPE_GRAPHICS);
 	}
+	if (active && conn->props.max_bpc != 0 && conn->max_bpc > 0) {
+		atomic_add(&atom, conn->id, conn->props.max_bpc, conn->max_bpc);
+	}
 	atomic_add(&atom, crtc->id, crtc->props.mode_id, mode_id);
 	atomic_add(&atom, crtc->id, crtc->props.active, active);
 	if (active) {

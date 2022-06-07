@@ -119,6 +119,7 @@ struct wlr_drm_connector {
 	enum wlr_drm_connector_status status;
 	bool desired_enabled;
 	uint32_t id;
+	uint64_t max_bpc;
 	struct wlr_drm_lease *lease;
 
 	struct wlr_drm_crtc *crtc;
