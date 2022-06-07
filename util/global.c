@@ -4,14 +4,25 @@
 struct destroy_global_data {
 	struct wl_global *global;
 	struct wl_event_source *event_source;
+	struct wl_listener display_destroy;
 };
 
-static int destroy_global(void *_data) {
-	struct destroy_global_data *data = _data;
+static void destroy_global(struct destroy_global_data *data) {
+	wl_list_remove(&data->display_destroy.link);
 	wl_global_destroy(data->global);
 	wl_event_source_remove(data->event_source);
 	free(data);
+}
+
+static int handle_timer_event(void *data) {
+	destroy_global(data);
 	return 0;
+}
+
+static void handle_display_destroy(struct wl_listener *listener, void *_data) {
+	struct destroy_global_data *data =
+		wl_container_of(listener, data, display_destroy);
+	destroy_global(data);
 }
 
 void wlr_global_destroy_safe(struct wl_global *global) {
@@ -33,11 +44,14 @@ void wlr_global_destroy_safe(struct wl_global *global) {
 	}
 	data->global = global;
 	data->event_source =
-		wl_event_loop_add_timer(event_loop, destroy_global, data);
+		wl_event_loop_add_timer(event_loop, handle_timer_event, data);
 	if (data->event_source == NULL) {
 		free(data);
 		wl_global_destroy(global);
 		return;
 	}
 	wl_event_source_timer_update(data->event_source, 5000);
+
+	data->display_destroy.notify = handle_display_destroy;
+	wl_display_add_destroy_listener(display, &data->display_destroy);
 }
