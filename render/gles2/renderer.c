@@ -204,7 +204,7 @@ static void gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
 
 	// refresh projection matrix
 	wlr_matrix_projection(renderer->projection, width, height,
-			WL_OUTPUT_TRANSFORM_NORMAL);
+		WL_OUTPUT_TRANSFORM_FLIPPED_180);
 
 	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -245,12 +245,6 @@ static void gles2_scissor(struct wlr_renderer *wlr_renderer,
 	pop_gles2_debug(renderer);
 }
 
-static const float flip_180[9] = {
-	1.0f, 0.0f, 0.0f,
-	0.0f, -1.0f, 0.0f,
-	0.0f, 0.0f, 1.0f,
-};
-
 static bool gles2_render_subtexture_with_matrix(
 		struct wlr_renderer *wlr_renderer, struct wlr_texture *wlr_texture,
 		const struct wlr_fbox *box, const float matrix[static 9],
@@ -286,7 +280,6 @@ static bool gles2_render_subtexture_with_matrix(
 
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
-	wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
 
 	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
 	// to GL_FALSE
@@ -346,7 +339,6 @@ static void gles2_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
-	wlr_matrix_multiply(gl_matrix, flip_180, gl_matrix);
 
 	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
 	// to GL_FALSE
