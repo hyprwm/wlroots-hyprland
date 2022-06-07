@@ -86,7 +86,11 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 
 	uint32_t serial = data[12] | (data[13] << 8) | (data[14] << 8) | (data[15] << 8);
 	char serial_str[32];
-	snprintf(serial_str, sizeof(serial_str), "0x%08" PRIX32, serial);
+	if (serial != 0) {
+		snprintf(serial_str, sizeof(serial_str), "0x%08" PRIX32, serial);
+	} else {
+		serial_str[0] = '\0';
+	}
 
 	for (size_t i = 72; i <= 108; i += 18) {
 		uint16_t flag = (data[i] << 8) | data[i + 1];
@@ -112,7 +116,9 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 	}
 
 	output->model = strdup(model_str);
-	output->serial = strdup(serial_str);
+	if (output->serial[0] != '\0') {
+		output->serial = strdup(serial_str);
+	}
 }
 
 const char *conn_get_name(uint32_t type_id) {

@@ -1343,9 +1343,13 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 
 			struct wlr_output *output = &wlr_conn->output;
 			char description[128];
-			snprintf(description, sizeof(description), "%s %s %s (%s%s%s)",
-				output->make, output->model, output->serial, output->name,
-				subconnector ? " via " : "", subconnector ? subconnector : "");
+			snprintf(description, sizeof(description), "%s %s%s%s (%s%s%s)",
+				output->make, output->model,
+				output->serial ? " " : "",
+				output->serial ? output->serial : "",
+				output->name,
+				subconnector ? " via " : "",
+				subconnector ? subconnector : "");
 			wlr_output_set_description(output, description);
 
 			free(subconnector);
