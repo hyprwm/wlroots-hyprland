@@ -205,52 +205,17 @@ static void output_update_matrix(struct wlr_output *output) {
 }
 
 void wlr_output_enable(struct wlr_output *output, bool enable) {
-	if (output->enabled == enable) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_ENABLED;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_ENABLED;
-	output->pending.enabled = enable;
-}
-
-static void output_state_clear_mode(struct wlr_output_state *state) {
-	if (!(state->committed & WLR_OUTPUT_STATE_MODE)) {
-		return;
-	}
-
-	state->mode = NULL;
-
-	state->committed &= ~WLR_OUTPUT_STATE_MODE;
+	wlr_output_state_set_enabled(&output->pending, enable);
 }
 
 void wlr_output_set_mode(struct wlr_output *output,
 		struct wlr_output_mode *mode) {
-	output_state_clear_mode(&output->pending);
-
-	if (output->current_mode == mode) {
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_MODE;
-	output->pending.mode_type = WLR_OUTPUT_STATE_MODE_FIXED;
-	output->pending.mode = mode;
+	wlr_output_state_set_mode(&output->pending, mode);
 }
 
 void wlr_output_set_custom_mode(struct wlr_output *output, int32_t width,
 		int32_t height, int32_t refresh) {
-	output_state_clear_mode(&output->pending);
-
-	if (output->width == width && output->height == height &&
-			output->refresh == refresh) {
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_MODE;
-	output->pending.mode_type = WLR_OUTPUT_STATE_MODE_CUSTOM;
-	output->pending.custom_mode.width = width;
-	output->pending.custom_mode.height = height;
-	output->pending.custom_mode.refresh = refresh;
+	wlr_output_state_set_custom_mode(&output->pending, width, height, refresh);
 }
 
 void wlr_output_update_mode(struct wlr_output *output,
@@ -295,56 +260,24 @@ void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
 
 void wlr_output_set_transform(struct wlr_output *output,
 		enum wl_output_transform transform) {
-	if (output->transform == transform) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_TRANSFORM;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_TRANSFORM;
-	output->pending.transform = transform;
+	wlr_output_state_set_transform(&output->pending, transform);
 }
 
 void wlr_output_set_scale(struct wlr_output *output, float scale) {
-	if (output->scale == scale) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_SCALE;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_SCALE;
-	output->pending.scale = scale;
+	wlr_output_state_set_scale(&output->pending, scale);
 }
 
 void wlr_output_enable_adaptive_sync(struct wlr_output *output, bool enabled) {
-	bool currently_enabled =
-		output->adaptive_sync_status != WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED;
-	if (currently_enabled == enabled) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
-	output->pending.adaptive_sync_enabled = enabled;
+	wlr_output_state_set_adaptive_sync_enabled(&output->pending, enabled);
 }
 
 void wlr_output_set_render_format(struct wlr_output *output, uint32_t format) {
-	if (output->render_format == format) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_RENDER_FORMAT;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_RENDER_FORMAT;
-	output->pending.render_format = format;
+	wlr_output_state_set_render_format(&output->pending, format);
 }
 
 void wlr_output_set_subpixel(struct wlr_output *output,
 		enum wl_output_subpixel subpixel) {
-	if (output->subpixel == subpixel) {
-		output->pending.committed &= ~WLR_OUTPUT_STATE_SUBPIXEL;
-		return;
-	}
-
-	output->pending.committed |= WLR_OUTPUT_STATE_SUBPIXEL;
-	output->pending.subpixel = subpixel;
+	wlr_output_state_set_subpixel(&output->pending, subpixel);
 }
 
 void wlr_output_set_name(struct wlr_output *output, const char *name) {
