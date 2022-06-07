@@ -579,6 +579,63 @@ void output_pending_resolution(struct wlr_output *output,
 	}
 }
 
+/**
+ * Compare a struct wlr_output_state with the current state of a struct
+ * wlr_output.
+ *
+ * Returns a bitfield of the unchanged fields.
+ *
+ * Some fields are not checked: damage always changes in-between frames, the
+ * gamma LUT is too expensive to check, the contents of the buffer might have
+ * changed, etc.
+ */
+static uint32_t output_compare_state(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	uint32_t fields = 0;
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		bool unchanged = false;
+		switch (state->mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			unchanged = output->current_mode == state->mode;
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			unchanged = output->width == state->custom_mode.width &&
+				output->height == state->custom_mode.height &&
+				output->refresh == state->custom_mode.refresh;
+			break;
+		}
+		if (unchanged) {
+			fields |= WLR_OUTPUT_STATE_MODE;
+		}
+	}
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && output->enabled == state->enabled) {
+		fields |= WLR_OUTPUT_STATE_ENABLED;
+	}
+	if ((state->committed & WLR_OUTPUT_STATE_SCALE) && output->scale == state->scale) {
+		fields |= WLR_OUTPUT_STATE_SCALE;
+	}
+	if ((state->committed & WLR_OUTPUT_STATE_TRANSFORM) &&
+			output->transform == state->transform) {
+		fields |= WLR_OUTPUT_STATE_TRANSFORM;
+	}
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+		bool enabled =
+			output->adaptive_sync_status != WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED;
+		if (enabled == state->adaptive_sync_enabled) {
+			fields |= WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
+		}
+	}
+	if ((state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) &&
+			output->render_format == state->render_format) {
+		fields |= WLR_OUTPUT_STATE_RENDER_FORMAT;
+	}
+	if ((state->committed & WLR_OUTPUT_STATE_SUBPIXEL) &&
+			output->subpixel == state->subpixel) {
+		fields |= WLR_OUTPUT_STATE_SUBPIXEL;
+	}
+	return fields;
+}
+
 static bool output_basic_test(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
@@ -680,7 +737,14 @@ static bool output_basic_test(struct wlr_output *output,
 
 bool wlr_output_test_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
-	if (!output_basic_test(output, state)) {
+	uint32_t unchanged = output_compare_state(output, state);
+
+	// Create a shallow copy of the state with only the fields which have been
+	// changed and potentially a new buffer.
+	struct wlr_output_state copy = *state;
+	copy.committed &= ~unchanged;
+
+	if (!output_basic_test(output, &copy)) {
 		return false;
 	}
 	if (!output->impl->test) {
@@ -688,13 +752,9 @@ bool wlr_output_test_state(struct wlr_output *output,
 	}
 
 	bool new_back_buffer = false;
-	if (!output_ensure_buffer(output, state, &new_back_buffer)) {
+	if (!output_ensure_buffer(output, &copy, &new_back_buffer)) {
 		return false;
 	}
-
-	// Create a shallow copy of the state with the new buffer
-	// potentially included to pass to the backend.
-	struct wlr_output_state copy = *state;
 	if (new_back_buffer) {
 		assert((copy.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
 		copy.committed |= WLR_OUTPUT_STATE_BUFFER;
@@ -714,21 +774,24 @@ bool wlr_output_test(struct wlr_output *output) {
 
 bool wlr_output_commit_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
-	if (!output_basic_test(output, state)) {
+	uint32_t unchanged = output_compare_state(output, state);
+
+	// Create a shallow copy of the state with only the fields which have been
+	// changed and potentially a new buffer.
+	struct wlr_output_state pending = *state;
+	pending.committed &= ~unchanged;
+
+	if (!output_basic_test(output, &pending)) {
 		wlr_log(WLR_ERROR, "Basic output test failed for %s", output->name);
 		output_clear_back_buffer(output);
 		return false;
 	}
 
 	bool new_back_buffer = false;
-	if (!output_ensure_buffer(output, state, &new_back_buffer)) {
+	if (!output_ensure_buffer(output, &pending, &new_back_buffer)) {
 		output_clear_back_buffer(output);
 		return false;
 	}
-
-	// Create a shallow copy of the state with the new back buffer
-	// potentially included to pass to the backend.
-	struct wlr_output_state pending = *state;
 	if (new_back_buffer) {
 		assert((pending.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
 		pending.committed |= WLR_OUTPUT_STATE_BUFFER;
