@@ -481,6 +481,9 @@ void wlr_output_destroy(struct wlr_output *output) {
 
 	free(output->name);
 	free(output->description);
+	free(output->make);
+	free(output->model);
+	free(output->serial);
 
 	output_state_finish(&output->pending);
 
