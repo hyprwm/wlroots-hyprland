@@ -43,14 +43,6 @@ void wlr_matrix_rotate(float mat[static 9], float rad);
 void wlr_matrix_transform(float mat[static 9],
 	enum wl_output_transform transform);
 
-/** Writes a 2D orthographic projection matrix to mat of (width, height) with a
- *  specified wl_output_transform.
- *
- *  Deprecated: this function is deprecated and will be removed in a future
- *  version of wlroots. */
-void wlr_matrix_projection(float mat[static 9], int width, int height,
-	enum wl_output_transform transform);
-
 /** Shortcut for the various matrix operations involved in projecting the
  *  specified wlr_box onto a given orthographic projection with a given
  *  rotation. The result is written to mat, which can be applied to each

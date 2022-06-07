@@ -23,6 +23,7 @@
 #include "render/vulkan/shaders/texture.frag.h"
 #include "render/vulkan/shaders/quad.frag.h"
 #include "types/wlr_buffer.h"
+#include "types/wlr_matrix.h"
 
 // TODO:
 // - simplify stage allocation, don't track allocations but use ringbuffer-like
@@ -564,9 +565,9 @@ static void vulkan_begin(struct wlr_renderer *wlr_renderer,
 	vkCmdSetScissor(cb, 0, 1, &rect);
 
 	// Refresh projection matrix.
-	// wlr_matrix_projection assumes a GL corrdinate system so we need
+	// matrix_projection() assumes a GL coordinate system so we need
 	// to pass WL_OUTPUT_TRANSFORM_FLIPPED_180 to adjust it for vulkan.
-	wlr_matrix_projection(renderer->projection, width, height,
+	matrix_projection(renderer->projection, width, height,
 		WL_OUTPUT_TRANSFORM_FLIPPED_180);
 
 	renderer->render_width = width;
