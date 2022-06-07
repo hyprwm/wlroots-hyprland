@@ -6,6 +6,7 @@ wlr_files += files(
 	'output/cursor.c',
 	'output/output.c',
 	'output/render.c',
+	'output/state.c',
 	'output/transform.c',
 	'scene/subsurface_tree.c',
 	'scene/surface.c',
