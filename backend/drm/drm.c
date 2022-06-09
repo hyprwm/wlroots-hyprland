@@ -1185,14 +1185,6 @@ static void disconnect_drm_connector(struct wlr_drm_connector *conn);
 
 void scan_drm_connectors(struct wlr_drm_backend *drm,
 		struct wlr_device_hotplug_event *event) {
-	/*
-	 * This GPU is not really a modesetting device.
-	 * It's just being used as a renderer.
-	 */
-	if (drm->num_crtcs == 0) {
-		return;
-	}
-
 	if (event != NULL && event->connector_id != 0) {
 		wlr_log(WLR_INFO, "Scanning DRM connector %"PRIu32" on %s",
 			event->connector_id, drm->name);
