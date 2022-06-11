@@ -297,7 +297,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 		dev->format_props[dev->format_prop_count] = props;
 		++dev->format_prop_count;
 	} else {
-		vulkan_format_props_finish(props);
+		vulkan_format_props_finish(&props);
 	}
 }
 
