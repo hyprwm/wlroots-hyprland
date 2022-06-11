@@ -506,7 +506,8 @@ uint32_t wlr_xdg_toplevel_set_resizing(struct wlr_xdg_toplevel *toplevel,
 
 uint32_t wlr_xdg_toplevel_set_tiled(struct wlr_xdg_toplevel *toplevel,
 		uint32_t tiled) {
-	assert(toplevel->base->client->shell->version >= 2);
+	assert(toplevel->base->client->shell->version >=
+		XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION);
 	toplevel->scheduled.tiled = tiled;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);
 }
