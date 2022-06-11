@@ -552,6 +552,7 @@ struct wlr_egl *wlr_egl_create_with_context(EGLDisplay display,
 	}
 
 	if (!egl_init_display(egl, display)) {
+		free(egl);
 		return NULL;
 	}
 
