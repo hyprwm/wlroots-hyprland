@@ -19,17 +19,9 @@ if not get_option('xwayland').disabled()
 	msg += 'Required for Xwayland support.'
 endif
 
-xwayland = dependency('xwayland', required: false)
+xwayland = dependency('xwayland', required: get_option('xwayland'))
 if not xwayland.found()
-	# There's no Xwayland release with the pkg-config file shipped yet.
-	xwayland_prog = find_program('Xwayland', required: false)
-	if not xwayland_prog.found()
-		if get_option('xwayland').enabled()
-			error('\n'.join(msg).format('xwayland'))
-		else
-			subdir_done()
-		endif
-	endif
+	subdir_done()
 endif
 
 foreach lib : xwayland_required
@@ -69,22 +61,9 @@ xwayland_feature_names = [
 	'terminate_delay',
 ]
 
-xwayland_features = {}
-if xwayland.found()
-	xwayland_path = xwayland.get_variable('xwayland')
-	foreach name : xwayland_feature_names
-		have = xwayland.get_variable('have_' + name, default_value: 'false') == 'true'
-		xwayland_features += { name: have }
-	endforeach
-else
-	xwayland_path = xwayland_prog.full_path()
-	foreach name : xwayland_feature_names
-		xwayland_features += { name: false }
-	endforeach
-endif
-
-internal_config.set_quoted('XWAYLAND_PATH', xwayland_path)
-foreach name, have : xwayland_features
+internal_config.set_quoted('XWAYLAND_PATH', xwayland.get_variable('xwayland'))
+foreach name : xwayland_feature_names
+	have = xwayland.get_variable('have_' + name, default_value: 'false') == 'true'
 	internal_config.set10('HAVE_XWAYLAND_' + name.to_upper(), have)
 endforeach
 

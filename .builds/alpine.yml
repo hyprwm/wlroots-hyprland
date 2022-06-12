@@ -15,7 +15,7 @@ packages:
   - xcb-util-image-dev
   - xcb-util-renderutil-dev
   - xcb-util-wm-dev
-  - xwayland
+  - xwayland-dev
   - libseat-dev
   - hwdata
 sources:
