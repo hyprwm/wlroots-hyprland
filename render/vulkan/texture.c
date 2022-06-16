@@ -33,14 +33,6 @@ static VkImageAspectFlagBits mem_plane_aspect(unsigned i) {
 	}
 }
 
-static bool vulkan_texture_is_opaque(struct wlr_texture *wlr_texture) {
-	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
-	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(
-			texture->format->drm_format);
-	assert(format_info);
-	return !format_info->has_alpha;
-}
-
 // Will transition the texture to shaderReadOnlyOptimal layout for reading
 // from fragment shader later on
 static bool write_pixels(struct wlr_texture *wlr_texture,
@@ -199,7 +191,6 @@ static void vulkan_texture_unref(struct wlr_texture *wlr_texture) {
 }
 
 static const struct wlr_texture_impl texture_impl = {
-	.is_opaque = vulkan_texture_is_opaque,
 	.write_pixels = vulkan_texture_write_pixels,
 	.destroy = vulkan_texture_unref,
 };

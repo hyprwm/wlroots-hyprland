@@ -162,6 +162,8 @@ struct wlr_surface {
 		int width, height;
 		int buffer_width, buffer_height;
 	} previous;
+
+	bool opaque;
 };
 
 struct wlr_renderer;

@@ -37,11 +37,6 @@ struct wlr_texture *wlr_texture_from_dmabuf(struct wlr_renderer *renderer,
 	struct wlr_dmabuf_attributes *attribs);
 
 /**
- * Returns true if this texture is using a fully opaque format.
- */
-bool wlr_texture_is_opaque(struct wlr_texture *texture);
-
-/**
   * Update a texture with raw pixels. The texture must be mutable, and the input
   * data must have the same pixel format that the texture was created with.
   */

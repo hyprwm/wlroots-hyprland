@@ -46,11 +46,6 @@ static struct wlr_pixman_texture *get_texture(
 	return (struct wlr_pixman_texture *)wlr_texture;
 }
 
-static bool texture_is_opaque(struct wlr_texture *wlr_texture) {
-	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
-	return !texture->format_info->has_alpha;
-}
-
 static void texture_destroy(struct wlr_texture *wlr_texture) {
 	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
 	wl_list_remove(&texture->link);
@@ -61,7 +56,6 @@ static void texture_destroy(struct wlr_texture *wlr_texture) {
 }
 
 static const struct wlr_texture_impl texture_impl = {
-	.is_opaque = texture_is_opaque,
 	.destroy = texture_destroy,
 };
 

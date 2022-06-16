@@ -69,4 +69,13 @@ struct wlr_dmabuf_buffer *dmabuf_buffer_create(
  */
 bool dmabuf_buffer_drop(struct wlr_dmabuf_buffer *buffer);
 
+/**
+ * Check whether a buffer is fully opaque.
+ *
+ * When true is returned, the buffer is guaranteed to be fully opaque, but the
+ * reverse is not true: false may be returned in cases where the buffer is fully
+ * opaque.
+ */
+bool buffer_is_opaque(struct wlr_buffer *buffer);
+
 #endif

@@ -29,11 +29,6 @@ struct wlr_gles2_texture *gles2_get_texture(
 	return (struct wlr_gles2_texture *)wlr_texture;
 }
 
-static bool gles2_texture_is_opaque(struct wlr_texture *wlr_texture) {
-	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
-	return !texture->has_alpha;
-}
-
 static bool check_stride(const struct wlr_pixel_format_info *fmt,
 		uint32_t stride, uint32_t width) {
 	if (stride % (fmt->bpp / 8) != 0) {
@@ -161,7 +156,6 @@ static void gles2_texture_unref(struct wlr_texture *wlr_texture) {
 }
 
 static const struct wlr_texture_impl texture_impl = {
-	.is_opaque = gles2_texture_is_opaque,
 	.write_pixels = gles2_texture_write_pixels,
 	.destroy = gles2_texture_unref,
 };

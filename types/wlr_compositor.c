@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
+#include "types/wlr_buffer.h"
 #include "types/wlr_region.h"
 #include "util/signal.h"
 #include "util/time.h"
@@ -336,8 +337,11 @@ static void surface_apply_damage(struct wlr_surface *surface) {
 			wlr_buffer_unlock(&surface->buffer->base);
 		}
 		surface->buffer = NULL;
+		surface->opaque = false;
 		return;
 	}
+
+	surface->opaque = buffer_is_opaque(surface->current.buffer);
 
 	if (surface->buffer != NULL) {
 		if (wlr_client_buffer_apply_damage(surface->buffer,
@@ -372,7 +376,7 @@ static void surface_update_opaque_region(struct wlr_surface *surface) {
 		return;
 	}
 
-	if (wlr_texture_is_opaque(texture)) {
+	if (surface->opaque) {
 		pixman_region32_init_rect(&surface->opaque_region,
 			0, 0, surface->current.width, surface->current.height);
 		return;
