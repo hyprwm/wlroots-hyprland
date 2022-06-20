@@ -13,6 +13,12 @@
 #include "util/signal.h"
 #include "util/time.h"
 
+struct wlr_keyboard *wlr_keyboard_from_input_device(
+		struct wlr_input_device *input_device) {
+	assert(input_device->type == WLR_INPUT_DEVICE_KEYBOARD);
+	return wl_container_of(input_device, (struct wlr_keyboard *)NULL, base);
+}
+
 void keyboard_led_update(struct wlr_keyboard *keyboard) {
 	if (keyboard->xkb_state == NULL) {
 		return;
@@ -118,7 +124,6 @@ void wlr_keyboard_init(struct wlr_keyboard *kb,
 		const struct wlr_keyboard_impl *impl, const char *name) {
 	memset(kb, 0, sizeof(*kb));
 	wlr_input_device_init(&kb->base, WLR_INPUT_DEVICE_KEYBOARD, name);
-	kb->base.keyboard = kb;
 
 	kb->impl = impl;
 	wl_signal_init(&kb->events.key);

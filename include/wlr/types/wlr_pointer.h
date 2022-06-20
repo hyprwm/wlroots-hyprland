@@ -145,4 +145,12 @@ struct wlr_pointer_hold_end_event {
 	bool cancelled;
 };
 
+/**
+ * Get a struct wlr_pointer from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a pointer.
+ */
+struct wlr_pointer *wlr_pointer_from_input_device(
+	struct wlr_input_device *input_device);
+
 #endif

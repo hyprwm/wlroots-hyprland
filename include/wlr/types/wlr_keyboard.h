@@ -101,6 +101,14 @@ struct wlr_keyboard_key_event {
 	enum wl_keyboard_key_state state;
 };
 
+/**
+ * Get a struct wlr_keyboard from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a keyboard.
+ */
+struct wlr_keyboard *wlr_keyboard_from_input_device(
+	struct wlr_input_device *input_device);
+
 bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb,
 	struct xkb_keymap *keymap);
 

@@ -60,7 +60,7 @@ struct wlr_tablet_v2_tablet *wlr_tablet_create(
 	if (!seat) {
 		return NULL;
 	}
-	struct wlr_tablet *wlr_tablet = wlr_device->tablet;
+	struct wlr_tablet *wlr_tablet = wlr_tablet_from_input_device(wlr_device);
 	struct wlr_tablet_v2_tablet *tablet = calloc(1, sizeof(struct wlr_tablet_v2_tablet));
 	if (!tablet) {
 		return NULL;

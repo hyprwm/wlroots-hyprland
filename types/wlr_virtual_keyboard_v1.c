@@ -26,11 +26,15 @@ static struct wlr_virtual_keyboard_v1 *virtual_keyboard_from_resource(
 
 struct wlr_virtual_keyboard_v1 *wlr_input_device_get_virtual_keyboard(
 		struct wlr_input_device *wlr_dev) {
-	if (wlr_dev->type != WLR_INPUT_DEVICE_KEYBOARD
-			|| wlr_dev->keyboard->impl != &keyboard_impl) {
+	if (wlr_dev->type != WLR_INPUT_DEVICE_KEYBOARD) {
 		return NULL;
 	}
-	return (struct wlr_virtual_keyboard_v1 *)wlr_dev->keyboard;
+	struct wlr_keyboard *wlr_keyboard = wlr_keyboard_from_input_device(wlr_dev);
+	if (wlr_keyboard->impl != &keyboard_impl) {
+		return NULL;
+	}
+	return wl_container_of(wlr_keyboard,
+		(struct wlr_virtual_keyboard_v1 *)NULL, keyboard);
 }
 
 static void virtual_keyboard_keymap(struct wl_client *client,

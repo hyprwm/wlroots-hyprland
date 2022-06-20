@@ -62,4 +62,12 @@ struct wlr_touch_cancel_event {
 	int32_t touch_id;
 };
 
+/**
+ * Get a struct wlr_touch from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a touch device.
+ */
+struct wlr_touch *wlr_touch_from_input_device(
+	struct wlr_input_device *input_device);
+
 #endif

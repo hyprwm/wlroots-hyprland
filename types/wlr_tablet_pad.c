@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
@@ -7,11 +8,16 @@
 
 #include "interfaces/wlr_input_device.h"
 
+struct wlr_tablet_pad *wlr_tablet_pad_from_input_device(
+		struct wlr_input_device *input_device) {
+	assert(input_device->type == WLR_INPUT_DEVICE_TABLET_PAD);
+	return wl_container_of(input_device, (struct wlr_tablet_pad *)NULL, base);
+}
+
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
 		const struct wlr_tablet_pad_impl *impl, const char *name) {
 	memset(pad, 0, sizeof(*pad));
 	wlr_input_device_init(&pad->base, WLR_INPUT_DEVICE_TABLET_PAD, name);
-	pad->base.tablet_pad = pad;
 
 	pad->impl = impl;
 	wl_signal_init(&pad->events.button);

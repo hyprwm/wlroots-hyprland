@@ -30,17 +30,6 @@ struct wlr_input_device {
 	unsigned int vendor, product;
 	char *name;
 
-	/* wlr_input_device.type determines which of these is valid */
-	union {
-		void *_device;
-		struct wlr_keyboard *keyboard;
-		struct wlr_pointer *pointer;
-		struct wlr_switch *switch_device;
-		struct wlr_touch *touch;
-		struct wlr_tablet *tablet;
-		struct wlr_tablet_pad *tablet_pad;
-	};
-
 	struct {
 		struct wl_signal destroy;
 	} events;

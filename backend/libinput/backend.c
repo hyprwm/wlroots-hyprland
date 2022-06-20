@@ -228,22 +228,22 @@ struct libinput_device *wlr_libinput_get_device_handle(
 	struct wlr_libinput_input_device *dev = NULL;
 	switch (wlr_dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
-		dev = device_from_keyboard(wlr_dev->keyboard);
+		dev = device_from_keyboard(wlr_keyboard_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_POINTER:
-		dev = device_from_pointer(wlr_dev->pointer);
+		dev = device_from_pointer(wlr_pointer_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_SWITCH:
-		dev = device_from_switch(wlr_dev->switch_device);
+		dev = device_from_switch(wlr_switch_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_TOUCH:
-		dev = device_from_touch(wlr_dev->touch);
+		dev = device_from_touch(wlr_touch_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		dev = device_from_tablet(wlr_dev->tablet);
+		dev = device_from_tablet(wlr_tablet_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
-		dev = device_from_tablet_pad(wlr_dev->tablet_pad);
+		dev = device_from_tablet_pad(wlr_tablet_pad_from_input_device(wlr_dev));
 		break;
 	}
 	return dev->handle;

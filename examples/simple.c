@@ -35,7 +35,7 @@ struct sample_output {
 
 struct sample_keyboard {
 	struct sample_state *sample;
-	struct wlr_input_device *device;
+	struct wlr_keyboard *wlr_keyboard;
 	struct wl_listener key;
 	struct wl_listener destroy;
 };
@@ -112,7 +112,7 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data) {
 	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
-	int nsyms = xkb_state_key_get_syms(keyboard->device->keyboard->xkb_state,
+	int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
 			keycode, &syms);
 	for (int i = 0; i < nsyms; i++) {
 		xkb_keysym_t sym = syms[i];
@@ -137,11 +137,11 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	case WLR_INPUT_DEVICE_KEYBOARD:;
 		struct sample_keyboard *keyboard =
 			calloc(1, sizeof(struct sample_keyboard));
-		keyboard->device = device;
+		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
 		keyboard->sample = sample;
 		wl_signal_add(&device->events.destroy, &keyboard->destroy);
 		keyboard->destroy.notify = keyboard_destroy_notify;
-		wl_signal_add(&device->keyboard->events.key, &keyboard->key);
+		wl_signal_add(&keyboard->wlr_keyboard->events.key, &keyboard->key);
 		keyboard->key.notify = keyboard_key_notify;
 		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 		if (!context) {
@@ -154,7 +154,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 			wlr_log(WLR_ERROR, "Failed to create XKB keymap");
 			exit(1);
 		}
-		wlr_keyboard_set_keymap(device->keyboard, keymap);
+		wlr_keyboard_set_keymap(keyboard->wlr_keyboard, keymap);
 		xkb_keymap_unref(keymap);
 		xkb_context_unref(context);
 		break;

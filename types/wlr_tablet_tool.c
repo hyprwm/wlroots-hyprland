@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
@@ -6,11 +7,16 @@
 
 #include "interfaces/wlr_input_device.h"
 
+struct wlr_tablet *wlr_tablet_from_input_device(
+		struct wlr_input_device *input_device) {
+	assert(input_device->type == WLR_INPUT_DEVICE_TABLET_TOOL);
+	return wl_container_of(input_device, (struct wlr_tablet *)NULL, base);
+}
+
 void wlr_tablet_init(struct wlr_tablet *tablet,
 		const struct wlr_tablet_impl *impl, const char *name) {
 	memset(tablet, 0, sizeof(*tablet));
 	wlr_input_device_init(&tablet->base, WLR_INPUT_DEVICE_TABLET_TOOL, name);
-	tablet->base.tablet = tablet;
 
 	tablet->impl = impl;
 	wl_signal_init(&tablet->events.axis);

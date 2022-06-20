@@ -376,7 +376,7 @@ struct wlr_tablet_v2_tablet_pad *wlr_tablet_pad_create(
 	if (!seat) {
 		return NULL;
 	}
-	struct wlr_tablet_pad *wlr_pad = wlr_device->tablet_pad;
+	struct wlr_tablet_pad *wlr_pad = wlr_tablet_pad_from_input_device(wlr_device);
 	struct wlr_tablet_v2_tablet_pad *pad = calloc(1, sizeof(struct wlr_tablet_v2_tablet_pad));
 	if (!pad) {
 		return NULL;

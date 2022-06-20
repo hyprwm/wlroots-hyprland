@@ -43,4 +43,12 @@ struct wlr_switch_toggle_event {
 	enum wlr_switch_state switch_state;
 };
 
+/**
+ * Get a struct wlr_switch from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a switch.
+ */
+struct wlr_switch *wlr_switch_from_input_device(
+	struct wlr_input_device *input_device);
+
 #endif

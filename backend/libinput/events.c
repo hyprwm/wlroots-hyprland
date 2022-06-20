@@ -41,17 +41,23 @@ void destroy_libinput_input_device(struct wlr_libinput_input_device *dev) {
 bool wlr_input_device_is_libinput(struct wlr_input_device *wlr_dev) {
 	switch (wlr_dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
-		return wlr_dev->keyboard->impl == &libinput_keyboard_impl;
+		return wlr_keyboard_from_input_device(wlr_dev)->impl ==
+			&libinput_keyboard_impl;
 	case WLR_INPUT_DEVICE_POINTER:
-		return wlr_dev->pointer->impl == &libinput_pointer_impl;
+		return wlr_pointer_from_input_device(wlr_dev)->impl ==
+			&libinput_pointer_impl;
 	case WLR_INPUT_DEVICE_TOUCH:
-		return wlr_dev->touch->impl == &libinput_touch_impl;
+		return wlr_touch_from_input_device(wlr_dev)->impl ==
+			&libinput_touch_impl;
 	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		return wlr_dev->tablet->impl == &libinput_tablet_impl;
+		return wlr_tablet_from_input_device(wlr_dev)-> impl ==
+			&libinput_tablet_impl;
 	case WLR_INPUT_DEVICE_TABLET_PAD:
-		return wlr_dev->tablet_pad->impl == &libinput_tablet_pad_impl;
+		return wlr_tablet_pad_from_input_device(wlr_dev)->impl ==
+			&libinput_tablet_pad_impl;
 	case WLR_INPUT_DEVICE_SWITCH:
-		return wlr_dev->switch_device->impl == &libinput_switch_impl;
+		return wlr_switch_from_input_device(wlr_dev)->impl ==
+			&libinput_switch_impl;
 	default:
 		return false;
 	}

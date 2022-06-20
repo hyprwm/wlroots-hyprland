@@ -648,75 +648,78 @@ static struct wlr_cursor_device *cursor_device_create(
 	c_device->destroy.notify = handle_device_destroy;
 
 	if (device->type == WLR_INPUT_DEVICE_POINTER) {
-		wl_signal_add(&device->pointer->events.motion, &c_device->motion);
+		struct wlr_pointer *pointer = wlr_pointer_from_input_device(device);
+
+		wl_signal_add(&pointer->events.motion, &c_device->motion);
 		c_device->motion.notify = handle_pointer_motion;
 
-		wl_signal_add(&device->pointer->events.motion_absolute,
+		wl_signal_add(&pointer->events.motion_absolute,
 			&c_device->motion_absolute);
 		c_device->motion_absolute.notify = handle_pointer_motion_absolute;
 
-		wl_signal_add(&device->pointer->events.button, &c_device->button);
+		wl_signal_add(&pointer->events.button, &c_device->button);
 		c_device->button.notify = handle_pointer_button;
 
-		wl_signal_add(&device->pointer->events.axis, &c_device->axis);
+		wl_signal_add(&pointer->events.axis, &c_device->axis);
 		c_device->axis.notify = handle_pointer_axis;
 
-		wl_signal_add(&device->pointer->events.frame, &c_device->frame);
+		wl_signal_add(&pointer->events.frame, &c_device->frame);
 		c_device->frame.notify = handle_pointer_frame;
 
-		wl_signal_add(&device->pointer->events.swipe_begin, &c_device->swipe_begin);
+		wl_signal_add(&pointer->events.swipe_begin, &c_device->swipe_begin);
 		c_device->swipe_begin.notify = handle_pointer_swipe_begin;
 
-		wl_signal_add(&device->pointer->events.swipe_update, &c_device->swipe_update);
+		wl_signal_add(&pointer->events.swipe_update, &c_device->swipe_update);
 		c_device->swipe_update.notify = handle_pointer_swipe_update;
 
-		wl_signal_add(&device->pointer->events.swipe_end, &c_device->swipe_end);
+		wl_signal_add(&pointer->events.swipe_end, &c_device->swipe_end);
 		c_device->swipe_end.notify = handle_pointer_swipe_end;
 
-		wl_signal_add(&device->pointer->events.pinch_begin, &c_device->pinch_begin);
+		wl_signal_add(&pointer->events.pinch_begin, &c_device->pinch_begin);
 		c_device->pinch_begin.notify = handle_pointer_pinch_begin;
 
-		wl_signal_add(&device->pointer->events.pinch_update, &c_device->pinch_update);
+		wl_signal_add(&pointer->events.pinch_update, &c_device->pinch_update);
 		c_device->pinch_update.notify = handle_pointer_pinch_update;
 
-		wl_signal_add(&device->pointer->events.pinch_end, &c_device->pinch_end);
+		wl_signal_add(&pointer->events.pinch_end, &c_device->pinch_end);
 		c_device->pinch_end.notify = handle_pointer_pinch_end;
 
-		wl_signal_add(&device->pointer->events.hold_begin, &c_device->hold_begin);
+		wl_signal_add(&pointer->events.hold_begin, &c_device->hold_begin);
 		c_device->hold_begin.notify = handle_pointer_hold_begin;
 
-		wl_signal_add(&device->pointer->events.hold_end, &c_device->hold_end);
+		wl_signal_add(&pointer->events.hold_end, &c_device->hold_end);
 		c_device->hold_end.notify = handle_pointer_hold_end;
 	} else if (device->type == WLR_INPUT_DEVICE_TOUCH) {
-		wl_signal_add(&device->touch->events.motion, &c_device->touch_motion);
+		struct wlr_touch *touch = wlr_touch_from_input_device(device);
+
+		wl_signal_add(&touch->events.motion, &c_device->touch_motion);
 		c_device->touch_motion.notify = handle_touch_motion;
 
-		wl_signal_add(&device->touch->events.down, &c_device->touch_down);
+		wl_signal_add(&touch->events.down, &c_device->touch_down);
 		c_device->touch_down.notify = handle_touch_down;
 
-		wl_signal_add(&device->touch->events.up, &c_device->touch_up);
+		wl_signal_add(&touch->events.up, &c_device->touch_up);
 		c_device->touch_up.notify = handle_touch_up;
 
-		wl_signal_add(&device->touch->events.cancel, &c_device->touch_cancel);
+		wl_signal_add(&touch->events.cancel, &c_device->touch_cancel);
 		c_device->touch_cancel.notify = handle_touch_cancel;
 
-		wl_signal_add(&device->touch->events.frame, &c_device->touch_frame);
+		wl_signal_add(&touch->events.frame, &c_device->touch_frame);
 		c_device->touch_frame.notify = handle_touch_frame;
 	} else if (device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
-		wl_signal_add(&device->tablet->events.tip,
-			&c_device->tablet_tool_tip);
+		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
+
+		wl_signal_add(&tablet->events.tip, &c_device->tablet_tool_tip);
 		c_device->tablet_tool_tip.notify = handle_tablet_tool_tip;
 
-		wl_signal_add(&device->tablet->events.proximity,
+		wl_signal_add(&tablet->events.proximity,
 			&c_device->tablet_tool_proximity);
 		c_device->tablet_tool_proximity.notify = handle_tablet_tool_proximity;
 
-		wl_signal_add(&device->tablet->events.axis,
-			&c_device->tablet_tool_axis);
+		wl_signal_add(&tablet->events.axis, &c_device->tablet_tool_axis);
 		c_device->tablet_tool_axis.notify = handle_tablet_tool_axis;
 
-		wl_signal_add(&device->tablet->events.button,
-			&c_device->tablet_tool_button);
+		wl_signal_add(&tablet->events.button, &c_device->tablet_tool_button);
 		c_device->tablet_tool_button.notify = handle_tablet_tool_button;
 	}
 

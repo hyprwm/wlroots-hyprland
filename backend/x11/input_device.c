@@ -317,11 +317,11 @@ void update_x11_pointer_position(struct wlr_x11_output *output,
 bool wlr_input_device_is_x11(struct wlr_input_device *wlr_dev) {
 	switch (wlr_dev->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
-		return wlr_dev->keyboard->impl == &x11_keyboard_impl;
+		return wlr_keyboard_from_input_device(wlr_dev)->impl == &x11_keyboard_impl;
 	case WLR_INPUT_DEVICE_POINTER:
-		return wlr_dev->pointer->impl == &x11_pointer_impl;
+		return wlr_pointer_from_input_device(wlr_dev)->impl == &x11_pointer_impl;
 	case WLR_INPUT_DEVICE_TOUCH:
-		return wlr_dev->touch->impl == &x11_touch_impl;
+		return wlr_touch_from_input_device(wlr_dev)->impl == &x11_touch_impl;
 	default:
 		return false;
 	}

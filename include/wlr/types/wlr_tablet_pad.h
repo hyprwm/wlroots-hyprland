@@ -92,4 +92,12 @@ struct wlr_tablet_pad_strip_event {
 	unsigned int mode;
 };
 
+/**
+ * Get a struct wlr_tablet_pad from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a tablet pad.
+ */
+struct wlr_tablet_pad *wlr_tablet_pad_from_input_device(
+	struct wlr_input_device *);
+
 #endif

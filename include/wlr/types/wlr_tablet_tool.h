@@ -144,4 +144,12 @@ struct wlr_tablet_tool_button_event {
 	enum wlr_button_state state;
 };
 
+/**
+ * Get a struct wlr_tablet from a struct wlr_input_device.
+ *
+ * Asserts that the input device is a tablet tool.
+ */
+struct wlr_tablet *wlr_tablet_from_input_device(
+	struct wlr_input_device *input_device);
+
 #endif
