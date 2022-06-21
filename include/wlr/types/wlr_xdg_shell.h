@@ -83,11 +83,14 @@ struct wlr_xdg_popup_state {
 	bool reactive;
 };
 
+enum wlr_xdg_popup_configure_field {
+	WLR_XDG_POPUP_CONFIGURE_REPOSITION_TOKEN = 1 << 0,
+};
+
 struct wlr_xdg_popup_configure {
+	uint32_t fields; // enum wlr_xdg_popup_configure_field
 	struct wlr_box geometry;
 	struct wlr_xdg_positioner_rules rules;
-
-	bool has_reposition_token;
 	uint32_t reposition_token;
 };
 

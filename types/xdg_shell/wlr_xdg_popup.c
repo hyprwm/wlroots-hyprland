@@ -21,16 +21,20 @@ struct wlr_xdg_popup_configure *send_xdg_popup_configure(
 	}
 	*configure = popup->scheduled;
 
-	if (popup->scheduled.has_reposition_token) {
-		popup->scheduled.has_reposition_token = false;
+	uint32_t version = wl_resource_get_version(popup->resource);
+
+	if ((configure->fields & WLR_XDG_POPUP_CONFIGURE_REPOSITION_TOKEN) &&
+			version >= XDG_POPUP_REPOSITIONED_SINCE_VERSION) {
 		xdg_popup_send_repositioned(popup->resource,
-			popup->scheduled.reposition_token);
+			configure->reposition_token);
 	}
 
 	struct wlr_box *geometry = &configure->geometry;
 	xdg_popup_send_configure(popup->resource,
 		geometry->x, geometry->y,
 		geometry->width, geometry->height);
+
+	popup->scheduled.fields = 0;
 
 	return configure;
 }
@@ -315,7 +319,8 @@ static void xdg_popup_handle_reposition(
 	wlr_xdg_positioner_rules_get_geometry(
 		&positioner->rules, &popup->scheduled.geometry);
 	popup->scheduled.rules = positioner->rules;
-	popup->scheduled.has_reposition_token = true;
+
+	popup->scheduled.fields |= WLR_XDG_POPUP_CONFIGURE_REPOSITION_TOKEN;
 	popup->scheduled.reposition_token = token;
 
 	wlr_xdg_surface_schedule_configure(popup->base);
