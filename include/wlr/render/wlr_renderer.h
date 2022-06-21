@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <wayland-server-core.h>
 #include <wlr/render/wlr_texture.h>
+#include <wlr/util/box.h>
 
 struct wlr_backend;
 struct wlr_renderer_impl;
@@ -154,5 +155,72 @@ int wlr_renderer_get_drm_fd(struct wlr_renderer *r);
  * Textures must be destroyed separately.
  */
 void wlr_renderer_destroy(struct wlr_renderer *renderer);
+
+/**
+ * A render pass accumulates drawing operations until submitted to the GPU.
+ */
+struct wlr_render_pass;
+
+/**
+ * Begin a new render pass with the supplied destination buffer.
+ *
+ * Callers must call wlr_render_pass_submit() once they are done with the
+ * render pass.
+ */
+struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
+	struct wlr_renderer *renderer, struct wlr_buffer *buffer);
+
+/**
+ * Submit the render pass.
+ *
+ * The render pass cannot be used after this function is called.
+ */
+bool wlr_render_pass_submit(struct wlr_render_pass *render_pass);
+
+struct wlr_render_texture_options {
+	/* Source texture */
+	struct wlr_texture *texture;
+	/* Source coordinates, leave empty to render the whole texture */
+	struct wlr_fbox src_box;
+	/* Destination coordinates, width/height default to the texture size */
+	struct wlr_box dst_box;
+	/* Opacity between 0 (transparent) and 1 (opaque), leave NULL for opaque */
+	const float *alpha;
+	/* Clip region, leave NULL to disable clipping */
+	const pixman_region32_t *clip;
+	/* Transform applied to the source texture */
+	enum wl_output_transform transform;
+};
+
+/**
+ * Render a texture.
+ */
+void wlr_render_pass_add_texture(struct wlr_render_pass *render_pass,
+	const struct wlr_render_texture_options *options);
+
+/**
+ * A color value.
+ *
+ * Each channel has values between 0 and 1 inclusive. The R, G, B
+ * channels need to be pre-multiplied by A.
+ */
+struct wlr_render_color {
+	float r, g, b, a;
+};
+
+struct wlr_render_rect_options {
+	/* Rectangle coordinates */
+	struct wlr_box box;
+	/* Source color */
+	struct wlr_render_color color;
+	/* Clip region, leave NULL to disable clipping */
+	const pixman_region32_t *clip;
+};
+
+/**
+ * Render a rectangle.
+ */
+void wlr_render_pass_add_rect(struct wlr_render_pass *render_pass,
+	const struct wlr_render_rect_options *options);
 
 #endif

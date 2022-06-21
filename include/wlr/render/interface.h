@@ -48,6 +48,8 @@ struct wlr_renderer_impl {
 	uint32_t (*get_render_buffer_caps)(struct wlr_renderer *renderer);
 	struct wlr_texture *(*texture_from_buffer)(struct wlr_renderer *renderer,
 		struct wlr_buffer *buffer);
+	struct wlr_render_pass *(*begin_buffer_pass)(struct wlr_renderer *renderer,
+		struct wlr_buffer *buffer);
 };
 
 void wlr_renderer_init(struct wlr_renderer *renderer,
@@ -61,5 +63,20 @@ struct wlr_texture_impl {
 
 void wlr_texture_init(struct wlr_texture *texture, struct wlr_renderer *rendener,
 	const struct wlr_texture_impl *impl, uint32_t width, uint32_t height);
+
+struct wlr_render_pass {
+	const struct wlr_render_pass_impl *impl;
+};
+
+void wlr_render_pass_init(struct wlr_render_pass *pass,
+	const struct wlr_render_pass_impl *impl);
+
+struct wlr_render_pass_impl {
+	bool (*submit)(struct wlr_render_pass *pass);
+	void (*add_texture)(struct wlr_render_pass *pass,
+		const struct wlr_render_texture_options *options);
+	void (*add_rect)(struct wlr_render_pass *pass,
+		const struct wlr_render_rect_options *options);
+};
 
 #endif

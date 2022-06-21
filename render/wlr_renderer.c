@@ -33,11 +33,13 @@
 
 void wlr_renderer_init(struct wlr_renderer *renderer,
 		const struct wlr_renderer_impl *impl) {
-	assert(impl->begin);
-	assert(impl->clear);
-	assert(impl->scissor);
-	assert(impl->render_subtexture_with_matrix);
-	assert(impl->render_quad_with_matrix);
+	if (!impl->begin_buffer_pass) {
+		assert(impl->begin);
+		assert(impl->clear);
+		assert(impl->scissor);
+		assert(impl->render_subtexture_with_matrix);
+		assert(impl->render_quad_with_matrix);
+	}
 	assert(impl->get_shm_texture_formats);
 	assert(impl->get_render_buffer_caps);
 
@@ -408,4 +410,12 @@ int wlr_renderer_get_drm_fd(struct wlr_renderer *r) {
 		return -1;
 	}
 	return r->impl->get_drm_fd(r);
+}
+
+struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
+		struct wlr_renderer *renderer, struct wlr_buffer *buffer) {
+	if (!renderer->impl->begin_buffer_pass) {
+		return NULL;
+	}
+	return renderer->impl->begin_buffer_pass(renderer, buffer);
 }
