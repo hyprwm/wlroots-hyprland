@@ -374,6 +374,8 @@ static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
 
 	surface->role_data = subsurface;
 
+	subsurface_consider_map(subsurface, true);
+
 	return subsurface;
 }
 
