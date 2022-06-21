@@ -157,6 +157,7 @@ static void xdg_toplevel_handle_set_title(struct wl_client *client,
 
 	tmp = strdup(title);
 	if (tmp == NULL) {
+		wl_resource_post_no_memory(resource);
 		return;
 	}
 
@@ -173,6 +174,7 @@ static void xdg_toplevel_handle_set_app_id(struct wl_client *client,
 
 	tmp = strdup(app_id);
 	if (tmp == NULL) {
+		wl_resource_post_no_memory(resource);
 		return;
 	}
 
