@@ -1,16 +1,6 @@
 /*
- * This is a stable interface of wlroots. Future changes will be limited to:
- *
- * - New functions
- * - New struct members
- * - New enum members
- *
- * Note that wlroots does not make an ABI compatibility promise - in the future,
- * the layout and size of structs used by wlroots may change, requiring code
- * depending on this header to be recompiled (but not edited).
- *
- * Breaking changes are announced in the release notes and follow a 1-year
- * deprecation schedule.
+ * This is a deprecated interface of wlroots. It will be removed in a future
+ * version. wlr/types/wlr_compositor.h should be used instead.
  */
 
 #ifndef WLR_TYPES_WLR_REGION_H

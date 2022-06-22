@@ -415,6 +415,11 @@ void wlr_surface_set_preferred_buffer_transform(struct wlr_surface *surface,
 	enum wl_output_transform transform);
 
 /**
+ * Get a Pixman region from a wl_region resource.
+ */
+const pixman_region32_t *wlr_region_from_resource(struct wl_resource *resource);
+
+/**
  * Create the wl_compositor global, which can be used by clients to create
  * surfaces and regions.
  *
