@@ -20,6 +20,7 @@ if 'gles2' in renderers or 'auto' in renderers
 	if egl.found() and gbm.found()
 		wlr_deps += [egl, gbm]
 		wlr_files += files('egl.c')
+		internal_features += { 'egl': true }
 	endif
 	subdir('gles2')
 endif

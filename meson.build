@@ -96,6 +96,7 @@ features = {
 }
 internal_features = {
 	'xcb-errors': false,
+	'egl': false,
 }
 
 wayland_project_options = ['tests=false', 'documentation=false']
