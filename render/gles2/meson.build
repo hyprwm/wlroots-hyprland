@@ -1,6 +1,6 @@
 glesv2 = dependency('glesv2', required: 'gles2' in renderers)
 
-if not (glesv2.found() and egl.found())
+if not (glesv2.found() and egl.found() and gbm.found())
 	subdir_done()
 endif
 
