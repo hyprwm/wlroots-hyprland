@@ -98,6 +98,7 @@ struct wlr_scene {
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
 	bool direct_scanout;
+	bool calculate_visibility;
 };
 
 /** A scene-graph node displaying a single surface. */

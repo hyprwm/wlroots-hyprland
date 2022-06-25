@@ -51,6 +51,9 @@ wlroots reads these environment variables
   tasks for compositors that use scenes (available options: none, rerender,
   highlight)
 * *WLR_SCENE_DISABLE_DIRECT_SCANOUT*: disables direct scan-out for debugging.
+* *WLR_SCENE_DISABLE_VISIBILITY*: If set to 1, the visibility of all scene nodes
+  will be considered to be the full node. Intelligent visibility canculations will
+  be disabled.
 
 # Generic
 
