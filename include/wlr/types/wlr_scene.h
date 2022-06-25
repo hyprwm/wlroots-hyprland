@@ -64,6 +64,10 @@ struct wlr_scene_node {
 	void *data;
 
 	struct wlr_addon_set addons;
+
+	// private state
+
+	pixman_region32_t visible;
 };
 
 enum wlr_scene_debug_damage_option {
