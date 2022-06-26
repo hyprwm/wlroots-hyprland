@@ -51,6 +51,7 @@ Install dependencies:
 * udev
 * pixman
 * [libseat]
+* [hwdata] (optional, for the DRM backend)
 
 If you choose to enable X11 support:
 
@@ -78,4 +79,5 @@ See [CONTRIBUTING.md].
 [#sway-devel on Libera Chat]: https://web.libera.chat/gamja/?channels=#sway-devel
 [wrapper libraries]: https://gitlab.freedesktop.org/wlroots/wlroots/-/wikis/Projects-which-use-wlroots#wrapper-libraries
 [libseat]: https://git.sr.ht/~kennylevinsen/seatd
+[hwdata]: https://github.com/vcrhonek/hwdata
 [CONTRIBUTING.md]: https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/CONTRIBUTING.md
