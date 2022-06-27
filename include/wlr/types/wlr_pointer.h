@@ -24,22 +24,22 @@ struct wlr_pointer {
 	char *output_name;
 
 	struct {
-		struct wl_signal motion; // struct wlr_event_pointer_motion
-		struct wl_signal motion_absolute; // struct wlr_event_pointer_motion_absolute
-		struct wl_signal button; // struct wlr_event_pointer_button
-		struct wl_signal axis; // struct wlr_event_pointer_axis
+		struct wl_signal motion; // struct wlr_pointer_motion_event
+		struct wl_signal motion_absolute; // struct wlr_pointer_motion_absolute_event
+		struct wl_signal button; // struct wlr_pointer_button_event
+		struct wl_signal axis; // struct wlr_pointer_axis_event
 		struct wl_signal frame;
 
-		struct wl_signal swipe_begin; // struct wlr_event_pointer_swipe_begin
-		struct wl_signal swipe_update; // struct wlr_event_pointer_swipe_update
-		struct wl_signal swipe_end; // struct wlr_event_pointer_swipe_end
+		struct wl_signal swipe_begin; // struct wlr_pointer_swipe_begin_event
+		struct wl_signal swipe_update; // struct wlr_pointer_swipe_update_event
+		struct wl_signal swipe_end; // struct wlr_pointer_swipe_end_event
 
-		struct wl_signal pinch_begin; // struct wlr_event_pointer_pinch_begin
-		struct wl_signal pinch_update; // struct wlr_event_pointer_pinch_update
-		struct wl_signal pinch_end; // struct wlr_event_pointer_pinch_end
+		struct wl_signal pinch_begin; // struct wlr_pointer_pinch_begin_event
+		struct wl_signal pinch_update; // struct wlr_pointer_pinch_update_event
+		struct wl_signal pinch_end; // struct wlr_pointer_pinch_end_event
 
-		struct wl_signal hold_begin; // struct wlr_event_pointer_hold_begin
-		struct wl_signal hold_end; // struct wlr_event_pointer_hold_end
+		struct wl_signal hold_begin; // struct wlr_pointer_hold_begin_event
+		struct wl_signal hold_end; // struct wlr_pointer_hold_end_event
 	} events;
 
 	void *data;
