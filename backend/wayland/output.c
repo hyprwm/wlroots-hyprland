@@ -29,7 +29,8 @@
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL |
 	WLR_OUTPUT_STATE_BUFFER |
-	WLR_OUTPUT_STATE_MODE;
+	WLR_OUTPUT_STATE_MODE |
+	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
 static struct wlr_wl_output *get_wl_output_from_output(
 		struct wlr_output *wlr_output) {
@@ -249,6 +250,16 @@ static bool output_test(struct wlr_output *wlr_output,
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
+	}
+
+	// Adaptive sync is effectively always enabled when using the Wayland
+	// backend. This is not something we have control over, so we set the state
+	// to enabled on creating the output and never allow changing it.
+	assert(wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED);
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+		if (!state->adaptive_sync_enabled) {
+			return false;
+		}
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
@@ -520,6 +531,8 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 	struct wlr_output *wlr_output = &output->wlr_output;
 
 	wlr_output_update_custom_mode(wlr_output, 1280, 720, 0);
+
+	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 
 	char name[64];
 	snprintf(name, sizeof(name), "WL-%zu", ++backend->last_output_num);
