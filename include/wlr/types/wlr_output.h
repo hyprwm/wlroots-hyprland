@@ -45,7 +45,6 @@ struct wlr_output_cursor {
 enum wlr_output_adaptive_sync_status {
 	WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED,
 	WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
-	WLR_OUTPUT_ADAPTIVE_SYNC_UNKNOWN, // requested, but maybe disabled
 };
 
 enum wlr_output_state_field {
