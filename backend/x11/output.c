@@ -113,6 +113,17 @@ static bool output_test(struct wlr_output *wlr_output,
 		return false;
 	}
 
+	// All we can do to influence adaptive sync on the X11 backend is set the
+	// _VARIABLE_REFRESH window property like mesa automatically does. We don't
+	// have any control beyond that, so we set the state to enabled on creating
+	// the output and never allow changing it (just like the Wayland backend).
+	assert(wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED);
+	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
+		if (!state->adaptive_sync_enabled) {
+			return false;
+		}
+	}
+
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
 	}
@@ -332,21 +343,6 @@ static bool output_commit(struct wlr_output *wlr_output,
 				state->custom_mode.height,
 				state->custom_mode.refresh)) {
 			return false;
-		}
-	}
-
-	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED &&
-			x11->atoms.variable_refresh != XCB_ATOM_NONE) {
-		if (state->adaptive_sync_enabled) {
-			uint32_t enabled = 1;
-			xcb_change_property(x11->xcb, XCB_PROP_MODE_REPLACE, output->win,
-				x11->atoms.variable_refresh, XCB_ATOM_CARDINAL, 32, 1,
-				&enabled);
-			wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_UNKNOWN;
-		} else {
-			xcb_delete_property(x11->xcb, output->win,
-				x11->atoms.variable_refresh);
-			wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED;
 		}
 	}
 
@@ -573,6 +569,12 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	xcb_change_property(x11->xcb, XCB_PROP_MODE_REPLACE, output->win,
 		x11->atoms.wm_protocols, XCB_ATOM_ATOM, 32, 1,
 		&x11->atoms.wm_delete_window);
+
+	uint32_t enabled = 1;
+	xcb_change_property(x11->xcb, XCB_PROP_MODE_REPLACE, output->win,
+		x11->atoms.variable_refresh, XCB_ATOM_CARDINAL, 32, 1,
+		&enabled);
+	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 
 	wlr_x11_output_set_title(wlr_output, NULL);
 
