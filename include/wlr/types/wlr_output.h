@@ -67,6 +67,7 @@ enum wlr_output_state_field {
 	WLR_OUTPUT_STATE_GAMMA_LUT = 1 << 7,
 	WLR_OUTPUT_STATE_RENDER_FORMAT = 1 << 8,
 	WLR_OUTPUT_STATE_SUBPIXEL = 1 << 9,
+	WLR_OUTPUT_STATE_LAYERS = 1 << 10,
 };
 
 enum wlr_output_state_mode_type {
@@ -104,6 +105,10 @@ struct wlr_output_state {
 	// only valid if WLR_OUTPUT_STATE_GAMMA_LUT
 	uint16_t *gamma_lut;
 	size_t gamma_lut_size;
+
+	// only valid if WLR_OUTPUT_STATE_LAYERS
+	struct wlr_output_layer_state *layers;
+	size_t layers_len;
 };
 
 struct wlr_output_impl;
@@ -190,6 +195,8 @@ struct wlr_output {
 	struct wlr_swapchain *cursor_swapchain;
 	struct wlr_buffer *cursor_front_buffer;
 	int software_cursor_locks; // number of locks forcing software cursors
+
+	struct wl_list layers; // wlr_output_layer.link
 
 	struct wlr_allocator *allocator;
 	struct wlr_renderer *renderer;

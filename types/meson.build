@@ -56,6 +56,7 @@ wlr_files += files(
 	'wlr_linux_dmabuf_v1.c',
 	'wlr_matrix.c',
 	'wlr_output_damage.c',
+	'wlr_output_layer.c',
 	'wlr_output_layout.c',
 	'wlr_output_management_v1.c',
 	'wlr_output_power_management_v1.c',

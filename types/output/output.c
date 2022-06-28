@@ -6,6 +6,7 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_matrix.h>
+#include <wlr/types/wlr_output_layer.h>
 #include <wlr/util/log.h>
 #include "render/allocator/allocator.h"
 #include "render/swapchain.h"
@@ -356,6 +357,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	output->scale = 1;
 	output->commit_seq = 0;
 	wl_list_init(&output->cursors);
+	wl_list_init(&output->layers);
 	wl_list_init(&output->resources);
 	wl_signal_init(&output->events.frame);
 	wl_signal_init(&output->events.damage);
@@ -397,6 +399,11 @@ void wlr_output_destroy(struct wlr_output *output) {
 	struct wlr_output_cursor *cursor, *tmp_cursor;
 	wl_list_for_each_safe(cursor, tmp_cursor, &output->cursors, link) {
 		wlr_output_cursor_destroy(cursor);
+	}
+
+	struct wlr_output_layer *layer, *tmp_layer;
+	wl_list_for_each_safe(layer, tmp_layer, &output->layers, link) {
+		wlr_output_layer_destroy(layer);
 	}
 
 	wlr_swapchain_destroy(output->cursor_swapchain);
@@ -665,6 +672,12 @@ static bool output_basic_test(struct wlr_output *output,
 		return false;
 	}
 
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		for (size_t i = 0; i < state->layers_len; i++) {
+			state->layers[i].accepted = false;
+		}
+	}
+
 	return true;
 }
 
@@ -821,6 +834,15 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
 		output->frame_pending = true;
 		output->needs_frame = false;
+	}
+
+	if (pending.committed & WLR_OUTPUT_STATE_LAYERS) {
+		// Commit layer ordering
+		for (size_t i = 0; i < pending.layers_len; i++) {
+			struct wlr_output_layer *layer = pending.layers[i].layer;
+			wl_list_remove(&layer->link);
+			wl_list_insert(output->layers.prev, &layer->link);
+		}
 	}
 
 	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
