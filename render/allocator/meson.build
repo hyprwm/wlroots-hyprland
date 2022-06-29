@@ -1,7 +1,7 @@
 allocators = get_option('allocators')
 if 'auto' in allocators and get_option('auto_features').enabled()
 	allocators = ['gbm']
-elif 'auto' in renderers and get_option('auto_features').disabled()
+elif 'auto' in allocators and get_option('auto_features').disabled()
 	allocators = []
 endif
 
