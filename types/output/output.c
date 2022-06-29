@@ -835,7 +835,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		.output = output,
 		.committed = pending.committed,
 		.when = &now,
-		.buffer = back_buffer,
+		.buffer = (pending.committed & WLR_OUTPUT_STATE_BUFFER) ? pending.buffer : NULL,
 	};
 	wlr_signal_emit_safe(&output->events.commit, &event);
 
