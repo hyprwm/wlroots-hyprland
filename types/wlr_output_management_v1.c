@@ -5,7 +5,7 @@
 #include <wlr/util/log.h>
 #include "wlr-output-management-unstable-v1-protocol.h"
 
-#define OUTPUT_MANAGER_VERSION 2
+#define OUTPUT_MANAGER_VERSION 3
 
 enum {
 	HEAD_STATE_ENABLED = 1 << 0,
@@ -27,6 +27,7 @@ static struct wlr_output_head_v1 *head_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
+// Can return NULL if the mode is inert
 static struct wlr_output_mode *mode_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
@@ -41,11 +42,15 @@ static void head_destroy(struct wlr_output_head_v1 *head) {
 	struct wl_resource *resource, *tmp;
 	wl_resource_for_each_safe(resource, tmp, &head->mode_resources) {
 		zwlr_output_mode_v1_send_finished(resource);
-		wl_resource_destroy(resource);
+		wl_list_remove(wl_resource_get_link(resource));
+		wl_list_init(wl_resource_get_link(resource));
+		wl_resource_set_user_data(resource, NULL);
 	}
 	wl_resource_for_each_safe(resource, tmp, &head->resources) {
 		zwlr_output_head_v1_send_finished(resource);
-		wl_resource_destroy(resource);
+		wl_list_remove(wl_resource_get_link(resource));
+		wl_list_init(wl_resource_get_link(resource));
+		wl_resource_set_user_data(resource, NULL);
 	}
 	wl_list_remove(&head->link);
 	wl_list_remove(&head->output_destroy.link);
@@ -648,9 +653,18 @@ static void send_mode_state(struct wl_resource *mode_resource,
 	}
 }
 
-static void mode_handle_resource_destroy(struct wl_resource *resource) {
+static void output_mode_handle_resource_destroy(struct wl_resource *resource) {
 	wl_list_remove(wl_resource_get_link(resource));
 }
+
+static void output_mode_handle_release(struct wl_client *client,
+		struct wl_resource *resource) {
+	wl_resource_destroy(resource);
+}
+
+static const struct zwlr_output_mode_v1_interface output_mode_impl = {
+	.release = output_mode_handle_release,
+};
 
 static struct wl_resource *head_send_mode(struct wlr_output_head_v1 *head,
 		struct wl_resource *head_resource, struct wlr_output_mode *mode) {
@@ -662,8 +676,8 @@ static struct wl_resource *head_send_mode(struct wlr_output_head_v1 *head,
 		wl_resource_post_no_memory(head_resource);
 		return NULL;
 	}
-	wl_resource_set_implementation(mode_resource, NULL, mode,
-		mode_handle_resource_destroy);
+	wl_resource_set_implementation(mode_resource, &output_mode_impl, mode,
+		output_mode_handle_resource_destroy);
 	wl_list_insert(&head->mode_resources, wl_resource_get_link(mode_resource));
 
 	zwlr_output_head_v1_send_mode(head_resource, mode_resource);
@@ -739,6 +753,15 @@ static void head_handle_resource_destroy(struct wl_resource *resource) {
 	wl_list_remove(wl_resource_get_link(resource));
 }
 
+static void head_handle_release(struct wl_client *client,
+		struct wl_resource *resource) {
+	wl_resource_destroy(resource);
+}
+
+static const struct zwlr_output_head_v1_interface head_impl = {
+	.release = head_handle_release,
+};
+
 static void manager_send_head(struct wlr_output_manager_v1 *manager,
 		struct wlr_output_head_v1 *head, struct wl_resource *manager_resource) {
 	struct wlr_output *output = head->state.output;
@@ -751,7 +774,7 @@ static void manager_send_head(struct wlr_output_manager_v1 *manager,
 		wl_resource_post_no_memory(manager_resource);
 		return;
 	}
-	wl_resource_set_implementation(head_resource, NULL, head,
+	wl_resource_set_implementation(head_resource, &head_impl, head,
 		head_handle_resource_destroy);
 	wl_list_insert(&head->resources, wl_resource_get_link(head_resource));
 
