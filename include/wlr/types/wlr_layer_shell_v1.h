@@ -140,8 +140,17 @@ uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
  */
 void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface);
 
+/**
+ * Returns true if the surface has the layer surface role.
+ */
 bool wlr_surface_is_layer_surface(struct wlr_surface *surface);
 
+/**
+ * Get a struct wlr_layer_surface from a struct wlr_surface.
+ * Asserts that the surface has the layer surface role.
+ * May return NULL even if the surface has the layer surface role if the
+ * corresponding layer surface has been destroyed.
+ */
 struct wlr_layer_surface_v1 *wlr_layer_surface_v1_from_wlr_surface(
 		struct wlr_surface *surface);
 

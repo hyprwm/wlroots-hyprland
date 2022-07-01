@@ -63,11 +63,16 @@ struct wlr_subcompositor {
 	} events;
 };
 
+/**
+ * Returns true if the surface has the subsurface role.
+ */
 bool wlr_surface_is_subsurface(struct wlr_surface *surface);
 
 /**
- * Get a subsurface from a surface. Can return NULL if the subsurface has been
- * destroyed.
+ * Get a struct wlr_subsurface from a struct wlr_surface.
+ * Asserts that the surface has the subsurface role.
+ * May return NULL even if the surface has the subsurface role if the
+ * corresponding subsurface has been destroyed.
  */
 struct wlr_subsurface *wlr_subsurface_from_wlr_surface(
 	struct wlr_surface *surface);

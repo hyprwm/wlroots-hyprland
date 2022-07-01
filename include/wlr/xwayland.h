@@ -273,8 +273,17 @@ void wlr_xwayland_surface_set_fullscreen(struct wlr_xwayland_surface *surface,
 void wlr_xwayland_set_seat(struct wlr_xwayland *xwayland,
 	struct wlr_seat *seat);
 
+/**
+ * Returns true if the surface has the xwayland surface role.
+ */
 bool wlr_surface_is_xwayland_surface(struct wlr_surface *surface);
 
+/**
+ * Get a struct wlr_xwayland_surface from a struct wlr_surface.
+ * Asserts that the surface has the xwayland surface role.
+ * May return NULL even if the surface has the xwayland surface role if the
+ * corresponding xwayland surface has been destroyed.
+ */
 struct wlr_xwayland_surface *wlr_xwayland_surface_from_wlr_surface(
 	struct wlr_surface *surface);
 

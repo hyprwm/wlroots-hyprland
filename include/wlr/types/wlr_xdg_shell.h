@@ -462,8 +462,17 @@ struct wlr_surface *wlr_xdg_surface_popup_surface_at(
 		struct wlr_xdg_surface *surface, double sx, double sy,
 		double *sub_x, double *sub_y);
 
+/**
+ * Returns true if the surface has the xdg surface role.
+ */
 bool wlr_surface_is_xdg_surface(struct wlr_surface *surface);
 
+/**
+ * Get a struct wlr_xdg_surface from a struct wlr_surface.
+ * Asserts that the surface has the xdg surface role.
+ * May return NULL even if the surface has the xdg surface role if the
+ * corresponding xdg surface has been destroyed.
+ */
 struct wlr_xdg_surface *wlr_xdg_surface_from_wlr_surface(
 		struct wlr_surface *surface);
 

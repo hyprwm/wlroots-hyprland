@@ -91,7 +91,17 @@ uint32_t wlr_session_lock_surface_v1_configure(
 	struct wlr_session_lock_surface_v1 *lock_surface,
 	uint32_t width, uint32_t height);
 
+/**
+ * Returns true if the surface has the session lock surface role.
+ */
 bool wlr_surface_is_session_lock_surface_v1(struct wlr_surface *surface);
+
+/**
+ * Get a struct wlr_session_lock_surface_v1 from a struct wlr_surface.
+ * Asserts that the surface has the session lock surface role.
+ * May return NULL even if the surface has the session lock surface role if the
+ * corresponding session lock surface has been destroyed.
+ */
 struct wlr_session_lock_surface_v1 *wlr_session_lock_surface_v1_from_wlr_surface(
 	struct wlr_surface *surface);
 
