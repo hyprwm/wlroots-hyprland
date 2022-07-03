@@ -93,7 +93,6 @@ struct wlr_scene {
 	struct wl_listener presentation_destroy;
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
-	struct wl_list damage_highlight_regions;
 };
 
 /** A scene-graph node displaying a single surface. */
@@ -178,6 +177,8 @@ struct wlr_scene_output {
 	struct wl_listener output_mode;
 	struct wl_listener output_damage;
 	struct wl_listener output_needs_frame;
+
+	struct wl_list damage_highlight_regions;
 };
 
 /** A layer shell scene helper */
