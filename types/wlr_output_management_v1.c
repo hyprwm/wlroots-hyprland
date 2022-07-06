@@ -5,7 +5,7 @@
 #include <wlr/util/log.h>
 #include "wlr-output-management-unstable-v1-protocol.h"
 
-#define OUTPUT_MANAGER_VERSION 3
+#define OUTPUT_MANAGER_VERSION 4
 
 enum {
 	HEAD_STATE_ENABLED = 1 << 0,
@@ -13,10 +13,12 @@ enum {
 	HEAD_STATE_POSITION = 1 << 2,
 	HEAD_STATE_TRANSFORM = 1 << 3,
 	HEAD_STATE_SCALE = 1 << 4,
+	HEAD_STATE_ADAPTIVE_SYNC = 1 << 5,
 };
 
 static const uint32_t HEAD_STATE_ALL = HEAD_STATE_ENABLED | HEAD_STATE_MODE |
-	HEAD_STATE_POSITION | HEAD_STATE_TRANSFORM | HEAD_STATE_SCALE;
+	HEAD_STATE_POSITION | HEAD_STATE_TRANSFORM | HEAD_STATE_SCALE |
+	HEAD_STATE_ADAPTIVE_SYNC;
 
 static const struct zwlr_output_head_v1_interface head_impl;
 
@@ -135,6 +137,8 @@ struct wlr_output_configuration_head_v1 *
 	config_head->state.custom_mode.refresh = output->refresh;
 	config_head->state.transform = output->transform;
 	config_head->state.scale = output->scale;
+	config_head->state.adaptive_sync_enabled =
+		output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 	return config_head;
 }
 
@@ -258,12 +262,36 @@ static void config_head_handle_set_scale(struct wl_client *client,
 	config_head->state.scale = scale;
 }
 
+static void config_head_handle_set_adaptive_sync(struct wl_client *client,
+		struct wl_resource *config_head_resource, uint32_t state) {
+	struct wlr_output_configuration_head_v1 *config_head =
+		config_head_from_resource(config_head_resource);
+	if (config_head == NULL) {
+		return;
+	}
+
+	switch (state) {
+	case ZWLR_OUTPUT_HEAD_V1_ADAPTIVE_SYNC_STATE_ENABLED:
+		config_head->state.adaptive_sync_enabled = true;
+		break;
+	case ZWLR_OUTPUT_HEAD_V1_ADAPTIVE_SYNC_STATE_DISABLED:
+		config_head->state.adaptive_sync_enabled = false;
+		break;
+	default:
+		wl_resource_post_error(config_head_resource,
+			ZWLR_OUTPUT_CONFIGURATION_HEAD_V1_ERROR_INVALID_ADAPTIVE_SYNC_STATE,
+			"client requested invalid adaptive sync state %ul", state);
+		break;
+	}
+}
+
 static const struct zwlr_output_configuration_head_v1_interface config_head_impl = {
 	.set_mode = config_head_handle_set_mode,
 	.set_custom_mode = config_head_handle_set_custom_mode,
 	.set_position = config_head_handle_set_position,
 	.set_transform = config_head_handle_set_transform,
 	.set_scale = config_head_handle_set_scale,
+	.set_adaptive_sync = config_head_handle_set_adaptive_sync,
 };
 
 static void config_head_handle_resource_destroy(struct wl_resource *resource) {
@@ -750,6 +778,18 @@ static void head_send_state(struct wlr_output_head_v1 *head,
 		zwlr_output_head_v1_send_scale(head_resource,
 			wl_fixed_from_double(head->state.scale));
 	}
+
+	if ((state & HEAD_STATE_ADAPTIVE_SYNC) &&
+			wl_resource_get_version(head_resource) >=
+			ZWLR_OUTPUT_HEAD_V1_ADAPTIVE_SYNC_SINCE_VERSION) {
+		if (head->state.adaptive_sync_enabled) {
+			zwlr_output_head_v1_send_adaptive_sync(head_resource,
+				ZWLR_OUTPUT_HEAD_V1_ADAPTIVE_SYNC_STATE_ENABLED);
+		} else {
+			zwlr_output_head_v1_send_adaptive_sync(head_resource,
+				ZWLR_OUTPUT_HEAD_V1_ADAPTIVE_SYNC_STATE_DISABLED);
+		}
+	}
 }
 
 static void head_handle_resource_destroy(struct wl_resource *resource) {
@@ -842,6 +882,9 @@ static bool manager_update_head(struct wlr_output_manager_v1 *manager,
 	}
 	if (current->scale != next->scale) {
 		state |= HEAD_STATE_SCALE;
+	}
+	if (current->adaptive_sync_enabled != next->adaptive_sync_enabled) {
+		state |= HEAD_STATE_ADAPTIVE_SYNC;
 	}
 
 	// If  a mode was added to wlr_output.modes we need to add the new mode
@@ -953,4 +996,6 @@ void wlr_output_head_v1_state_apply(
 
 	wlr_output_state_set_scale(output_state, head_state->scale);
 	wlr_output_state_set_transform(output_state, head_state->transform);
+	wlr_output_state_set_adaptive_sync_enabled(output_state,
+		head_state->adaptive_sync_enabled);
 }
