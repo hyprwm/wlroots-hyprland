@@ -11,8 +11,6 @@ struct wlr_drm_connector;
 int32_t calculate_refresh_rate(const drmModeModeInfo *mode);
 // Populates the make/model/phys_{width,height} of output from the edid data
 void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data);
-// Returns the string representation of a DRM output type
-const char *conn_get_name(uint32_t type_id);
 
 // Part of match_obj
 enum {

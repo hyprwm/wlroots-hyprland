@@ -1250,9 +1250,14 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			wlr_conn->status = WLR_DRM_CONN_DISCONNECTED;
 			wlr_conn->id = drm_conn->connector_id;
 
+			const char *conn_name =
+				drmModeGetConnectorTypeName(drm_conn->connector_type);
+			if (conn_name == NULL) {
+				conn_name = "Unknown";
+			}
+
 			snprintf(wlr_conn->name, sizeof(wlr_conn->name),
-				"%s-%"PRIu32, conn_get_name(drm_conn->connector_type),
-				drm_conn->connector_type_id);
+				"%s-%"PRIu32, conn_name, drm_conn->connector_type_id);
 
 			wl_list_insert(drm->outputs.prev, &wlr_conn->link);
 			wlr_log(WLR_INFO, "Found connector '%s'", wlr_conn->name);
