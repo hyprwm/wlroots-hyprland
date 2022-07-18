@@ -279,10 +279,17 @@ static bool should_reset_value120_accumulators(int32_t current, int32_t last) {
 
 static void update_value120_accumulators(struct wlr_seat_client *client,
 		enum wlr_axis_orientation orientation,
-		double value, int32_t value_discrete) {
+		double value, int32_t value_discrete,
+		double *low_res_value, int32_t *low_res_value_discrete) {
+	if (value_discrete == 0) {
+		// Continuous scrolling has no effect on accumulators
+		return;
+	}
+
 	int32_t *acc_discrete = &client->value120.acc_discrete[orientation];
 	int32_t *last_discrete = &client->value120.last_discrete[orientation];
 	double *acc_axis = &client->value120.acc_axis[orientation];
+
 	if (should_reset_value120_accumulators(value_discrete, *last_discrete)) {
 		*acc_discrete = 0;
 		*acc_axis = 0;
@@ -290,33 +297,17 @@ static void update_value120_accumulators(struct wlr_seat_client *client,
 	*acc_discrete += value_discrete;
 	*last_discrete = value_discrete;
 	*acc_axis += value;
-}
 
-static void send_axis_discrete(struct wlr_seat_client *client,
-		struct wl_resource *resource, uint32_t time,
-		enum wlr_axis_orientation orientation, double value,
-		int32_t value_discrete) {
-	int32_t *acc_discrete = &client->value120.acc_discrete[orientation];
-	double *acc_axis = &client->value120.acc_axis[orientation];
-
-	if (abs(*acc_discrete) < WLR_POINTER_AXIS_DISCRETE_STEP) {
-		return;
+	// Compute low resolution event values for older clients and reset
+	// the accumulators if needed
+	*low_res_value_discrete = *acc_discrete / WLR_POINTER_AXIS_DISCRETE_STEP;
+	if (*low_res_value_discrete == 0) {
+		*low_res_value = 0;
+	} else {
+		*acc_discrete -= *low_res_value_discrete * WLR_POINTER_AXIS_DISCRETE_STEP;
+		*low_res_value = *acc_axis;
+		*acc_axis = 0;
 	}
-
-	wl_pointer_send_axis_discrete(resource, orientation,
-		*acc_discrete / WLR_POINTER_AXIS_DISCRETE_STEP);
-	wl_pointer_send_axis(resource, time, orientation,
-		wl_fixed_from_double(*acc_axis));
-	*acc_discrete %= WLR_POINTER_AXIS_DISCRETE_STEP;
-	*acc_axis = 0;
-}
-
-static void send_axis_value120(struct wl_resource *resource, uint32_t time,
-		enum wlr_axis_orientation orientation, double value,
-		int32_t value_discrete) {
-	wl_pointer_send_axis_value120(resource, orientation, value_discrete);
-	wl_pointer_send_axis(resource, time, orientation,
-		wl_fixed_from_double(value));
 }
 
 void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
@@ -336,7 +327,10 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		send_source = true;
 	}
 
-	update_value120_accumulators(client, orientation, value, value_discrete);
+	double low_res_value;
+	int32_t low_res_value_discrete;
+	update_value120_accumulators(client, orientation, value, value_discrete,
+		&low_res_value, &low_res_value_discrete);
 
 	struct wl_resource *resource;
 	wl_resource_for_each(resource, &client->pointers) {
@@ -346,19 +340,36 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 
 		uint32_t version = wl_resource_get_version(resource);
 
+		if (version < WL_POINTER_AXIS_VALUE120_SINCE_VERSION &&
+				value_discrete != 0 && low_res_value_discrete == 0) {
+			// The client doesn't support high resolution discrete scrolling
+			// and we haven't accumulated enough wheel clicks for a single
+			// low resolution event. Don't send anything.
+			continue;
+		}
+
 		if (send_source && version >= WL_POINTER_AXIS_SOURCE_SINCE_VERSION) {
 			wl_pointer_send_axis_source(resource, source);
 		}
 		if (value) {
 			if (value_discrete) {
 				if (version >= WL_POINTER_AXIS_VALUE120_SINCE_VERSION) {
-					send_axis_value120(resource, time, orientation, value,
+					// High resolution discrete scrolling
+					wl_pointer_send_axis_value120(resource, orientation,
 						value_discrete);
-				} else if (version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
-					send_axis_discrete(client, resource, time, orientation,
-						value, value_discrete);
+					wl_pointer_send_axis(resource, time, orientation,
+						wl_fixed_from_double(value));
+				} else {
+					// Low resolution discrete scrolling
+					if (version >= WL_POINTER_AXIS_DISCRETE_SINCE_VERSION) {
+						wl_pointer_send_axis_discrete(resource, orientation,
+							low_res_value_discrete);
+					}
+					wl_pointer_send_axis(resource, time, orientation,
+						wl_fixed_from_double(low_res_value));
 				}
 			} else {
+				// Continuous scrolling
 				wl_pointer_send_axis(resource, time, orientation,
 					wl_fixed_from_double(value));
 			}
