@@ -395,15 +395,10 @@ static uint32_t gles2_preferred_read_format(
 
 	push_gles2_debug(renderer);
 
-	GLint gl_format = -1, gl_type = -1;
+	GLint gl_format = -1, gl_type = -1, alpha_size = -1;
 	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &gl_format);
 	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &gl_type);
-
-	EGLint alpha_size = -1;
-	glBindRenderbuffer(GL_RENDERBUFFER, renderer->current_buffer->rbo);
-	glGetRenderbufferParameteriv(GL_RENDERBUFFER,
-		GL_RENDERBUFFER_ALPHA_SIZE, &alpha_size);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glGetIntegerv(GL_ALPHA_BITS, &alpha_size);
 
 	pop_gles2_debug(renderer);
 
