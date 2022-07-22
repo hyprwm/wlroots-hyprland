@@ -240,3 +240,43 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 	*dst = out;
 	return true;
 }
+
+static bool drm_format_set_extend(struct wlr_drm_format_set *dst,
+		const struct wlr_drm_format_set *src) {
+	for (size_t i = 0; i < src->len; i++) {
+		struct wlr_drm_format *format = src->formats[i];
+		for (size_t j = 0; j < format->len; j++) {
+			if (!wlr_drm_format_set_add(dst, format->format, format->modifiers[j])) {
+				wlr_log_errno(WLR_ERROR, "Adding format/modifier to set failed");
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool wlr_drm_format_set_union(struct wlr_drm_format_set *dst,
+		const struct wlr_drm_format_set *a, const struct wlr_drm_format_set *b) {
+	assert(dst != a && dst != b);
+
+	struct wlr_drm_format_set out = {0};
+	out.capacity = a->len + b->len;
+	out.formats = calloc(out.capacity, sizeof(struct wlr_drm_format *));
+	if (out.formats == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		return false;
+	}
+
+	// Add both a and b sets into out
+	if (!drm_format_set_extend(&out, a)) {
+		return false;
+	}
+	if (!drm_format_set_extend(&out, b)) {
+		return false;
+	}
+
+	*dst = out;
+
+	return true;
+}
