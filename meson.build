@@ -110,7 +110,6 @@ drm = dependency('libdrm',
 	version: '>=2.4.112',
 	fallback: 'libdrm',
 	default_options: [
-		'libkms=false',
 		'intel=false',
 		'radeon=false',
 		'amdgpu=false',
@@ -125,6 +124,7 @@ drm = dependency('libdrm',
 		'cairo-tests=false',
 		'man-pages=false',
 		'valgrind=false',
+		'tests=false',
 	],
 )
 xkbcommon = dependency('xkbcommon')
