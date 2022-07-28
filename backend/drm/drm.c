@@ -707,7 +707,7 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 		return true;
 	}
 
-	if (conn->status != WLR_DRM_CONN_CONNECTED) {
+	if (conn->status != DRM_MODE_CONNECTED) {
 		wlr_drm_conn_log(conn, WLR_ERROR,
 			"Cannot modeset a disconnected output");
 		return false;
@@ -905,7 +905,7 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 
 	dealloc_crtc(conn);
 
-	conn->status = WLR_DRM_CONN_DISCONNECTED;
+	conn->status = DRM_MODE_DISCONNECTED;
 	conn->desired_enabled = false;
 	conn->possible_crtcs = 0;
 	conn->pending_page_flip_crtc = 0;
@@ -1084,7 +1084,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 
 		// Only search CRTCs for user-enabled outputs (that are already
 		// connected or in need of a modeset)
-		if (conn->status == WLR_DRM_CONN_CONNECTED && conn->desired_enabled) {
+		if (conn->status == DRM_MODE_CONNECTED && conn->desired_enabled) {
 			connector_constraints[i] = conn->possible_crtcs;
 		} else {
 			// Will always fail to match anything
@@ -1115,7 +1115,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 	 */
 	for (size_t i = 0; i < num_outputs; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
-		if (conn->status == WLR_DRM_CONN_CONNECTED && conn->output.enabled &&
+		if (conn->status == DRM_MODE_CONNECTED && conn->output.enabled &&
 				connector_match[i] == -1) {
 			wlr_log(WLR_DEBUG, "Could not match a CRTC for previously connected output; "
 					"keeping old configuration");
@@ -1151,7 +1151,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 		conn->crtc = &drm->crtcs[connector_match[i]];
 
 		// Only realloc buffers if we have actually been modeset
-		if (conn->status != WLR_DRM_CONN_CONNECTED || !conn->output.enabled) {
+		if (conn->status != DRM_MODE_CONNECTED || !conn->output.enabled) {
 			continue;
 		}
 		wlr_output_damage_whole(&conn->output);
@@ -1224,7 +1224,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			}
 
 			wlr_conn->backend = drm;
-			wlr_conn->status = WLR_DRM_CONN_DISCONNECTED;
+			wlr_conn->status = DRM_MODE_DISCONNECTED;
 			wlr_conn->id = drm_conn->connector_id;
 
 			const char *conn_name =
@@ -1271,7 +1271,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			}
 		}
 
-		if (wlr_conn->status == WLR_DRM_CONN_DISCONNECTED &&
+		if (wlr_conn->status == DRM_MODE_DISCONNECTED &&
 				drm_conn->connection == DRM_MODE_CONNECTED) {
 			wlr_log(WLR_INFO, "'%s' connected", wlr_conn->name);
 			wlr_log(WLR_DEBUG, "Current CRTC: %d",
@@ -1377,9 +1377,9 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
 			wlr_conn->desired_enabled = true;
 
-			wlr_conn->status = WLR_DRM_CONN_CONNECTED;
+			wlr_conn->status = DRM_MODE_CONNECTED;
 			new_outputs[new_outputs_len++] = wlr_conn;
-		} else if (wlr_conn->status == WLR_DRM_CONN_CONNECTED &&
+		} else if (wlr_conn->status == DRM_MODE_CONNECTED &&
 				drm_conn->connection != DRM_MODE_CONNECTED) {
 			wlr_log(WLR_INFO, "'%s' disconnected", wlr_conn->name);
 			disconnect_drm_connector(wlr_conn);
@@ -1469,7 +1469,7 @@ static void handle_page_flip(int fd, unsigned seq,
 
 	conn->pending_page_flip_crtc = 0;
 
-	if (conn->status != WLR_DRM_CONN_CONNECTED || conn->crtc == NULL) {
+	if (conn->status != DRM_MODE_CONNECTED || conn->crtc == NULL) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,
 			"Ignoring page-flip event for disabled connector");
 		return;
@@ -1532,7 +1532,7 @@ int handle_drm_event(int fd, uint32_t mask, void *data) {
 }
 
 static void disconnect_drm_connector(struct wlr_drm_connector *conn) {
-	if (conn->status == WLR_DRM_CONN_DISCONNECTED) {
+	if (conn->status == DRM_MODE_DISCONNECTED) {
 		return;
 	}
 
@@ -1540,7 +1540,7 @@ static void disconnect_drm_connector(struct wlr_drm_connector *conn) {
 	// our wlr_drm_connector.
 	wlr_output_destroy(&conn->output);
 
-	assert(conn->status == WLR_DRM_CONN_DISCONNECTED);
+	assert(conn->status == DRM_MODE_DISCONNECTED);
 }
 
 void destroy_drm_connector(struct wlr_drm_connector *conn) {
