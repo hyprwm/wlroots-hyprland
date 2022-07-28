@@ -707,8 +707,7 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 		return true;
 	}
 
-	if (conn->status != WLR_DRM_CONN_CONNECTED
-			&& conn->status != WLR_DRM_CONN_NEEDS_MODESET) {
+	if (conn->status != WLR_DRM_CONN_CONNECTED) {
 		wlr_drm_conn_log(conn, WLR_ERROR,
 			"Cannot modeset a disconnected output");
 		return false;
@@ -735,7 +734,6 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 		return false;
 	}
 
-	conn->status = WLR_DRM_CONN_CONNECTED;
 	wlr_output_update_mode(&conn->output, wlr_mode);
 	wlr_output_update_enabled(&conn->output, true);
 	conn->desired_enabled = true;
@@ -1086,9 +1084,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 
 		// Only search CRTCs for user-enabled outputs (that are already
 		// connected or in need of a modeset)
-		if ((conn->status == WLR_DRM_CONN_CONNECTED ||
-				conn->status == WLR_DRM_CONN_NEEDS_MODESET) &&
-				conn->desired_enabled) {
+		if (conn->status == WLR_DRM_CONN_CONNECTED && conn->desired_enabled) {
 			connector_constraints[i] = conn->possible_crtcs;
 		} else {
 			// Will always fail to match anything
@@ -1119,8 +1115,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 	 */
 	for (size_t i = 0; i < num_outputs; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
-		if (conn->status == WLR_DRM_CONN_CONNECTED &&
-				conn->desired_enabled &&
+		if (conn->status == WLR_DRM_CONN_CONNECTED && conn->output.enabled &&
 				connector_match[i] == -1) {
 			wlr_log(WLR_DEBUG, "Could not match a CRTC for previously connected output; "
 					"keeping old configuration");
@@ -1147,7 +1142,6 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 		if (connector_match[i] == -1) {
 			if (prev_enabled) {
 				wlr_drm_conn_log(conn, WLR_DEBUG, "Output has lost its CRTC");
-				conn->status = WLR_DRM_CONN_NEEDS_MODESET;
 				wlr_output_update_enabled(&conn->output, false);
 				wlr_output_update_mode(&conn->output, NULL);
 			}
@@ -1157,7 +1151,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 		conn->crtc = &drm->crtcs[connector_match[i]];
 
 		// Only realloc buffers if we have actually been modeset
-		if (conn->status != WLR_DRM_CONN_CONNECTED) {
+		if (conn->status != WLR_DRM_CONN_CONNECTED || !conn->output.enabled) {
 			continue;
 		}
 		wlr_output_damage_whole(&conn->output);
@@ -1383,10 +1377,9 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
 			wlr_conn->desired_enabled = true;
 
-			wlr_conn->status = WLR_DRM_CONN_NEEDS_MODESET;
+			wlr_conn->status = WLR_DRM_CONN_CONNECTED;
 			new_outputs[new_outputs_len++] = wlr_conn;
-		} else if ((wlr_conn->status == WLR_DRM_CONN_CONNECTED ||
-				wlr_conn->status == WLR_DRM_CONN_NEEDS_MODESET) &&
+		} else if (wlr_conn->status == WLR_DRM_CONN_CONNECTED &&
 				drm_conn->connection != DRM_MODE_CONNECTED) {
 			wlr_log(WLR_INFO, "'%s' disconnected", wlr_conn->name);
 			disconnect_drm_connector(wlr_conn);
