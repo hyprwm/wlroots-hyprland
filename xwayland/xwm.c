@@ -836,8 +836,8 @@ static void xwayland_surface_role_commit(struct wlr_surface *wlr_surface) {
 	}
 
 	if (!surface->mapped && wlr_surface_has_buffer(surface->surface)) {
-		wlr_signal_emit_safe(&surface->events.map, surface);
 		surface->mapped = true;
+		wlr_signal_emit_safe(&surface->events.map, surface);
 		xwm_set_net_client_list(surface->xwm);
 	}
 }
@@ -853,8 +853,8 @@ static void xwayland_surface_role_precommit(struct wlr_surface *wlr_surface,
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
 		if (surface->mapped) {
-			wlr_signal_emit_safe(&surface->events.unmap, surface);
 			surface->mapped = false;
+			wlr_signal_emit_safe(&surface->events.unmap, surface);
 			xwm_set_net_client_list(surface->xwm);
 		}
 	}

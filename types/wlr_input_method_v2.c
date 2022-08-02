@@ -143,8 +143,8 @@ static void popup_surface_set_mapped(
 		popup_surface->mapped = true;
 		wlr_signal_emit_safe(&popup_surface->events.map, popup_surface);
 	} else if (!mapped && popup_surface->mapped) {
-		wlr_signal_emit_safe(&popup_surface->events.unmap, popup_surface);
 		popup_surface->mapped = false;
+		wlr_signal_emit_safe(&popup_surface->events.unmap, popup_surface);
 	}
 }
 

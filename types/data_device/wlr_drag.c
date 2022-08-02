@@ -112,8 +112,8 @@ static void drag_icon_set_mapped(struct wlr_drag_icon *icon, bool mapped) {
 		icon->mapped = true;
 		wlr_signal_emit_safe(&icon->events.map, icon);
 	} else if (!mapped && icon->mapped) {
-		wlr_signal_emit_safe(&icon->events.unmap, icon);
 		icon->mapped = false;
+		wlr_signal_emit_safe(&icon->events.unmap, icon);
 	}
 }
 

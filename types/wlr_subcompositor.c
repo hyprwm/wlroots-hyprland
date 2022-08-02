@@ -229,8 +229,8 @@ static void subsurface_consider_map(struct wlr_subsurface *subsurface,
 	}
 
 	// Now we can map the subsurface
-	wlr_signal_emit_safe(&subsurface->events.map, subsurface);
 	subsurface->mapped = true;
+	wlr_signal_emit_safe(&subsurface->events.map, subsurface);
 
 	// Try mapping all children too
 	struct wlr_subsurface *child;
@@ -249,8 +249,8 @@ static void subsurface_unmap(struct wlr_subsurface *subsurface) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&subsurface->events.unmap, subsurface);
 	subsurface->mapped = false;
+	wlr_signal_emit_safe(&subsurface->events.unmap, subsurface);
 
 	// Unmap all children
 	struct wlr_subsurface *child;
