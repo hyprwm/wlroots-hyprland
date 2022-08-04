@@ -31,15 +31,15 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 	assert(surface->role != WLR_XDG_SURFACE_ROLE_NONE);
 	surface->configured = false;
 
-	struct wlr_xdg_popup *popup, *popup_tmp;
-	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup);
-	}
-
 	// TODO: probably need to ungrab before this event
 	if (surface->mapped) {
 		surface->mapped = false;
 		wlr_signal_emit_safe(&surface->events.unmap, NULL);
+	}
+
+	struct wlr_xdg_popup *popup, *popup_tmp;
+	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
+		wlr_xdg_popup_destroy(popup);
 	}
 
 	switch (surface->role) {
