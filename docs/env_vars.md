@@ -50,6 +50,7 @@ wlroots reads these environment variables
 * *WLR_SCENE_DEBUG_DAMAGE*: specifies debug options for screen damage related
   tasks for compositors that use scenes (available options: none, rerender,
   highlight)
+* *WLR_SCENE_DISABLE_DIRECT_SCANOUT*: disables direct scan-out for debugging.
 
 # Generic
 

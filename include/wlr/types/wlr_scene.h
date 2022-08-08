@@ -93,6 +93,7 @@ struct wlr_scene {
 	struct wl_listener presentation_destroy;
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
+	bool direct_scanout;
 };
 
 /** A scene-graph node displaying a single surface. */
