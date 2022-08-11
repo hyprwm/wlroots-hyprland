@@ -424,6 +424,10 @@ static bool backend_start(struct wlr_backend *backend) {
 			init_seat_keyboard(seat);
 		}
 
+		if (seat->wl_touch) {
+			init_seat_touch(seat);
+		}
+
 		if (wl->tablet_manager) {
 			init_seat_tablet(seat);
 		}

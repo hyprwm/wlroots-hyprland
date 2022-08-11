@@ -144,6 +144,8 @@ void init_seat_pointer(struct wlr_wl_seat *seat);
 void finish_seat_pointer(struct wlr_wl_seat *seat);
 void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output);
 
+void init_seat_touch(struct wlr_wl_seat *seat);
+
 void init_seat_tablet(struct wlr_wl_seat *seat);
 void finish_seat_tablet(struct wlr_wl_seat *seat);
 

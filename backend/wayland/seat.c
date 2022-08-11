@@ -212,7 +212,7 @@ static const struct wlr_touch_impl touch_impl = {
 	.name = "wl-touch",
 };
 
-static void init_seat_touch(struct wlr_wl_seat *seat) {
+void init_seat_touch(struct wlr_wl_seat *seat) {
 	assert(seat->wl_touch);
 
 	char name[128] = {0};
@@ -333,7 +333,9 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		wlr_log(WLR_DEBUG, "seat '%s' offering touch", seat->name);
 
 		seat->wl_touch = wl_seat_get_touch(wl_seat);
-		init_seat_touch(seat);
+		if (backend->started) {
+			init_seat_touch(seat);
+		}
 	}
 	if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && seat->wl_touch != NULL) {
 		wlr_log(WLR_DEBUG, "seat '%s' dropping touch", seat->name);
