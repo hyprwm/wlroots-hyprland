@@ -158,6 +158,11 @@ struct wlr_scene_buffer {
 	enum wl_output_transform transform;
 };
 
+struct wlr_scene_output_render_list {
+	struct wlr_scene_node **data;
+	size_t capacity;
+};
+
 /** A viewport for an output in the scene-graph */
 struct wlr_scene_output {
 	struct wlr_output *output;
@@ -184,6 +189,8 @@ struct wlr_scene_output {
 	struct wl_listener output_needs_frame;
 
 	struct wl_list damage_highlight_regions;
+
+	struct wlr_scene_output_render_list render_list;
 };
 
 /** A layer shell scene helper */
