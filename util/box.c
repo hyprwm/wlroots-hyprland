@@ -179,4 +179,9 @@ bool wlr_box_equal(const struct wlr_box *a, const struct wlr_box *b) {
 		a->width == b->width && a->height == b->height;
 }
 
+bool wlr_fbox_equal(const struct wlr_fbox *a, const struct wlr_fbox *b) {
+	return a->x == b->x && a->y == b->y &&
+		a->width == b->width && a->height == b->height;
+}
+
 #endif
