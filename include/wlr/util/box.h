@@ -92,4 +92,13 @@ bool wlr_fbox_empty(const struct wlr_fbox *box);
 void wlr_fbox_transform(struct wlr_fbox *dest, const struct wlr_fbox *box,
 	enum wl_output_transform transform, double width, double height);
 
+#ifdef WLR_USE_UNSTABLE
+
+/**
+ * Returns true if the two boxes are equal, false otherwise.
+ */
+bool wlr_box_equal(const struct wlr_box *a, const struct wlr_box *b);
+
+#endif
+
 #endif
