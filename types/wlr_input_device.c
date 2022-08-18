@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "interfaces/wlr_input_device.h"
-#include "util/signal.h"
 
 void wlr_input_device_init(struct wlr_input_device *dev,
 		enum wlr_input_device_type type, const char *name) {
@@ -21,7 +20,7 @@ void wlr_input_device_finish(struct wlr_input_device *wlr_device) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&wlr_device->events.destroy, wlr_device);
+	wl_signal_emit_mutable(&wlr_device->events.destroy, wlr_device);
 
 	wl_list_remove(&wlr_device->events.destroy.listener_list);
 

@@ -6,7 +6,6 @@
 #include <wlr/interfaces/wlr_tablet_tool.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
-#include "util/signal.h"
 
 struct tablet_tool {
 	struct wlr_tablet_tool wlr_tool;
@@ -36,7 +35,7 @@ void init_device_tablet(struct wlr_libinput_input_device *dev) {
 }
 
 static void tool_destroy(struct tablet_tool *tool) {
-	wlr_signal_emit_safe(&tool->wlr_tool.events.destroy, &tool->wlr_tool);
+	wl_signal_emit_mutable(&tool->wlr_tool.events.destroy, &tool->wlr_tool);
 	libinput_tablet_tool_unref(tool->handle);
 	libinput_tablet_tool_set_user_data(tool->handle, NULL);
 	wl_list_remove(&tool->link);
@@ -173,7 +172,7 @@ void handle_tablet_tool_axis(struct libinput_event *event,
 		wlr_event.updated_axes |= WLR_TABLET_TOOL_AXIS_WHEEL;
 		wlr_event.wheel_delta = libinput_event_tablet_tool_get_wheel_delta(tevent);
 	}
-	wlr_signal_emit_safe(&wlr_tablet->events.axis, &wlr_event);
+	wl_signal_emit_mutable(&wlr_tablet->events.axis, &wlr_event);
 }
 
 void handle_tablet_tool_proximity(struct libinput_event *event,
@@ -200,7 +199,7 @@ void handle_tablet_tool_proximity(struct libinput_event *event,
 		wlr_event.state = WLR_TABLET_TOOL_PROXIMITY_IN;
 		break;
 	}
-	wlr_signal_emit_safe(&wlr_tablet->events.proximity, &wlr_event);
+	wl_signal_emit_mutable(&wlr_tablet->events.proximity, &wlr_event);
 
 	if (libinput_event_tablet_tool_get_proximity_state(tevent) ==
 			LIBINPUT_TABLET_TOOL_PROXIMITY_STATE_IN) {
@@ -242,7 +241,7 @@ void handle_tablet_tool_tip(struct libinput_event *event,
 		wlr_event.state = WLR_TABLET_TOOL_TIP_DOWN;
 		break;
 	}
-	wlr_signal_emit_safe(&wlr_tablet->events.tip, &wlr_event);
+	wl_signal_emit_mutable(&wlr_tablet->events.tip, &wlr_event);
 }
 
 void handle_tablet_tool_button(struct libinput_event *event,
@@ -268,5 +267,5 @@ void handle_tablet_tool_button(struct libinput_event *event,
 		wlr_event.state = WLR_BUTTON_PRESSED;
 		break;
 	}
-	wlr_signal_emit_safe(&wlr_tablet->events.button, &wlr_event);
+	wl_signal_emit_mutable(&wlr_tablet->events.button, &wlr_event);
 }

@@ -12,7 +12,6 @@
 #include <wlr/types/wlr_touch.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 
 struct wlr_cursor_device {
 	struct wlr_cursor *cursor;
@@ -368,7 +367,7 @@ static void handle_pointer_motion(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_motion_event *event = data;
 	struct wlr_cursor_device *device =
 		wl_container_of(listener, device, motion);
-	wlr_signal_emit_safe(&device->cursor->events.motion, event);
+	wl_signal_emit_mutable(&device->cursor->events.motion, event);
 }
 
 static void apply_output_transform(double *x, double *y,
@@ -440,80 +439,80 @@ static void handle_pointer_motion_absolute(struct wl_listener *listener,
 	if (output) {
 		apply_output_transform(&event->x, &event->y, output->transform);
 	}
-	wlr_signal_emit_safe(&device->cursor->events.motion_absolute, event);
+	wl_signal_emit_mutable(&device->cursor->events.motion_absolute, event);
 }
 
 static void handle_pointer_button(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_button_event *event = data;
 	struct wlr_cursor_device *device =
 		wl_container_of(listener, device, button);
-	wlr_signal_emit_safe(&device->cursor->events.button, event);
+	wl_signal_emit_mutable(&device->cursor->events.button, event);
 }
 
 static void handle_pointer_axis(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_axis_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, axis);
-	wlr_signal_emit_safe(&device->cursor->events.axis, event);
+	wl_signal_emit_mutable(&device->cursor->events.axis, event);
 }
 
 static void handle_pointer_frame(struct wl_listener *listener, void *data) {
 	struct wlr_cursor_device *device = wl_container_of(listener, device, frame);
-	wlr_signal_emit_safe(&device->cursor->events.frame, device->cursor);
+	wl_signal_emit_mutable(&device->cursor->events.frame, device->cursor);
 }
 
 static void handle_pointer_swipe_begin(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_swipe_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_begin);
-	wlr_signal_emit_safe(&device->cursor->events.swipe_begin, event);
+	wl_signal_emit_mutable(&device->cursor->events.swipe_begin, event);
 }
 
 static void handle_pointer_swipe_update(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_swipe_update_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_update);
-	wlr_signal_emit_safe(&device->cursor->events.swipe_update, event);
+	wl_signal_emit_mutable(&device->cursor->events.swipe_update, event);
 }
 
 static void handle_pointer_swipe_end(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_swipe_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, swipe_end);
-	wlr_signal_emit_safe(&device->cursor->events.swipe_end, event);
+	wl_signal_emit_mutable(&device->cursor->events.swipe_end, event);
 }
 
 static void handle_pointer_pinch_begin(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_pinch_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_begin);
-	wlr_signal_emit_safe(&device->cursor->events.pinch_begin, event);
+	wl_signal_emit_mutable(&device->cursor->events.pinch_begin, event);
 }
 
 static void handle_pointer_pinch_update(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_pinch_update_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_update);
-	wlr_signal_emit_safe(&device->cursor->events.pinch_update, event);
+	wl_signal_emit_mutable(&device->cursor->events.pinch_update, event);
 }
 
 static void handle_pointer_pinch_end(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_pinch_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, pinch_end);
-	wlr_signal_emit_safe(&device->cursor->events.pinch_end, event);
+	wl_signal_emit_mutable(&device->cursor->events.pinch_end, event);
 }
 
 static void handle_pointer_hold_begin(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_hold_begin_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, hold_begin);
-	wlr_signal_emit_safe(&device->cursor->events.hold_begin, event);
+	wl_signal_emit_mutable(&device->cursor->events.hold_begin, event);
 }
 
 static void handle_pointer_hold_end(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_hold_end_event *event = data;
 	struct wlr_cursor_device *device = wl_container_of(listener, device, hold_end);
-	wlr_signal_emit_safe(&device->cursor->events.hold_end, event);
+	wl_signal_emit_mutable(&device->cursor->events.hold_end, event);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct wlr_touch_up_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_up);
-	wlr_signal_emit_safe(&device->cursor->events.touch_up, event);
+	wl_signal_emit_mutable(&device->cursor->events.touch_up, event);
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
@@ -526,7 +525,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	if (output) {
 		apply_output_transform(&event->x, &event->y, output->transform);
 	}
-	wlr_signal_emit_safe(&device->cursor->events.touch_down, event);
+	wl_signal_emit_mutable(&device->cursor->events.touch_down, event);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
@@ -539,20 +538,20 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	if (output) {
 		apply_output_transform(&event->x, &event->y, output->transform);
 	}
-	wlr_signal_emit_safe(&device->cursor->events.touch_motion, event);
+	wl_signal_emit_mutable(&device->cursor->events.touch_motion, event);
 }
 
 static void handle_touch_cancel(struct wl_listener *listener, void *data) {
 	struct wlr_touch_cancel_event *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, touch_cancel);
-	wlr_signal_emit_safe(&device->cursor->events.touch_cancel, event);
+	wl_signal_emit_mutable(&device->cursor->events.touch_cancel, event);
 }
 
 static void handle_touch_frame(struct wl_listener *listener, void *data) {
 	struct wlr_cursor_device *device =
 		wl_container_of(listener, device, touch_frame);
-	wlr_signal_emit_safe(&device->cursor->events.touch_frame, NULL);
+	wl_signal_emit_mutable(&device->cursor->events.touch_frame, NULL);
 }
 
 static void handle_tablet_tool_tip(struct wl_listener *listener, void *data) {
@@ -565,7 +564,7 @@ static void handle_tablet_tool_tip(struct wl_listener *listener, void *data) {
 	if (output) {
 		apply_output_transform(&event->x, &event->y, output->transform);
 	}
-	wlr_signal_emit_safe(&device->cursor->events.tablet_tool_tip, event);
+	wl_signal_emit_mutable(&device->cursor->events.tablet_tool_tip, event);
 }
 
 static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
@@ -600,7 +599,7 @@ static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	wlr_signal_emit_safe(&device->cursor->events.tablet_tool_axis, event);
+	wl_signal_emit_mutable(&device->cursor->events.tablet_tool_axis, event);
 }
 
 static void handle_tablet_tool_button(struct wl_listener *listener,
@@ -608,7 +607,7 @@ static void handle_tablet_tool_button(struct wl_listener *listener,
 	struct wlr_tablet_tool_button *event = data;
 	struct wlr_cursor_device *device;
 	device = wl_container_of(listener, device, tablet_tool_button);
-	wlr_signal_emit_safe(&device->cursor->events.tablet_tool_button, event);
+	wl_signal_emit_mutable(&device->cursor->events.tablet_tool_button, event);
 }
 
 static void handle_tablet_tool_proximity(struct wl_listener *listener,
@@ -622,7 +621,7 @@ static void handle_tablet_tool_proximity(struct wl_listener *listener,
 	if (output) {
 		apply_output_transform(&event->x, &event->y, output->transform);
 	}
-	wlr_signal_emit_safe(&device->cursor->events.tablet_tool_proximity, event);
+	wl_signal_emit_mutable(&device->cursor->events.tablet_tool_proximity, event);
 }
 
 static void handle_device_destroy(struct wl_listener *listener, void *data) {

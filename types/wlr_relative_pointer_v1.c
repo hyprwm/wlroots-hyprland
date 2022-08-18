@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#include <util/signal.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
@@ -27,7 +26,7 @@ static struct wlr_relative_pointer_manager_v1 *relative_pointer_manager_from_res
 }
 
 static void relative_pointer_destroy(struct wlr_relative_pointer_v1 *relative_pointer) {
-	wlr_signal_emit_safe(&relative_pointer->events.destroy, relative_pointer);
+	wl_signal_emit_mutable(&relative_pointer->events.destroy, relative_pointer);
 
 	wl_list_remove(&relative_pointer->link);
 	wl_list_remove(&relative_pointer->seat_destroy.link);
@@ -118,7 +117,7 @@ static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_cl
 			&relative_pointer->pointer_destroy);
 	relative_pointer->pointer_destroy.notify = relative_pointer_handle_pointer_destroy;
 
-	wlr_signal_emit_safe(&manager->events.new_relative_pointer,
+	wl_signal_emit_mutable(&manager->events.new_relative_pointer,
 		relative_pointer);
 }
 
@@ -140,7 +139,7 @@ static void relative_pointer_manager_v1_bind(struct wl_client *wl_client, void *
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_relative_pointer_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy_listener);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy_listener.link);
 	wl_global_destroy(manager->global);
 	free(manager);

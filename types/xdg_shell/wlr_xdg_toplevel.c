@@ -5,7 +5,6 @@
 #include <wlr/util/log.h>
 #include <wlr/util/edges.h>
 #include "types/wlr_xdg_shell.h"
-#include "util/signal.h"
 
 void handle_xdg_toplevel_ack_configure(
 		struct wlr_xdg_toplevel *toplevel,
@@ -168,7 +167,7 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 		toplevel->parent = NULL;
 	}
 
-	wlr_signal_emit_safe(&toplevel->events.set_parent, NULL);
+	wl_signal_emit_mutable(&toplevel->events.set_parent, NULL);
 }
 
 static void xdg_toplevel_handle_set_parent(struct wl_client *client,
@@ -198,7 +197,7 @@ static void xdg_toplevel_handle_set_title(struct wl_client *client,
 
 	free(toplevel->title);
 	toplevel->title = tmp;
-	wlr_signal_emit_safe(&toplevel->events.set_title, NULL);
+	wl_signal_emit_mutable(&toplevel->events.set_title, NULL);
 }
 
 static void xdg_toplevel_handle_set_app_id(struct wl_client *client,
@@ -215,7 +214,7 @@ static void xdg_toplevel_handle_set_app_id(struct wl_client *client,
 
 	free(toplevel->app_id);
 	toplevel->app_id = tmp;
-	wlr_signal_emit_safe(&toplevel->events.set_app_id, NULL);
+	wl_signal_emit_mutable(&toplevel->events.set_app_id, NULL);
 }
 
 static void xdg_toplevel_handle_show_window_menu(struct wl_client *client,
@@ -246,7 +245,7 @@ static void xdg_toplevel_handle_show_window_menu(struct wl_client *client,
 		.y = y,
 	};
 
-	wlr_signal_emit_safe(&toplevel->events.request_show_window_menu, &event);
+	wl_signal_emit_mutable(&toplevel->events.request_show_window_menu, &event);
 }
 
 static void xdg_toplevel_handle_move(struct wl_client *client,
@@ -275,7 +274,7 @@ static void xdg_toplevel_handle_move(struct wl_client *client,
 		.serial = serial,
 	};
 
-	wlr_signal_emit_safe(&toplevel->events.request_move, &event);
+	wl_signal_emit_mutable(&toplevel->events.request_move, &event);
 }
 
 static void xdg_toplevel_handle_resize(struct wl_client *client,
@@ -305,7 +304,7 @@ static void xdg_toplevel_handle_resize(struct wl_client *client,
 		.edges = edges,
 	};
 
-	wlr_signal_emit_safe(&toplevel->events.request_resize, &event);
+	wl_signal_emit_mutable(&toplevel->events.request_resize, &event);
 }
 
 static void xdg_toplevel_handle_set_max_size(struct wl_client *client,
@@ -329,7 +328,7 @@ static void xdg_toplevel_handle_set_maximized(struct wl_client *client,
 	struct wlr_xdg_toplevel *toplevel =
 		wlr_xdg_toplevel_from_resource(resource);
 	toplevel->requested.maximized = true;
-	wlr_signal_emit_safe(&toplevel->events.request_maximize, NULL);
+	wl_signal_emit_mutable(&toplevel->events.request_maximize, NULL);
 }
 
 static void xdg_toplevel_handle_unset_maximized(struct wl_client *client,
@@ -337,7 +336,7 @@ static void xdg_toplevel_handle_unset_maximized(struct wl_client *client,
 	struct wlr_xdg_toplevel *toplevel =
 		wlr_xdg_toplevel_from_resource(resource);
 	toplevel->requested.maximized = false;
-	wlr_signal_emit_safe(&toplevel->events.request_maximize, NULL);
+	wl_signal_emit_mutable(&toplevel->events.request_maximize, NULL);
 }
 
 static void handle_fullscreen_output_destroy(struct wl_listener *listener,
@@ -376,7 +375,7 @@ static void xdg_toplevel_handle_set_fullscreen(struct wl_client *client,
 
 	store_fullscreen_requested(toplevel, true, output);
 
-	wlr_signal_emit_safe(&toplevel->events.request_fullscreen, NULL);
+	wl_signal_emit_mutable(&toplevel->events.request_fullscreen, NULL);
 }
 
 static void xdg_toplevel_handle_unset_fullscreen(struct wl_client *client,
@@ -386,7 +385,7 @@ static void xdg_toplevel_handle_unset_fullscreen(struct wl_client *client,
 
 	store_fullscreen_requested(toplevel, false, NULL);
 
-	wlr_signal_emit_safe(&toplevel->events.request_fullscreen, NULL);
+	wl_signal_emit_mutable(&toplevel->events.request_fullscreen, NULL);
 }
 
 static void xdg_toplevel_handle_set_minimized(struct wl_client *client,
@@ -394,7 +393,7 @@ static void xdg_toplevel_handle_set_minimized(struct wl_client *client,
 	struct wlr_xdg_toplevel *toplevel =
 		wlr_xdg_toplevel_from_resource(resource);
 	toplevel->requested.minimized = true;
-	wlr_signal_emit_safe(&toplevel->events.request_minimize, NULL);
+	wl_signal_emit_mutable(&toplevel->events.request_minimize, NULL);
 }
 
 static void xdg_toplevel_handle_destroy(struct wl_client *client,

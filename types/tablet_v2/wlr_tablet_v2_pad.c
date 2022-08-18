@@ -11,7 +11,6 @@
 #include <wlr/types/wlr_tablet_pad.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "tablet-unstable-v2-protocol.h"
 
 static const struct wlr_tablet_pad_v2_grab_interface default_pad_grab_interface;
@@ -52,7 +51,7 @@ static void handle_tablet_pad_ring_v2_set_feedback(struct wl_client *client,
 		.index = aux->index
 	};
 
-	wlr_signal_emit_safe(&aux->pad->pad->events.ring_feedback, &evt);
+	wl_signal_emit_mutable(&aux->pad->pad->events.ring_feedback, &evt);
 }
 
 static void handle_tablet_pad_ring_v2_destroy(struct wl_client *client,
@@ -90,7 +89,7 @@ static void handle_tablet_pad_strip_v2_set_feedback(struct wl_client *client,
 		.index = aux->index
 	};
 
-	wlr_signal_emit_safe(&aux->pad->pad->events.strip_feedback, &evt);
+	wl_signal_emit_mutable(&aux->pad->pad->events.strip_feedback, &evt);
 }
 
 static void handle_tablet_pad_strip_v2_destroy(struct wl_client *client,
@@ -117,7 +116,7 @@ static void handle_tablet_pad_v2_set_feedback( struct wl_client *client,
 		.description = description,
 	};
 
-	wlr_signal_emit_safe(&pad->pad->events.button_feedback, &evt);
+	wl_signal_emit_mutable(&pad->pad->events.button_feedback, &evt);
 }
 
 static const struct zwp_tablet_pad_v2_interface tablet_pad_impl = {

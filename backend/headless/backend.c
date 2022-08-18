@@ -3,7 +3,6 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/util/log.h>
 #include "backend/headless.h"
-#include "util/signal.h"
 
 struct wlr_headless_backend *headless_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
@@ -20,7 +19,7 @@ static bool backend_start(struct wlr_backend *wlr_backend) {
 	wl_list_for_each(output, &backend->outputs, link) {
 		wl_event_source_timer_update(output->frame_timer, output->frame_delay);
 		wlr_output_update_enabled(&output->wlr_output, true);
-		wlr_signal_emit_safe(&backend->backend.events.new_output,
+		wl_signal_emit_mutable(&backend->backend.events.new_output,
 			&output->wlr_output);
 	}
 

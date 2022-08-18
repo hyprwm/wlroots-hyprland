@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "xdg-foreign-unstable-v2-protocol.h"
 
 #define FOREIGN_V2_VERSION 1
@@ -367,7 +366,7 @@ static void xdg_foreign_destroy(struct wlr_xdg_foreign_v2 *foreign) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&foreign->events.destroy, NULL);
+	wl_signal_emit_mutable(&foreign->events.destroy, NULL);
 	wl_list_remove(&foreign->foreign_registry_destroy.link);
 	wl_list_remove(&foreign->display_destroy.link);
 

@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-output-power-management-unstable-v1-protocol.h"
 
 #define OUTPUT_POWER_MANAGER_V1_VERSION 1
@@ -93,7 +92,7 @@ static void output_power_handle_set_mode(struct wl_client *client,
 		.output = output_power->output,
 		.mode = mode,
 	};
-	wlr_signal_emit_safe(&output_power->manager->events.set_mode, &event);
+	wl_signal_emit_mutable(&output_power->manager->events.set_mode, &event);
 }
 
 static const struct zwlr_output_power_v1_interface output_power_impl = {
@@ -196,7 +195,7 @@ static void output_power_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_output_power_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_global_destroy(manager->global);
 	free(manager);
 }

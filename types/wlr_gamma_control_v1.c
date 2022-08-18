@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-gamma-control-unstable-v1-protocol.h"
 
 #define GAMMA_CONTROL_MANAGER_V1_VERSION 1
@@ -259,7 +258,7 @@ static void gamma_control_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_gamma_control_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

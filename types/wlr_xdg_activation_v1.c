@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "util/token.h"
 #include "xdg-activation-v1-protocol.h"
 
@@ -33,7 +32,7 @@ void wlr_xdg_activation_token_v1_destroy(
 		wl_event_source_remove(token->timeout);
 	}
 
-	wlr_signal_emit_safe(&token->events.destroy, NULL);
+	wl_signal_emit_mutable(&token->events.destroy, NULL);
 
 	wl_list_remove(&token->link);
 	wl_list_remove(&token->seat_destroy.link);
@@ -312,7 +311,7 @@ static void activation_handle_activate(struct wl_client *client,
 		.token = token,
 		.surface = surface,
 	};
-	wlr_signal_emit_safe(&activation->events.request_activate, &event);
+	wl_signal_emit_mutable(&activation->events.request_activate, &event);
 
 	wlr_xdg_activation_token_v1_destroy(token);
 }
@@ -339,7 +338,7 @@ static void activation_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_activation_v1 *activation =
 		wl_container_of(listener, activation, display_destroy);
-	wlr_signal_emit_safe(&activation->events.destroy, NULL);
+	wl_signal_emit_mutable(&activation->events.destroy, NULL);
 
 	struct wlr_xdg_activation_token_v1 *token, *token_tmp;
 	wl_list_for_each_safe(token, token_tmp, &activation->tokens, link) {

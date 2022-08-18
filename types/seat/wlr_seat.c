@@ -11,7 +11,6 @@
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
 #include "util/global.h"
-#include "util/signal.h"
 
 #define SEAT_VERSION 8
 
@@ -67,7 +66,7 @@ static void seat_client_handle_resource_destroy(
 		return;
 	}
 
-	wlr_signal_emit_safe(&client->events.destroy, client);
+	wl_signal_emit_mutable(&client->events.destroy, client);
 
 	if (client == client->seat->pointer_state.focused_client) {
 		client->seat->pointer_state.focused_client = NULL;
@@ -181,7 +180,7 @@ void wlr_seat_destroy(struct wlr_seat *seat) {
 		wlr_seat_touch_point_clear_focus(seat, 0, point->touch_id);
 	}
 
-	wlr_signal_emit_safe(&seat->events.destroy, seat);
+	wl_signal_emit_mutable(&seat->events.destroy, seat);
 
 	wl_list_remove(&seat->display_destroy.link);
 

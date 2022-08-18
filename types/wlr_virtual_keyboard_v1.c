@@ -8,7 +8,6 @@
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
-#include "util/signal.h"
 #include "virtual-keyboard-unstable-v1-protocol.h"
 
 static const struct wlr_keyboard_impl keyboard_impl = {
@@ -176,7 +175,7 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 
 	wl_list_insert(&manager->virtual_keyboards, &virtual_keyboard->link);
 
-	wlr_signal_emit_safe(&manager->events.new_virtual_keyboard,
+	wl_signal_emit_mutable(&manager->events.new_virtual_keyboard,
 		virtual_keyboard);
 }
 
@@ -201,7 +200,7 @@ static void virtual_keyboard_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_keyboard_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

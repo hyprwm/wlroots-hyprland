@@ -10,7 +10,6 @@
 #include "types/wlr_keyboard.h"
 #include "util/array.h"
 #include "util/shm.h"
-#include "util/signal.h"
 #include "util/time.h"
 
 struct wlr_keyboard *wlr_keyboard_from_input_device(
@@ -91,7 +90,7 @@ void wlr_keyboard_notify_modifiers(struct wlr_keyboard *keyboard,
 
 	bool updated = keyboard_modifier_update(keyboard);
 	if (updated) {
-		wlr_signal_emit_safe(&keyboard->events.modifiers, keyboard);
+		wl_signal_emit_mutable(&keyboard->events.modifiers, keyboard);
 	}
 
 	keyboard_led_update(keyboard);
@@ -100,7 +99,7 @@ void wlr_keyboard_notify_modifiers(struct wlr_keyboard *keyboard,
 void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
 		struct wlr_keyboard_key_event *event) {
 	keyboard_key_update(keyboard, event);
-	wlr_signal_emit_safe(&keyboard->events.key, event);
+	wl_signal_emit_mutable(&keyboard->events.key, event);
 
 	if (keyboard->xkb_state == NULL) {
 		return;
@@ -114,7 +113,7 @@ void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
 
 	bool updated = keyboard_modifier_update(keyboard);
 	if (updated) {
-		wlr_signal_emit_safe(&keyboard->events.modifiers, keyboard);
+		wl_signal_emit_mutable(&keyboard->events.modifiers, keyboard);
 	}
 
 	keyboard_led_update(keyboard);
@@ -246,7 +245,7 @@ bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb,
 
 	keyboard_modifier_update(kb);
 
-	wlr_signal_emit_safe(&kb->events.keymap, kb);
+	wl_signal_emit_mutable(&kb->events.keymap, kb);
 	return true;
 
 err:
@@ -266,7 +265,7 @@ void wlr_keyboard_set_repeat_info(struct wlr_keyboard *kb, int32_t rate,
 	}
 	kb->repeat_info.rate = rate;
 	kb->repeat_info.delay = delay;
-	wlr_signal_emit_safe(&kb->events.repeat_info, kb);
+	wl_signal_emit_mutable(&kb->events.repeat_info, kb);
 }
 
 uint32_t wlr_keyboard_get_modifiers(struct wlr_keyboard *kb) {

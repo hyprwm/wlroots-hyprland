@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-output-management-unstable-v1-protocol.h"
 
 #define OUTPUT_MANAGER_VERSION 2
@@ -413,7 +412,7 @@ static void config_handle_apply(struct wl_client *client,
 		return;
 	}
 
-	wlr_signal_emit_safe(&config->manager->events.apply, config);
+	wl_signal_emit_mutable(&config->manager->events.apply, config);
 }
 
 static void config_handle_test(struct wl_client *client,
@@ -432,7 +431,7 @@ static void config_handle_test(struct wl_client *client,
 		return;
 	}
 
-	wlr_signal_emit_safe(&config->manager->events.test, config);
+	wl_signal_emit_mutable(&config->manager->events.test, config);
 }
 
 static void config_handle_destroy(struct wl_client *client,
@@ -589,7 +588,7 @@ static void manager_handle_display_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_output_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	struct wlr_output_head_v1 *head, *tmp;
 	wl_list_for_each_safe(head, tmp, &manager->heads, link) {

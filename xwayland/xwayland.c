@@ -14,7 +14,6 @@
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
 #include "sockets.h"
-#include "util/signal.h"
 #include "xwayland/xwm.h"
 
 struct wlr_xwayland_cursor {
@@ -54,7 +53,7 @@ static void handle_server_ready(struct wl_listener *listener, void *data) {
 			cur->height, cur->hotspot_x, cur->hotspot_y);
 	}
 
-	wlr_signal_emit_safe(&xwayland->events.ready, NULL);
+	wl_signal_emit_mutable(&xwayland->events.ready, NULL);
 }
 
 void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {

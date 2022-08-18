@@ -12,7 +12,6 @@
 #include <wlr/util/log.h>
 #include "wlr-screencopy-unstable-v1-protocol.h"
 #include "render/pixel_format.h"
-#include "util/signal.h"
 
 #define SCREENCOPY_MANAGER_VERSION 3
 
@@ -680,7 +679,7 @@ failure:
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_screencopy_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

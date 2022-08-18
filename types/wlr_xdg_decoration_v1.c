@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "xdg-decoration-unstable-v1-protocol.h"
 
 #define DECORATION_MANAGER_VERSION 1
@@ -31,7 +30,7 @@ static void toplevel_decoration_handle_set_mode(struct wl_client *client,
 
 	decoration->requested_mode =
 		(enum wlr_xdg_toplevel_decoration_v1_mode)mode;
-	wlr_signal_emit_safe(&decoration->events.request_mode, decoration);
+	wl_signal_emit_mutable(&decoration->events.request_mode, decoration);
 }
 
 static void toplevel_decoration_handle_unset_mode(struct wl_client *client,
@@ -40,7 +39,7 @@ static void toplevel_decoration_handle_unset_mode(struct wl_client *client,
 		toplevel_decoration_from_resource(resource);
 
 	decoration->requested_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE;
-	wlr_signal_emit_safe(&decoration->events.request_mode, decoration);
+	wl_signal_emit_mutable(&decoration->events.request_mode, decoration);
 }
 
 static const struct zxdg_toplevel_decoration_v1_interface
@@ -62,7 +61,7 @@ static void toplevel_decoration_handle_resource_destroy(
 		struct wl_resource *resource) {
 	struct wlr_xdg_toplevel_decoration_v1 *decoration =
 		toplevel_decoration_from_resource(resource);
-	wlr_signal_emit_safe(&decoration->events.destroy, decoration);
+	wl_signal_emit_mutable(&decoration->events.destroy, decoration);
 	wl_list_remove(&decoration->surface_commit.link);
 	wl_list_remove(&decoration->surface_destroy.link);
 	wl_list_remove(&decoration->surface_configure.link);
@@ -148,7 +147,7 @@ static void toplevel_decoration_handle_surface_commit(
 
 	if (decoration->surface->added && !decoration->added) {
 		decoration->added = true;
-		wlr_signal_emit_safe(&manager->events.new_toplevel_decoration,
+		wl_signal_emit_mutable(&manager->events.new_toplevel_decoration,
 			decoration);
 	}
 }
@@ -232,7 +231,7 @@ static void decoration_manager_handle_get_toplevel_decoration(
 
 	if (toplevel->base->added) {
 		decoration->added = true;
-		wlr_signal_emit_safe(&manager->events.new_toplevel_decoration,
+		wl_signal_emit_mutable(&manager->events.new_toplevel_decoration,
 			decoration);
 	}
 }
@@ -260,7 +259,7 @@ static void decoration_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_decoration_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

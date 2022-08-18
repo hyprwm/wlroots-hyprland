@@ -9,7 +9,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
 #include "types/wlr_data_device.h"
-#include "util/signal.h"
 
 static void drag_handle_seat_client_destroy(struct wl_listener *listener,
 		void *data) {
@@ -104,16 +103,16 @@ static void drag_set_focus(struct wlr_drag *drag,
 	wl_signal_add(&focus_client->events.destroy, &drag->seat_client_destroy);
 
 out:
-	wlr_signal_emit_safe(&drag->events.focus, drag);
+	wl_signal_emit_mutable(&drag->events.focus, drag);
 }
 
 static void drag_icon_set_mapped(struct wlr_drag_icon *icon, bool mapped) {
 	if (mapped && !icon->mapped) {
 		icon->mapped = true;
-		wlr_signal_emit_safe(&icon->events.map, icon);
+		wl_signal_emit_mutable(&icon->events.map, icon);
 	} else if (!mapped && icon->mapped) {
 		icon->mapped = false;
-		wlr_signal_emit_safe(&icon->events.unmap, icon);
+		wl_signal_emit_mutable(&icon->events.unmap, icon);
 	}
 }
 
@@ -151,7 +150,7 @@ static void drag_destroy(struct wlr_drag *drag) {
 	// to ensure that the wl_data_device.leave is sent before emitting the
 	// signal. This allows e.g. wl_pointer.enter to be sent in the destroy
 	// signal handler.
-	wlr_signal_emit_safe(&drag->events.destroy, drag);
+	wl_signal_emit_mutable(&drag->events.destroy, drag);
 
 	if (drag->source) {
 		wl_list_remove(&drag->source_destroy.link);
@@ -188,7 +187,7 @@ static void drag_handle_pointer_motion(struct wlr_seat_pointer_grab *grab,
 			.sx = sx,
 			.sy = sy,
 		};
-		wlr_signal_emit_safe(&drag->events.motion, &event);
+		wl_signal_emit_mutable(&drag->events.motion, &event);
 	}
 }
 
@@ -209,7 +208,7 @@ static void drag_drop(struct wlr_drag *drag, uint32_t time) {
 		.drag = drag,
 		.time = time,
 	};
-	wlr_signal_emit_safe(&drag->events.drop, &event);
+	wl_signal_emit_mutable(&drag->events.drop, &event);
 }
 
 static uint32_t drag_handle_pointer_button(struct wlr_seat_pointer_grab *grab,
@@ -364,7 +363,7 @@ static void drag_icon_destroy(struct wlr_drag_icon *icon) {
 		return;
 	}
 	drag_icon_set_mapped(icon, false);
-	wlr_signal_emit_safe(&icon->events.destroy, icon);
+	wl_signal_emit_mutable(&icon->events.destroy, icon);
 	icon->surface->role_data = NULL;
 	wl_list_remove(&icon->surface_destroy.link);
 	free(icon);
@@ -480,7 +479,7 @@ void wlr_seat_request_start_drag(struct wlr_seat *seat, struct wlr_drag *drag,
 		.origin = origin,
 		.serial = serial,
 	};
-	wlr_signal_emit_safe(&seat->events.request_start_drag, &event);
+	wl_signal_emit_mutable(&seat->events.request_start_drag, &event);
 }
 
 static void seat_handle_drag_source_destroy(struct wl_listener *listener,
@@ -511,7 +510,7 @@ void wlr_seat_start_drag(struct wlr_seat *seat, struct wlr_drag *drag,
 		wl_signal_add(&drag->source->events.destroy, &seat->drag_source_destroy);
 	}
 
-	wlr_signal_emit_safe(&seat->events.start_drag, drag);
+	wl_signal_emit_mutable(&seat->events.start_drag, drag);
 }
 
 void wlr_seat_start_pointer_drag(struct wlr_seat *seat, struct wlr_drag *drag,

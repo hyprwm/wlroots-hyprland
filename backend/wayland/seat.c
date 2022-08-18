@@ -18,7 +18,6 @@
 #include <wlr/util/log.h>
 
 #include "backend/wayland.h"
-#include "util/signal.h"
 #include "util/time.h"
 
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
@@ -113,7 +112,7 @@ void init_seat_keyboard(struct wlr_wl_seat *seat) {
 	wl_keyboard_add_listener(seat->wl_keyboard, &keyboard_listener,
 		&seat->wlr_keyboard);
 
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+	wl_signal_emit_mutable(&seat->backend->backend.events.new_input,
 		&seat->wlr_keyboard.base);
 }
 
@@ -148,7 +147,7 @@ static void touch_handle_down(void *data, struct wl_touch *wl_touch,
 		.touch_id = id,
 	};
 	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
-	wlr_signal_emit_safe(&touch->events.down, &event);
+	wl_signal_emit_mutable(&touch->events.down, &event);
 }
 
 static void touch_handle_up(void *data, struct wl_touch *wl_touch,
@@ -161,7 +160,7 @@ static void touch_handle_up(void *data, struct wl_touch *wl_touch,
 		.time_msec = time,
 		.touch_id = id,
 	};
-	wlr_signal_emit_safe(&touch->events.up, &event);
+	wl_signal_emit_mutable(&touch->events.up, &event);
 }
 
 static void touch_handle_motion(void *data, struct wl_touch *wl_touch,
@@ -176,12 +175,12 @@ static void touch_handle_motion(void *data, struct wl_touch *wl_touch,
 	};
 
 	touch_coordinates_to_absolute(seat, x, y, &event.x, &event.y);
-	wlr_signal_emit_safe(&touch->events.motion, &event);
+	wl_signal_emit_mutable(&touch->events.motion, &event);
 }
 
 static void touch_handle_frame(void *data, struct wl_touch *wl_touch) {
 	struct wlr_wl_seat *seat = data;
-	wlr_signal_emit_safe(&seat->wlr_touch.events.frame, NULL);
+	wl_signal_emit_mutable(&seat->wlr_touch.events.frame, NULL);
 }
 
 static void touch_handle_cancel(void *data, struct wl_touch *wl_touch) {
@@ -228,7 +227,7 @@ void init_seat_touch(struct wlr_wl_seat *seat) {
 	}
 
 	wl_touch_add_listener(seat->wl_touch, &touch_listener, seat);
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+	wl_signal_emit_mutable(&seat->backend->backend.events.new_input,
 		&seat->wlr_touch.base);
 }
 

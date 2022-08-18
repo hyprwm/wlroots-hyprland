@@ -4,7 +4,6 @@
 #include <wlr/types/wlr_fullscreen_shell_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 
 #define FULLSCREEN_SHELL_VERSION 1
 
@@ -37,7 +36,7 @@ static void shell_handle_present_surface(struct wl_client *client,
 		.method = method,
 		.output = output,
 	};
-	wlr_signal_emit_safe(&shell->events.present_surface, &event);
+	wl_signal_emit_mutable(&shell->events.present_surface, &event);
 }
 
 static void shell_handle_present_surface_for_mode(struct wl_client *client,
@@ -79,7 +78,7 @@ static void shell_bind(struct wl_client *client, void *data, uint32_t version,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_fullscreen_shell_v1 *shell =
 		wl_container_of(listener, shell, display_destroy);
-	wlr_signal_emit_safe(&shell->events.destroy, shell);
+	wl_signal_emit_mutable(&shell->events.destroy, shell);
 	wl_list_remove(&shell->display_destroy.link);
 	wl_global_destroy(shell->global);
 	free(shell);

@@ -9,7 +9,6 @@
 #include <wlr/util/log.h>
 #include "render/pixel_format.h"
 #include "types/wlr_buffer.h"
-#include "util/signal.h"
 
 void wlr_buffer_init(struct wlr_buffer *buffer,
 		const struct wlr_buffer_impl *impl, int width, int height) {
@@ -34,7 +33,7 @@ static void buffer_consider_destroy(struct wlr_buffer *buffer) {
 
 	assert(!buffer->accessing_data_ptr);
 
-	wlr_signal_emit_safe(&buffer->events.destroy, NULL);
+	wl_signal_emit_mutable(&buffer->events.destroy, NULL);
 	wlr_addon_set_finish(&buffer->addons);
 
 	buffer->impl->destroy(buffer);
@@ -64,7 +63,7 @@ void wlr_buffer_unlock(struct wlr_buffer *buffer) {
 	buffer->n_locks--;
 
 	if (buffer->n_locks == 0) {
-		wlr_signal_emit_safe(&buffer->events.release, NULL);
+		wl_signal_emit_mutable(&buffer->events.release, NULL);
 	}
 
 	buffer_consider_destroy(buffer);

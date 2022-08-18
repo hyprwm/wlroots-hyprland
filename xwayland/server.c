@@ -16,7 +16,6 @@
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
 #include "sockets.h"
-#include "util/signal.h"
 #include "xwayland/config.h"
 
 static void safe_close(int fd) {
@@ -281,7 +280,7 @@ static int xserver_handle_ready(int fd, uint32_t mask, void *data) {
 		.server = server,
 		.wm_fd = server->wm_fd[0],
 	};
-	wlr_signal_emit_safe(&server->events.ready, &event);
+	wl_signal_emit_mutable(&server->events.ready, &event);
 
 	/* We removed the source, so don't need recheck */
 	return 0;
@@ -432,7 +431,7 @@ void wlr_xwayland_server_destroy(struct wlr_xwayland_server *server) {
 
 	server_finish_process(server);
 	server_finish_display(server);
-	wlr_signal_emit_safe(&server->events.destroy, NULL);
+	wl_signal_emit_mutable(&server->events.destroy, NULL);
 	free(server);
 }
 

@@ -19,7 +19,6 @@
 #include "backend/wayland.h"
 #include "render/drm_format_set.h"
 #include "render/pixel_format.h"
-#include "util/signal.h"
 
 #include "drm-client-protocol.h"
 #include "linux-dmabuf-unstable-v1-client-protocol.h"

@@ -8,7 +8,6 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 #define LAYER_SHELL_VERSION 4
@@ -223,7 +222,7 @@ static void layer_surface_handle_get_popup(struct wl_client *client,
 	}
 	popup->parent = parent->surface;
 	wl_list_insert(&parent->popups, &popup->link);
-	wlr_signal_emit_safe(&parent->events.new_popup, popup);
+	wl_signal_emit_mutable(&parent->events.new_popup, popup);
 }
 
 static void layer_surface_set_layer(struct wl_client *client,
@@ -265,7 +264,7 @@ static void layer_surface_unmap(struct wlr_layer_surface_v1 *surface) {
 	surface->configured = surface->mapped = false;
 
 	// TODO: probably need to ungrab before this event
-	wlr_signal_emit_safe(&surface->events.unmap, surface);
+	wl_signal_emit_mutable(&surface->events.unmap, surface);
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
@@ -283,7 +282,7 @@ static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
 	if (surface->configured && surface->mapped) {
 		layer_surface_unmap(surface);
 	}
-	wlr_signal_emit_safe(&surface->events.destroy, surface);
+	wl_signal_emit_mutable(&surface->events.destroy, surface);
 	wl_resource_set_user_data(surface->resource, NULL);
 	surface->surface->role_data = NULL;
 	wl_list_remove(&surface->surface_destroy.link);
@@ -365,7 +364,7 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 		surface->added = true;
 		assert(!surface->configured);
 		assert(!surface->mapped);
-		wlr_signal_emit_safe(&surface->shell->events.new_surface, surface);
+		wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
 		// Return early here as the compositor may have closed this layer surface
 		// in response to the new_surface event.
 		return;
@@ -374,7 +373,7 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	if (surface->configured && wlr_surface_has_buffer(surface->surface) &&
 			!surface->mapped) {
 		surface->mapped = true;
-		wlr_signal_emit_safe(&surface->events.map, surface);
+		wl_signal_emit_mutable(&surface->events.map, surface);
 	}
 }
 
@@ -501,7 +500,7 @@ static void layer_shell_bind(struct wl_client *wl_client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_layer_shell_v1 *layer_shell =
 		wl_container_of(listener, layer_shell, display_destroy);
-	wlr_signal_emit_safe(&layer_shell->events.destroy, layer_shell);
+	wl_signal_emit_mutable(&layer_shell->events.destroy, layer_shell);
 	wl_list_remove(&layer_shell->display_destroy.link);
 	wl_global_destroy(layer_shell->global);
 	free(layer_shell);

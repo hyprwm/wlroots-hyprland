@@ -9,7 +9,6 @@
 #include <wlr/util/log.h>
 
 #include "backend/wayland.h"
-#include "util/signal.h"
 #include "util/time.h"
 
 #include "tablet-unstable-v2-client-protocol.h"
@@ -108,11 +107,11 @@ static void handle_tablet_pad_ring_frame(void *data,
 	};
 
 	if (ring->angle >= 0) {
-		wlr_signal_emit_safe(&ring->group->pad->events.ring, &evt);
+		wl_signal_emit_mutable(&ring->group->pad->events.ring, &evt);
 	}
 	if (ring->stopped) {
 		evt.position = -1;
-		wlr_signal_emit_safe(&ring->group->pad->events.ring, &evt);
+		wl_signal_emit_mutable(&ring->group->pad->events.ring, &evt);
 	}
 
 	ring->angle = -1;
@@ -161,11 +160,11 @@ static void handle_tablet_pad_strip_frame(void *data,
 	};
 
 	if (strip->position >= 0) {
-		wlr_signal_emit_safe(&strip->group->pad->events.strip, &evt);
+		wl_signal_emit_mutable(&strip->group->pad->events.strip, &evt);
 	}
 	if (strip->stopped) {
 		evt.position = -1;
-		wlr_signal_emit_safe(&strip->group->pad->events.strip, &evt);
+		wl_signal_emit_mutable(&strip->group->pad->events.strip, &evt);
 	}
 
 	strip->position = -1;
@@ -345,13 +344,13 @@ static void handle_tablet_pad_button(void *data,
 		.group = 0,
 	};
 
-	wlr_signal_emit_safe(&seat->wlr_tablet_pad.events.button, &evt);
+	wl_signal_emit_mutable(&seat->wlr_tablet_pad.events.button, &evt);
 }
 
 static void handle_tablet_pad_done(void *data,
 		struct zwp_tablet_pad_v2 *zwp_tablet_pad_v2) {
 	struct wlr_wl_seat *seat = data;
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+	wl_signal_emit_mutable(&seat->backend->backend.events.new_input,
 		&seat->wlr_tablet_pad.base);
 }
 
@@ -362,7 +361,7 @@ static void handle_tablet_pad_enter(void *data,
 	struct wlr_wl_seat *seat = data;
 	assert(seat->zwp_tablet_v2 == tablet_p);
 
-	wlr_signal_emit_safe(&seat->wlr_tablet_pad.events.attach_tablet,
+	wl_signal_emit_mutable(&seat->wlr_tablet_pad.events.attach_tablet,
 		&seat->wlr_tablet_tool);
 }
 
@@ -591,7 +590,7 @@ static void handle_tablet_tool_button(void *data,
 			WLR_BUTTON_RELEASED : WLR_BUTTON_PRESSED,
 	};
 
-	wlr_signal_emit_safe(&tablet->events.button, &evt);
+	wl_signal_emit_mutable(&tablet->events.button, &evt);
 }
 
 static void clear_tablet_tool_values(struct tablet_tool *tool) {
@@ -629,7 +628,7 @@ static void handle_tablet_tool_frame(void *data,
 			.state = WLR_TABLET_TOOL_PROXIMITY_IN,
 		};
 
-		wlr_signal_emit_safe(&tablet->events.proximity, &evt);
+		wl_signal_emit_mutable(&tablet->events.proximity, &evt);
 	}
 
 	{
@@ -686,7 +685,7 @@ static void handle_tablet_tool_frame(void *data,
 		}
 
 		if (evt.updated_axes) {
-			wlr_signal_emit_safe(&tablet->events.axis, &evt);
+			wl_signal_emit_mutable(&tablet->events.axis, &evt);
 		}
 	}
 
@@ -705,7 +704,7 @@ static void handle_tablet_tool_frame(void *data,
 			.state = WLR_TABLET_TOOL_TIP_DOWN,
 		};
 
-		wlr_signal_emit_safe(&tablet->events.tip, &evt);
+		wl_signal_emit_mutable(&tablet->events.tip, &evt);
 	}
 
 	if (tool->is_up) {
@@ -718,7 +717,7 @@ static void handle_tablet_tool_frame(void *data,
 			.state = WLR_TABLET_TOOL_TIP_UP,
 		};
 
-		wlr_signal_emit_safe(&tablet->events.tip, &evt);
+		wl_signal_emit_mutable(&tablet->events.tip, &evt);
 	}
 
 	if (tool->is_out) {
@@ -731,7 +730,7 @@ static void handle_tablet_tool_frame(void *data,
 			.state = WLR_TABLET_TOOL_PROXIMITY_OUT,
 		};
 
-		wlr_signal_emit_safe(&tablet->events.proximity, &evt);
+		wl_signal_emit_mutable(&tablet->events.proximity, &evt);
 	}
 
 clear_values:
@@ -829,7 +828,7 @@ static void handle_tablet_path(void *data, struct zwp_tablet_v2 *zwp_tablet_v2,
 static void handle_tablet_done(void *data, struct zwp_tablet_v2 *zwp_tablet_v2) {
 	struct wlr_wl_seat *seat = data;
 
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+	wl_signal_emit_mutable(&seat->backend->backend.events.new_input,
 		&seat->wlr_tablet.base);
 }
 

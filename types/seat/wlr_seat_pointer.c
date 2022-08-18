@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
-#include "util/signal.h"
 #include "util/array.h"
 
 static void default_pointer_enter(struct wlr_seat_pointer_grab *grab,
@@ -101,7 +100,7 @@ static void pointer_set_cursor(struct wl_client *client,
 		.hotspot_x = hotspot_x,
 		.hotspot_y = hotspot_y,
 	};
-	wlr_signal_emit_safe(&seat_client->seat->events.request_set_cursor, &event);
+	wl_signal_emit_mutable(&seat_client->seat->events.request_set_cursor, &event);
 }
 
 static void pointer_release(struct wl_client *client,
@@ -211,7 +210,7 @@ void wlr_seat_pointer_enter(struct wlr_seat *wlr_seat,
 		.sx = sx,
 		.sy = sy,
 	};
-	wlr_signal_emit_safe(&wlr_seat->pointer_state.events.focus_change, &event);
+	wl_signal_emit_mutable(&wlr_seat->pointer_state.events.focus_change, &event);
 }
 
 void wlr_seat_pointer_clear_focus(struct wlr_seat *wlr_seat) {
@@ -403,14 +402,14 @@ void wlr_seat_pointer_start_grab(struct wlr_seat *wlr_seat,
 	grab->seat = wlr_seat;
 	wlr_seat->pointer_state.grab = grab;
 
-	wlr_signal_emit_safe(&wlr_seat->events.pointer_grab_begin, grab);
+	wl_signal_emit_mutable(&wlr_seat->events.pointer_grab_begin, grab);
 }
 
 void wlr_seat_pointer_end_grab(struct wlr_seat *wlr_seat) {
 	struct wlr_seat_pointer_grab *grab = wlr_seat->pointer_state.grab;
 	if (grab != wlr_seat->pointer_state.default_grab) {
 		wlr_seat->pointer_state.grab = wlr_seat->pointer_state.default_grab;
-		wlr_signal_emit_safe(&wlr_seat->events.pointer_grab_end, grab);
+		wl_signal_emit_mutable(&wlr_seat->events.pointer_grab_end, grab);
 		if (grab->interface->cancel) {
 			grab->interface->cancel(grab);
 		}

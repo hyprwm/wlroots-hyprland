@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "types/wlr_xdg_shell.h"
-#include "util/signal.h"
 
 void handle_xdg_popup_ack_configure(
 		struct wlr_xdg_popup *popup,
@@ -325,7 +324,7 @@ static void xdg_popup_handle_reposition(
 
 	wlr_xdg_surface_schedule_configure(popup->base);
 
-	wlr_signal_emit_safe(&popup->events.reposition, NULL);
+	wl_signal_emit_mutable(&popup->events.reposition, NULL);
 }
 
 static void xdg_popup_handle_destroy(struct wl_client *client,
@@ -419,7 +418,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	if (parent) {
 		surface->popup->parent = parent->surface;
 		wl_list_insert(&parent->popups, &surface->popup->link);
-		wlr_signal_emit_safe(&parent->events.new_popup, surface->popup);
+		wl_signal_emit_mutable(&parent->events.new_popup, surface->popup);
 	} else {
 		wl_list_init(&surface->popup->link);
 	}

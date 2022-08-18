@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "ext-session-lock-v1-protocol.h"
 
 #define SESSION_LOCK_VERSION 1
@@ -157,7 +156,7 @@ static void lock_surface_role_commit(struct wlr_surface *surface) {
 
 	if (!lock_surface->mapped) {
 		lock_surface->mapped = true;
-		wlr_signal_emit_safe(&lock_surface->events.map, NULL);
+		wl_signal_emit_mutable(&lock_surface->events.map, NULL);
 	}
 }
 
@@ -185,7 +184,7 @@ static const struct wlr_surface_role lock_surface_role = {
 
 static void lock_surface_destroy(
 		struct wlr_session_lock_surface_v1 *lock_surface) {
-	wlr_signal_emit_safe(&lock_surface->events.destroy, NULL);
+	wl_signal_emit_mutable(&lock_surface->events.destroy, NULL);
 
 	wl_list_remove(&lock_surface->link);
 
@@ -312,7 +311,7 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 	wl_signal_add(&surface->events.destroy, &lock_surface->surface_destroy);
 	lock_surface->surface_destroy.notify = lock_surface_handle_surface_destroy;
 
-	wlr_signal_emit_safe(&lock->events.new_surface, lock_surface);
+	wl_signal_emit_mutable(&lock->events.new_surface, lock_surface);
 }
 
 static void lock_handle_unlock_and_destroy(struct wl_client *client,
@@ -322,7 +321,7 @@ static void lock_handle_unlock_and_destroy(struct wl_client *client,
 		return;
 	}
 
-	wlr_signal_emit_safe(&lock->events.unlock, NULL);
+	wl_signal_emit_mutable(&lock->events.unlock, NULL);
 
 	wl_resource_destroy(lock_resource);
 }
@@ -344,7 +343,7 @@ static void lock_destroy(struct wlr_session_lock_v1 *lock) {
 	}
 	assert(wl_list_empty(&lock->surfaces));
 
-	wlr_signal_emit_safe(&lock->events.destroy, NULL);
+	wl_signal_emit_mutable(&lock->events.destroy, NULL);
 
 	assert(wl_list_empty(&lock->events.new_surface.listener_list));
 	assert(wl_list_empty(&lock->events.unlock.listener_list));
@@ -395,7 +394,7 @@ static void lock_manager_handle_lock(struct wl_client *client,
 	wl_resource_set_implementation(lock->resource, &lock_implementation,
 		lock, lock_resource_destroy);
 
-	wlr_signal_emit_safe(&lock_manager->events.new_lock, lock);
+	wl_signal_emit_mutable(&lock_manager->events.new_lock, lock);
 }
 
 static const struct ext_session_lock_manager_v1_interface lock_manager_implementation = {
@@ -420,7 +419,7 @@ static void lock_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_session_lock_manager_v1 *lock_manager =
 		wl_container_of(listener, lock_manager, display_destroy);
-	wlr_signal_emit_safe(&lock_manager->events.destroy, NULL);
+	wl_signal_emit_mutable(&lock_manager->events.destroy, NULL);
 	wl_list_remove(&lock_manager->display_destroy.link);
 
 	wl_global_destroy(lock_manager->global);

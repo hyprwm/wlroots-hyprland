@@ -14,7 +14,6 @@
 #include "render/allocator/drm_dumb.h"
 #include "render/allocator/shm.h"
 #include "render/wlr_renderer.h"
-#include "util/signal.h"
 
 #if WLR_HAS_GBM_ALLOCATOR
 #include "render/allocator/gbm.h"
@@ -159,7 +158,7 @@ void wlr_allocator_destroy(struct wlr_allocator *alloc) {
 	if (alloc == NULL) {
 		return;
 	}
-	wlr_signal_emit_safe(&alloc->events.destroy, NULL);
+	wl_signal_emit_mutable(&alloc->events.destroy, NULL);
 	alloc->impl->destroy(alloc);
 }
 

@@ -3,7 +3,6 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "viewporter-protocol.h"
 
 #define VIEWPORTER_VERSION 1
@@ -211,7 +210,7 @@ static void viewporter_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_viewporter *viewporter =
 		wl_container_of(listener, viewporter, display_destroy);
-	wlr_signal_emit_safe(&viewporter->events.destroy, NULL);
+	wl_signal_emit_mutable(&viewporter->events.destroy, NULL);
 	wl_global_destroy(viewporter->global);
 	free(viewporter);
 }

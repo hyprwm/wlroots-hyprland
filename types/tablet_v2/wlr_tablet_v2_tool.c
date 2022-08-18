@@ -11,7 +11,6 @@
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
 #include "util/array.h"
-#include "util/signal.h"
 #include "util/time.h"
 #include "tablet-unstable-v2-protocol.h"
 
@@ -47,7 +46,7 @@ static void handle_tablet_tool_v2_set_cursor(struct wl_client *client,
 		.seat_client = tool->seat->seat_client,
 	};
 
-	wlr_signal_emit_safe(&tool->tool->events.set_cursor, &evt);
+	wl_signal_emit_mutable(&tool->tool->events.set_cursor, &evt);
 }
 
 static void handle_tablet_tool_v2_destroy(struct wl_client *client,

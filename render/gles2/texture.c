@@ -15,7 +15,6 @@
 #include "render/gles2.h"
 #include "render/pixel_format.h"
 #include "types/wlr_buffer.h"
-#include "util/signal.h"
 
 static const struct wlr_texture_impl texture_impl;
 

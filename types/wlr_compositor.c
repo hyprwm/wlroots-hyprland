@@ -12,7 +12,6 @@
 #include <wlr/util/region.h>
 #include "types/wlr_buffer.h"
 #include "types/wlr_region.h"
-#include "util/signal.h"
 #include "util/time.h"
 
 #define COMPOSITOR_VERSION 5
@@ -492,7 +491,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 		surface->role->commit(surface);
 	}
 
-	wlr_signal_emit_safe(&surface->events.commit, surface);
+	wl_signal_emit_mutable(&surface->events.commit, surface);
 }
 
 static void collect_subsurface_damage_iter(struct wlr_surface *surface,
@@ -531,7 +530,7 @@ static void subsurface_parent_commit(struct wlr_subsurface *subsurface) {
 
 	if (!subsurface->added) {
 		subsurface->added = true;
-		wlr_signal_emit_safe(&subsurface->parent->events.new_subsurface,
+		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
 			subsurface);
 	}
 }
@@ -541,7 +540,7 @@ static void surface_handle_commit(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
 	surface_finalize_pending(surface);
 
-	wlr_signal_emit_safe(&surface->events.client_commit, NULL);
+	wl_signal_emit_mutable(&surface->events.client_commit, NULL);
 
 	if (surface->pending.cached_state_locks > 0 || !wl_list_empty(&surface->cached)) {
 		surface_cache_pending(surface);
@@ -667,7 +666,7 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 		surface_output_destroy(surface_output);
 	}
 
-	wlr_signal_emit_safe(&surface->events.destroy, surface);
+	wl_signal_emit_mutable(&surface->events.destroy, surface);
 
 	wlr_addon_set_finish(&surface->addons);
 
@@ -1126,7 +1125,7 @@ static void compositor_create_surface(struct wl_client *client,
 		return;
 	}
 
-	wlr_signal_emit_safe(&compositor->events.new_surface, surface);
+	wl_signal_emit_mutable(&compositor->events.new_surface, surface);
 }
 
 static void compositor_create_region(struct wl_client *client,
@@ -1156,7 +1155,7 @@ static void compositor_handle_display_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_compositor *compositor =
 		wl_container_of(listener, compositor, display_destroy);
-	wlr_signal_emit_safe(&compositor->events.destroy, NULL);
+	wl_signal_emit_mutable(&compositor->events.destroy, NULL);
 	wl_list_remove(&compositor->display_destroy.link);
 	wl_global_destroy(compositor->global);
 	free(compositor);

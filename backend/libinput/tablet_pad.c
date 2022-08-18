@@ -6,7 +6,6 @@
 #include <wlr/interfaces/wlr_tablet_pad.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
-#include "util/signal.h"
 
 const struct wlr_tablet_pad_impl libinput_tablet_pad_impl = {
 	.name = "libinput-tablet-pad",
@@ -160,7 +159,7 @@ void handle_tablet_pad_button(struct libinput_event *event,
 		wlr_event.state = WLR_BUTTON_RELEASED;
 		break;
 	}
-	wlr_signal_emit_safe(&tablet_pad->events.button, &wlr_event);
+	wl_signal_emit_mutable(&tablet_pad->events.button, &wlr_event);
 }
 
 void handle_tablet_pad_ring(struct libinput_event *event,
@@ -181,7 +180,7 @@ void handle_tablet_pad_ring(struct libinput_event *event,
 		wlr_event.source = WLR_TABLET_PAD_RING_SOURCE_FINGER;
 		break;
 	}
-	wlr_signal_emit_safe(&tablet_pad->events.ring, &wlr_event);
+	wl_signal_emit_mutable(&tablet_pad->events.ring, &wlr_event);
 }
 
 void handle_tablet_pad_strip(struct libinput_event *event,
@@ -202,5 +201,5 @@ void handle_tablet_pad_strip(struct libinput_event *event,
 		wlr_event.source = WLR_TABLET_PAD_STRIP_SOURCE_FINGER;
 		break;
 	}
-	wlr_signal_emit_safe(&tablet_pad->events.strip, &wlr_event);
+	wl_signal_emit_mutable(&tablet_pad->events.strip, &wlr_event);
 }

@@ -4,7 +4,6 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/util/log.h>
 #include "backend/headless.h"
-#include "util/signal.h"
 
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL |
@@ -134,7 +133,7 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	if (backend->started) {
 		wl_event_source_timer_update(output->frame_timer, output->frame_delay);
 		wlr_output_update_enabled(wlr_output, true);
-		wlr_signal_emit_safe(&backend->backend.events.new_output, wlr_output);
+		wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
 	}
 
 	return wlr_output;

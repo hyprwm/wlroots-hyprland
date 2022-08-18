@@ -6,7 +6,6 @@
 #include <wlr/backend/session.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
-#include "util/signal.h"
 
 static struct wlr_libinput_backend *get_libinput_backend_from_backend(
 		struct wlr_backend *wlr_backend) {

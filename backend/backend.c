@@ -17,7 +17,6 @@
 #include "backend/backend.h"
 #include "backend/multi.h"
 #include "render/allocator/allocator.h"
-#include "util/signal.h"
 
 #if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
@@ -44,7 +43,7 @@ void wlr_backend_init(struct wlr_backend *backend,
 }
 
 void wlr_backend_finish(struct wlr_backend *backend) {
-	wlr_signal_emit_safe(&backend->events.destroy, backend);
+	wl_signal_emit_mutable(&backend->events.destroy, backend);
 }
 
 bool wlr_backend_start(struct wlr_backend *backend) {

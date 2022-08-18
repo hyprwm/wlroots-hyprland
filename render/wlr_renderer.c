@@ -26,7 +26,6 @@
 #endif // WLR_HAS_VULKAN_RENDERER
 
 #include "backend/backend.h"
-#include "util/signal.h"
 #include "render/pixel_format.h"
 #include "render/wlr_renderer.h"
 
@@ -53,7 +52,7 @@ void wlr_renderer_destroy(struct wlr_renderer *r) {
 
 	assert(!r->rendering);
 
-	wlr_signal_emit_safe(&r->events.destroy, r);
+	wl_signal_emit_mutable(&r->events.destroy, r);
 
 	if (r->impl && r->impl->destroy) {
 		r->impl->destroy(r);

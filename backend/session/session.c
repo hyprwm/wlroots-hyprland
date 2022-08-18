@@ -17,7 +17,6 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include "backend/session/session.h"
-#include "util/signal.h"
 
 #include <libseat.h>
 
@@ -26,13 +25,13 @@
 static void handle_enable_seat(struct libseat *seat, void *data) {
 	struct wlr_session *session = data;
 	session->active = true;
-	wlr_signal_emit_safe(&session->events.active, NULL);
+	wl_signal_emit_mutable(&session->events.active, NULL);
 }
 
 static void handle_disable_seat(struct libseat *seat, void *data) {
 	struct wlr_session *session = data;
 	session->active = false;
-	wlr_signal_emit_safe(&session->events.active, NULL);
+	wl_signal_emit_mutable(&session->events.active, NULL);
 	libseat_disable_seat(session->seat_handle);
 }
 
@@ -198,7 +197,7 @@ static int handle_udev_event(int fd, uint32_t mask, void *data) {
 		struct wlr_session_add_event event = {
 			.path = devnode,
 		};
-		wlr_signal_emit_safe(&session->events.add_drm_card, &event);
+		wl_signal_emit_mutable(&session->events.add_drm_card, &event);
 	} else if (strcmp(action, "change") == 0 || strcmp(action, "remove") == 0) {
 		dev_t devnum = udev_device_get_devnum(udev_dev);
 		struct wlr_device *dev;
@@ -211,10 +210,10 @@ static int handle_udev_event(int fd, uint32_t mask, void *data) {
 				wlr_log(WLR_DEBUG, "DRM device %s changed", sysname);
 				struct wlr_device_change_event event = {0};
 				read_udev_change_event(&event, udev_dev);
-				wlr_signal_emit_safe(&dev->events.change, &event);
+				wl_signal_emit_mutable(&dev->events.change, &event);
 			} else if (strcmp(action, "remove") == 0) {
 				wlr_log(WLR_DEBUG, "DRM device %s removed", sysname);
-				wlr_signal_emit_safe(&dev->events.remove, NULL);
+				wl_signal_emit_mutable(&dev->events.remove, NULL);
 			} else {
 				assert(0);
 			}
@@ -298,7 +297,7 @@ void wlr_session_destroy(struct wlr_session *session) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&session->events.destroy, session);
+	wl_signal_emit_mutable(&session->events.destroy, session);
 	wl_list_remove(&session->display_destroy.link);
 
 	wl_event_source_remove(session->udev_event);

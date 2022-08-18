@@ -7,7 +7,6 @@
 #include <wlr/util/log.h>
 
 #include "backend/wayland.h"
-#include "util/signal.h"
 
 #include "pointer-gestures-unstable-v1-client-protocol.h"
 #include "relative-pointer-unstable-v1-client-protocol.h"
@@ -94,7 +93,7 @@ static void pointer_handle_motion(void *data, struct wl_pointer *wl_pointer,
 		.x = wl_fixed_to_double(sx) / wlr_output->width,
 		.y = wl_fixed_to_double(sy) / wlr_output->height,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.motion_absolute, &event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.motion_absolute, &event);
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
@@ -111,7 +110,7 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 		.state = state,
 		.time_msec = time,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.button, &event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.button, &event);
 }
 
 static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
@@ -130,7 +129,7 @@ static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
 		.time_msec = time,
 		.source = pointer->axis_source,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.axis, &event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.axis, &event);
 
 	pointer->axis_discrete = 0;
 }
@@ -142,7 +141,7 @@ static void pointer_handle_frame(void *data, struct wl_pointer *wl_pointer) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.frame,
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.frame,
 		&pointer->wlr_pointer);
 }
 
@@ -173,7 +172,7 @@ static void pointer_handle_axis_stop(void *data, struct wl_pointer *wl_pointer,
 		.time_msec = time,
 		.source = pointer->axis_source,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.axis, &event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.axis, &event);
 }
 
 static void pointer_handle_axis_discrete(void *data,
@@ -228,7 +227,7 @@ static void gesture_swipe_begin(void *data,
 		.time_msec = time,
 		.fingers = fingers,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.swipe_begin, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.swipe_begin, &wlr_event);
 }
 
 static void gesture_swipe_update(void *data,
@@ -247,7 +246,7 @@ static void gesture_swipe_update(void *data,
 		.dx = wl_fixed_to_double(dx),
 		.dy = wl_fixed_to_double(dy),
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.swipe_update, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.swipe_update, &wlr_event);
 }
 
 static void gesture_swipe_end(void *data,
@@ -264,7 +263,7 @@ static void gesture_swipe_end(void *data,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.swipe_end, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.swipe_end, &wlr_event);
 }
 
 static const struct zwp_pointer_gesture_swipe_v1_listener gesture_swipe_impl = {
@@ -291,7 +290,7 @@ static void gesture_pinch_begin(void *data,
 		.fingers = pointer->fingers,
 	};
 
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.pinch_begin, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.pinch_begin, &wlr_event);
 }
 
 static void gesture_pinch_update(void *data,
@@ -313,7 +312,7 @@ static void gesture_pinch_update(void *data,
 		.scale = wl_fixed_to_double(scale),
 		.rotation = wl_fixed_to_double(rotation),
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.pinch_update, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.pinch_update, &wlr_event);
 }
 
 static void gesture_pinch_end(void *data,
@@ -330,7 +329,7 @@ static void gesture_pinch_end(void *data,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.pinch_end, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.pinch_end, &wlr_event);
 }
 
 static const struct zwp_pointer_gesture_pinch_v1_listener gesture_pinch_impl = {
@@ -356,7 +355,7 @@ static void gesture_hold_begin(void *data,
 		.time_msec = time,
 		.fingers = fingers,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.hold_begin, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.hold_begin, &wlr_event);
 }
 
 static void gesture_hold_end(void *data,
@@ -373,7 +372,7 @@ static void gesture_hold_end(void *data,
 		.time_msec = time,
 		.cancelled = cancelled,
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.hold_end, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.hold_end, &wlr_event);
 }
 
 static const struct zwp_pointer_gesture_hold_v1_listener gesture_hold_impl = {
@@ -401,7 +400,7 @@ static void relative_pointer_handle_relative_motion(void *data,
 		.unaccel_dx = wl_fixed_to_double(dx_unaccel),
 		.unaccel_dy = wl_fixed_to_double(dy_unaccel),
 	};
-	wlr_signal_emit_safe(&pointer->wlr_pointer.events.motion, &wlr_event);
+	wl_signal_emit_mutable(&pointer->wlr_pointer.events.motion, &wlr_event);
 }
 
 static const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
@@ -463,7 +462,7 @@ void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
 	wl_signal_add(&output->wlr_output.events.destroy, &pointer->output_destroy);
 	pointer->output_destroy.notify = pointer_output_destroy;
 
-	wlr_signal_emit_safe(&seat->backend->backend.events.new_input,
+	wl_signal_emit_mutable(&seat->backend->backend.events.new_input,
 		&pointer->wlr_pointer.base);
 
 	wl_list_insert(&seat->pointers, &pointer->link);

@@ -5,7 +5,6 @@
 #include <wlr/types/wlr_idle.h>
 #include <wlr/util/log.h>
 #include "idle-protocol.h"
-#include "util/signal.h"
 
 static const struct org_kde_kwin_idle_timeout_interface idle_timeout_impl;
 
@@ -22,7 +21,7 @@ static int idle_notify(void *data) {
 		return 0;
 	}
 	timer->idle_state = true;
-	wlr_signal_emit_safe(&timer->events.idle, timer);
+	wl_signal_emit_mutable(&timer->events.idle, timer);
 
 	if (timer->resource) {
 		org_kde_kwin_idle_timeout_send_idle(timer->resource);
@@ -38,7 +37,7 @@ static void handle_activity(struct wlr_idle_timeout *timer) {
 	// in case the previous state was sleeping send a resume event and switch state
 	if (timer->idle_state) {
 		timer->idle_state = false;
-		wlr_signal_emit_safe(&timer->events.resume, timer);
+		wl_signal_emit_mutable(&timer->events.resume, timer);
 
 		if (timer->resource) {
 			org_kde_kwin_idle_timeout_send_resumed(timer->resource);
@@ -212,7 +211,7 @@ static void idle_bind(struct wl_client *wl_client, void *data,
 
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_idle *idle = wl_container_of(listener, idle, display_destroy);
-	wlr_signal_emit_safe(&idle->events.destroy, idle);
+	wl_signal_emit_mutable(&idle->events.destroy, idle);
 	wl_list_remove(&idle->display_destroy.link);
 	wl_global_destroy(idle->global);
 	free(idle);
@@ -249,7 +248,7 @@ struct wlr_idle *wlr_idle_create(struct wl_display *display) {
 }
 
 void wlr_idle_notify_activity(struct wlr_idle *idle, struct wlr_seat *seat) {
-	wlr_signal_emit_safe(&idle->events.activity_notify, seat);
+	wl_signal_emit_mutable(&idle->events.activity_notify, seat);
 }
 
 struct wlr_idle_timeout *wlr_idle_timeout_create(struct wlr_idle *idle,
@@ -258,7 +257,7 @@ struct wlr_idle_timeout *wlr_idle_timeout_create(struct wlr_idle *idle,
 }
 
 void wlr_idle_timeout_destroy(struct wlr_idle_timeout *timer) {
-	wlr_signal_emit_safe(&timer->events.destroy, NULL);
+	wl_signal_emit_mutable(&timer->events.destroy, NULL);
 
 	wl_list_remove(&timer->input_listener.link);
 	wl_list_remove(&timer->seat_destroy.link);

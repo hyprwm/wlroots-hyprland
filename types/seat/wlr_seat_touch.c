@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
-#include "util/signal.h"
 
 static uint32_t default_touch_down(struct wlr_seat_touch_grab *grab,
 		uint32_t time, struct wlr_touch_point *point) {
@@ -84,7 +83,7 @@ void wlr_seat_touch_start_grab(struct wlr_seat *wlr_seat,
 	grab->seat = wlr_seat;
 	wlr_seat->touch_state.grab = grab;
 
-	wlr_signal_emit_safe(&wlr_seat->events.touch_grab_begin, grab);
+	wl_signal_emit_mutable(&wlr_seat->events.touch_grab_begin, grab);
 }
 
 void wlr_seat_touch_end_grab(struct wlr_seat *wlr_seat) {
@@ -92,7 +91,7 @@ void wlr_seat_touch_end_grab(struct wlr_seat *wlr_seat) {
 
 	if (grab != wlr_seat->touch_state.default_grab) {
 		wlr_seat->touch_state.grab = wlr_seat->touch_state.default_grab;
-		wlr_signal_emit_safe(&wlr_seat->events.touch_grab_end, grab);
+		wl_signal_emit_mutable(&wlr_seat->events.touch_grab_end, grab);
 		if (grab->interface->cancel) {
 			grab->interface->cancel(grab);
 		}
@@ -108,7 +107,7 @@ static void touch_point_clear_focus(struct wlr_touch_point *point) {
 }
 
 static void touch_point_destroy(struct wlr_touch_point *point) {
-	wlr_signal_emit_safe(&point->events.destroy, point);
+	wl_signal_emit_mutable(&point->events.destroy, point);
 
 	touch_point_clear_focus(point);
 	wl_list_remove(&point->surface_destroy.link);

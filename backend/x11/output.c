@@ -21,7 +21,6 @@
 #include <wlr/util/log.h>
 
 #include "backend/x11.h"
-#include "util/signal.h"
 #include "util/time.h"
 
 static const uint32_t SUPPORTED_OUTPUT_STATE =
@@ -590,9 +589,9 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	output->touch.output_name = strdup(wlr_output->name);
 	wl_list_init(&output->touchpoints);
 
-	wlr_signal_emit_safe(&x11->backend.events.new_output, wlr_output);
-	wlr_signal_emit_safe(&x11->backend.events.new_input, &output->pointer.base);
-	wlr_signal_emit_safe(&x11->backend.events.new_input, &output->touch.base);
+	wl_signal_emit_mutable(&x11->backend.events.new_output, wlr_output);
+	wl_signal_emit_mutable(&x11->backend.events.new_input, &output->pointer.base);
+	wl_signal_emit_mutable(&x11->backend.events.new_input, &output->touch.base);
 
 	// Start the rendering loop by requesting the compositor to render a frame
 	wlr_output_schedule_frame(wlr_output);

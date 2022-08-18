@@ -9,7 +9,6 @@
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "pointer-gestures-unstable-v1-protocol.h"
 
 #define POINTER_GESTURES_VERSION 3

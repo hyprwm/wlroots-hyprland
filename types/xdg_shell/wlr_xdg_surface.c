@@ -4,7 +4,6 @@
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
 #include "types/wlr_xdg_shell.h"
-#include "util/signal.h"
 
 bool wlr_surface_is_xdg_surface(struct wlr_surface *surface) {
 	return surface->role == &xdg_toplevel_surface_role ||
@@ -34,7 +33,7 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 	// TODO: probably need to ungrab before this event
 	if (surface->mapped) {
 		surface->mapped = false;
-		wlr_signal_emit_safe(&surface->events.unmap, NULL);
+		wl_signal_emit_mutable(&surface->events.unmap, NULL);
 	}
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
@@ -98,7 +97,7 @@ static void xdg_surface_handle_ack_configure(struct wl_client *client,
 		if (configure->serial == serial) {
 			break;
 		}
-		wlr_signal_emit_safe(&surface->events.ack_configure, configure);
+		wl_signal_emit_mutable(&surface->events.ack_configure, configure);
 		xdg_surface_configure_destroy(configure);
 	}
 
@@ -119,7 +118,7 @@ static void xdg_surface_handle_ack_configure(struct wl_client *client,
 	surface->configured = true;
 	surface->pending.configure_serial = serial;
 
-	wlr_signal_emit_safe(&surface->events.ack_configure, configure);
+	wl_signal_emit_mutable(&surface->events.ack_configure, configure);
 	xdg_surface_configure_destroy(configure);
 }
 
@@ -153,7 +152,7 @@ static void surface_send_configure(void *user_data) {
 		break;
 	}
 
-	wlr_signal_emit_safe(&surface->events.configure, configure);
+	wl_signal_emit_mutable(&surface->events.configure, configure);
 
 	xdg_surface_send_configure(surface->resource, configure->serial);
 }
@@ -306,13 +305,13 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 
 	if (!surface->added) {
 		surface->added = true;
-		wlr_signal_emit_safe(&surface->client->shell->events.new_surface,
+		wl_signal_emit_mutable(&surface->client->shell->events.new_surface,
 			surface);
 	}
 	if (surface->configured && wlr_surface_has_buffer(surface->surface) &&
 			!surface->mapped) {
 		surface->mapped = true;
-		wlr_signal_emit_safe(&surface->events.map, NULL);
+		wl_signal_emit_mutable(&surface->events.map, NULL);
 	}
 }
 
@@ -405,7 +404,7 @@ void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	}
 
 	if (surface->added) {
-		wlr_signal_emit_safe(&surface->events.destroy, NULL);
+		wl_signal_emit_mutable(&surface->events.destroy, NULL);
 		surface->added = false;
 	}
 

@@ -29,7 +29,6 @@
 #include "render/drm_format_set.h"
 #include "render/swapchain.h"
 #include "render/wlr_renderer.h"
-#include "util/signal.h"
 
 // Output state which needs a KMS commit to be applied
 static const uint32_t COMMIT_OUTPUT_STATE =
@@ -1411,7 +1410,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *conn = new_outputs[i];
 
 		wlr_drm_conn_log(conn, WLR_INFO, "Requesting modeset");
-		wlr_signal_emit_safe(&drm->backend.events.new_output,
+		wl_signal_emit_mutable(&drm->backend.events.new_output,
 			&conn->output);
 	}
 }
@@ -1664,7 +1663,7 @@ void wlr_drm_lease_terminate(struct wlr_drm_lease *lease) {
 void drm_lease_destroy(struct wlr_drm_lease *lease) {
 	struct wlr_drm_backend *drm = lease->backend;
 
-	wlr_signal_emit_safe(&lease->events.destroy, NULL);
+	wl_signal_emit_mutable(&lease->events.destroy, NULL);
 
 	struct wlr_drm_connector *conn;
 	wl_list_for_each(conn, &drm->outputs, link) {

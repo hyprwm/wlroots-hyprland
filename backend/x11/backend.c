@@ -30,7 +30,6 @@
 
 #include "backend/x11.h"
 #include "render/drm_format_set.h"
-#include "util/signal.h"
 
 // See dri2_format_for_depth in mesa
 const struct wlr_x11_format formats[] = {
@@ -164,7 +163,7 @@ static bool backend_start(struct wlr_backend *backend) {
 
 	wlr_log(WLR_INFO, "Starting X11 backend");
 
-	wlr_signal_emit_safe(&x11->backend.events.new_input, &x11->keyboard.base);
+	wl_signal_emit_mutable(&x11->backend.events.new_input, &x11->keyboard.base);
 
 	for (size_t i = 0; i < x11->requested_outputs; ++i) {
 		wlr_x11_output_create(&x11->backend);

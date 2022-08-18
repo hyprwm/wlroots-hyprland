@@ -9,7 +9,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
 #include "types/wlr_data_device.h"
-#include "util/signal.h"
 
 void wlr_data_source_init(struct wlr_data_source *source,
 		const struct wlr_data_source_impl *impl) {
@@ -40,7 +39,7 @@ void wlr_data_source_destroy(struct wlr_data_source *source) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&source->events.destroy, source);
+	wl_signal_emit_mutable(&source->events.destroy, source);
 
 	char **p;
 	wl_array_for_each(p, &source->mime_types) {

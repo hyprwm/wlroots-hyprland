@@ -11,7 +11,6 @@
 #include "render/swapchain.h"
 #include "types/wlr_output.h"
 #include "util/global.h"
-#include "util/signal.h"
 
 #define OUTPUT_VERSION 4
 
@@ -124,7 +123,7 @@ static void output_bind(struct wl_client *wl_client, void *data,
 		.resource = resource,
 	};
 
-	wlr_signal_emit_safe(&output->events.bind, &evt);
+	wl_signal_emit_mutable(&output->events.bind, &evt);
 }
 
 void wlr_output_create_global(struct wlr_output *output) {
@@ -187,7 +186,7 @@ void wlr_output_update_enabled(struct wlr_output *output, bool enabled) {
 	}
 
 	output->enabled = enabled;
-	wlr_signal_emit_safe(&output->events.enable, output);
+	wl_signal_emit_mutable(&output->events.enable, output);
 }
 
 static void output_update_matrix(struct wlr_output *output) {
@@ -255,7 +254,7 @@ void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
 	}
 	wlr_output_schedule_done(output);
 
-	wlr_signal_emit_safe(&output->events.mode, output);
+	wl_signal_emit_mutable(&output->events.mode, output);
 }
 
 void wlr_output_set_transform(struct wlr_output *output,
@@ -306,7 +305,7 @@ void wlr_output_set_description(struct wlr_output *output, const char *desc) {
 	}
 	wlr_output_schedule_done(output);
 
-	wlr_signal_emit_safe(&output->events.description, output);
+	wl_signal_emit_mutable(&output->events.description, output);
 }
 
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
@@ -389,7 +388,7 @@ void wlr_output_destroy(struct wlr_output *output) {
 	wlr_output_destroy_global(output);
 	output_clear_back_buffer(output);
 
-	wlr_signal_emit_safe(&output->events.destroy, output);
+	wl_signal_emit_mutable(&output->events.destroy, output);
 	wlr_addon_set_finish(&output->addons);
 
 	// The backend is responsible for free-ing the list of modes
@@ -747,7 +746,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		.when = &now,
 		.state = &pending,
 	};
-	wlr_signal_emit_safe(&output->events.precommit, &pre_event);
+	wl_signal_emit_mutable(&output->events.precommit, &pre_event);
 
 	// output_clear_back_buffer detaches the buffer from the renderer. This is
 	// important to do before calling impl->commit(), because this marks an
@@ -837,7 +836,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		.when = &now,
 		.buffer = (pending.committed & WLR_OUTPUT_STATE_BUFFER) ? pending.buffer : NULL,
 	};
-	wlr_signal_emit_safe(&output->events.commit, &event);
+	wl_signal_emit_mutable(&output->events.commit, &event);
 
 	wlr_buffer_unlock(back_buffer);
 	if (new_back_buffer) {
@@ -876,7 +875,7 @@ void wlr_output_attach_buffer(struct wlr_output *output,
 void wlr_output_send_frame(struct wlr_output *output) {
 	output->frame_pending = false;
 	if (output->enabled) {
-		wlr_signal_emit_safe(&output->events.frame, output);
+		wl_signal_emit_mutable(&output->events.frame, output);
 	}
 }
 
@@ -922,7 +921,7 @@ void wlr_output_send_present(struct wlr_output *output,
 		event->when = &now;
 	}
 
-	wlr_signal_emit_safe(&output->events.present, event);
+	wl_signal_emit_mutable(&output->events.present, event);
 }
 
 void wlr_output_set_gamma(struct wlr_output *output, size_t size,
@@ -954,7 +953,7 @@ void wlr_output_update_needs_frame(struct wlr_output *output) {
 		return;
 	}
 	output->needs_frame = true;
-	wlr_signal_emit_safe(&output->events.needs_frame, output);
+	wl_signal_emit_mutable(&output->events.needs_frame, output);
 }
 
 void wlr_output_damage_whole(struct wlr_output *output) {
@@ -968,7 +967,7 @@ void wlr_output_damage_whole(struct wlr_output *output) {
 		.output = output,
 		.damage = &damage,
 	};
-	wlr_signal_emit_safe(&output->events.damage, &event);
+	wl_signal_emit_mutable(&output->events.damage, &event);
 
 	pixman_region32_fini(&damage);
 }

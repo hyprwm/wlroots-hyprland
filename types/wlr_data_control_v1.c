@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-data-control-unstable-v1-protocol.h"
 
 #define DATA_CONTROL_MANAGER_VERSION 2
@@ -628,7 +627,7 @@ static void manager_handle_get_data_device(struct wl_client *client,
 		&device->seat_set_primary_selection);
 
 	wl_list_insert(&manager->devices, &device->link);
-	wlr_signal_emit_safe(&manager->events.new_device, device);
+	wl_signal_emit_mutable(&manager->events.new_device, device);
 
 	// At this point maybe the compositor decided to destroy the device. If
 	// it's the case then the resource will be inert.
@@ -666,7 +665,7 @@ static void manager_bind(struct wl_client *client, void *data, uint32_t version,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_data_control_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

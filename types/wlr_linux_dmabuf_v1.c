@@ -11,7 +11,6 @@
 #include <wlr/util/log.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
 #include "render/drm_format_set.h"
-#include "util/signal.h"
 #include "util/shm.h"
 
 #define LINUX_DMABUF_VERSION 4
@@ -887,7 +886,7 @@ static void linux_dmabuf_bind(struct wl_client *client, void *data,
 }
 
 static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
-	wlr_signal_emit_safe(&linux_dmabuf->events.destroy, linux_dmabuf);
+	wl_signal_emit_mutable(&linux_dmabuf->events.destroy, linux_dmabuf);
 
 	struct wlr_linux_dmabuf_v1_surface *surface, *surface_tmp;
 	wl_list_for_each_safe(surface, surface_tmp, &linux_dmabuf->surfaces, link) {

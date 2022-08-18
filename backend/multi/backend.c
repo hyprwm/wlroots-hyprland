@@ -9,7 +9,6 @@
 #include <wlr/util/log.h>
 #include "backend/backend.h"
 #include "backend/multi.h"
-#include "util/signal.h"
 
 struct subbackend_state {
 	struct wlr_backend *backend;
@@ -161,13 +160,13 @@ bool wlr_backend_is_multi(struct wlr_backend *b) {
 static void new_input_reemit(struct wl_listener *listener, void *data) {
 	struct subbackend_state *state = wl_container_of(listener,
 			state, new_input);
-	wlr_signal_emit_safe(&state->container->events.new_input, data);
+	wl_signal_emit_mutable(&state->container->events.new_input, data);
 }
 
 static void new_output_reemit(struct wl_listener *listener, void *data) {
 	struct subbackend_state *state = wl_container_of(listener,
 			state, new_output);
-	wlr_signal_emit_safe(&state->container->events.new_output, data);
+	wl_signal_emit_mutable(&state->container->events.new_output, data);
 }
 
 static void handle_subbackend_destroy(struct wl_listener *listener,
@@ -218,7 +217,7 @@ bool wlr_multi_backend_add(struct wlr_backend *_multi,
 	wl_signal_add(&backend->events.new_output, &sub->new_output);
 	sub->new_output.notify = new_output_reemit;
 
-	wlr_signal_emit_safe(&multi->events.backend_add, backend);
+	wl_signal_emit_mutable(&multi->events.backend_add, backend);
 	return true;
 }
 
@@ -230,7 +229,7 @@ void wlr_multi_backend_remove(struct wlr_backend *_multi,
 		multi_backend_get_subbackend(multi, backend);
 
 	if (sub) {
-		wlr_signal_emit_safe(&multi->events.backend_remove, backend);
+		wl_signal_emit_mutable(&multi->events.backend_remove, backend);
 		subbackend_state_destroy(sub);
 	}
 }

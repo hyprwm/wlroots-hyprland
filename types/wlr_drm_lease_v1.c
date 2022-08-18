@@ -9,7 +9,6 @@
 #include <wlr/util/log.h>
 #include "backend/drm/drm.h"
 #include "drm-lease-v1-protocol.h"
-#include "util/signal.h"
 #include "util/global.h"
 
 #define DRM_LEASE_DEVICE_V1_VERSION 1
@@ -353,7 +352,7 @@ static void drm_lease_request_v1_handle_submit(
 	request->lease = lease;
 
 	/* TODO: reject the request if the user does not grant it */
-	wlr_signal_emit_safe(&request->device->manager->events.request,
+	wl_signal_emit_mutable(&request->device->manager->events.request,
 			request);
 
 	/* Request is done */

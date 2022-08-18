@@ -10,7 +10,6 @@
 #include "render/swapchain.h"
 #include "types/wlr_buffer.h"
 #include "types/wlr_output.h"
-#include "util/signal.h"
 
 static bool output_set_hardware_cursor(struct wlr_output *output,
 		struct wlr_buffer *buffer, int hotspot_x, int hotspot_y) {
@@ -168,7 +167,7 @@ static void output_cursor_damage_whole(struct wlr_output_cursor *cursor) {
 		.output = cursor->output,
 		.damage = &damage,
 	};
-	wlr_signal_emit_safe(&cursor->output->events.damage, &event);
+	wl_signal_emit_mutable(&cursor->output->events.damage, &event);
 
 	pixman_region32_fini(&damage);
 }

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 
 void wlr_primary_selection_source_init(
 		struct wlr_primary_selection_source *source,
@@ -20,7 +19,7 @@ void wlr_primary_selection_source_destroy(
 		return;
 	}
 
-	wlr_signal_emit_safe(&source->events.destroy, source);
+	wl_signal_emit_mutable(&source->events.destroy, source);
 
 	char **p;
 	wl_array_for_each(p, &source->mime_types) {
@@ -63,7 +62,7 @@ void wlr_seat_request_set_primary_selection(struct wlr_seat *seat,
 		.source = source,
 		.serial = serial,
 	};
-	wlr_signal_emit_safe(&seat->events.request_set_primary_selection, &event);
+	wl_signal_emit_mutable(&seat->events.request_set_primary_selection, &event);
 }
 
 static void seat_handle_primary_selection_source_destroy(
@@ -72,7 +71,7 @@ static void seat_handle_primary_selection_source_destroy(
 		wl_container_of(listener, seat, primary_selection_source_destroy);
 	wl_list_remove(&seat->primary_selection_source_destroy.link);
 	seat->primary_selection_source = NULL;
-	wlr_signal_emit_safe(&seat->events.set_primary_selection, seat);
+	wl_signal_emit_mutable(&seat->events.set_primary_selection, seat);
 }
 
 void wlr_seat_set_primary_selection(struct wlr_seat *seat,
@@ -98,5 +97,5 @@ void wlr_seat_set_primary_selection(struct wlr_seat *seat,
 			&seat->primary_selection_source_destroy);
 	}
 
-	wlr_signal_emit_safe(&seat->events.set_primary_selection, seat);
+	wl_signal_emit_mutable(&seat->events.set_primary_selection, seat);
 }

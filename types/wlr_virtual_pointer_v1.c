@@ -5,7 +5,6 @@
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/util/log.h>
-#include "util/signal.h"
 #include "wlr-virtual-pointer-unstable-v1-protocol.h"
 
 static const struct wlr_pointer_impl pointer_impl = {
@@ -37,7 +36,7 @@ static void virtual_pointer_motion(struct wl_client *client,
 		.unaccel_dx = wl_fixed_to_double(dx),
 		.unaccel_dy = wl_fixed_to_double(dy),
 	};
-	wlr_signal_emit_safe(&pointer->pointer.events.motion, &event);
+	wl_signal_emit_mutable(&pointer->pointer.events.motion, &event);
 }
 
 static void virtual_pointer_motion_absolute(struct wl_client *client,
@@ -57,7 +56,7 @@ static void virtual_pointer_motion_absolute(struct wl_client *client,
 		.x = (double)x / x_extent,
 		.y = (double)y / y_extent,
 	};
-	wlr_signal_emit_safe(&pointer->pointer.events.motion_absolute, &event);
+	wl_signal_emit_mutable(&pointer->pointer.events.motion_absolute, &event);
 }
 
 static void virtual_pointer_button(struct wl_client *client,
@@ -74,7 +73,7 @@ static void virtual_pointer_button(struct wl_client *client,
 		.button = button,
 		.state = state ? WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED
 	};
-	wlr_signal_emit_safe(&pointer->pointer.events.button, &event);
+	wl_signal_emit_mutable(&pointer->pointer.events.button, &event);
 }
 
 static void virtual_pointer_axis(struct wl_client *client,
@@ -112,14 +111,14 @@ static void virtual_pointer_frame(struct wl_client *client,
 			++i) {
 		if (pointer->axis_valid[i]) {
 			/* Deliver pending axis event */
-			wlr_signal_emit_safe(&pointer->pointer.events.axis,
+			wl_signal_emit_mutable(&pointer->pointer.events.axis,
 					&pointer->axis_event[i]);
 			memset(&pointer->axis_event[i], 0, sizeof(pointer->axis_event[i]));
 			pointer->axis_valid[i] = false;
 		}
 	}
 
-	wlr_signal_emit_safe(&pointer->pointer.events.frame, &pointer->pointer);
+	wl_signal_emit_mutable(&pointer->pointer.events.frame, &pointer->pointer);
 }
 
 static void virtual_pointer_axis_source(struct wl_client *client,
@@ -270,7 +269,7 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 	virtual_pointer->resource = pointer_resource;
 
 	wl_list_insert(&manager->virtual_pointers, &virtual_pointer->link);
-	wlr_signal_emit_safe(&manager->events.new_virtual_pointer, &event);
+	wl_signal_emit_mutable(&manager->events.new_virtual_pointer, &event);
 }
 
 static void virtual_pointer_manager_create_virtual_pointer(
@@ -308,7 +307,7 @@ static void virtual_pointer_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_pointer_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	struct wlr_virtual_pointer_v1 *pointer, *pointer_tmp;

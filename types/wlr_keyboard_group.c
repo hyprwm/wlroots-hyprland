@@ -7,7 +7,6 @@
 #include <wayland-server-protocol.h>
 #include <xkbcommon/xkbcommon.h>
 #include "types/wlr_keyboard.h"
-#include "util/signal.h"
 #include "wlr/interfaces/wlr_keyboard.h"
 #include "wlr/types/wlr_keyboard.h"
 #include "wlr/types/wlr_keyboard_group.h"
@@ -212,9 +211,9 @@ static void refresh_state(struct keyboard_group_device *device,
 	// If there are any unique keys, emit the enter/leave event
 	if (keys.size > 0) {
 		if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-			wlr_signal_emit_safe(&device->keyboard->group->events.enter, &keys);
+			wl_signal_emit_mutable(&device->keyboard->group->events.enter, &keys);
 		} else {
-			wlr_signal_emit_safe(&device->keyboard->group->events.leave, &keys);
+			wl_signal_emit_mutable(&device->keyboard->group->events.leave, &keys);
 		}
 	}
 

@@ -19,7 +19,6 @@
 #include "render/pixel_format.h"
 #include "render/swapchain.h"
 #include "render/wlr_renderer.h"
-#include "util/signal.h"
 
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
@@ -579,7 +578,7 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 	wl_list_insert(&backend->outputs, &output->link);
 	wlr_output_update_enabled(wlr_output, true);
 
-	wlr_signal_emit_safe(&backend->backend.events.new_output, wlr_output);
+	wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
 
 	struct wlr_wl_seat *seat;
 	wl_list_for_each(seat, &backend->seats, link) {

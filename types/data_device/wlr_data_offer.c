@@ -8,7 +8,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
 #include "types/wlr_data_device.h"
-#include "util/signal.h"
 
 static const struct wl_data_offer_interface data_offer_impl;
 

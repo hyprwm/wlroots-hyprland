@@ -9,7 +9,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
 #include "primary-selection-unstable-v1-protocol.h"
-#include "util/signal.h"
 
 #define DEVICE_MANAGER_VERSION 1
 
@@ -458,7 +457,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 		device_destroy(device);
 	}
 
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

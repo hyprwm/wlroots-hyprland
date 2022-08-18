@@ -8,7 +8,6 @@
 #include <wlr/util/log.h>
 #include "types/wlr_data_device.h"
 #include "types/wlr_seat.h"
-#include "util/signal.h"
 
 static void default_keyboard_enter(struct wlr_seat_keyboard_grab *grab,
 		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
@@ -168,7 +167,7 @@ void wlr_seat_keyboard_start_grab(struct wlr_seat *wlr_seat,
 	grab->seat = wlr_seat;
 	wlr_seat->keyboard_state.grab = grab;
 
-	wlr_signal_emit_safe(&wlr_seat->events.keyboard_grab_begin, grab);
+	wl_signal_emit_mutable(&wlr_seat->events.keyboard_grab_begin, grab);
 }
 
 void wlr_seat_keyboard_end_grab(struct wlr_seat *wlr_seat) {
@@ -176,7 +175,7 @@ void wlr_seat_keyboard_end_grab(struct wlr_seat *wlr_seat) {
 
 	if (grab != wlr_seat->keyboard_state.default_grab) {
 		wlr_seat->keyboard_state.grab = wlr_seat->keyboard_state.default_grab;
-		wlr_signal_emit_safe(&wlr_seat->events.keyboard_grab_end, grab);
+		wl_signal_emit_mutable(&wlr_seat->events.keyboard_grab_end, grab);
 		if (grab->interface->cancel) {
 			grab->interface->cancel(grab);
 		}
@@ -303,7 +302,7 @@ void wlr_seat_keyboard_enter(struct wlr_seat *seat,
 		.old_surface = focused_surface,
 		.new_surface = surface,
 	};
-	wlr_signal_emit_safe(&seat->keyboard_state.events.focus_change, &event);
+	wl_signal_emit_mutable(&seat->keyboard_state.events.focus_change, &event);
 }
 
 void wlr_seat_keyboard_notify_enter(struct wlr_seat *seat,

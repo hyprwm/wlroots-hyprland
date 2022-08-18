@@ -11,7 +11,6 @@
 #include <wlr/interfaces/wlr_switch.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
-#include "util/signal.h"
 
 void destroy_libinput_input_device(struct wlr_libinput_input_device *dev) {
 	if (dev->keyboard.impl) {
@@ -87,7 +86,7 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 			libinput_dev, LIBINPUT_DEVICE_CAP_KEYBOARD)) {
 		init_device_keyboard(dev);
 
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->keyboard.base);
 	}
 
@@ -95,35 +94,35 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 			libinput_dev, LIBINPUT_DEVICE_CAP_POINTER)) {
 		init_device_pointer(dev);
 
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->pointer.base);
 	}
 
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_SWITCH)) {
 		init_device_switch(dev);
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->switch_device.base);
 	}
 
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_TOUCH)) {
 		init_device_touch(dev);
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->touch.base);
 	}
 
 	if (libinput_device_has_capability(libinput_dev,
 			LIBINPUT_DEVICE_CAP_TABLET_TOOL)) {
 		init_device_tablet(dev);
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->tablet.base);
 	}
 
 	if (libinput_device_has_capability(
 			libinput_dev, LIBINPUT_DEVICE_CAP_TABLET_PAD)) {
 		init_device_tablet_pad(dev);
-		wlr_signal_emit_safe(&backend->backend.events.new_input,
+		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->tablet_pad.base);
 	}
 

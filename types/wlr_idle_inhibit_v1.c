@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdlib.h>
-#include <util/signal.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/types/wlr_compositor.h>
@@ -33,7 +32,7 @@ static void idle_inhibitor_v1_destroy(struct wlr_idle_inhibitor_v1 *inhibitor) {
 		return;
 	}
 
-	wlr_signal_emit_safe(&inhibitor->events.destroy, inhibitor->surface);
+	wl_signal_emit_mutable(&inhibitor->events.destroy, inhibitor->surface);
 
 	wl_resource_set_user_data(inhibitor->resource, NULL);
 	wl_list_remove(&inhibitor->link);
@@ -98,7 +97,7 @@ static void manager_handle_create_inhibitor(struct wl_client *client,
 		inhibitor, idle_inhibitor_v1_handle_resource_destroy);
 
 	wl_list_insert(&manager->inhibitors, &inhibitor->link);
-	wlr_signal_emit_safe(&manager->events.new_inhibitor, inhibitor);
+	wl_signal_emit_mutable(&manager->events.new_inhibitor, inhibitor);
 }
 
 static void manager_handle_destroy(struct wl_client *client,
@@ -114,7 +113,7 @@ static const struct zwp_idle_inhibit_manager_v1_interface idle_inhibit_impl = {
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_idle_inhibit_manager_v1 *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

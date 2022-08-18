@@ -2,7 +2,6 @@
 #include <libinput.h>
 #include <wlr/interfaces/wlr_switch.h>
 #include "backend/libinput.h"
-#include "util/signal.h"
 
 const struct wlr_switch_impl libinput_switch_impl = {
 	.name = "libinput-switch",
@@ -48,5 +47,5 @@ void handle_switch_toggle(struct libinput_event *event,
 	}
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_switch_get_time_usec(sevent));
-	wlr_signal_emit_safe(&wlr_switch->events.toggle, &wlr_event);
+	wl_signal_emit_mutable(&wlr_switch->events.toggle, &wlr_event);
 }

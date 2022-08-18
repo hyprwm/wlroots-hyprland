@@ -4,7 +4,6 @@
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/util/log.h>
 #include "server-decoration-protocol.h"
-#include "util/signal.h"
 
 static const struct org_kde_kwin_server_decoration_interface
 	server_decoration_impl;
@@ -29,14 +28,14 @@ static void server_decoration_handle_request_mode(struct wl_client *client,
 		return;
 	}
 	decoration->mode = mode;
-	wlr_signal_emit_safe(&decoration->events.mode, decoration);
+	wl_signal_emit_mutable(&decoration->events.mode, decoration);
 	org_kde_kwin_server_decoration_send_mode(decoration->resource,
 		decoration->mode);
 }
 
 static void server_decoration_destroy(
 		struct wlr_server_decoration *decoration) {
-	wlr_signal_emit_safe(&decoration->events.destroy, decoration);
+	wl_signal_emit_mutable(&decoration->events.destroy, decoration);
 	wl_list_remove(&decoration->surface_destroy_listener.link);
 	wl_resource_set_user_data(decoration->resource, NULL);
 	wl_list_remove(&decoration->link);
@@ -119,7 +118,7 @@ static void server_decoration_manager_handle_create(struct wl_client *client,
 	org_kde_kwin_server_decoration_send_mode(decoration->resource,
 		decoration->mode);
 
-	wlr_signal_emit_safe(&manager->events.new_decoration, decoration);
+	wl_signal_emit_mutable(&manager->events.new_decoration, decoration);
 }
 
 static const struct org_kde_kwin_server_decoration_manager_interface
@@ -166,7 +165,7 @@ static void server_decoration_manager_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_server_decoration_manager *manager =
 		wl_container_of(listener, manager, display_destroy);
-	wlr_signal_emit_safe(&manager->events.destroy, manager);
+	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
 	wl_global_destroy(manager->global);
 	free(manager);

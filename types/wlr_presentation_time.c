@@ -7,7 +7,6 @@
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/util/addon.h>
 #include "presentation-time-protocol.h"
-#include "util/signal.h"
 
 #define PRESENTATION_VERSION 1
 
@@ -173,7 +172,7 @@ static void presentation_bind(struct wl_client *client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_presentation *presentation =
 		wl_container_of(listener, presentation, display_destroy);
-	wlr_signal_emit_safe(&presentation->events.destroy, presentation);
+	wl_signal_emit_mutable(&presentation->events.destroy, presentation);
 	wl_list_remove(&presentation->display_destroy.link);
 	wl_global_destroy(presentation->global);
 	free(presentation);

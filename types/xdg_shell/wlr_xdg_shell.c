@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "types/wlr_xdg_shell.h"
-#include "util/signal.h"
 
 #define WM_BASE_VERSION 5
 
@@ -84,7 +83,7 @@ static int xdg_client_ping_timeout(void *user_data) {
 
 	struct wlr_xdg_surface *surface;
 	wl_list_for_each(surface, &client->surfaces, link) {
-		wlr_signal_emit_safe(&surface->events.ping_timeout, NULL);
+		wl_signal_emit_mutable(&surface->events.ping_timeout, NULL);
 	}
 
 	client->ping_serial = 0;
@@ -131,7 +130,7 @@ static void xdg_shell_bind(struct wl_client *wl_client, void *data,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_shell *xdg_shell =
 		wl_container_of(listener, xdg_shell, display_destroy);
-	wlr_signal_emit_safe(&xdg_shell->events.destroy, xdg_shell);
+	wl_signal_emit_mutable(&xdg_shell->events.destroy, xdg_shell);
 	wl_list_remove(&xdg_shell->display_destroy.link);
 	wl_global_destroy(xdg_shell->global);
 	free(xdg_shell);

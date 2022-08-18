@@ -4,7 +4,6 @@
 #include <pixman.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/util/box.h>
-#include "util/signal.h"
 
 #define WLR_DAMAGE_RING_MAX_RECTS 20
 
