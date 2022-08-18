@@ -42,7 +42,8 @@ static const uint32_t COMMIT_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ENABLED |
 	WLR_OUTPUT_STATE_GAMMA_LUT |
-	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
+	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED |
+	WLR_OUTPUT_STATE_LAYERS;
 
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL | COMMIT_OUTPUT_STATE;
@@ -276,6 +277,8 @@ bool init_drm_resources(struct wlr_drm_backend *drm) {
 		if (!get_drm_crtc_props(drm->fd, crtc->id, &crtc->props)) {
 			goto error_crtcs;
 		}
+
+		wl_list_init(&crtc->layers);
 	}
 
 	if (!init_planes(drm)) {
@@ -336,6 +339,64 @@ static struct wlr_drm_connector *get_drm_connector_from_output(
 	return (struct wlr_drm_connector *)wlr_output;
 }
 
+static void layer_handle_addon_destroy(struct wlr_addon *addon) {
+	struct wlr_drm_layer *layer = wl_container_of(addon, layer, addon);
+	wlr_addon_finish(&layer->addon);
+	wl_list_remove(&layer->link);
+#if HAVE_LIBLIFTOFF
+	liftoff_layer_destroy(layer->liftoff);
+#endif
+	drm_fb_clear(&layer->pending_fb);
+	drm_fb_clear(&layer->queued_fb);
+	drm_fb_clear(&layer->current_fb);
+	free(layer);
+}
+
+const struct wlr_addon_interface layer_impl = {
+	.name = "wlr_drm_layer",
+	.destroy = layer_handle_addon_destroy,
+};
+
+struct wlr_drm_layer *get_drm_layer(struct wlr_drm_backend *drm,
+		struct wlr_output_layer *wlr_layer) {
+	struct wlr_addon *addon =
+		wlr_addon_find(&wlr_layer->addons, drm, &layer_impl);
+	assert(addon != NULL);
+	struct wlr_drm_layer *layer = wl_container_of(addon, layer, addon);
+	return layer;
+}
+
+static struct wlr_drm_layer *get_or_create_layer(struct wlr_drm_backend *drm,
+		struct wlr_drm_crtc *crtc, struct wlr_output_layer *wlr_layer) {
+	struct wlr_drm_layer *layer;
+	struct wlr_addon *addon =
+		wlr_addon_find(&wlr_layer->addons, drm, &layer_impl);
+	if (addon != NULL) {
+		layer = wl_container_of(addon, layer, addon);
+		return layer;
+	}
+
+	layer = calloc(1, sizeof(*layer));
+	if (layer == NULL) {
+		return NULL;
+	}
+
+#if HAVE_LIBLIFTOFF
+	layer->liftoff = liftoff_layer_create(crtc->liftoff);
+	if (layer->liftoff == NULL) {
+		free(layer);
+		return NULL;
+	}
+#else
+	abort(); // unreachable
+#endif
+
+	wlr_addon_init(&layer->addon, &wlr_layer->addons, drm, &layer_impl);
+	wl_list_insert(&crtc->layers, &layer->link);
+
+	return layer;
+}
+
 static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state,
 		uint32_t flags, bool test_only) {
@@ -353,6 +414,11 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		if (crtc->cursor != NULL) {
 			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
 		}
+
+		struct wlr_drm_layer *layer;
+		wl_list_for_each(layer, &crtc->layers, link) {
+			drm_fb_move(&layer->queued_fb, &layer->pending_fb);
+		}
 	} else {
 		// The set_cursor() hook is a bit special: it's not really synchronized
 		// to commit() or test(). Once set_cursor() returns true, the new
@@ -360,6 +426,11 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		// risk ending up in a state where we don't have a cursor FB but
 		// wlr_drm_connector.cursor_enabled is true.
 		// TODO: fix our output interface to avoid this issue.
+
+		struct wlr_drm_layer *layer;
+		wl_list_for_each(layer, &crtc->layers, link) {
+			drm_fb_clear(&layer->pending_fb);
+		}
 	}
 	return ok;
 }
@@ -457,6 +528,42 @@ static bool drm_connector_state_update_primary_fb(struct wlr_drm_connector *conn
 	return true;
 }
 
+static bool drm_connector_set_pending_layer_fbs(struct wlr_drm_connector *conn,
+		const struct wlr_output_state *state) {
+	struct wlr_drm_backend *drm = conn->backend;
+
+	struct wlr_drm_crtc *crtc = conn->crtc;
+	if (!crtc || drm->parent) {
+		return false;
+	}
+
+	if (!crtc->liftoff) {
+		return true; // libliftoff is disabled
+	}
+
+	assert(state->committed & WLR_OUTPUT_STATE_LAYERS);
+
+	for (size_t i = 0; i < state->layers_len; i++) {
+		struct wlr_output_layer_state *layer_state = &state->layers[i];
+		struct wlr_drm_layer *layer =
+			get_or_create_layer(drm, crtc, layer_state->layer);
+		if (!layer) {
+			return false;
+		}
+
+		if (layer_state->buffer != NULL) {
+			layer->pending_width = layer_state->buffer->width;
+			layer->pending_height = layer_state->buffer->height;
+			drm_fb_import(&layer->pending_fb, drm, layer_state->buffer, NULL);
+		} else {
+			layer->pending_width = layer->pending_height = 0;
+			drm_fb_clear(&layer->pending_fb);
+		}
+	}
+
+	return true;
+}
+
 static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn);
 
 static bool drm_connector_test(struct wlr_output *output,
@@ -531,6 +638,11 @@ static bool drm_connector_test(struct wlr_output *output,
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
 			goto out;
+		}
+	}
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
+			return false;
 		}
 	}
 
@@ -617,6 +729,11 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	}
 	if (pending.modeset && pending.active) {
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
+	}
+	if (pending.base->committed & WLR_OUTPUT_STATE_LAYERS) {
+		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
+			return false;
+		}
 	}
 
 	if (pending.modeset) {
@@ -1562,6 +1679,11 @@ static void handle_page_flip(int fd, unsigned seq,
 	if (conn->crtc->cursor && conn->crtc->cursor->queued_fb) {
 		drm_fb_move(&conn->crtc->cursor->current_fb,
 			&conn->crtc->cursor->queued_fb);
+	}
+
+	struct wlr_drm_layer *layer;
+	wl_list_for_each(layer, &conn->crtc->layers, link) {
+		drm_fb_move(&layer->current_fb, &layer->queued_fb);
 	}
 
 	uint32_t present_flags = WLR_OUTPUT_PRESENT_VSYNC |

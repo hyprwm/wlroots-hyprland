@@ -142,10 +142,9 @@ static void rollback_blob(struct wlr_drm_backend *drm,
 }
 
 static bool set_plane_props(struct wlr_drm_plane *plane,
-		struct liftoff_layer *layer, int32_t x, int32_t y, uint64_t zpos) {
-	struct wlr_drm_fb *fb = plane_get_next_fb(plane);
+		struct liftoff_layer *layer, struct wlr_drm_fb *fb, int32_t x, int32_t y, uint64_t zpos) {
 	if (fb == NULL) {
-		wlr_log(WLR_ERROR, "Failed to acquire FB");
+		wlr_log(WLR_ERROR, "Failed to acquire FB for plane %"PRIu32, plane->id);
 		return false;
 	}
 
@@ -167,6 +166,52 @@ static bool set_plane_props(struct wlr_drm_plane *plane,
 
 static bool disable_plane(struct wlr_drm_plane *plane) {
 	return liftoff_layer_set_property(plane->liftoff_layer, "FB_ID", 0) == 0;
+}
+
+static uint64_t to_fp16(double v) {
+	return (uint64_t)round(v * (1 << 16));
+}
+
+static bool set_layer_props(struct wlr_drm_backend *drm,
+		const struct wlr_output_layer_state *state, uint64_t zpos) {
+	struct wlr_drm_layer *layer = get_drm_layer(drm, state->layer);
+
+	struct wlr_drm_fb *fb = layer->pending_fb;
+	int ret = 0;
+	if (state->buffer == NULL) {
+		ret = liftoff_layer_set_property(layer->liftoff, "FB_ID", 0);
+	} else if (fb == NULL) {
+		liftoff_layer_set_fb_composited(layer->liftoff);
+	} else {
+		ret = liftoff_layer_set_property(layer->liftoff, "FB_ID", fb->id);
+	}
+	if (ret != 0) {
+		return false;
+	}
+
+	uint32_t width = layer->pending_width;
+	uint32_t height = layer->pending_height;
+
+	uint64_t crtc_x = (uint64_t)state->x;
+	uint64_t crtc_y = (uint64_t)state->y;
+	uint64_t crtc_w = (uint64_t)width;
+	uint64_t crtc_h = (uint64_t)height;
+
+	uint64_t src_x = to_fp16(0);
+	uint64_t src_y = to_fp16(0);
+	uint64_t src_w = to_fp16(width);
+	uint64_t src_h = to_fp16(height);
+
+	return
+		liftoff_layer_set_property(layer->liftoff, "zpos", zpos) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "CRTC_X", crtc_x) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "CRTC_Y", crtc_y) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "CRTC_W", crtc_w) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "CRTC_H", crtc_h) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "SRC_X", src_x) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "SRC_Y", src_y) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "SRC_W", src_w) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "SRC_H", src_h) == 0;
 }
 
 static bool crtc_commit(struct wlr_drm_connector *conn,
@@ -272,16 +317,25 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 			ok = ok && add_prop(req, crtc->id, crtc->props.vrr_enabled, vrr_enabled);
 		}
 		ok = ok &&
-			set_plane_props(crtc->primary, crtc->primary->liftoff_layer, 0, 0, 0) &&
-			set_plane_props(crtc->primary, crtc->liftoff_composition_layer, 0, 0, 0);
+			set_plane_props(crtc->primary, crtc->primary->liftoff_layer, state->primary_fb, 0, 0, 0) &&
+			set_plane_props(crtc->primary, crtc->liftoff_composition_layer, state->primary_fb, 0, 0, 0);
 		liftoff_layer_set_property(crtc->primary->liftoff_layer,
 			"FB_DAMAGE_CLIPS", fb_damage_clips);
 		liftoff_layer_set_property(crtc->liftoff_composition_layer,
 			"FB_DAMAGE_CLIPS", fb_damage_clips);
+
+		if (state->base->committed & WLR_OUTPUT_STATE_LAYERS) {
+			for (size_t i = 0; i < state->base->layers_len; i++) {
+				const struct wlr_output_layer_state *layer_state = &state->base->layers[i];
+				ok = ok && set_layer_props(drm, layer_state, i + 1);
+			}
+		}
+
 		if (crtc->cursor) {
 			if (drm_connector_is_cursor_visible(conn)) {
 				ok = ok && set_plane_props(crtc->cursor, crtc->cursor->liftoff_layer,
-					conn->cursor_x, conn->cursor_y, 1);
+					get_next_cursor_fb(conn), conn->cursor_x, conn->cursor_y,
+					wl_list_length(&crtc->layers) + 1);
 			} else {
 				ok = ok && disable_plane(crtc->cursor);
 			}
@@ -318,6 +372,15 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 			"Atomic commit failed");
 		ok = false;
 		goto out;
+	}
+
+	if (state->base->committed & WLR_OUTPUT_STATE_LAYERS) {
+		for (size_t i = 0; i < state->base->layers_len; i++) {
+			struct wlr_output_layer_state *layer_state = &state->base->layers[i];
+			struct wlr_drm_layer *layer = get_drm_layer(drm, layer_state->layer);
+			layer_state->accepted =
+				!liftoff_layer_needs_composition(layer->liftoff);
+		}
 	}
 
 out:
