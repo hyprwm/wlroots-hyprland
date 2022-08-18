@@ -13,6 +13,7 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
+#include <wlr/types/wlr_output_layer.h>
 #include <wlr/util/log.h>
 
 #include "backend/wayland.h"
@@ -275,6 +276,154 @@ static bool output_test(struct wlr_output *wlr_output,
 		return false;
 	}
 
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		// If we can't use a sub-surface for a layer, then we can't use a
+		// sub-surface for any layer underneath
+		bool supported = output->backend->subcompositor != NULL;
+		for (ssize_t i = state->layers_len - 1; i >= 0; i--) {
+			struct wlr_output_layer_state *layer_state = &state->layers[i];
+			if (layer_state->buffer != NULL) {
+				if (layer_state->x < 0 || layer_state->y < 0 ||
+						layer_state->x + layer_state->buffer->width > wlr_output->width ||
+						layer_state->y + layer_state->buffer->height > wlr_output->height) {
+					supported = false;
+				}
+				supported = supported &&
+					test_buffer(output->backend, layer_state->buffer);
+			}
+			layer_state->accepted = supported;
+		}
+	}
+
+	return true;
+}
+
+static void output_layer_handle_addon_destroy(struct wlr_addon *addon) {
+	struct wlr_wl_output_layer *layer = wl_container_of(addon, layer, addon);
+
+	wlr_addon_finish(&layer->addon);
+	wl_subsurface_destroy(layer->subsurface);
+	wl_surface_destroy(layer->surface);
+	free(layer);
+}
+
+static const struct wlr_addon_interface output_layer_addon_impl = {
+	.name = "wlr_wl_output_layer",
+	.destroy = output_layer_handle_addon_destroy,
+};
+
+static struct wlr_wl_output_layer *get_or_create_output_layer(
+		struct wlr_wl_output *output, struct wlr_output_layer *wlr_layer) {
+	assert(output->backend->subcompositor != NULL);
+
+	struct wlr_wl_output_layer *layer;
+	struct wlr_addon *addon = wlr_addon_find(&wlr_layer->addons, output,
+		&output_layer_addon_impl);
+	if (addon != NULL) {
+		layer = wl_container_of(addon, layer, addon);
+		return layer;
+	}
+
+	layer = calloc(1, sizeof(*layer));
+	if (layer == NULL) {
+		return NULL;
+	}
+
+	wlr_addon_init(&layer->addon, &wlr_layer->addons, output,
+		&output_layer_addon_impl);
+
+	layer->surface = wl_compositor_create_surface(output->backend->compositor);
+	layer->subsurface = wl_subcompositor_get_subsurface(
+		output->backend->subcompositor, layer->surface, output->surface);
+
+	// Set an empty input region so that input events are handled by the main
+	// surface
+	struct wl_region *region = wl_compositor_create_region(output->backend->compositor);
+	wl_surface_set_input_region(layer->surface, region);
+	wl_region_destroy(region);
+
+	return layer;
+}
+
+static bool output_layer_commit(struct wlr_wl_output *output,
+		struct wlr_wl_output_layer *layer,
+		const struct wlr_output_layer_state *state) {
+	// TODO: only do this if the layer moved
+	wl_subsurface_set_position(layer->subsurface, state->x, state->y);
+
+	struct wlr_wl_buffer *buffer = NULL;
+	if (state->buffer != NULL) {
+		buffer = get_or_create_wl_buffer(output->backend, state->buffer);
+		if (buffer == NULL) {
+			return false;
+		}
+	}
+
+	wl_surface_attach(layer->surface, buffer ? buffer->wl_buffer : NULL, 0, 0);
+	wl_surface_damage_buffer(layer->surface, 0, 0, INT32_MAX, INT32_MAX);
+
+	wl_surface_commit(layer->surface);
+	return true;
+}
+
+static bool commit_layers(struct wlr_wl_output *output,
+		struct wlr_output_layer_state *layers, size_t layers_len) {
+	if (output->backend->subcompositor == NULL) {
+		return true;
+	}
+
+	struct wlr_wl_output_layer *prev_layer = NULL;
+	for (size_t i = 0; i < layers_len; i++) {
+		struct wlr_wl_output_layer *layer =
+			get_or_create_output_layer(output, layers[i].layer);
+		if (layer == NULL) {
+			return false;
+		}
+
+		if (!layers[i].accepted) {
+			// Unmap the sub-surface
+			// TODO: only do this once
+			wl_surface_attach(layer->surface, NULL, 0, 0);
+			wl_surface_commit(layer->surface);
+			continue;
+		}
+
+		// TODO: only do this if layers were re-ordered
+		if (prev_layer != NULL) {
+			wl_subsurface_place_above(layer->subsurface,
+				prev_layer->surface);
+		}
+
+		if (!output_layer_commit(output, layer, &layers[i])) {
+			return false;
+		}
+	}
+
+	// Unmap any layer we haven't seen
+	struct wlr_output_layer *wlr_layer;
+	wl_list_for_each(wlr_layer, &output->wlr_output.layers, link) {
+		bool found = false;
+		for (size_t i = 0; i < layers_len; i++) {
+			if (layers[i].layer == wlr_layer) {
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			continue;
+		}
+
+		struct wlr_wl_output_layer *layer =
+			get_or_create_output_layer(output, wlr_layer);
+		if (layer == NULL) {
+			continue;
+		}
+
+		// TODO: only do this once
+		wl_surface_attach(layer->surface, NULL, 0, 0);
+		wl_surface_commit(layer->surface);
+	}
+
 	return true;
 }
 
@@ -288,22 +437,10 @@ static bool output_commit(struct wlr_output *wlr_output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		struct wp_presentation_feedback *wp_feedback = NULL;
-		if (output->backend->presentation != NULL) {
-			wp_feedback = wp_presentation_feedback(output->backend->presentation,
-				output->surface);
-		}
-
 		const pixman_region32_t *damage = NULL;
 		if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
 			damage = &state->damage;
 		}
-
-		if (output->frame_callback != NULL) {
-			wl_callback_destroy(output->frame_callback);
-		}
-		output->frame_callback = wl_surface_frame(output->surface);
-		wl_callback_add_listener(output->frame_callback, &frame_listener, output);
 
 		struct wlr_buffer *wlr_buffer = state->buffer;
 		struct wlr_wl_buffer *buffer =
@@ -326,6 +463,25 @@ static bool output_commit(struct wlr_output *wlr_output,
 				wl_surface_damage_buffer(output->surface, r->x1, r->y1,
 					r->x2 - r->x1, r->y2 - r->y1);
 			}
+		}
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_LAYERS) &&
+			!commit_layers(output, state->layers, state->layers_len)) {
+		return false;
+	}
+
+	if (state->committed & (WLR_OUTPUT_STATE_BUFFER | WLR_OUTPUT_STATE_LAYERS)) {
+		if (output->frame_callback != NULL) {
+			wl_callback_destroy(output->frame_callback);
+		}
+		output->frame_callback = wl_surface_frame(output->surface);
+		wl_callback_add_listener(output->frame_callback, &frame_listener, output);
+
+		struct wp_presentation_feedback *wp_feedback = NULL;
+		if (output->backend->presentation != NULL) {
+			wp_feedback = wp_presentation_feedback(output->backend->presentation,
+				output->surface);
 		}
 
 		wl_surface_commit(output->surface);

@@ -393,6 +393,9 @@ static void registry_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(iface, xdg_activation_v1_interface.name) == 0) {
 		wl->activation_v1 = wl_registry_bind(registry, name,
 			&xdg_activation_v1_interface, 1);
+	} else if (strcmp(iface, wl_subcompositor_interface.name) == 0) {
+		wl->subcompositor = wl_registry_bind(registry, name,
+			&wl_subcompositor_interface, 1);
 	}
 }
 
@@ -499,6 +502,9 @@ static void backend_destroy(struct wlr_backend *backend) {
 	}
 	if (wl->zwp_relative_pointer_manager_v1) {
 		zwp_relative_pointer_manager_v1_destroy(wl->zwp_relative_pointer_manager_v1);
+	}
+	if (wl->subcompositor) {
+		wl_subcompositor_destroy(wl->subcompositor);
 	}
 	free(wl->drm_render_name);
 	free(wl->activation_token);

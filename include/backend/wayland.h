@@ -47,6 +47,7 @@ struct wlr_wl_backend {
 	struct wlr_drm_format_set linux_dmabuf_v1_formats;
 	struct wl_drm *legacy_drm;
 	struct xdg_activation_v1 *activation_v1;
+	struct wl_subcompositor *subcompositor;
 	char *drm_render_name;
 };
 
@@ -63,6 +64,13 @@ struct wlr_wl_presentation_feedback {
 	struct wl_list link;
 	struct wp_presentation_feedback *feedback;
 	uint32_t commit_seq;
+};
+
+struct wlr_wl_output_layer {
+	struct wlr_addon addon;
+
+	struct wl_surface *surface;
+	struct wl_subsurface *subsurface;
 };
 
 struct wlr_wl_output {
