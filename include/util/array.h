@@ -27,4 +27,9 @@ bool set_remove(uint32_t values[], size_t *len, size_t cap, uint32_t target);
  */
 void array_remove_at(struct wl_array *arr, size_t offset, size_t size);
 
+/**
+ * Grow or shrink the array to fit the specifized size.
+ */
+bool array_realloc(struct wl_array *arr, size_t size);
+
 #endif
