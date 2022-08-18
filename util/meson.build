@@ -6,7 +6,6 @@ wlr_files += files(
 	'log.c',
 	'region.c',
 	'shm.c',
-	'signal.c',
 	'time.c',
 	'token.c',
 )
