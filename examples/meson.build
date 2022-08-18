@@ -57,6 +57,12 @@ compositors = {
 		'src': 'scene-graph.c',
 		'proto': ['xdg-shell'],
 	},
+	'output-layers': {
+		'src': 'output-layers.c',
+		'proto': [
+			'xdg-shell',
+		],
+	},
 }
 
 clients = {
