@@ -157,11 +157,6 @@ struct wlr_scene_buffer {
 	pixman_region32_t opaque_region;
 };
 
-struct wlr_scene_output_render_list {
-	struct wlr_scene_node **data;
-	size_t capacity;
-};
-
 /** A viewport for an output in the scene-graph */
 struct wlr_scene_output {
 	struct wlr_output *output;
@@ -189,7 +184,7 @@ struct wlr_scene_output {
 
 	struct wl_list damage_highlight_regions;
 
-	struct wlr_scene_output_render_list render_list;
+	struct wl_array render_list;
 };
 
 /** A layer shell scene helper */
