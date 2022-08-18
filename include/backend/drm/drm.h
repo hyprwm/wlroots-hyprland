@@ -40,6 +40,7 @@ struct wlr_drm_crtc {
 	uint32_t id;
 	struct wlr_drm_lease *lease;
 	struct liftoff_output *liftoff;
+	struct liftoff_layer *liftoff_composition_layer;
 
 	// Atomic modesetting only
 	uint32_t mode_id;
