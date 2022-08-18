@@ -107,12 +107,6 @@ static const struct wp_presentation_feedback_listener
 	.discarded = presentation_feedback_handle_discarded,
 };
 
-static bool output_set_custom_mode(struct wlr_output *wlr_output,
-		int32_t width, int32_t height, int32_t refresh) {
-	wlr_output_update_custom_mode(wlr_output, width, height, 0);
-	return true;
-}
-
 void destroy_wl_buffer(struct wlr_wl_buffer *buffer) {
 	if (buffer == NULL) {
 		return;
@@ -284,12 +278,8 @@ static bool output_commit(struct wlr_output *wlr_output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
-		if (!output_set_custom_mode(wlr_output,
-				state->custom_mode.width,
-				state->custom_mode.height,
-				state->custom_mode.refresh)) {
-			return false;
-		}
+		wlr_output_update_custom_mode(wlr_output,
+			state->custom_mode.width, state->custom_mode.height, 0);
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
@@ -497,8 +487,9 @@ static void xdg_toplevel_handle_configure(void *data,
 	if (width == 0 || height == 0) {
 		return;
 	}
-	// loop over states for maximized etc?
-	output_set_custom_mode(&output->wlr_output, width, height, 0);
+
+	// TODO: loop over states for maximized etc?
+	wlr_output_update_custom_mode(&output->wlr_output, width, height, 0);
 }
 
 static void xdg_toplevel_handle_close(void *data,
