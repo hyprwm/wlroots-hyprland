@@ -30,6 +30,11 @@
 #include "render/swapchain.h"
 #include "render/wlr_renderer.h"
 #include "util/env.h"
+#include "config.h"
+
+#if HAVE_LIBLIFTOFF
+#include <libliftoff.h>
+#endif
 
 // Output state which needs a KMS commit to be applied
 static const uint32_t COMMIT_OUTPUT_STATE =
@@ -76,7 +81,20 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 		return false;
 	}
 
-	if (env_parse_bool("WLR_DRM_NO_ATOMIC")) {
+	if (env_parse_bool("WLR_DRM_FORCE_LIBLIFTOFF")) {
+#if HAVE_LIBLIFTOFF
+		wlr_log(WLR_INFO,
+			"WLR_DRM_FORCE_LIBLIFTOFF set, forcing libliftoff interface");
+		if (drmSetClientCap(drm->fd, DRM_CLIENT_CAP_ATOMIC, 1) != 0) {
+			wlr_log_errno(WLR_ERROR, "drmSetClientCap(ATOMIC) failed");
+			return false;
+		}
+		drm->iface = &liftoff_iface;
+#else
+		wlr_log(WLR_ERROR, "libliftoff interface not available");
+		return false;
+#endif
+	} else if (env_parse_bool("WLR_DRM_NO_ATOMIC")) {
 		wlr_log(WLR_DEBUG,
 			"WLR_DRM_NO_ATOMIC set, forcing legacy DRM interface");
 		drm->iface = &legacy_iface;
@@ -121,6 +139,7 @@ static bool init_plane(struct wlr_drm_backend *drm,
 	p->type = type;
 	p->id = drm_plane->plane_id;
 	p->props = props;
+	p->initial_crtc_id = drm_plane->crtc_id;
 
 	for (size_t i = 0; i < drm_plane->count_formats; ++i) {
 		// Force a LINEAR layout for the cursor if the driver doesn't support
@@ -263,6 +282,10 @@ bool init_drm_resources(struct wlr_drm_backend *drm) {
 		goto error_crtcs;
 	}
 
+	if (drm->iface->init != NULL && !drm->iface->init(drm)) {
+		goto error_crtcs;
+	}
+
 	drmModeFreeResources(res);
 
 	return true;
@@ -277,6 +300,10 @@ error_res:
 void finish_drm_resources(struct wlr_drm_backend *drm) {
 	if (!drm) {
 		return;
+	}
+
+	if (drm->iface->finish != NULL) {
+		drm->iface->finish(drm);
 	}
 
 	for (size_t i = 0; i < drm->num_crtcs; ++i) {
@@ -295,6 +322,9 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 	for (size_t i = 0; i < drm->num_planes; ++i) {
 		struct wlr_drm_plane *plane = &drm->planes[i];
 		wlr_drm_format_set_finish(&plane->formats);
+#if HAVE_LIBLIFTOFF
+		liftoff_plane_destroy(plane->liftoff);
+#endif
 	}
 
 	free(drm->planes);

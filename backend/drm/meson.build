@@ -5,6 +5,13 @@ hwdata = dependency(
 	not_found_message: 'Required for the DRM backend.',
 )
 
+libliftoff = dependency(
+	'libliftoff',
+	version: '>=0.2.0',
+	fallback: 'libliftoff',
+	required: false,
+)
+
 if not (hwdata.found() and features['session'])
 	subdir_done()
 endif
@@ -32,4 +39,10 @@ wlr_files += files(
 	'util.c',
 )
 
+if libliftoff.found()
+	wlr_files += files('libliftoff.c')
+endif
+
 features += { 'drm-backend': true }
+internal_features += { 'libliftoff': libliftoff.found() }
+wlr_deps += libliftoff

@@ -93,7 +93,7 @@ static void atomic_add(struct atomic *atom, uint32_t id, uint32_t prop, uint64_t
 	}
 }
 
-static bool create_mode_blob(struct wlr_drm_backend *drm,
+bool create_mode_blob(struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state, uint32_t *blob_id) {
 	if (!state->active) {
@@ -110,7 +110,7 @@ static bool create_mode_blob(struct wlr_drm_backend *drm,
 	return true;
 }
 
-static bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
+bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 		size_t size, const uint16_t *lut, uint32_t *blob_id) {
 	if (size == 0) {
 		*blob_id = 0;

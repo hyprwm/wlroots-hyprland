@@ -30,11 +30,16 @@ struct wlr_drm_plane {
 	struct wlr_drm_format_set formats;
 
 	union wlr_drm_plane_props props;
+
+	uint32_t initial_crtc_id;
+	struct liftoff_plane *liftoff;
+	struct liftoff_layer *liftoff_layer;
 };
 
 struct wlr_drm_crtc {
 	uint32_t id;
 	struct wlr_drm_lease *lease;
+	struct liftoff_output *liftoff;
 
 	// Atomic modesetting only
 	uint32_t mode_id;
@@ -60,6 +65,7 @@ struct wlr_drm_backend {
 	int fd;
 	char *name;
 	struct wlr_device *dev;
+	struct liftoff_device *liftoff;
 
 	size_t num_crtcs;
 	struct wlr_drm_crtc *crtcs;

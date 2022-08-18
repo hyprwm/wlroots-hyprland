@@ -4,6 +4,7 @@ packages:
   - ffmpeg-dev
   - glslang
   - libinput-dev
+  - libliftoff-dev
   - libxkbcommon-dev
   - mesa-dev
   - meson

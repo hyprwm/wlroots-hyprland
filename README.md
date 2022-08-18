@@ -52,6 +52,7 @@ Install dependencies:
 * pixman
 * [libseat] (optional, for the session)
 * [hwdata] (optional, for the DRM backend)
+* [libliftoff] (optional, for the DRM backend)
 
 If you choose to enable X11 support:
 
@@ -80,4 +81,5 @@ See [CONTRIBUTING.md].
 [wrapper libraries]: https://gitlab.freedesktop.org/wlroots/wlroots/-/wikis/Projects-which-use-wlroots#wrapper-libraries
 [libseat]: https://git.sr.ht/~kennylevinsen/seatd
 [hwdata]: https://github.com/vcrhonek/hwdata
+[libliftoff]: https://gitlab.freedesktop.org/emersion/libliftoff
 [CONTRIBUTING.md]: https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/CONTRIBUTING.md
