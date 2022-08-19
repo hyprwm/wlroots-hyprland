@@ -21,7 +21,8 @@
  *
  * To configure output layers, callers should call wlr_output_layer_create() to
  * create layers, attach struct wlr_output_layer_state onto
- * struct wlr_output_state to describe their new state, and commit the output.
+ * struct wlr_output_state via wlr_output_set_layers() to describe their new
+ * state, and commit the output via wlr_output_commit().
  *
  * Backends may have arbitrary limitations when it comes to displaying output
  * layers. Backends indicate whether or not a layer can be displayed via

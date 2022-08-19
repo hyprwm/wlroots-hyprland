@@ -486,6 +486,13 @@ void wlr_output_set_damage(struct wlr_output *output,
 	output->pending.committed |= WLR_OUTPUT_STATE_DAMAGE;
 }
 
+void wlr_output_set_layers(struct wlr_output *output,
+		struct wlr_output_layer_state *layers, size_t layers_len) {
+	output->pending.committed |= WLR_OUTPUT_STATE_LAYERS;
+	output->pending.layers = layers;
+	output->pending.layers_len = layers_len;
+}
+
 static void output_state_clear_gamma_lut(struct wlr_output_state *state) {
 	free(state->gamma_lut);
 	state->gamma_lut = NULL;

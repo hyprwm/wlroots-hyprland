@@ -435,6 +435,16 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output);
 void wlr_output_set_damage(struct wlr_output *output,
 	const pixman_region32_t *damage);
 /**
+ * Set the output layers state.
+ *
+ * See struct wlr_output_layer for more details on output layers.
+ *
+ * This state is double-buffered, see wlr_output_commit(). The layers array
+ * must remain valid until the wlr_output_test() or wlr_output_commit() call.
+ */
+void wlr_output_set_layers(struct wlr_output *output,
+	struct wlr_output_layer_state *layers, size_t layers_len);
+/**
  * Test whether the pending output state would be accepted by the backend. If
  * this function returns true, wlr_output_commit() can only fail due to a
  * runtime error.
