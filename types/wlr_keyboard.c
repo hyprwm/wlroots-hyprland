@@ -8,7 +8,7 @@
 #include <wlr/util/log.h>
 #include "interfaces/wlr_input_device.h"
 #include "types/wlr_keyboard.h"
-#include "util/array.h"
+#include "util/set.h"
 #include "util/shm.h"
 #include "util/time.h"
 

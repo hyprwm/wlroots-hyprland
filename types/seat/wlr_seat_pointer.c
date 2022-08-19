@@ -7,7 +7,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
-#include "util/array.h"
+#include "util/set.h"
 
 static void default_pointer_enter(struct wlr_seat_pointer_grab *grab,
 		struct wlr_surface *surface, double sx, double sy) {

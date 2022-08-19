@@ -10,7 +10,7 @@
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
-#include "util/array.h"
+#include "util/set.h"
 #include "util/time.h"
 #include "tablet-unstable-v2-protocol.h"
 
