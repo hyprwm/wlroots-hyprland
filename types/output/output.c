@@ -10,6 +10,7 @@
 #include "render/allocator/allocator.h"
 #include "render/swapchain.h"
 #include "types/wlr_output.h"
+#include "util/env.h"
 #include "util/global.h"
 
 #define OUTPUT_VERSION 4
@@ -366,11 +367,9 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.destroy);
 	output_state_init(&output->pending);
 
-	const char *no_hardware_cursors = getenv("WLR_NO_HARDWARE_CURSORS");
-	if (no_hardware_cursors != NULL && strcmp(no_hardware_cursors, "1") == 0) {
-		wlr_log(WLR_DEBUG,
-			"WLR_NO_HARDWARE_CURSORS set, forcing software cursors");
-		output->software_cursor_locks = 1;
+	output->software_cursor_locks = env_parse_bool("WLR_NO_HARDWARE_CURSORS");
+	if (output->software_cursor_locks) {
+		wlr_log(WLR_DEBUG, "WLR_NO_HARDWARE_CURSORS set, forcing software cursors");
 	}
 
 	wlr_addon_set_init(&output->addons);

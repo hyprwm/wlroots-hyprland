@@ -17,6 +17,7 @@
 #include "backend/backend.h"
 #include "backend/multi.h"
 #include "render/allocator/allocator.h"
+#include "util/env.h"
 
 #if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
@@ -364,8 +365,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display) {
 	}
 	wlr_multi_backend_add(backend, libinput);
 #else
-	const char *no_devs = getenv("WLR_LIBINPUT_NO_DEVICES");
-	if (no_devs && strcmp(no_devs, "1") == 0) {
+	if (env_parse_bool("WLR_LIBINPUT_NO_DEVICES")) {
 		wlr_log(WLR_INFO, "WLR_LIBINPUT_NO_DEVICES is set, "
 			"starting without libinput backend");
 	} else {

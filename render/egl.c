@@ -11,6 +11,7 @@
 #include <wlr/util/region.h>
 #include <xf86drm.h>
 #include "render/egl.h"
+#include "util/env.h"
 
 static enum wlr_log_importance egl_log_importance_to_wlr(EGLint type) {
 	switch (type) {
@@ -284,8 +285,7 @@ static bool egl_init_display(struct wlr_egl *egl, EGLDisplay *display) {
 		}
 
 		if (check_egl_ext(device_exts_str, "EGL_MESA_device_software")) {
-			const char *allow_software = getenv("WLR_RENDERER_ALLOW_SOFTWARE");
-			if (allow_software != NULL && strcmp(allow_software, "1") == 0) {
+			if (env_parse_bool("WLR_RENDERER_ALLOW_SOFTWARE")) {
 				wlr_log(WLR_INFO, "Using software rendering");
 			} else {
 				wlr_log(WLR_ERROR, "Software rendering detected, please use "

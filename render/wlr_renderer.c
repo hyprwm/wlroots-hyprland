@@ -28,6 +28,7 @@
 #include "backend/backend.h"
 #include "render/pixel_format.h"
 #include "render/wlr_renderer.h"
+#include "util/env.h"
 
 void wlr_renderer_init(struct wlr_renderer *renderer,
 		const struct wlr_renderer_impl *impl) {
@@ -266,54 +267,65 @@ bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
 	return true;
 }
 
-struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
-	const char *name = getenv("WLR_RENDERER");
-	if (name) {
-		wlr_log(WLR_INFO, "Loading user-specified renderer due to WLR_RENDERER: %s",
-			name);
+static void log_creation_failure(bool is_auto, const char *msg) {
+	wlr_log(is_auto ? WLR_DEBUG : WLR_ERROR, "%s%s", msg, is_auto ? ". Skipping!" : "");
+}
 
+struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
+	const char *renderer_options[] = {
+		"auto",
 #if WLR_HAS_GLES2_RENDERER
-		if (strcmp(name, "gles2") == 0) {
-			if (drm_fd < 0) {
-				wlr_log(WLR_ERROR, "Cannot create GLES2 renderer: "
-					"no DRM FD available");
-				return NULL;
-			}
-			return wlr_gles2_renderer_create_with_drm_fd(drm_fd);
-		}
+		"gles2",
 #endif
 #if WLR_HAS_VULKAN_RENDERER
-		if (strcmp(name, "vulkan") == 0) {
-			return wlr_vk_renderer_create_with_drm_fd(drm_fd);
-		}
+		"vulkan",
 #endif
-		if (strcmp(name, "pixman") == 0) {
-			return wlr_pixman_renderer_create();
-		}
+		"pixman",
+		NULL
+	};
 
-		wlr_log(WLR_ERROR, "Invalid WLR_RENDERER value: '%s'", name);
-		return NULL;
-	}
-
+	const char *renderer_name = renderer_options[env_parse_switch("WLR_RENDERER", renderer_options)];
+	bool is_auto = strcmp(renderer_name, "auto") == 0;
 	struct wlr_renderer *renderer = NULL;
+
 #if WLR_HAS_GLES2_RENDERER
-	if (drm_fd >= 0) {
-		if ((renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd)) != NULL) {
-			return renderer;
+	if (!renderer && (is_auto || strcmp(renderer_name, "gles2") == 0)) {
+		if (drm_fd < 0) {
+			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
+		} else {
+			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
+			if (!renderer) {
+				log_creation_failure(is_auto, "Failed to create a GLES2 renderer");
+			}
 		}
-		wlr_log(WLR_DEBUG, "Failed to create GLES2 renderer");
-	} else {
-		wlr_log(WLR_DEBUG, "Skipping GLES2 renderer: no DRM FD available");
 	}
 #endif
 
-	if ((renderer = wlr_pixman_renderer_create()) != NULL) {
-		return renderer;
+#if WLR_HAS_VULKAN_RENDERER
+	if (!renderer && (is_auto || strcmp(renderer_name, "vulkan") == 0)) {
+		if (drm_fd < 0) {
+			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
+		} else {
+			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
+			if (!renderer) { 
+				log_creation_failure(is_auto, "Failed to create a Vulkan renderer");
+			}
+		}
 	}
-	wlr_log(WLR_DEBUG, "Failed to create pixman renderer");
+#endif
 
-	wlr_log(WLR_ERROR, "Could not initialize renderer");
-	return NULL;
+	if (!renderer && (is_auto || strcmp(renderer_name, "pixman") == 0)) {
+		renderer = wlr_pixman_renderer_create();
+		if (!renderer) { 
+			log_creation_failure(is_auto, "Failed to create a pixman renderer");
+		}
+	}
+
+	if (!renderer) {
+		wlr_log(WLR_ERROR, "Could not initialize renderer");
+	}
+
+	return renderer;
 }
 
 static int open_drm_render_node(void) {
