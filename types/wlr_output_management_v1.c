@@ -18,20 +18,23 @@ enum {
 static const uint32_t HEAD_STATE_ALL = HEAD_STATE_ENABLED | HEAD_STATE_MODE |
 	HEAD_STATE_POSITION | HEAD_STATE_TRANSFORM | HEAD_STATE_SCALE;
 
+static const struct zwlr_output_head_v1_interface head_impl;
 
 // Can return NULL if the head is inert
 static struct wlr_output_head_v1 *head_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
-		&zwlr_output_head_v1_interface, NULL));
+		&zwlr_output_head_v1_interface, &head_impl));
 	return wl_resource_get_user_data(resource);
 }
+
+static const struct zwlr_output_mode_v1_interface output_mode_impl;
 
 // Can return NULL if the mode is inert
 static struct wlr_output_mode *mode_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
-		&zwlr_output_mode_v1_interface, NULL));
+		&zwlr_output_mode_v1_interface, &output_mode_impl));
 	return wl_resource_get_user_data(resource);
 }
 
