@@ -230,10 +230,7 @@ static void surface_update_damage(pixman_region32_t *buffer_damage,
 
 	if (pending->width != current->width ||
 			pending->height != current->height ||
-			pending->viewport.src.x != current->viewport.src.x ||
-			pending->viewport.src.y != current->viewport.src.y ||
-			pending->viewport.src.width != current->viewport.src.width ||
-			pending->viewport.src.height != current->viewport.src.height) {
+			!wlr_fbox_equal(&pending->viewport.src, &current->viewport.src)) {
 		// Damage the whole buffer on resize or viewport source box change
 		pixman_region32_union_rect(buffer_damage, buffer_damage, 0, 0,
 			pending->buffer_width, pending->buffer_height);
