@@ -240,7 +240,7 @@ bool output_ensure_buffer(struct wlr_output *output,
 	}
 
 	if (!output_attach_empty_back_buffer(output, state)) {
-		return false;
+		goto error_destroy_swapchain;
 	}
 
 	if (output_test_with_back_buffer(output, state)) {
@@ -249,6 +249,13 @@ bool output_ensure_buffer(struct wlr_output *output,
 	}
 
 	output_clear_back_buffer(output);
+
+error_destroy_swapchain:
+	// Destroy the modifierless swapchain so that the output does not get stuck
+	// without modifiers. A new swapchain with modifiers will be created when
+	// needed by output_attach_back_buffer().
+	wlr_swapchain_destroy(output->swapchain);
+	output->swapchain = NULL;
 
 	return false;
 }
