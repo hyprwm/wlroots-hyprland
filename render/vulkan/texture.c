@@ -270,8 +270,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(struct wlr_renderer *wlr_r
 	texture->format = &fmt->format;
 
 	// create image
-	unsigned mem_bits = 0xFFFFFFFF;
-
 	VkImageCreateInfo img_info = {0};
 	img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	img_info.imageType = VK_IMAGE_TYPE_2D;
@@ -286,8 +284,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(struct wlr_renderer *wlr_r
 
 	img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	img_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	mem_bits = vulkan_find_mem_type(renderer->dev,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mem_bits);
 	VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	res = vkCreateImage(dev, &img_info, NULL, &texture->image);
@@ -303,7 +299,15 @@ static struct wlr_texture *vulkan_texture_from_pixels(struct wlr_renderer *wlr_r
 	VkMemoryAllocateInfo mem_info = {0};
 	mem_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	mem_info.allocationSize = mem_reqs.size;
-	mem_info.memoryTypeIndex = mem_bits & mem_reqs.memoryTypeBits;
+
+	int mem_type_index = vulkan_find_mem_type(renderer->dev,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mem_reqs.memoryTypeBits);
+	if (mem_type_index == -1) {
+		wlr_log(WLR_ERROR, "failed to find suitable vulkan memory type");
+		goto error;
+	}
+	mem_info.memoryTypeIndex = mem_type_index;
+
 	res = vkAllocateMemory(dev, &mem_info, NULL, &texture->memories[0]);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkAllocatorMemory failed", res);
