@@ -236,19 +236,22 @@ static void cursor_warp_unchecked(struct wlr_cursor *cur,
  * Absolute movement for touch and pen devices will be relative to this box and
  * pointer movement will be constrained to this box.
  *
- * If none of these are set, empties the box and absolute movement should be
+ * If none of these are set, the box is empty and absolute movement should be
  * relative to the extents of the layout.
  */
 static void get_mapping(struct wlr_cursor *cur,
 		struct wlr_input_device *dev, struct wlr_box *box) {
 	assert(cur->state->layout);
-	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 
+	memset(box, 0, sizeof(*box));
+
+	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 	if (c_device) {
 		if (!wlr_box_empty(&c_device->mapped_box)) {
 			*box = c_device->mapped_box;
 			return;
-		} else if (c_device->mapped_output) {
+		}
+		if (c_device->mapped_output) {
 			wlr_output_layout_get_box(cur->state->layout,
 				c_device->mapped_output, box);
 			return;
@@ -257,11 +260,12 @@ static void get_mapping(struct wlr_cursor *cur,
 
 	if (!wlr_box_empty(&cur->state->mapped_box)) {
 		*box = cur->state->mapped_box;
-	} else if (cur->state->mapped_output) {
+		return;
+	}
+	if (cur->state->mapped_output) {
 		wlr_output_layout_get_box(cur->state->layout,
 			cur->state->mapped_output, box);
-	} else {
-		box->width = box->height = 0;
+		return;
 	}
 }
 
@@ -868,19 +872,21 @@ void wlr_cursor_map_input_to_output(struct wlr_cursor *cur,
 
 void wlr_cursor_map_to_region(struct wlr_cursor *cur,
 		const struct wlr_box *box) {
+	memset(&cur->state->mapped_box, 0, sizeof(cur->state->mapped_box));
+
 	if (box) {
 		if (wlr_box_empty(box)) {
 			wlr_log(WLR_ERROR, "cannot map cursor to an empty region");
 			return;
 		}
 		cur->state->mapped_box = *box;
-	} else {
-		cur->state->mapped_box.width = cur->state->mapped_box.height = 0;
 	}
 }
 
 void wlr_cursor_map_input_to_region(struct wlr_cursor *cur,
 		struct wlr_input_device *dev, const struct wlr_box *box) {
+	memset(&cur->state->mapped_box, 0, sizeof(cur->state->mapped_box));
+
 	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 	if (!c_device) {
 		wlr_log(WLR_ERROR, "Cannot map device \"%s\" to geometry (not found in"
@@ -896,7 +902,5 @@ void wlr_cursor_map_input_to_region(struct wlr_cursor *cur,
 			return;
 		}
 		c_device->mapped_box = *box;
-	} else {
-		c_device->mapped_box.width = c_device->mapped_box.height = 0;
 	}
 }
