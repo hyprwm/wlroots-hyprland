@@ -459,6 +459,10 @@ static struct wlr_output *wlr_output_layout_output_in_direction(
 
 	struct wlr_box ref_box;
 	wlr_output_layout_get_box(layout, reference, &ref_box);
+	if (wlr_box_empty(&ref_box)) {
+		// The output doesn't belong to the layout
+		return NULL;
+	}
 
 	double min_distance = (distance_method == NEAREST) ? DBL_MAX : DBL_MIN;
 	struct wlr_output *closest_output = NULL;
