@@ -365,6 +365,8 @@ void wlr_output_layout_closest_point(struct wlr_output_layout *layout,
 
 void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 		struct wlr_output *reference, struct wlr_box *dest_box) {
+	memset(dest_box, 0, sizeof(*dest_box));
+
 	struct wlr_output_layout_output *l_output;
 	if (reference) {
 		// output extents
@@ -372,8 +374,6 @@ void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 
 		if (l_output) {
 			output_layout_output_get_box(l_output, dest_box);
-		} else {
-			dest_box->width = dest_box->height = 0;
 		}
 	} else {
 		// layout extents
