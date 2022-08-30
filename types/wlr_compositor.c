@@ -386,6 +386,7 @@ static void surface_update_opaque_region(struct wlr_surface *surface) {
 	}
 
 	if (surface->opaque) {
+		pixman_region32_fini(&surface->opaque_region);
 		pixman_region32_init_rect(&surface->opaque_region,
 			0, 0, surface->current.width, surface->current.height);
 		return;
