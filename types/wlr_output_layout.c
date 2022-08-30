@@ -165,27 +165,50 @@ static struct wlr_output_layout_output *output_layout_output_create(
 	return l_output;
 }
 
-void wlr_output_layout_add(struct wlr_output_layout *layout,
-		struct wlr_output *output, int lx, int ly) {
+static bool output_layout_add(struct wlr_output_layout *layout,
+		struct wlr_output *output, int lx, int ly,
+		bool auto_configured) {
 	struct wlr_output_layout_output *l_output =
 		wlr_output_layout_get(layout, output);
 	bool is_new = l_output == NULL;
-	if (!l_output) {
+	if (is_new) {
 		l_output = output_layout_output_create(layout, output);
-		if (!l_output) {
-			wlr_log(WLR_ERROR, "Failed to create wlr_output_layout_output");
-			return;
+		if (l_output == NULL) {
+			return false;
 		}
 	}
 
 	l_output->x = lx;
 	l_output->y = ly;
-	l_output->auto_configured = false;
+	l_output->auto_configured = auto_configured;
+
 	output_layout_reconfigure(layout);
 	output_update_global(output);
 
 	if (is_new) {
 		wl_signal_emit_mutable(&layout->events.add, l_output);
+	}
+
+	return true;
+}
+
+bool wlr_output_layout_add(struct wlr_output_layout *layout,
+		struct wlr_output *output, int lx, int ly) {
+	return output_layout_add(layout, output, lx, ly, false);
+}
+
+bool wlr_output_layout_add_auto(struct wlr_output_layout *layout,
+		struct wlr_output *output) {
+	return output_layout_add(layout, output, 0, 0, true);
+}
+
+void wlr_output_layout_remove(struct wlr_output_layout *layout,
+		struct wlr_output *output) {
+	struct wlr_output_layout_output *l_output =
+		wlr_output_layout_get(layout, output);
+	if (l_output != NULL) {
+		output_layout_output_destroy(l_output);
+		output_layout_reconfigure(layout);
 	}
 }
 
@@ -254,30 +277,6 @@ struct wlr_output *wlr_output_layout_output_at(struct wlr_output_layout *layout,
 		}
 	}
 	return NULL;
-}
-
-void wlr_output_layout_move(struct wlr_output_layout *layout,
-		struct wlr_output *output, int lx, int ly) {
-	struct wlr_output_layout_output *l_output =
-		wlr_output_layout_get(layout, output);
-	if (l_output) {
-		l_output->x = lx;
-		l_output->y = ly;
-		l_output->auto_configured = false;
-		output_layout_reconfigure(layout);
-	} else {
-		wlr_log(WLR_ERROR, "output not found in this layout: %s", output->name);
-	}
-}
-
-void wlr_output_layout_remove(struct wlr_output_layout *layout,
-		struct wlr_output *output) {
-	struct wlr_output_layout_output *l_output =
-		wlr_output_layout_get(layout, output);
-	if (l_output) {
-		output_layout_output_destroy(l_output);
-		output_layout_reconfigure(layout);
-	}
 }
 
 void wlr_output_layout_output_coords(struct wlr_output_layout *layout,
@@ -378,28 +377,6 @@ void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 		dest_box->y = min_y;
 		dest_box->width = max_x - min_x;
 		dest_box->height = max_y - min_y;
-	}
-}
-
-void wlr_output_layout_add_auto(struct wlr_output_layout *layout,
-		struct wlr_output *output) {
-	struct wlr_output_layout_output *l_output =
-		wlr_output_layout_get(layout, output);
-	bool is_new = l_output == NULL;
-	if (!l_output) {
-		l_output = output_layout_output_create(layout, output);
-		if (!l_output) {
-			wlr_log(WLR_ERROR, "Failed to create wlr_output_layout_output");
-			return;
-		}
-	}
-
-	l_output->auto_configured = true;
-	output_layout_reconfigure(layout);
-	output_update_global(output);
-
-	if (is_new) {
-		wl_signal_emit_mutable(&layout->events.add, l_output);
 	}
 }
 

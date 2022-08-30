@@ -28,7 +28,7 @@ struct wlr_output_layout {
 	struct wl_list outputs;
 
 	struct {
-		struct wl_signal add;
+		struct wl_signal add; // struct wlr_output_layout_output *
 		struct wl_signal change;
 		struct wl_signal destroy;
 	} events;
@@ -77,14 +77,30 @@ struct wlr_output *wlr_output_layout_output_at(
 
 /**
  * Add the output to the layout at the specified coordinates. If the output is
- * already part of the output layout, this moves the output.
+ * already a part of the output layout, it will become manually configured and
+ * will be moved to the specified coordinates.
+ *
+ * Returns true on success, false on a memory allocation error.
  */
-void wlr_output_layout_add(struct wlr_output_layout *layout,
+bool wlr_output_layout_add(struct wlr_output_layout *layout,
 	struct wlr_output *output, int lx, int ly);
 
-void wlr_output_layout_move(struct wlr_output_layout *layout,
-	struct wlr_output *output, int lx, int ly);
+/**
+ * Add the output to the layout as automatically configured. This will place
+ * the output in a sensible location in the layout. The coordinates of
+ * the output in the layout will be adjusted dynamically when the layout
+ * changes. If the output is already a part of the layout, it will become
+ * automatically configured.
+ *
+ * Returns true on success, false on a memory allocation error.
+ */
+bool wlr_output_layout_add_auto(struct wlr_output_layout *layout,
+	struct wlr_output *output);
 
+/**
+ * Remove the output from the layout. If the output is already not a part of
+ * the layout, this function is a no-op.
+ */
 void wlr_output_layout_remove(struct wlr_output_layout *layout,
 	struct wlr_output *output);
 
@@ -116,17 +132,6 @@ void wlr_output_layout_closest_point(struct wlr_output_layout *layout,
  */
 void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 	struct wlr_output *reference, struct wlr_box *dest_box);
-
-/**
-* Add an auto configured output to the layout. This will place the output in a
-* sensible location in the layout. The coordinates of the output in the layout
-* may adjust dynamically when the layout changes. If the output is already in
-* the layout, it will become auto configured. If the position of the output is
-* set such as with wlr_output_layout_move(), the output will become manually
-* configured.
-*/
-void wlr_output_layout_add_auto(struct wlr_output_layout *layout,
-	struct wlr_output *output);
 
 /**
  * Get the output closest to the center of the layout extents.
