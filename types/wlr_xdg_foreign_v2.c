@@ -113,6 +113,14 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 	child->xdg_surface_destroy.notify = handle_child_xdg_surface_destroy;
 	child->xdg_toplevel_set_parent.notify = handle_xdg_toplevel_set_parent;
 
+	if (!wlr_xdg_toplevel_set_parent(child_toplevel, surface->toplevel)) {
+		wl_resource_post_error(surface->toplevel->resource,
+			XDG_TOPLEVEL_ERROR_INVALID_PARENT,
+			"a toplevel cannot be a parent of itself or its ancestor");
+		free(child);
+		return;
+	}
+
 	wlr_xdg_toplevel_set_parent(child_toplevel, surface->toplevel);
 	wl_signal_add(&child_toplevel->base->events.destroy,
 			&child->xdg_surface_destroy);

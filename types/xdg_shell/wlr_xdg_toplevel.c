@@ -149,16 +149,27 @@ struct wlr_xdg_toplevel *wlr_xdg_toplevel_from_resource(
 static void handle_parent_unmap(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel *toplevel =
 		wl_container_of(listener, toplevel, parent_unmap);
-	wlr_xdg_toplevel_set_parent(toplevel, toplevel->parent->parent);
+	if (!wlr_xdg_toplevel_set_parent(toplevel, toplevel->parent->parent)) {
+		assert(0 && "Unreachable");
+	}
 }
 
-void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
+bool wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 		struct wlr_xdg_toplevel *parent) {
-	if (toplevel->parent) {
+	// Check for a loop
+	struct wlr_xdg_toplevel *iter = parent;
+	while (iter != NULL) {
+		if (iter == toplevel) {
+			return false;
+		}
+		iter = iter->parent;
+	}
+
+	if (toplevel->parent != NULL) {
 		wl_list_remove(&toplevel->parent_unmap.link);
 	}
 
-	if (parent && parent->base->mapped) {
+	if (parent != NULL && parent->base->mapped) {
 		toplevel->parent = parent;
 		toplevel->parent_unmap.notify = handle_parent_unmap;
 		wl_signal_add(&toplevel->parent->base->events.unmap,
@@ -168,6 +179,7 @@ void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 	}
 
 	wl_signal_emit_mutable(&toplevel->events.set_parent, NULL);
+	return true;
 }
 
 static void xdg_toplevel_handle_set_parent(struct wl_client *client,
@@ -180,7 +192,10 @@ static void xdg_toplevel_handle_set_parent(struct wl_client *client,
 		parent = wlr_xdg_toplevel_from_resource(parent_resource);
 	}
 
-	wlr_xdg_toplevel_set_parent(toplevel, parent);
+	if (!wlr_xdg_toplevel_set_parent(toplevel, parent)) {
+		wl_resource_post_error(resource, XDG_TOPLEVEL_ERROR_INVALID_PARENT,
+			"a toplevel cannot be a parent of itself or its ancestor");
+	}
 }
 
 static void xdg_toplevel_handle_set_title(struct wl_client *client,

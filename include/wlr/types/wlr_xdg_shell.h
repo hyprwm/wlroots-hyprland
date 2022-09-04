@@ -418,9 +418,11 @@ void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel);
 
 /**
  * Sets the parent of this toplevel. Parent can be NULL.
+ *
+ * Returns true on success, false if setting the parent would create a loop.
  */
-void wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
-		struct wlr_xdg_toplevel *parent);
+bool wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
+	struct wlr_xdg_toplevel *parent);
 
 /**
  * Request that this popup closes.
