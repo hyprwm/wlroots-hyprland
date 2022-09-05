@@ -15,7 +15,7 @@
 #include "types/wlr_subcompositor.h"
 #include "util/time.h"
 
-#define COMPOSITOR_VERSION 5
+#define COMPOSITOR_VERSION 6
 #define CALLBACK_VERSION 1
 
 static int min(int fst, int snd) {
@@ -1087,6 +1087,23 @@ void wlr_surface_get_buffer_source_box(struct wlr_surface *surface,
 			wlr_output_transform_invert(surface->current.transform),
 			width, height);
 	}
+}
+
+void wlr_surface_set_preferred_buffer_scale(struct wlr_surface *surface,
+		int32_t scale) {
+	assert(scale > 0);
+
+	if (wl_resource_get_version(surface->resource) <
+			WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION) {
+		return;
+	}
+
+	if (surface->preferred_buffer_scale == scale) {
+		return;
+	}
+
+	wl_surface_send_preferred_buffer_scale(surface->resource, scale);
+	surface->preferred_buffer_scale = scale;
 }
 
 static const struct wl_compositor_interface compositor_impl;

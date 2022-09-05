@@ -163,6 +163,8 @@ struct wlr_surface {
 	} previous;
 
 	bool opaque;
+
+	int32_t preferred_buffer_scale;
 };
 
 struct wlr_renderer;
@@ -318,6 +320,15 @@ uint32_t wlr_surface_lock_pending(struct wlr_surface *surface);
  * committed. Another caller may still have an active lock.
  */
 void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq);
+
+/**
+ * Set the preferred buffer scale for the surface.
+ *
+ * This sends an event to the client indicating the preferred scale to use for
+ * buffers attached to this surface.
+ */
+void wlr_surface_set_preferred_buffer_scale(struct wlr_surface *surface,
+	int32_t scale);
 
 /**
  * Create the wl_compositor global, which can be used by clients to create
