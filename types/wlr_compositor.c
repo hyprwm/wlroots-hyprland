@@ -1146,14 +1146,16 @@ static void compositor_handle_display_destroy(
 }
 
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
-		struct wlr_renderer *renderer) {
+		uint32_t version, struct wlr_renderer *renderer) {
+	assert(version <= COMPOSITOR_VERSION);
+
 	struct wlr_compositor *compositor = calloc(1, sizeof(*compositor));
 	if (!compositor) {
 		return NULL;
 	}
 
 	compositor->global = wl_global_create(display, &wl_compositor_interface,
-		COMPOSITOR_VERSION, compositor, compositor_bind);
+		version, compositor, compositor_bind);
 	if (!compositor->global) {
 		free(compositor);
 		return NULL;

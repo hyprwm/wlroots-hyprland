@@ -327,6 +327,6 @@ void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq);
  * objects from client buffers on surface commit.
  */
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
-	struct wlr_renderer *renderer);
+	uint32_t version, struct wlr_renderer *renderer);
 
 #endif

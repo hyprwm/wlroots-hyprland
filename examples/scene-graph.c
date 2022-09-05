@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
 		server.renderer);
 
 	struct wlr_compositor *compositor =
-		wlr_compositor_create(server.display, server.renderer);
+		wlr_compositor_create(server.display, 5, server.renderer);
 
 	wlr_xdg_shell_create(server.display, 2);
 

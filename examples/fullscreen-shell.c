@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	server.allocator = wlr_allocator_autocreate(server.backend,
 		server.renderer);
 
-	wlr_compositor_create(server.wl_display, server.renderer);
+	wlr_compositor_create(server.wl_display, 5, server.renderer);
 
 	server.output_layout = wlr_output_layout_create();
 
