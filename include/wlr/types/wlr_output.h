@@ -17,10 +17,19 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/util/addon.h>
 
+enum wlr_output_mode_aspect_ratio {
+	WLR_OUTPUT_MODE_ASPECT_RATIO_NONE,
+	WLR_OUTPUT_MODE_ASPECT_RATIO_4_3,
+	WLR_OUTPUT_MODE_ASPECT_RATIO_16_9,
+	WLR_OUTPUT_MODE_ASPECT_RATIO_64_27,
+	WLR_OUTPUT_MODE_ASPECT_RATIO_256_135,
+};
+
 struct wlr_output_mode {
 	int32_t width, height;
 	int32_t refresh; // mHz
 	bool preferred;
+	enum wlr_output_mode_aspect_ratio picture_aspect_ratio;
 	struct wl_list link;
 };
 
