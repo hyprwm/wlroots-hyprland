@@ -231,12 +231,28 @@ bool wlr_surface_point_accepts_input(struct wlr_surface *surface,
 struct wlr_surface *wlr_surface_surface_at(struct wlr_surface *surface,
 		double sx, double sy, double *sub_x, double *sub_y);
 
+/**
+ * Notify the client that the surface has entered an output.
+ *
+ * This is a no-op if the surface has already entered the output.
+ */
 void wlr_surface_send_enter(struct wlr_surface *surface,
 		struct wlr_output *output);
 
+/**
+ * Notify the client that the surface has left an output.
+ *
+ * This is a no-op if the surface has already left the output.
+ */
 void wlr_surface_send_leave(struct wlr_surface *surface,
 		struct wlr_output *output);
 
+/**
+ * Complete the queued frame callbacks for this surface.
+ *
+ * This will send an event to the client indicating that now is a good time to
+ * draw its next frame.
+ */
 void wlr_surface_send_frame_done(struct wlr_surface *surface,
 		const struct timespec *when);
 
