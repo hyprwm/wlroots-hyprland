@@ -9,6 +9,7 @@ struct wlr_drm_connector;
 
 // Calculates a more accurate refresh rate (mHz) than what mode itself provides
 int32_t calculate_refresh_rate(const drmModeModeInfo *mode);
+enum wlr_output_mode_aspect_ratio get_picture_aspect_ratio(const drmModeModeInfo *mode);
 // Populates the make/model/phys_{width,height} of output from the edid data
 void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data);
 

@@ -30,6 +30,25 @@ int32_t calculate_refresh_rate(const drmModeModeInfo *mode) {
 	return refresh;
 }
 
+enum wlr_output_mode_aspect_ratio get_picture_aspect_ratio(const drmModeModeInfo *mode) {
+	switch (mode->flags & DRM_MODE_FLAG_PIC_AR_MASK) {
+	case DRM_MODE_FLAG_PIC_AR_NONE:
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_NONE;
+	case DRM_MODE_FLAG_PIC_AR_4_3:
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_4_3;
+	case DRM_MODE_FLAG_PIC_AR_16_9:
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_16_9;
+	case DRM_MODE_FLAG_PIC_AR_64_27:
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_64_27;
+	case DRM_MODE_FLAG_PIC_AR_256_135:
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_256_135;
+	default:
+		wlr_log(WLR_ERROR, "Unknown mode picture aspect ratio: %u",
+			mode->flags & DRM_MODE_FLAG_PIC_AR_MASK);
+		return WLR_OUTPUT_MODE_ASPECT_RATIO_NONE;
+	}
+}
+
 static const char *get_manufacturer(struct udev_hwdb *hwdb, uint16_t code) {
 	static char pnp_id[4];
 

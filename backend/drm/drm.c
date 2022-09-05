@@ -760,6 +760,7 @@ static struct wlr_drm_mode *drm_mode_create(const drmModeModeInfo *modeinfo) {
 	mode->wlr_mode.width = mode->drm_mode.hdisplay;
 	mode->wlr_mode.height = mode->drm_mode.vdisplay;
 	mode->wlr_mode.refresh = calculate_refresh_rate(modeinfo);
+	mode->wlr_mode.picture_aspect_ratio = get_picture_aspect_ratio(modeinfo);
 	if (modeinfo->type & DRM_MODE_TYPE_PREFERRED) {
 		mode->wlr_mode.preferred = true;
 	}
