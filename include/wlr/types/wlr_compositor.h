@@ -185,8 +185,8 @@ typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
 	int sx, int sy, void *data);
 
 /**
- * Set the lifetime role for this surface. Returns 0 on success or -1 if the
- * role cannot be set.
+ * Set the lifetime role for this surface. Returns true on success or false if
+ * the role cannot be set.
  */
 bool wlr_surface_set_role(struct wlr_surface *surface,
 		const struct wlr_surface_role *role, void *role_data,
