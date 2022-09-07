@@ -4,6 +4,7 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/render/interface.h>
 #include <wlr/util/log.h>
+#include <xf86drm.h>
 #include "backend/backend.h"
 #include "render/allocator/allocator.h"
 #include "render/drm_format_set.h"
@@ -70,8 +71,10 @@ static bool output_create_swapchain(struct wlr_output *output,
 		return true;
 	}
 
-	wlr_log(WLR_DEBUG, "Choosing primary buffer format 0x%"PRIX32" for output '%s'",
-		format->format, output->name);
+	char *format_name = drmGetFormatName(format->format);
+	wlr_log(WLR_DEBUG, "Choosing primary buffer format %s (0x%08"PRIX32") for output '%s'",
+		format_name ? format_name : "<unknown>", format->format, output->name);
+	free(format_name);
 
 	if (!allow_modifiers && (format->len != 1 || format->modifiers[0] != DRM_FORMAT_MOD_LINEAR)) {
 		if (!wlr_drm_format_has(format, DRM_FORMAT_MOD_INVALID)) {
