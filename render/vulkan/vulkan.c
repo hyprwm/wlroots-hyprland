@@ -426,33 +426,25 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	dev->phdev = phdev;
 	dev->instance = ini;
 	dev->drm_fd = -1;
-	dev->extensions = calloc(16, sizeof(*ini->extensions));
-	if (!dev->extensions) {
-		wlr_log_errno(WLR_ERROR, "allocation failed");
-		goto error;
-	}
 
 	// For dmabuf import we require at least the external_memory_fd,
 	// external_memory_dma_buf, queue_family_foreign and
 	// image_drm_format_modifier extensions.
-	const char *names[] = {
+	const char *extensions[] = {
 		VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
 		VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, // or vulkan 1.2
 		VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
 		VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
 		VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
 	};
+	size_t extensions_len = sizeof(extensions) / sizeof(extensions[0]);
 
-	unsigned nc = sizeof(names) / sizeof(names[0]);
-	const char *not_found = find_extensions(avail_ext_props, avail_extc, names, nc);
+	const char *not_found =
+		find_extensions(avail_ext_props, avail_extc, extensions, extensions_len);
 	if (not_found) {
 		wlr_log(WLR_ERROR, "vulkan: required device extension %s not found",
 			not_found);
 		goto error;
-	}
-
-	for (unsigned i = 0u; i < nc; ++i) {
-		dev->extensions[dev->extension_count++] = names[i];
 	}
 
 	// queue families
@@ -488,8 +480,8 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	dev_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	dev_info.queueCreateInfoCount = 1u;
 	dev_info.pQueueCreateInfos = &qinfo;
-	dev_info.enabledExtensionCount = dev->extension_count;
-	dev_info.ppEnabledExtensionNames = dev->extensions;
+	dev_info.enabledExtensionCount = extensions_len;
+	dev_info.ppEnabledExtensionNames = extensions;
 
 	res = vkCreateDevice(phdev, &dev_info, NULL, &dev->dev);
 	if (res != VK_SUCCESS) {
@@ -550,7 +542,6 @@ void vulkan_device_destroy(struct wlr_vk_device *dev) {
 		vulkan_format_props_finish(&dev->format_props[i]);
 	}
 
-	free(dev->extensions);
 	free(dev->shm_formats);
 	free(dev->format_props);
 	free(dev);

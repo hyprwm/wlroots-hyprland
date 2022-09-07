@@ -48,10 +48,6 @@ struct wlr_vk_device {
 
 	int drm_fd;
 
-	// enabled extensions
-	size_t extension_count;
-	const char **extensions;
-
 	// we only ever need one queue for rendering and transfer commands
 	uint32_t queue_family;
 	VkQueue queue;
