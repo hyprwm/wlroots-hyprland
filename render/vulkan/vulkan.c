@@ -391,7 +391,7 @@ VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd) 
 }
 
 struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
-		VkPhysicalDevice phdev, size_t ext_count, const char **exts) {
+		VkPhysicalDevice phdev) {
 	VkResult res;
 
 	// check for extensions
@@ -426,21 +426,10 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	dev->phdev = phdev;
 	dev->instance = ini;
 	dev->drm_fd = -1;
-	dev->extensions = calloc(16 + ext_count, sizeof(*ini->extensions));
+	dev->extensions = calloc(16, sizeof(*ini->extensions));
 	if (!dev->extensions) {
 		wlr_log_errno(WLR_ERROR, "allocation failed");
 		goto error;
-	}
-
-	// find extensions
-	for (unsigned i = 0; i < ext_count; ++i) {
-		if (find_extensions(avail_ext_props, avail_extc, &exts[i], 1)) {
-			wlr_log(WLR_DEBUG, "vulkan device extension %s not found",
-				exts[i]);
-			continue;
-		}
-
-		dev->extensions[dev->extension_count++] = exts[i];
 	}
 
 	// For dmabuf import we require at least the external_memory_fd,

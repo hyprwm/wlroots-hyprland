@@ -76,10 +76,8 @@ struct wlr_vk_device {
 VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd);
 
 // Creates a device for the given instance and physical device.
-// Will try to enable the given extensions but not fail if they are not
-// available which can later be checked by the caller.
 struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
-	VkPhysicalDevice phdev, size_t ext_count, const char **exts);
+	VkPhysicalDevice phdev);
 void vulkan_device_destroy(struct wlr_vk_device *dev);
 
 // Tries to find any memory bit for the given vulkan device that

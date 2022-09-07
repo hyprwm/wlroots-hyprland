@@ -1496,7 +1496,7 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	vkGetPhysicalDeviceQueueFamilyProperties(phdev, &qfam_count,
 		queue_props);
 
-	struct wlr_vk_device *dev = vulkan_device_create(ini, phdev, 0, NULL);
+	struct wlr_vk_device *dev = vulkan_device_create(ini, phdev);
 	if (!dev) {
 		wlr_log(WLR_ERROR, "Failed to create vulkan device");
 		vulkan_instance_destroy(ini);
