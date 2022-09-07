@@ -35,13 +35,12 @@ static VkImageAspectFlagBits mem_plane_aspect(unsigned i) {
 
 // Will transition the texture to shaderReadOnlyOptimal layout for reading
 // from fragment shader later on
-static bool write_pixels(struct wlr_texture *wlr_texture,
+static bool write_pixels(struct wlr_vk_texture *texture,
 		uint32_t stride, uint32_t width, uint32_t height, uint32_t src_x,
 		uint32_t src_y, uint32_t dst_x, uint32_t dst_y, const void *vdata,
 		VkImageLayout old_layout, VkPipelineStageFlags src_stage,
 		VkAccessFlags src_access) {
 	VkResult res;
-	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
 	struct wlr_vk_renderer *renderer = texture->renderer;
 	VkDevice dev = texture->renderer->dev->dev;
 
@@ -164,7 +163,7 @@ static bool vulkan_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 		uint32_t height = rect.y2 - rect.y1;
 
 		// TODO: only map memory once
-		ok = write_pixels(wlr_texture, stride, width, height, rect.x1, rect.y1,
+		ok = write_pixels(texture, stride, width, height, rect.x1, rect.y1,
 			rect.x1, rect.y1, data, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
 		if (!ok) {
@@ -243,11 +242,9 @@ static struct wlr_vk_texture *vulkan_texture_create(
 	return texture;
 }
 
-static struct wlr_texture *vulkan_texture_from_pixels(struct wlr_renderer *wlr_renderer,
-		uint32_t drm_fmt, uint32_t stride, uint32_t width,
-		uint32_t height, const void *data) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-
+static struct wlr_texture *vulkan_texture_from_pixels(
+		struct wlr_vk_renderer *renderer, uint32_t drm_fmt, uint32_t stride,
+		uint32_t width, uint32_t height, const void *data) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
@@ -369,7 +366,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(struct wlr_renderer *wlr_r
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 
 	// write data
-	if (!write_pixels(&texture->wlr_texture, stride,
+	if (!write_pixels(texture, stride,
 			width, height, 0, 0, 0, 0, data, VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0)) {
 		goto error;
@@ -610,10 +607,9 @@ error_image:
 	return VK_NULL_HANDLE;
 }
 
-static struct wlr_texture *vulkan_texture_from_dmabuf(struct wlr_renderer *wlr_renderer,
+static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
+		struct wlr_vk_renderer *renderer,
 		struct wlr_dmabuf_attributes *attribs) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
@@ -685,7 +681,7 @@ static struct wlr_texture *vulkan_texture_from_dmabuf(struct wlr_renderer *wlr_r
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 	texture->dmabuf_imported = true;
 
-	return &texture->wlr_texture;
+	return texture;
 
 error:
 	vulkan_texture_destroy(texture);
@@ -710,13 +706,11 @@ static struct wlr_texture *vulkan_texture_from_dmabuf_buffer(
 		}
 	}
 
-	struct wlr_texture *wlr_texture =
-		vulkan_texture_from_dmabuf(&renderer->wlr_renderer, dmabuf);
-	if (wlr_texture == NULL) {
+	texture = vulkan_texture_from_dmabuf(renderer, dmabuf);
+	if (texture == NULL) {
 		return false;
 	}
 
-	texture = vulkan_get_texture(wlr_texture);
 	texture->buffer = wlr_buffer_lock(buffer);
 
 	texture->buffer_destroy.notify = texture_handle_buffer_destroy;
@@ -725,8 +719,7 @@ static struct wlr_texture *vulkan_texture_from_dmabuf_buffer(
 	return &texture->wlr_texture;
 }
 
-struct wlr_texture *vulkan_texture_from_buffer(
-		struct wlr_renderer *wlr_renderer,
+struct wlr_texture *vulkan_texture_from_buffer(struct wlr_renderer *wlr_renderer,
 		struct wlr_buffer *buffer) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 
@@ -738,7 +731,7 @@ struct wlr_texture *vulkan_texture_from_buffer(
 		return vulkan_texture_from_dmabuf_buffer(renderer, buffer, &dmabuf);
 	} else if (wlr_buffer_begin_data_ptr_access(buffer,
 			WLR_BUFFER_DATA_PTR_ACCESS_READ, &data, &format, &stride)) {
-		struct wlr_texture *tex = vulkan_texture_from_pixels(wlr_renderer,
+		struct wlr_texture *tex = vulkan_texture_from_pixels(renderer,
 			format, stride, buffer->width, buffer->height, data);
 		wlr_buffer_end_data_ptr_access(buffer);
 		return tex;
