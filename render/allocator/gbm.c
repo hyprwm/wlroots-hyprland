@@ -138,9 +138,15 @@ static struct wlr_gbm_buffer *create_buffer(struct wlr_gbm_allocator *alloc,
 		buffer->dmabuf.modifier = fallback_modifier;
 	}
 
-	wlr_log(WLR_DEBUG, "Allocated %dx%d GBM buffer (format 0x%"PRIX32", "
-		"modifier 0x%"PRIX64")", buffer->base.width, buffer->base.height,
-		buffer->dmabuf.format, buffer->dmabuf.modifier);
+	char *format_name = drmGetFormatName(buffer->dmabuf.format);
+	char *modifier_name = drmGetFormatModifierName(buffer->dmabuf.modifier);
+	wlr_log(WLR_DEBUG, "Allocated %dx%d GBM buffer "
+		"with format %s (0x%08"PRIX32"), modifier %s (0x%016"PRIX64")",
+		buffer->base.width, buffer->base.height,
+		format_name ? format_name : "<unknown>", buffer->dmabuf.format,
+		modifier_name ? modifier_name : "<unknown>", buffer->dmabuf.modifier);
+	free(format_name);
+	free(modifier_name);
 
 	return buffer;
 }
