@@ -99,12 +99,21 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats);
 static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, int format,
 	uint64_t **modifiers, EGLBoolean **external_only);
 
+static void log_modifier(uint64_t modifier, bool external_only) {
+	char *mod_name = drmGetFormatModifierName(modifier);
+	wlr_log(WLR_DEBUG, "    %s (0x%016"PRIX64"): ✓ texture  %s render",
+		mod_name ? mod_name : "<unknown>", modifier, external_only ? "✗" : "✓");
+	free(mod_name);
+}
+
 static void init_dmabuf_formats(struct wlr_egl *egl) {
 	int *formats;
 	int formats_len = get_egl_dmabuf_formats(egl, &formats);
 	if (formats_len < 0) {
 		return;
 	}
+
+	wlr_log(WLR_DEBUG, "Supported DMA-BUF formats:");
 
 	bool has_modifiers = false;
 	for (int i = 0; i < formats_len; i++) {
@@ -144,27 +153,29 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 			}
 		}
 
+		if (wlr_log_get_verbosity() >= WLR_DEBUG) {
+			char *fmt_name = drmGetFormatName(fmt);
+			wlr_log(WLR_DEBUG, "  %s (0x%08"PRIX32")",
+				fmt_name ? fmt_name : "<unknown>", fmt);
+			free(fmt_name);
+
+			log_modifier(DRM_FORMAT_MOD_INVALID, false);
+			if (modifiers_len == 0) {
+				log_modifier(DRM_FORMAT_MOD_LINEAR, false);
+			}
+			for (int j = 0; j < modifiers_len; j++) {
+				log_modifier(modifiers[j], external_only[j]);
+			}
+		}
+
 		free(modifiers);
 		free(external_only);
 	}
-
-	char *str_formats = malloc(formats_len * 5 + 1);
-	if (str_formats == NULL) {
-		goto out;
-	}
-	for (int i = 0; i < formats_len; i++) {
-		snprintf(&str_formats[i*5], (formats_len - i) * 5 + 1, "%.4s ",
-			(char*)&formats[i]);
-	}
-	wlr_log(WLR_DEBUG, "Supported DMA-BUF formats: %s", str_formats);
-	wlr_log(WLR_DEBUG, "EGL DMA-BUF format modifiers %s",
-		has_modifiers ? "supported" : "unsupported");
-	free(str_formats);
+	free(formats);
 
 	egl->has_modifiers = has_modifiers;
-
-out:
-	free(formats);
+	wlr_log(WLR_DEBUG, "EGL DMA-BUF format modifiers %s",
+		has_modifiers ? "supported" : "unsupported");
 }
 
 static struct wlr_egl *egl_create(void) {
