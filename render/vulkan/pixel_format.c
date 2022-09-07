@@ -261,7 +261,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 	}
 
 	// non-dmabuf texture properties
-	if (fmtp.formatProperties.optimalTilingFeatures & tex_features) {
+	if ((fmtp.formatProperties.optimalTilingFeatures & tex_features) == tex_features) {
 		fmti.pNext = NULL;
 		ifmtp.pNext = NULL;
 		fmti.tiling = VK_IMAGE_TILING_OPTIMAL;
