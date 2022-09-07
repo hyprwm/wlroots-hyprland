@@ -511,6 +511,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		goto error;
 	}
 
+	wlr_log(WLR_DEBUG, "Supported Vulkan formats:");
 	for (unsigned i = 0u; i < max_fmts; ++i) {
 		vulkan_format_props_query(dev, &fmts[i]);
 	}
