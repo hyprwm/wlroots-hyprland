@@ -235,7 +235,7 @@ static struct wlr_egl *egl_create(void) {
 	return egl;
 }
 
-static bool egl_init_display(struct wlr_egl *egl, EGLDisplay *display) {
+static bool egl_init_display(struct wlr_egl *egl, EGLDisplay display) {
 	egl->display = display;
 
 	EGLint major, minor;
