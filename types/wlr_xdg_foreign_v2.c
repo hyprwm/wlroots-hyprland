@@ -53,15 +53,15 @@ static struct wlr_xdg_toplevel *verify_is_toplevel(struct wl_resource *resource,
 
 static void destroy_imported_child(struct wlr_xdg_imported_child_v2 *child) {
 	wl_list_remove(&child->xdg_toplevel_set_parent.link);
-	wl_list_remove(&child->xdg_surface_unmap.link);
+	wl_list_remove(&child->xdg_surface_destroy.link);
 	wl_list_remove(&child->link);
 	free(child);
 }
 
-static void handle_child_xdg_surface_unmap(
+static void handle_child_xdg_surface_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_xdg_imported_child_v2 *child =
-		wl_container_of(listener, child, xdg_surface_unmap);
+		wl_container_of(listener, child, xdg_surface_destroy);
 	destroy_imported_child(child);
 }
 
@@ -110,12 +110,12 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 		return;
 	}
 	child->surface = wlr_surface_child;
-	child->xdg_surface_unmap.notify = handle_child_xdg_surface_unmap;
+	child->xdg_surface_destroy.notify = handle_child_xdg_surface_destroy;
 	child->xdg_toplevel_set_parent.notify = handle_xdg_toplevel_set_parent;
 
 	wlr_xdg_toplevel_set_parent(child_toplevel, surface->toplevel);
-	wl_signal_add(&child_toplevel->base->events.unmap,
-			&child->xdg_surface_unmap);
+	wl_signal_add(&child_toplevel->base->events.destroy,
+			&child->xdg_surface_destroy);
 	wl_signal_add(&child_toplevel->events.set_parent,
 			&child->xdg_toplevel_set_parent);
 
@@ -176,7 +176,7 @@ static void destroy_imported(struct wlr_xdg_imported_v2 *imported) {
 static void destroy_exported(struct wlr_xdg_exported_v2 *exported) {
 	wlr_xdg_foreign_exported_finish(&exported->base);
 
-	wl_list_remove(&exported->xdg_surface_unmap.link);
+	wl_list_remove(&exported->xdg_surface_destroy.link);
 	wl_list_remove(&exported->link);
 	wl_resource_set_user_data(exported->resource, NULL);
 	free(exported);
@@ -192,10 +192,10 @@ static void xdg_exported_handle_resource_destroy(
 	}
 }
 
-static void handle_xdg_surface_unmap(
+static void handle_xdg_surface_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_xdg_exported_v2 *exported =
-		wl_container_of(listener, exported, xdg_surface_unmap);
+		wl_container_of(listener, exported, xdg_surface_destroy);
 
 	destroy_exported(exported);
 }
@@ -244,8 +244,8 @@ static void xdg_exporter_handle_export(struct wl_client *wl_client,
 
 	zxdg_exported_v2_send_handle(exported->resource, exported->base.handle);
 
-	exported->xdg_surface_unmap.notify = handle_xdg_surface_unmap;
-	wl_signal_add(&xdg_toplevel->base->events.unmap, &exported->xdg_surface_unmap);
+	exported->xdg_surface_destroy.notify = handle_xdg_surface_destroy;
+	wl_signal_add(&xdg_toplevel->base->events.destroy, &exported->xdg_surface_destroy);
 }
 
 static const struct zxdg_exporter_v2_interface xdg_exporter_impl = {
