@@ -909,9 +909,14 @@ static const struct wlr_drm_format_set *vulkan_get_render_formats(
 
 static uint32_t vulkan_preferred_read_format(
 		struct wlr_renderer *wlr_renderer) {
-	// TODO: implement!
-	wlr_log(WLR_ERROR, "vulkan_preferred_read_format not implemented");
-	return DRM_FORMAT_XBGR8888;
+	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
+	struct wlr_dmabuf_attributes dmabuf = {0};
+	if (!wlr_buffer_get_dmabuf(renderer->current_render_buffer->wlr_buffer,
+				&dmabuf)) {
+		wlr_log(WLR_ERROR, "vulkan_preferred_read_format: Failed to get dmabuf of current render buffer");
+		return DRM_FORMAT_INVALID;
+	}
+	return dmabuf.format;
 }
 
 static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
