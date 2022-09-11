@@ -1341,6 +1341,24 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 
 			free(subconnector);
 
+			// Before iterating on the conn's modes, get the current KMS mode
+			// in use from the connector's CRTC.
+			drmModeModeInfo *current_modeinfo = NULL;
+			if (wlr_conn->crtc != NULL) {
+				if (wlr_conn->crtc->props.mode_id == 0) {
+					// Use the legacy drm interface.
+					if (wlr_conn->crtc->legacy_crtc->mode_valid) {
+						current_modeinfo = &wlr_conn->crtc->legacy_crtc->mode;
+					}
+				} else {
+					// Use the modern atomic drm interface.
+			 		size_t modeinfo_size = 0; 
+					current_modeinfo = get_drm_prop_blob(drm->fd, wlr_conn->crtc->id,
+						wlr_conn->crtc->props.mode_id, &modeinfo_size);
+					assert(modeinfo_size == sizeof(drmModeModeInfo));
+				}
+			}
+
 			wlr_log(WLR_INFO, "Detected modes:");
 
 			for (int i = 0; i < drm_conn->count_modes; ++i) {
@@ -1363,12 +1381,33 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 					mode->wlr_mode.preferred = true;
 				}
 
+				// If this is the current mode set on the conn's crtc,
+				// then set it as the conn's output current mode.
+				if (current_modeinfo != NULL && memcmp(&mode->drm_mode,
+						current_modeinfo, sizeof(*current_modeinfo)) == 0) {
+					// Update width, height, refresh, transform_matrix and current_mode
+					// of this connector's output.
+					wlr_output_update_mode(&wlr_conn->output, &mode->wlr_mode);
+
+					uint64_t mode_id = 0;
+					get_drm_prop(drm->fd, wlr_conn->crtc->id,
+						wlr_conn->crtc->props.mode_id, &mode_id);
+
+					wlr_conn->crtc->mode_id = mode_id;
+				}
+
 				wlr_log(WLR_INFO, "  %"PRId32"x%"PRId32"@%"PRId32" %s",
 					mode->wlr_mode.width, mode->wlr_mode.height,
 					mode->wlr_mode.refresh,
 					mode->wlr_mode.preferred ? "(preferred)" : "");
 
 				wl_list_insert(wlr_conn->output.modes.prev, &mode->wlr_mode.link);
+			}
+
+			if (wlr_conn->crtc != NULL && wlr_conn->crtc->props.mode_id != 0) {
+				// free() the modeinfo pointer, but only
+				// if not using the legacy API.
+				free(current_modeinfo);
 			}
 
 			wlr_conn->possible_crtcs =
