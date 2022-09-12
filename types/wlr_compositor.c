@@ -12,6 +12,7 @@
 #include <wlr/util/region.h>
 #include "types/wlr_buffer.h"
 #include "types/wlr_region.h"
+#include "types/wlr_subcompositor.h"
 #include "util/time.h"
 
 #define COMPOSITOR_VERSION 5
@@ -405,8 +406,6 @@ static void surface_update_input_region(struct wlr_surface *surface) {
 
 static void surface_state_init(struct wlr_surface_state *state);
 
-static void subsurface_parent_commit(struct wlr_subsurface *subsurface);
-
 static void surface_cache_pending(struct wlr_surface *surface) {
 	struct wlr_surface_state *cached = calloc(1, sizeof(*cached));
 	if (!cached) {
@@ -468,7 +467,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 		wl_list_insert(&surface->current.subsurfaces_above,
 			&subsurface->current.link);
 
-		subsurface_parent_commit(subsurface);
+		subsurface_handle_parent_commit(subsurface);
 	}
 	wl_list_for_each_reverse(subsurface, &surface->pending.subsurfaces_below,
 			pending.link) {
@@ -476,7 +475,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 		wl_list_insert(&surface->current.subsurfaces_below,
 			&subsurface->current.link);
 
-		subsurface_parent_commit(subsurface);
+		subsurface_handle_parent_commit(subsurface);
 	}
 
 	// If we're committing the pending state, bump the pending sequence number
@@ -490,47 +489,6 @@ static void surface_commit_state(struct wlr_surface *surface,
 	}
 
 	wl_signal_emit_mutable(&surface->events.commit, surface);
-}
-
-static void collect_subsurface_damage_iter(struct wlr_surface *surface,
-		int sx, int sy, void *data) {
-	struct wlr_subsurface *subsurface = data;
-	pixman_region32_t *damage = &subsurface->parent->external_damage;
-	pixman_region32_union_rect(damage, damage,
-		subsurface->current.x + sx,
-		subsurface->current.y + sy,
-		surface->current.width, surface->current.height);
-}
-
-// TODO: untangle from wlr_surface
-static void subsurface_parent_commit(struct wlr_subsurface *subsurface) {
-	struct wlr_surface *surface = subsurface->surface;
-
-	bool moved = subsurface->current.x != subsurface->pending.x ||
-		subsurface->current.y != subsurface->pending.y;
-	if (subsurface->mapped && moved) {
-		wlr_surface_for_each_surface(surface,
-			collect_subsurface_damage_iter, subsurface);
-	}
-
-	if (subsurface->synchronized && subsurface->has_cache) {
-		wlr_surface_unlock_cached(surface, subsurface->cached_seq);
-		subsurface->has_cache = false;
-	}
-
-	subsurface->current.x = subsurface->pending.x;
-	subsurface->current.y = subsurface->pending.y;
-	if (subsurface->mapped && (moved || subsurface->reordered)) {
-		subsurface->reordered = false;
-		wlr_surface_for_each_surface(surface,
-			collect_subsurface_damage_iter, subsurface);
-	}
-
-	if (!subsurface->added) {
-		subsurface->added = true;
-		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
-			subsurface);
-	}
 }
 
 static void surface_handle_commit(struct wl_client *client,
