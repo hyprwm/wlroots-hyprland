@@ -367,6 +367,7 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 		subsurface->added = true;
 		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
 			subsurface);
+		subsurface_consider_map(subsurface, true);
 	}
 }
 
@@ -413,8 +414,6 @@ static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
 		&subsurface->pending.link);
 
 	surface->role_data = subsurface;
-
-	subsurface_consider_map(subsurface, true);
 
 	return subsurface;
 }
