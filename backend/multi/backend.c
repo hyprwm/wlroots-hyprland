@@ -4,6 +4,7 @@
 #include <time.h>
 #include <wlr/backend/interface.h>
 #include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include "backend/backend.h"
 #include "backend/multi.h"
@@ -97,11 +98,73 @@ static uint32_t multi_backend_get_buffer_caps(struct wlr_backend *backend) {
 	return caps;
 }
 
+static int compare_output_state_backend(const void *data_a, const void *data_b) {
+	const struct wlr_backend_output_state *a = data_a;
+	const struct wlr_backend_output_state *b = data_b;
+
+	uintptr_t ptr_a = (uintptr_t)a->output->backend;
+	uintptr_t ptr_b = (uintptr_t)b->output->backend;
+
+	if (ptr_a == ptr_b) {
+		return 0;
+	} else if (ptr_a < ptr_b) {
+		return -1;
+	} else {
+		return 1;
+	}
+}
+
+static bool commit(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len,
+		bool test_only) {
+	// Group states by backend, then perform one commit per backend
+	struct wlr_backend_output_state *by_backend = malloc(states_len * sizeof(by_backend[0]));
+	if (by_backend == NULL) {
+		return false;
+	}
+	memcpy(by_backend, states, states_len * sizeof(by_backend[0]));
+	qsort(by_backend, states_len, sizeof(by_backend[0]), compare_output_state_backend);
+
+	bool ok = true;
+	for (size_t i = 0; i < states_len; i++) {
+		struct wlr_backend *sub = by_backend[i].output->backend;
+
+		size_t j = i;
+		while (j < states_len && by_backend[j].output->backend == sub) {
+			j++;
+		}
+
+		if (test_only) {
+			ok = wlr_backend_test(sub, &by_backend[i], j - i);
+		} else {
+			ok = wlr_backend_commit(sub, &by_backend[i], j - i);
+		}
+		if (!ok) {
+			break;
+		}
+	}
+
+	free(by_backend);
+	return ok;
+}
+
+static bool multi_backend_test(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	return commit(backend, states, states_len, true);
+}
+
+static bool multi_backend_commit(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	return commit(backend, states, states_len, false);
+}
+
 static const struct wlr_backend_impl backend_impl = {
 	.start = multi_backend_start,
 	.destroy = multi_backend_destroy,
 	.get_drm_fd = multi_backend_get_drm_fd,
 	.get_buffer_caps = multi_backend_get_buffer_caps,
+	.test = multi_backend_test,
+	.commit = multi_backend_commit,
 };
 
 static void handle_event_loop_destroy(struct wl_listener *listener, void *data) {
