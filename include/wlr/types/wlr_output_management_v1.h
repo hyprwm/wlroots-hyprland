@@ -154,4 +154,16 @@ void wlr_output_head_v1_state_apply(
 	const struct wlr_output_head_v1_state *head_state,
 	struct wlr_output_state *output_state);
 
+/**
+ * Build an array of struct wlr_output_state reflecting the new configuration.
+ *
+ * The states_len pointer will be populated with the number of elements in the
+ * array. The caller is responsible for freeing the array.
+ *
+ * The returned array can be passed to wlr_backend_test() and
+ * wlr_backend_commit().
+ */
+struct wlr_backend_output_state *wlr_output_configuration_v1_build_state(
+	const struct wlr_output_configuration_v1 *config, size_t *states_len);
+
 #endif

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <wlr/backend.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/util/log.h>
 #include "wlr-output-management-unstable-v1-protocol.h"
@@ -1026,4 +1027,26 @@ void wlr_output_head_v1_state_apply(
 	wlr_output_state_set_transform(output_state, head_state->transform);
 	wlr_output_state_set_adaptive_sync_enabled(output_state,
 		head_state->adaptive_sync_enabled);
+}
+
+struct wlr_backend_output_state *wlr_output_configuration_v1_build_state(
+		const struct wlr_output_configuration_v1 *config, size_t *states_len) {
+	*states_len = wl_list_length(&config->heads);
+	struct wlr_backend_output_state *states = calloc(*states_len, sizeof(states[0]));
+	if (states == NULL) {
+		return NULL;
+	}
+
+	size_t i = 0;
+	const struct wlr_output_configuration_head_v1 *config_head;
+	wl_list_for_each(config_head, &config->heads, link) {
+		struct wlr_backend_output_state *state = &states[i];
+		i++;
+
+		state->output = config_head->state.output;
+		wlr_output_state_init(&state->base);
+		wlr_output_head_v1_state_apply(&config_head->state, &state->base);
+	}
+
+	return states;
 }
