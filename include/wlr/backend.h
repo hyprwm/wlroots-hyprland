@@ -10,9 +10,18 @@
 #define WLR_BACKEND_H
 
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_output.h>
 
 struct wlr_session;
 struct wlr_backend_impl;
+
+/**
+ * Per-output state for wlr_backend_test() and wlr_backend_commit().
+ */
+struct wlr_backend_output_state {
+	struct wlr_output *output;
+	struct wlr_output_state base;
+};
 
 /**
  * A backend provides a set of input and output devices.
@@ -61,5 +70,24 @@ void wlr_backend_destroy(struct wlr_backend *backend);
  * to have ownership of it.
  */
 int wlr_backend_get_drm_fd(struct wlr_backend *backend);
+
+/**
+ * Atomically test a new configuration for multiple outputs.
+ *
+ * Some backends (e.g. DRM) have global backend-wide limitations. This function
+ * can be used to check whether changes across multiple outputs are supported by
+ * the backend.
+ */
+bool wlr_backend_test(struct wlr_backend *backend,
+	const struct wlr_backend_output_state *states, size_t states_len);
+/**
+ * Atomically apply a new configuration for multiple outputs.
+ *
+ * There is no guarantee that the changes will be applied atomically. Users
+ * should call wlr_backend_test() first to check that the new state is supported
+ * by the backend.
+ */
+bool wlr_backend_commit(struct wlr_backend *backend,
+	const struct wlr_backend_output_state *states, size_t states_len);
 
 #endif

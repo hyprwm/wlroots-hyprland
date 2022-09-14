@@ -15,6 +15,7 @@
 #include "backend/backend.h"
 #include "backend/multi.h"
 #include "render/allocator/allocator.h"
+#include "types/wlr_output.h"
 #include "util/env.h"
 #include "util/time.h"
 
@@ -444,4 +445,53 @@ error:
 	wlr_session_destroy(session);
 #endif
 	return NULL;
+}
+
+bool wlr_backend_test(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	if (backend->impl->test) {
+		return backend->impl->test(backend, states, states_len);
+	}
+
+	for (size_t i = 0; i < states_len; i++) {
+		const struct wlr_backend_output_state *state = &states[i];
+		assert(state->output->backend == backend);
+		if (!wlr_output_test_state(states[i].output, &state->base)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool wlr_backend_commit(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	if (!backend->impl->commit) {
+		for (size_t i = 0; i < states_len; i++) {
+			const struct wlr_backend_output_state *state = &states[i];
+			if (!wlr_output_commit_state(state->output, &state->base)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	for (size_t i = 0; i < states_len; i++) {
+		const struct wlr_backend_output_state *state = &states[i];
+		if (!output_prepare_commit(state->output, &state->base)) {
+			return false;
+		}
+	}
+
+	if (!backend->impl->commit(backend, states, states_len)) {
+		return false;
+	}
+
+	for (size_t i = 0; i < states_len; i++) {
+		const struct wlr_backend_output_state *state = &states[i];
+		output_apply_commit(state->output, &state->base);
+	}
+
+	return true;
 }

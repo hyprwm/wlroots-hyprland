@@ -22,4 +22,7 @@ bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 
 void output_defer_present(struct wlr_output *output, struct wlr_output_event_present event);
 
+bool output_prepare_commit(struct wlr_output *output, const struct wlr_output_state *state);
+void output_apply_commit(struct wlr_output *output, const struct wlr_output_state *state);
+
 #endif

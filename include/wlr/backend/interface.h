@@ -12,11 +12,17 @@
 #include <stdbool.h>
 #include <wlr/backend.h>
 
+struct wlr_output_state;
+
 struct wlr_backend_impl {
 	bool (*start)(struct wlr_backend *backend);
 	void (*destroy)(struct wlr_backend *backend);
 	int (*get_drm_fd)(struct wlr_backend *backend);
 	uint32_t (*get_buffer_caps)(struct wlr_backend *backend);
+	bool (*test)(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len);
+	bool (*commit)(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len);
 };
 
 /**

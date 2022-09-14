@@ -663,6 +663,51 @@ bool wlr_output_test_state(struct wlr_output *output,
 	return success;
 }
 
+bool output_prepare_commit(struct wlr_output *output, const struct wlr_output_state *state) {
+	if (!output_basic_test(output, state)) {
+		wlr_log(WLR_ERROR, "Basic output test failed for %s", output->name);
+		return false;
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_BUFFER) &&
+			output->idle_frame != NULL) {
+		wl_event_source_remove(output->idle_frame);
+		output->idle_frame = NULL;
+	}
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	struct wlr_output_event_precommit pre_event = {
+		.output = output,
+		.when = &now,
+		.state = state,
+	};
+	wl_signal_emit_mutable(&output->events.precommit, &pre_event);
+
+	return true;
+}
+
+void output_apply_commit(struct wlr_output *output, const struct wlr_output_state *state) {
+	output->commit_seq++;
+
+	if (output_pending_enabled(output, state)) {
+		output->frame_pending = true;
+		output->needs_frame = false;
+	}
+
+	output_apply_state(output, state);
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	struct wlr_output_event_commit event = {
+		.output = output,
+		.when = &now,
+		.state = state,
+	};
+	wl_signal_emit_mutable(&output->events.commit, &event);
+}
+
 bool wlr_output_commit_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	uint32_t unchanged = output_compare_state(output, state);
@@ -682,21 +727,9 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		return false;
 	}
 
-	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
-			output->idle_frame != NULL) {
-		wl_event_source_remove(output->idle_frame);
-		output->idle_frame = NULL;
+	if (!output_prepare_commit(output, &pending)) {
+		return false;
 	}
-
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-
-	struct wlr_output_event_precommit pre_event = {
-		.output = output,
-		.when = &now,
-		.state = &pending,
-	};
-	wl_signal_emit_mutable(&output->events.precommit, &pre_event);
 
 	if (!output->impl->commit(output, &pending)) {
 		if (new_back_buffer) {
@@ -705,21 +738,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		return false;
 	}
 
-	output->commit_seq++;
-
-	if (output_pending_enabled(output, state)) {
-		output->frame_pending = true;
-		output->needs_frame = false;
-	}
-
-	output_apply_state(output, &pending);
-
-	struct wlr_output_event_commit event = {
-		.output = output,
-		.when = &now,
-		.state = &pending,
-	};
-	wl_signal_emit_mutable(&output->events.commit, &event);
+	output_apply_commit(output, &pending);
 
 	if (new_back_buffer) {
 		wlr_buffer_unlock(pending.buffer);
