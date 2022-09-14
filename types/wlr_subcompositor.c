@@ -422,34 +422,16 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 	struct wlr_surface *parent = wlr_surface_from_resource(parent_resource);
 
-	static const char msg[] = "get_subsurface: wl_subsurface@";
-
-	if (surface == parent) {
-		wl_resource_post_error(resource,
-			WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-			"%s%" PRIu32 ": wl_surface@%" PRIu32 " cannot be its own parent",
-			msg, id, wl_resource_get_id(surface_resource));
-		return;
-	}
-
-	if (wlr_subsurface_try_from_wlr_surface(surface) != NULL) {
-		wl_resource_post_error(resource,
-			WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-			"%s%" PRIu32 ": wl_surface@%" PRIu32 " is already a sub-surface",
-			msg, id, wl_resource_get_id(surface_resource));
+	if (!wlr_surface_set_role(surface, &subsurface_role, NULL,
+			resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE)) {
 		return;
 	}
 
 	if (wlr_surface_get_root_surface(parent) == surface) {
 		wl_resource_post_error(resource,
 			WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-			"%s%" PRIu32 ": wl_surface@%" PRIu32 " is an ancestor of parent",
-			msg, id, wl_resource_get_id(surface_resource));
-		return;
-	}
-
-	if (!wlr_surface_set_role(surface, &subsurface_role, NULL,
-			resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE)) {
+			"wl_subsurface@%" PRIu32
+			" cannot be a parent of itself or its ancestor", id);
 		return;
 	}
 
