@@ -429,7 +429,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 
 	if (wlr_surface_get_root_surface(parent) == surface) {
 		wl_resource_post_error(resource,
-			WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
+			WL_SUBCOMPOSITOR_ERROR_BAD_PARENT,
 			"wl_subsurface@%" PRIu32
 			" cannot be a parent of itself or its ancestor", id);
 		return;
