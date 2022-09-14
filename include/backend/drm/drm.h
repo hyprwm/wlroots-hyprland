@@ -58,7 +58,6 @@ struct wlr_drm_backend {
 	const struct wlr_drm_interface *iface;
 	clockid_t clock;
 	bool addfb2_modifiers;
-	struct udev_hwdb *hwdb;
 
 	int fd;
 	char *name;
