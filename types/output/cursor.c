@@ -220,7 +220,7 @@ static struct wlr_drm_format *output_pick_cursor_format(struct wlr_output *outpu
 		display_formats =
 			output->impl->get_cursor_formats(output, allocator->buffer_caps);
 		if (display_formats == NULL) {
-			wlr_log(WLR_ERROR, "Failed to get cursor display formats");
+			wlr_log(WLR_DEBUG, "Failed to get cursor display formats");
 			return NULL;
 		}
 	}
@@ -266,7 +266,7 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 		struct wlr_drm_format *format =
 			output_pick_cursor_format(output);
 		if (format == NULL) {
-			wlr_log(WLR_ERROR, "Failed to pick cursor format");
+			wlr_log(WLR_DEBUG, "Failed to pick cursor format");
 			return NULL;
 		}
 
@@ -351,7 +351,7 @@ static bool output_cursor_attempt_hardware(struct wlr_output_cursor *cursor) {
 	if (texture != NULL) {
 		buffer = render_cursor_buffer(cursor);
 		if (buffer == NULL) {
-			wlr_log(WLR_ERROR, "Failed to render cursor buffer");
+			wlr_log(WLR_DEBUG, "Failed to render cursor buffer");
 			return false;
 		}
 	}
