@@ -126,6 +126,7 @@ static void drm_lease_device_v1_destroy(
 	}
 
 	wl_list_remove(&device->link);
+	wl_list_remove(&device->backend_destroy.link);
 	wlr_global_destroy_safe(device->global);
 
 	free(device);
