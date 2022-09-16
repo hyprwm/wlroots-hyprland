@@ -207,9 +207,10 @@ static struct wlr_egl *egl_create(void) {
 
 	egl->exts.KHR_platform_gbm = check_egl_ext(client_exts_str,
 			"EGL_KHR_platform_gbm");
-
 	egl->exts.EXT_platform_device = check_egl_ext(client_exts_str,
 			"EGL_EXT_platform_device");
+	egl->exts.KHR_display_reference = check_egl_ext(client_exts_str,
+			"EGL_KHR_display_reference");
 
 	if (check_egl_ext(client_exts_str, "EGL_EXT_device_base") || check_egl_ext(client_exts_str, "EGL_EXT_device_enumeration")) {
 		load_egl_proc(&egl->procs.eglQueryDevicesEXT, "eglQueryDevicesEXT");
@@ -351,8 +352,19 @@ static bool egl_init_display(struct wlr_egl *egl, EGLDisplay display) {
 
 static bool egl_init(struct wlr_egl *egl, EGLenum platform,
 		void *remote_display) {
+	EGLint display_attribs[3] = {0};
+	size_t display_attribs_len = 0;
+
+	if (egl->exts.KHR_display_reference) {
+		display_attribs[display_attribs_len++] = EGL_TRACK_REFERENCES_KHR;
+		display_attribs[display_attribs_len++] = EGL_TRUE;
+	}
+
+	display_attribs[display_attribs_len++] = EGL_NONE;
+	assert(display_attribs_len < sizeof(display_attribs) / sizeof(display_attribs[0]));
+
 	EGLDisplay display = egl->procs.eglGetPlatformDisplayEXT(platform,
-		remote_display, NULL);
+		remote_display, display_attribs);
 	if (display == EGL_NO_DISPLAY) {
 		wlr_log(WLR_ERROR, "Failed to create EGL display");
 		return false;

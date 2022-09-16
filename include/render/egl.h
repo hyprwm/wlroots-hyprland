@@ -24,6 +24,7 @@ struct wlr_egl {
 		bool EXT_device_query;
 		bool KHR_platform_gbm;
 		bool EXT_platform_device;
+		bool KHR_display_reference;
 	} exts;
 
 	struct {
