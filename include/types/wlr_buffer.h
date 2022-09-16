@@ -22,6 +22,9 @@ struct wlr_shm_client_buffer {
 	struct wl_listener release;
 };
 
+struct wlr_shm_client_buffer *shm_client_buffer_get_or_create(
+	struct wl_resource *resource);
+
 /**
  * A read-only buffer that holds a data pointer.
  *
