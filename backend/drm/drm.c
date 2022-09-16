@@ -750,6 +750,23 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 	return true;
 }
 
+static struct wlr_drm_mode *drm_mode_create(const drmModeModeInfo *modeinfo) {
+	struct wlr_drm_mode *mode = calloc(1, sizeof(*mode));
+	if (!mode) {
+		return NULL;
+	}
+
+	mode->drm_mode = *modeinfo;
+	mode->wlr_mode.width = mode->drm_mode.hdisplay;
+	mode->wlr_mode.height = mode->drm_mode.vdisplay;
+	mode->wlr_mode.refresh = calculate_refresh_rate(modeinfo);
+	if (modeinfo->type & DRM_MODE_TYPE_PREFERRED) {
+		mode->wlr_mode.preferred = true;
+	}
+
+	return mode;
+}
+
 struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 		const drmModeModeInfo *modeinfo) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
@@ -766,21 +783,17 @@ struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 		}
 	}
 
-	struct wlr_drm_mode *mode = calloc(1, sizeof(*mode));
+	struct wlr_drm_mode *mode = drm_mode_create(modeinfo);
 	if (!mode) {
 		return NULL;
 	}
-	memcpy(&mode->drm_mode, modeinfo, sizeof(*modeinfo));
 
-	mode->wlr_mode.width = mode->drm_mode.hdisplay;
-	mode->wlr_mode.height = mode->drm_mode.vdisplay;
-	mode->wlr_mode.refresh = calculate_refresh_rate(modeinfo);
+	wl_list_insert(&conn->output.modes, &mode->wlr_mode.link);
 
 	wlr_drm_conn_log(conn, WLR_INFO, "Registered custom mode "
 			"%"PRId32"x%"PRId32"@%"PRId32,
 			mode->wlr_mode.width, mode->wlr_mode.height,
 			mode->wlr_mode.refresh);
-	wl_list_insert(&conn->output.modes, &mode->wlr_mode.link);
 
 	return &mode->wlr_mode;
 }
@@ -1352,7 +1365,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 					}
 				} else {
 					// Use the modern atomic drm interface.
-			 		size_t modeinfo_size = 0; 
+			 		size_t modeinfo_size = 0;
 					current_modeinfo = get_drm_prop_blob(drm->fd, wlr_conn->crtc->id,
 						wlr_conn->crtc->props.mode_id, &modeinfo_size);
 					assert(modeinfo_size == sizeof(drmModeModeInfo));
@@ -1362,23 +1375,14 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			wlr_log(WLR_INFO, "Detected modes:");
 
 			for (int i = 0; i < drm_conn->count_modes; ++i) {
-				struct wlr_drm_mode *mode = calloc(1, sizeof(*mode));
+				if (drm_conn->modes[i].flags & DRM_MODE_FLAG_INTERLACE) {
+					continue;
+				}
+
+				struct wlr_drm_mode *mode = drm_mode_create(&drm_conn->modes[i]);
 				if (!mode) {
 					wlr_log_errno(WLR_ERROR, "Allocation failed");
 					continue;
-				}
-
-				if (drm_conn->modes[i].flags & DRM_MODE_FLAG_INTERLACE) {
-					free(mode);
-					continue;
-				}
-
-				mode->drm_mode = drm_conn->modes[i];
-				mode->wlr_mode.width = mode->drm_mode.hdisplay;
-				mode->wlr_mode.height = mode->drm_mode.vdisplay;
-				mode->wlr_mode.refresh = calculate_refresh_rate(&mode->drm_mode);
-				if (mode->drm_mode.type & DRM_MODE_TYPE_PREFERRED) {
-					mode->wlr_mode.preferred = true;
 				}
 
 				// If this is the current mode set on the conn's crtc,
