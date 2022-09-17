@@ -285,6 +285,13 @@ static void xdg_toplevel_handle_resize(struct wl_client *client,
 	struct wlr_seat_client *seat =
 		wlr_seat_client_from_resource(seat_resource);
 
+	if (edges > XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT) {
+		wl_resource_post_error(toplevel->base->resource,
+			XDG_TOPLEVEL_ERROR_INVALID_RESIZE_EDGE,
+			"provided value is not a valid variant of the resize_edge enum");
+		return;
+	}
+
 	if (!toplevel->base->configured) {
 		wl_resource_post_error(toplevel->base->resource,
 			XDG_SURFACE_ERROR_NOT_CONSTRUCTED,
