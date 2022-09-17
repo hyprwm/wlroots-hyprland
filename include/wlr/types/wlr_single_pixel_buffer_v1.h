@@ -6,8 +6,8 @@
 #error "Add -DWLR_USE_UNSTABLE to enable unstable wlroots features"
 #endif
 
-#ifndef WLR_TYPES_WLR_SINGLE_PIXEL_BUFFER_V1
-#define WLR_TYPES_WLR_SINGLE_PIXEL_BUFFER_V1
+#ifndef WLR_TYPES_WLR_SINGLE_PIXEL_BUFFER_V1_H
+#define WLR_TYPES_WLR_SINGLE_PIXEL_BUFFER_V1_H
 
 #include <wayland-server-core.h>
 
