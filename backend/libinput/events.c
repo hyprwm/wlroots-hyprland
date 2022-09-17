@@ -133,18 +133,11 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 }
 
 static void handle_device_removed(struct wlr_libinput_backend *backend,
-		struct libinput_device *libinput_dev) {
-	int vendor = libinput_device_get_id_vendor(libinput_dev);
-	int product = libinput_device_get_id_product(libinput_dev);
-	const char *name = libinput_device_get_name(libinput_dev);
+		struct wlr_libinput_input_device *dev) {
+	int vendor = libinput_device_get_id_vendor(dev->handle);
+	int product = libinput_device_get_id_product(dev->handle);
+	const char *name = libinput_device_get_name(dev->handle);
 	wlr_log(WLR_DEBUG, "Removing %s [%d:%d]", name, vendor, product);
-
-	struct wlr_libinput_input_device *dev =
-		libinput_device_get_user_data(libinput_dev);
-	if (dev == NULL) {
-		wlr_log(WLR_ERROR, "libinput_device has no wlr_libinput_input_device");
-		return;
-	}
 
 	destroy_libinput_input_device(dev);
 }
@@ -155,12 +148,18 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 	struct wlr_libinput_input_device *dev =
 		libinput_device_get_user_data(libinput_dev);
 	enum libinput_event_type event_type = libinput_event_get_type(event);
+
+	if (dev == NULL && event_type != LIBINPUT_EVENT_DEVICE_ADDED) {
+		wlr_log(WLR_ERROR, "libinput_device has no wlr_libinput_input_device");
+		return;
+	}
+
 	switch (event_type) {
 	case LIBINPUT_EVENT_DEVICE_ADDED:
 		handle_device_added(backend, libinput_dev);
 		break;
 	case LIBINPUT_EVENT_DEVICE_REMOVED:
-		handle_device_removed(backend, libinput_dev);
+		handle_device_removed(backend, dev);
 		break;
 	case LIBINPUT_EVENT_KEYBOARD_KEY:
 		handle_keyboard_key(event, &dev->keyboard);
