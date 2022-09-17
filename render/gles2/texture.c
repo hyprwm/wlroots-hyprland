@@ -28,21 +28,6 @@ struct wlr_gles2_texture *gles2_get_texture(
 	return (struct wlr_gles2_texture *)wlr_texture;
 }
 
-static bool check_stride(const struct wlr_pixel_format_info *fmt,
-		uint32_t stride, uint32_t width) {
-	if (stride % (fmt->bpp / 8) != 0) {
-		wlr_log(WLR_ERROR, "Invalid stride %d (incompatible with %d "
-			"bytes-per-pixel)", stride, fmt->bpp / 8);
-		return false;
-	}
-	if (stride < width * (fmt->bpp / 8)) {
-		wlr_log(WLR_ERROR, "Invalid stride %d (too small for %d "
-			"bytes-per-pixel and width %d)", stride, fmt->bpp / 8, width);
-		return false;
-	}
-	return true;
-}
-
 static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
@@ -72,7 +57,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 		drm_get_pixel_format_info(texture->drm_format);
 	assert(drm_fmt);
 
-	if (!check_stride(drm_fmt, stride, buffer->width)) {
+	if (!pixel_format_info_check_stride(drm_fmt, stride, buffer->width)) {
 		wlr_buffer_end_data_ptr_access(buffer);
 		return false;
 	}
@@ -212,7 +197,7 @@ static struct wlr_texture *gles2_texture_from_pixels(
 		drm_get_pixel_format_info(drm_format);
 	assert(drm_fmt);
 
-	if (!check_stride(drm_fmt, stride, width)) {
+	if (!pixel_format_info_check_stride(drm_fmt, stride, width)) {
 		return NULL;
 	}
 

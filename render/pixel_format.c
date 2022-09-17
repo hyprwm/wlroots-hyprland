@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <drm_fourcc.h>
+#include <wlr/util/log.h>
 #include "render/pixel_format.h"
 
 static const struct wlr_pixel_format_info pixel_format_info[] = {
@@ -175,4 +177,21 @@ enum wl_shm_format convert_drm_format_to_wl_shm(uint32_t fmt) {
 	default:
 		return (enum wl_shm_format)fmt;
 	}
+}
+
+bool pixel_format_info_check_stride(const struct wlr_pixel_format_info *fmt,
+		int32_t stride, int32_t width) {
+	assert(fmt->bpp > 0 && fmt->bpp % 8 == 0);
+	int32_t bytes_per_pixel = (int32_t)(fmt->bpp / 8);
+	if (stride % bytes_per_pixel != 0) {
+		wlr_log(WLR_DEBUG, "Invalid stride %d (incompatible with %d "
+			"bytes-per-pixel)", stride, bytes_per_pixel);
+		return false;
+	}
+	if (stride / bytes_per_pixel < width) {
+		wlr_log(WLR_DEBUG, "Invalid stride %d (too small for %d "
+			"bytes-per-pixel and width %d)", stride, bytes_per_pixel, width);
+		return false;
+	}
+	return true;
 }

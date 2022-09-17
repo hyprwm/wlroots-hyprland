@@ -19,6 +19,8 @@ struct wlr_pixel_format_info {
 };
 
 const struct wlr_pixel_format_info *drm_get_pixel_format_info(uint32_t fmt);
+bool pixel_format_info_check_stride(const struct wlr_pixel_format_info *info,
+	int32_t stride, int32_t width);
 
 uint32_t convert_wl_shm_format_to_drm(enum wl_shm_format fmt);
 enum wl_shm_format convert_drm_format_to_wl_shm(uint32_t fmt);
