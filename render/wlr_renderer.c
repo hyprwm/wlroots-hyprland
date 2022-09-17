@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_matrix.h>
+#include <wlr/types/wlr_shm.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
 #include <xf86drm.h>
@@ -213,42 +214,7 @@ bool wlr_renderer_read_pixels(struct wlr_renderer *r, uint32_t fmt,
 
 bool wlr_renderer_init_wl_shm(struct wlr_renderer *r,
 		struct wl_display *wl_display) {
-	if (wl_display_init_shm(wl_display) != 0) {
-		wlr_log(WLR_ERROR, "Failed to initialize wl_shm");
-		return false;
-	}
-
-	size_t len;
-	const uint32_t *formats = wlr_renderer_get_shm_texture_formats(r, &len);
-	if (formats == NULL) {
-		wlr_log(WLR_ERROR, "Failed to initialize wl_shm: "
-			"cannot get renderer formats");
-		return false;
-	}
-
-	bool argb8888 = false, xrgb8888 = false;
-	for (size_t i = 0; i < len; ++i) {
-		// ARGB8888 and XRGB8888 must be supported and are implicitly
-		// advertised by wl_display_init_shm
-		enum wl_shm_format fmt = convert_drm_format_to_wl_shm(formats[i]);
-		switch (fmt) {
-		case WL_SHM_FORMAT_ARGB8888:
-			argb8888 = true;
-			break;
-		case WL_SHM_FORMAT_XRGB8888:
-			xrgb8888 = true;
-			break;
-		default:
-			if (wl_display_add_shm_format(wl_display, fmt) == NULL) {
-				wlr_log(WLR_ERROR, "Failed to initialize wl_shm: "
-					"failed to add format");
-				return false;
-			}
-		}
-	}
-	assert(argb8888 && xrgb8888);
-
-	return true;
+	return wlr_shm_create_with_renderer(wl_display, 1, r) != NULL;
 }
 
 bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
