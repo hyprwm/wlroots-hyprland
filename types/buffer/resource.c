@@ -49,15 +49,7 @@ struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource) {
 	assert(resource && wlr_resource_is_buffer(resource));
 
 	struct wlr_buffer *buffer;
-	if (wl_shm_buffer_get(resource) != NULL) {
-		struct wlr_shm_client_buffer *shm_client_buffer =
-			shm_client_buffer_get_or_create(resource);
-		if (shm_client_buffer == NULL) {
-			wlr_log(WLR_ERROR, "Failed to create shm client buffer");
-			return NULL;
-		}
-		buffer = wlr_buffer_lock(&shm_client_buffer->base);
-	} else if (wlr_dmabuf_v1_resource_is_buffer(resource)) {
+	if (wlr_dmabuf_v1_resource_is_buffer(resource)) {
 		struct wlr_dmabuf_v1_buffer *dmabuf =
 			wlr_dmabuf_v1_buffer_from_buffer_resource(resource);
 		buffer = wlr_buffer_lock(&dmabuf->base);
