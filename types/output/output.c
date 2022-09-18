@@ -751,15 +751,12 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	// important to do before calling impl->commit(), because this marks an
 	// implicit rendering synchronization point. The backend needs it to avoid
 	// displaying a buffer when asynchronous GPU work isn't finished.
-	struct wlr_buffer *back_buffer = NULL;
 	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
 			output->back_buffer != NULL) {
-		back_buffer = wlr_buffer_lock(output->back_buffer);
 		output_clear_back_buffer(output);
 	}
 
 	if (!output->impl->commit(output, &pending)) {
-		wlr_buffer_unlock(back_buffer);
 		if (new_back_buffer) {
 			wlr_buffer_unlock(pending.buffer);
 		}
@@ -825,8 +822,8 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		output->needs_frame = false;
 	}
 
-	if (back_buffer != NULL) {
-		wlr_swapchain_set_buffer_submitted(output->swapchain, back_buffer);
+	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+		wlr_swapchain_set_buffer_submitted(output->swapchain, pending.buffer);
 	}
 
 	struct wlr_output_event_commit event = {
@@ -837,7 +834,6 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	};
 	wl_signal_emit_mutable(&output->events.commit, &event);
 
-	wlr_buffer_unlock(back_buffer);
 	if (new_back_buffer) {
 		wlr_buffer_unlock(pending.buffer);
 	}
