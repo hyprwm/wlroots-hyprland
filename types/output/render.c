@@ -141,17 +141,13 @@ void output_clear_back_buffer(struct wlr_output *output) {
 	output->back_buffer = NULL;
 }
 
-static bool output_attach_render(struct wlr_output *output,
-		struct wlr_output_state *state, int *buffer_age) {
+bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
+	struct wlr_output_state *state = &output->pending;
 	if (!output_attach_back_buffer(output, state, buffer_age)) {
 		return false;
 	}
 	output_state_attach_buffer(state, output->back_buffer);
 	return true;
-}
-
-bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
-	return output_attach_render(output, &output->pending, buffer_age);
 }
 
 static bool output_attach_empty_back_buffer(struct wlr_output *output,
