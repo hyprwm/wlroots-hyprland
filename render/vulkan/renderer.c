@@ -271,12 +271,18 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 	VkMemoryRequirements mem_reqs;
 	vkGetBufferMemoryRequirements(r->dev->dev, buf->buffer, &mem_reqs);
 
+	int mem_type_index = vulkan_find_mem_type(r->dev,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mem_reqs.memoryTypeBits);
+	if (mem_type_index < 0) {
+		wlr_log(WLR_ERROR, "Failed to find memory type");
+		goto error;
+	}
+
 	VkMemoryAllocateInfo mem_info = {0};
 	mem_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	mem_info.allocationSize = mem_reqs.size;
-	mem_info.memoryTypeIndex = vulkan_find_mem_type(r->dev,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mem_reqs.memoryTypeBits);
+	mem_info.memoryTypeIndex = (uint32_t)mem_type_index;
 	res = vkAllocateMemory(r->dev->dev, &mem_info, NULL, &buf->memory);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkAllocatorMemory", res);
