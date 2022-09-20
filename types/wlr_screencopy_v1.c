@@ -381,7 +381,7 @@ static void frame_handle_copy(struct wl_client *wl_client,
 
 	if (shm_buffer) {
 		enum wl_shm_format fmt = wl_shm_buffer_get_format(shm_buffer);
-		if (fmt != frame->format) {
+		if (fmt != frame->shm_format) {
 			wl_resource_post_error(frame->resource,
 				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
 				"invalid buffer format");
@@ -401,8 +401,8 @@ static void frame_handle_copy(struct wl_client *wl_client,
 		width = wl_shm_buffer_get_width(shm_buffer);
 		height = wl_shm_buffer_get_height(shm_buffer);
 	} else if (dma_buffer) {
-		uint32_t fourcc = dma_buffer->attributes.format;
-		if (fourcc != frame->fourcc) {
+		uint32_t fmt = dma_buffer->attributes.format;
+		if (fmt != frame->dmabuf_format) {
 			wl_resource_post_error(frame->resource,
 				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
 				"invalid buffer format");
@@ -551,12 +551,12 @@ static void capture_output(struct wl_client *wl_client,
 		goto error;
 	}
 
-	frame->format = convert_drm_format_to_wl_shm(drm_format);
+	frame->shm_format = convert_drm_format_to_wl_shm(drm_format);
 	if (output->allocator &&
 			(output->allocator->buffer_caps & WLR_BUFFER_CAP_DMABUF)) {
-		frame->fourcc = output->render_format;
+		frame->dmabuf_format = output->render_format;
 	} else {
-		frame->fourcc = DRM_FORMAT_INVALID;
+		frame->dmabuf_format = DRM_FORMAT_INVALID;
 	}
 
 	struct wlr_box buffer_box = {0};
@@ -579,13 +579,13 @@ static void capture_output(struct wl_client *wl_client,
 	frame->box = buffer_box;
 	frame->stride = (info->bpp / 8) * buffer_box.width;
 
-	zwlr_screencopy_frame_v1_send_buffer(frame->resource, frame->format,
+	zwlr_screencopy_frame_v1_send_buffer(frame->resource, frame->shm_format,
 		buffer_box.width, buffer_box.height, frame->stride);
 
 	if (version >= 3) {
-		if (frame->fourcc != DRM_FORMAT_INVALID) {
+		if (frame->dmabuf_format != DRM_FORMAT_INVALID) {
 			zwlr_screencopy_frame_v1_send_linux_dmabuf(
-					frame->resource, frame->fourcc,
+					frame->resource, frame->dmabuf_format,
 					buffer_box.width, buffer_box.height);
 		}
 
