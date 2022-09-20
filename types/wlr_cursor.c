@@ -300,9 +300,19 @@ void wlr_cursor_warp_closest(struct wlr_cursor *cur,
 	get_mapping(cur, dev, &mapping);
 	if (!wlr_box_empty(&mapping)) {
 		wlr_box_closest_point(&mapping, lx, ly, &lx, &ly);
-	} else {
+	} else if (!wl_list_empty(&cur->state->layout->outputs)) {
 		wlr_output_layout_closest_point(cur->state->layout, NULL, lx, ly,
 			&lx, &ly);
+	} else {
+		/*
+		 * There is no mapping box for the input device and the
+		 * output layout is empty.  This can happen for example
+		 * when external monitors are turned off/disconnected.
+		 * In this case, all (x,y) points are equally invalid,
+		 * so leave the cursor in its current location (better
+		 * from a user standpoint than warping it to (0,0)).
+		 */
+		return;
 	}
 
 	cursor_warp_unchecked(cur, lx, ly);
@@ -819,9 +829,9 @@ static void handle_layout_change(struct wl_listener *listener, void *data) {
 	struct wlr_output_layout *layout = data;
 
 	if (!wlr_output_layout_contains_point(layout, NULL, state->cursor->x,
-			state->cursor->y)) {
+			state->cursor->y) && !wl_list_empty(&layout->outputs)) {
 		// the output we were on has gone away so go to the closest boundary
-		// point
+		// point (unless the layout is empty; compare warp_closest())
 		double x, y;
 		wlr_output_layout_closest_point(layout, NULL, state->cursor->x,
 			state->cursor->y, &x, &y);
