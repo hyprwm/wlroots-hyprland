@@ -329,3 +329,18 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
 
 	return fmt;
 }
+
+bool output_is_direct_scanout(struct wlr_output *output,
+		struct wlr_buffer *buffer) {
+	if (output->swapchain == NULL) {
+		return true;
+	}
+
+	for (size_t i = 0; i < WLR_SWAPCHAIN_CAP; i++) {
+		if (output->swapchain->slots[i].buffer == buffer) {
+			return false;
+		}
+	}
+
+	return true;
+}

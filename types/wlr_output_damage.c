@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/box.h>
+#include "types/wlr_output.h"
 
 static void output_handle_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_output_damage *output_damage =
@@ -53,7 +54,8 @@ static void output_handle_precommit(struct wl_listener *listener, void *data) {
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		// TODO: find a better way to access this info without a precommit
 		// handler
-		output_damage->pending_attach_render = output->back_buffer != NULL;
+		output_damage->pending_attach_render =
+			output_is_direct_scanout(output, state->buffer);
 	}
 }
 

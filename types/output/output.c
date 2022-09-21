@@ -575,7 +575,7 @@ static bool output_basic_test(struct wlr_output *output,
 			return false;
 		}
 
-		if (output->back_buffer == NULL) {
+		if (output_is_direct_scanout(output, state->buffer)) {
 			if (output->attach_render_locks > 0) {
 				wlr_log(WLR_DEBUG, "Direct scan-out disabled by lock");
 				return false;
