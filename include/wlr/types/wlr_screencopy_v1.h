@@ -39,7 +39,7 @@ struct wlr_screencopy_frame_v1 {
 
 	uint32_t shm_format, dmabuf_format; // DRM format codes
 	struct wlr_box box;
-	int stride;
+	int shm_stride;
 
 	bool overlay_cursor, cursor_locked;
 

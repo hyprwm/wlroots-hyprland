@@ -391,7 +391,7 @@ static void frame_handle_copy(struct wl_client *wl_client,
 		}
 
 		int32_t stride = wl_shm_buffer_get_stride(shm_buffer);
-		if (stride != frame->stride) {
+		if (stride != frame->shm_stride) {
 			wl_resource_post_error(frame->resource,
 				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
 				"invalid buffer stride");
@@ -578,11 +578,11 @@ static void capture_output(struct wl_client *wl_client,
 	}
 
 	frame->box = buffer_box;
-	frame->stride = (shm_info->bpp / 8) * buffer_box.width;
+	frame->shm_stride = (shm_info->bpp / 8) * buffer_box.width;
 
 	zwlr_screencopy_frame_v1_send_buffer(frame->resource,
 		convert_drm_format_to_wl_shm(frame->shm_format),
-		buffer_box.width, buffer_box.height, frame->stride);
+		buffer_box.width, buffer_box.height, frame->shm_stride);
 
 	if (version >= 3) {
 		if (frame->dmabuf_format != DRM_FORMAT_INVALID) {
