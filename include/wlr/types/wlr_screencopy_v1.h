@@ -37,8 +37,7 @@ struct wlr_screencopy_frame_v1 {
 	struct wlr_screencopy_v1_client *client;
 	struct wl_list link; // wlr_screencopy_manager_v1.frames
 
-	enum wl_shm_format shm_format;
-	uint32_t dmabuf_format;
+	uint32_t shm_format, dmabuf_format; // DRM format codes
 	struct wlr_box box;
 	int stride;
 

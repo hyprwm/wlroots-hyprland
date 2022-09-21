@@ -380,7 +380,8 @@ static void frame_handle_copy(struct wl_client *wl_client,
 	int32_t height = 0;
 
 	if (shm_buffer) {
-		enum wl_shm_format fmt = wl_shm_buffer_get_format(shm_buffer);
+		uint32_t fmt =
+			convert_wl_shm_format_to_drm(wl_shm_buffer_get_format(shm_buffer));
 		if (fmt != frame->shm_format) {
 			wl_resource_post_error(frame->resource,
 				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
@@ -538,20 +539,20 @@ static void capture_output(struct wl_client *wl_client,
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
-	uint32_t drm_format = wlr_output_preferred_read_format(frame->output);
-	if (drm_format == DRM_FORMAT_INVALID) {
+	frame->shm_format = wlr_output_preferred_read_format(frame->output);
+	if (frame->shm_format == DRM_FORMAT_INVALID) {
 		wlr_log(WLR_ERROR,
 			"Failed to capture output: no read format supported by renderer");
 		goto error;
 	}
-	const struct wlr_pixel_format_info *info = drm_get_pixel_format_info(drm_format);
-	if (!info) {
+	const struct wlr_pixel_format_info *shm_info =
+		drm_get_pixel_format_info(frame->shm_format);
+	if (!shm_info) {
 		wlr_log(WLR_ERROR,
 			"Failed to capture output: no pixel format info matching read format");
 		goto error;
 	}
 
-	frame->shm_format = convert_drm_format_to_wl_shm(drm_format);
 	if (output->allocator &&
 			(output->allocator->buffer_caps & WLR_BUFFER_CAP_DMABUF)) {
 		frame->dmabuf_format = output->render_format;
@@ -577,9 +578,10 @@ static void capture_output(struct wl_client *wl_client,
 	}
 
 	frame->box = buffer_box;
-	frame->stride = (info->bpp / 8) * buffer_box.width;
+	frame->stride = (shm_info->bpp / 8) * buffer_box.width;
 
-	zwlr_screencopy_frame_v1_send_buffer(frame->resource, frame->shm_format,
+	zwlr_screencopy_frame_v1_send_buffer(frame->resource,
+		convert_drm_format_to_wl_shm(frame->shm_format),
 		buffer_box.width, buffer_box.height, frame->stride);
 
 	if (version >= 3) {
