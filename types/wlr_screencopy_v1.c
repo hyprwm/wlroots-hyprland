@@ -5,7 +5,6 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output.h>
-#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/backend.h>
 #include <wlr/util/box.h>
@@ -138,8 +137,7 @@ static void frame_destroy(struct wlr_screencopy_frame_v1 *frame) {
 	if (frame == NULL) {
 		return;
 	}
-	if (frame->output != NULL &&
-			(frame->shm_buffer != NULL || frame->dma_buffer != NULL)) {
+	if (frame->output != NULL && frame->buffer != NULL) {
 		wlr_output_lock_attach_render(frame->output, false);
 		if (frame->cursor_locked) {
 			wlr_output_lock_software_cursors(frame->output, false);
@@ -149,9 +147,9 @@ static void frame_destroy(struct wlr_screencopy_frame_v1 *frame) {
 	wl_list_remove(&frame->output_commit.link);
 	wl_list_remove(&frame->output_destroy.link);
 	wl_list_remove(&frame->output_enable.link);
-	wl_list_remove(&frame->buffer_destroy.link);
 	// Make the frame resource inert
 	wl_resource_set_user_data(frame->resource, NULL);
+	wlr_buffer_unlock(frame->buffer);
 	client_unref(frame->client);
 	free(frame);
 }
@@ -193,44 +191,55 @@ static void frame_send_ready(struct wlr_screencopy_frame_v1 *frame,
 
 static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 		struct wlr_buffer *src_buffer, uint32_t *flags) {
-	struct wl_shm_buffer *shm_buffer = frame->shm_buffer;
 	struct wlr_output *output = frame->output;
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
 	int x = frame->box.x;
 	int y = frame->box.y;
+	int width = frame->buffer->width;
+	int height = frame->buffer->height;
 
-	enum wl_shm_format wl_shm_format = wl_shm_buffer_get_format(shm_buffer);
-	uint32_t drm_format = convert_wl_shm_format_to_drm(wl_shm_format);
-	int32_t width = wl_shm_buffer_get_width(shm_buffer);
-	int32_t height = wl_shm_buffer_get_height(shm_buffer);
-	int32_t stride = wl_shm_buffer_get_stride(shm_buffer);
+	void *data;
+	uint32_t format;
+	size_t stride;
+	if (!wlr_buffer_begin_data_ptr_access(frame->buffer,
+			WLR_BUFFER_DATA_PTR_ACCESS_WRITE, &data, &format, &stride)) {
+		return false;
+	}
 
-	wl_shm_buffer_begin_access(shm_buffer);
-	void *data = wl_shm_buffer_get_data(shm_buffer);
 	uint32_t renderer_flags = 0;
 	bool ok;
 	ok = wlr_renderer_begin_with_buffer(renderer, src_buffer);
-	ok = ok && wlr_renderer_read_pixels(renderer, drm_format,
-		&renderer_flags, stride, width, height, x, y, 0, 0, data);
+	ok = ok && wlr_renderer_read_pixels(renderer, format, &renderer_flags,
+		stride, width, height, x, y, 0, 0, data);
 	wlr_renderer_end(renderer);
 	*flags = renderer_flags & WLR_RENDERER_READ_PIXELS_Y_INVERT ?
 		ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT : 0;
-	wl_shm_buffer_end_access(shm_buffer);
+
+	wlr_buffer_end_data_ptr_access(frame->buffer);
 
 	return ok;
 }
 
-static bool blit_dmabuf(struct wlr_renderer *renderer,
-		struct wlr_dmabuf_v1_buffer *dst_dmabuf,
+static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 		struct wlr_buffer *src_buffer) {
-	struct wlr_buffer *dst_buffer = wlr_buffer_lock(&dst_dmabuf->base);
+	struct wlr_buffer *dst_buffer = frame->buffer;
+	struct wlr_output *output = frame->output;
+	struct wlr_renderer *renderer = output->renderer;
+	assert(renderer);
+
+	// TODO: add support for copying regions with DMA-BUFs
+	if (frame->box.x != 0 || frame->box.y != 0 ||
+			src_buffer->width != frame->box.width ||
+			src_buffer->height != frame->box.height) {
+		return false;
+	}
 
 	struct wlr_texture *src_tex =
 		wlr_texture_from_buffer(renderer, src_buffer);
 	if (src_tex == NULL) {
-		goto error_src_tex;
+		return false;
 	}
 
 	float mat[9];
@@ -247,31 +256,11 @@ static bool blit_dmabuf(struct wlr_renderer *renderer,
 	wlr_renderer_end(renderer);
 
 	wlr_texture_destroy(src_tex);
-	wlr_buffer_unlock(dst_buffer);
 	return true;
 
 error_renderer_begin:
 	wlr_texture_destroy(src_tex);
-error_src_tex:
-	wlr_buffer_unlock(dst_buffer);
 	return false;
-}
-
-static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
-		struct wlr_buffer *src_buffer) {
-	struct wlr_dmabuf_v1_buffer *dst_buffer = frame->dma_buffer;
-	struct wlr_output *output = frame->output;
-	struct wlr_renderer *renderer = output->renderer;
-	assert(renderer);
-
-	// TODO: add support for copying regions with DMA-BUFs
-	if (frame->box.x != 0 || frame->box.y != 0 ||
-			src_buffer->width != frame->box.width ||
-			src_buffer->height != frame->box.height) {
-		return false;
-	}
-
-	return blit_dmabuf(renderer, dst_buffer, src_buffer);
 }
 
 static void frame_handle_output_commit(struct wl_listener *listener,
@@ -288,7 +277,7 @@ static void frame_handle_output_commit(struct wl_listener *listener,
 		return;
 	}
 
-	if (!frame->shm_buffer && !frame->dma_buffer) {
+	if (!frame->buffer) {
 		return;
 	}
 
@@ -303,10 +292,18 @@ static void frame_handle_output_commit(struct wl_listener *listener,
 	wl_list_remove(&frame->output_commit.link);
 	wl_list_init(&frame->output_commit.link);
 
-
 	uint32_t flags = 0;
-	bool ok = frame->shm_buffer ?
-		frame_shm_copy(frame, buffer, &flags) : frame_dma_copy(frame, buffer);
+	bool ok;
+	switch (frame->buffer_cap) {
+	case WLR_BUFFER_CAP_DMABUF:
+		ok = frame_dma_copy(frame, buffer);
+		break;
+	case WLR_BUFFER_CAP_DATA_PTR:
+		ok = frame_shm_copy(frame, buffer, &flags);
+		break;
+	default:
+		abort(); // unreachable
+	}
 	if (!ok) {
 		zwlr_screencopy_frame_v1_send_failed(frame->resource);
 		frame_destroy(frame);
@@ -337,14 +334,6 @@ static void frame_handle_output_destroy(struct wl_listener *listener,
 	frame_destroy(frame);
 }
 
-static void frame_handle_buffer_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_screencopy_frame_v1 *frame =
-		wl_container_of(listener, frame, buffer_destroy);
-	zwlr_screencopy_frame_v1_send_failed(frame->resource);
-	frame_destroy(frame);
-}
-
 static void frame_handle_copy(struct wl_client *wl_client,
 		struct wl_resource *frame_resource,
 		struct wl_resource *buffer_resource) {
@@ -361,87 +350,75 @@ static void frame_handle_copy(struct wl_client *wl_client,
 		return;
 	}
 
-	struct wlr_dmabuf_v1_buffer *dma_buffer = NULL;
-	struct wl_shm_buffer *shm_buffer = wl_shm_buffer_get(buffer_resource);
-	if (shm_buffer == NULL &&
-			wlr_dmabuf_v1_resource_is_buffer(buffer_resource)) {
-		dma_buffer =
-			wlr_dmabuf_v1_buffer_from_buffer_resource(buffer_resource);
-	}
-
-	if (shm_buffer == NULL && dma_buffer == NULL) {
+	struct wlr_buffer *buffer = wlr_buffer_from_resource(buffer_resource);
+	if (buffer == NULL) {
 		wl_resource_post_error(frame->resource,
 			ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
-			"unsupported buffer type");
+			"invalid buffer");
 		return;
 	}
 
-	int32_t width = 0;
-	int32_t height = 0;
-
-	if (shm_buffer) {
-		uint32_t fmt =
-			convert_wl_shm_format_to_drm(wl_shm_buffer_get_format(shm_buffer));
-		if (fmt != frame->shm_format) {
-			wl_resource_post_error(frame->resource,
-				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
-				"invalid buffer format");
-			return;
-
-		}
-
-		int32_t stride = wl_shm_buffer_get_stride(shm_buffer);
-		if (stride != frame->shm_stride) {
-			wl_resource_post_error(frame->resource,
-				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
-				"invalid buffer stride");
-			return;
-
-		}
-
-		width = wl_shm_buffer_get_width(shm_buffer);
-		height = wl_shm_buffer_get_height(shm_buffer);
-	} else if (dma_buffer) {
-		uint32_t fmt = dma_buffer->attributes.format;
-		if (fmt != frame->dmabuf_format) {
-			wl_resource_post_error(frame->resource,
-				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
-				"invalid buffer format");
-			return;
-
-		}
-
-		width = dma_buffer->attributes.width;
-		height = dma_buffer->attributes.height;
-	} else {
-		abort();
-	}
-
-	if (width != frame->box.width || height != frame->box.height) {
+	if (buffer->width != frame->box.width || buffer->height != frame->box.height) {
 		wl_resource_post_error(frame->resource,
 			ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
 			"invalid buffer dimensions");
 		return;
 	}
 
-	if (frame->shm_buffer != NULL || frame->dma_buffer != NULL) {
+	if (frame->buffer != NULL) {
 		wl_resource_post_error(frame->resource,
 			ZWLR_SCREENCOPY_FRAME_V1_ERROR_ALREADY_USED,
 			"frame already used");
 		return;
 	}
 
-	frame->shm_buffer = shm_buffer;
-	frame->dma_buffer = dma_buffer;
+	enum wlr_buffer_cap cap;
+	struct wlr_dmabuf_attributes dmabuf;
+	void *data;
+	uint32_t format;
+	size_t stride;
+	if (wlr_buffer_get_dmabuf(buffer, &dmabuf)) {
+		cap = WLR_BUFFER_CAP_DMABUF;
+
+		if (dmabuf.format != frame->dmabuf_format) {
+			wl_resource_post_error(frame->resource,
+				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
+				"invalid buffer format");
+			return;
+		}
+	} else if (wlr_buffer_begin_data_ptr_access(buffer,
+			WLR_BUFFER_DATA_PTR_ACCESS_WRITE, &data, &format, &stride)) {
+		wlr_buffer_end_data_ptr_access(buffer);
+
+		cap = WLR_BUFFER_CAP_DATA_PTR;
+
+		if (format != frame->shm_format) {
+			wl_resource_post_error(frame->resource,
+				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
+				"invalid buffer format");
+			return;
+		}
+		if (stride != (size_t)frame->shm_stride) {
+			wl_resource_post_error(frame->resource,
+				ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
+				"invalid buffer stride");
+			return;
+		}
+	} else {
+		wl_resource_post_error(frame->resource,
+			ZWLR_SCREENCOPY_FRAME_V1_ERROR_INVALID_BUFFER,
+			"unsupported buffer type");
+		return;
+	}
+
+	frame->buffer = buffer;
+	frame->buffer_cap = cap;
 
 	wl_signal_add(&output->events.commit, &frame->output_commit);
 	frame->output_commit.notify = frame_handle_output_commit;
 
 	wl_signal_add(&output->events.destroy, &frame->output_enable);
 	frame->output_enable.notify = frame_handle_output_enable;
-
-	wl_resource_add_destroy_listener(buffer_resource, &frame->buffer_destroy);
-	frame->buffer_destroy.notify = frame_handle_buffer_destroy;
 
 	// Schedule a buffer commit
 	wlr_output_schedule_frame(output);
@@ -527,7 +504,6 @@ static void capture_output(struct wl_client *wl_client,
 
 	wl_list_init(&frame->output_commit.link);
 	wl_list_init(&frame->output_enable.link);
-	wl_list_init(&frame->buffer_destroy.link);
 
 	wl_signal_add(&output->events.destroy, &frame->output_destroy);
 	frame->output_destroy.notify = frame_handle_output_destroy;

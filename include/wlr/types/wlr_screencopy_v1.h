@@ -45,10 +45,8 @@ struct wlr_screencopy_frame_v1 {
 
 	bool with_damage;
 
-	struct wl_shm_buffer *shm_buffer;
-	struct wlr_dmabuf_v1_buffer *dma_buffer;
-
-	struct wl_listener buffer_destroy;
+	enum wlr_buffer_cap buffer_cap;
+	struct wlr_buffer *buffer;
 
 	struct wlr_output *output;
 	struct wl_listener output_commit;
