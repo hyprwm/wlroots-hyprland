@@ -211,6 +211,10 @@ static struct wlr_cursor_device *get_cursor_device(struct wlr_cursor *cur,
 static void cursor_warp_unchecked(struct wlr_cursor *cur,
 		double lx, double ly) {
 	assert(cur->state->layout);
+	if (!isfinite(lx) || !isfinite(ly)) {
+		assert(false);
+		return;
+	}
 
 	struct wlr_cursor_output_cursor *output_cursor;
 	wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
@@ -296,10 +300,6 @@ void wlr_cursor_warp_closest(struct wlr_cursor *cur,
 	get_mapping(cur, dev, &mapping);
 	if (!wlr_box_empty(&mapping)) {
 		wlr_box_closest_point(&mapping, lx, ly, &lx, &ly);
-		if (isnan(lx) || isnan(ly)) {
-			lx = 0;
-			ly = 0;
-		}
 	} else {
 		wlr_output_layout_closest_point(cur->state->layout, NULL, lx, ly,
 			&lx, &ly);
