@@ -307,7 +307,7 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
 		} else {
 			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
-			if (!renderer) { 
+			if (!renderer) {
 				log_creation_failure(is_auto, "Failed to create a Vulkan renderer");
 			}
 		}
@@ -316,7 +316,7 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 
 	if (!renderer && (is_auto || strcmp(renderer_name, "pixman") == 0)) {
 		renderer = wlr_pixman_renderer_create();
-		if (!renderer) { 
+		if (!renderer) {
 			log_creation_failure(is_auto, "Failed to create a pixman renderer");
 		}
 	}
