@@ -55,6 +55,7 @@ struct wlr_shm_mapping {
 struct wlr_shm_sigbus_data {
 	struct wlr_shm_mapping *mapping;
 	struct sigaction prev_action;
+	struct wlr_shm_sigbus_data *_Atomic next;
 };
 
 struct wlr_shm_buffer {
@@ -122,13 +123,14 @@ static struct wlr_shm_mapping *mapping_create(int fd, size_t size) {
 }
 
 static void mapping_consider_destroy(struct wlr_shm_mapping *mapping) {
-	struct wlr_shm_mapping *mapping_in_use = NULL;
-	if (sigbus_data != NULL) {
-		mapping_in_use = sigbus_data->mapping;
+	if (!mapping->dropped) {
+		return;
 	}
 
-	if (mapping_in_use == mapping || !mapping->dropped) {
-		return;
+	for (struct wlr_shm_sigbus_data *cur = sigbus_data; cur != NULL; cur = cur->next) {
+		if (cur->mapping == mapping) {
+			return;
+		}
 	}
 
 	munmap(mapping->data, mapping->size);
@@ -181,13 +183,22 @@ static bool buffer_get_shm(struct wlr_buffer *wlr_buffer,
 }
 
 static void handle_sigbus(int sig, siginfo_t *info, void *context) {
-	struct wlr_shm_sigbus_data data = *sigbus_data;
-	struct wlr_shm_mapping *mapping = data.mapping;
+	assert(sigbus_data != NULL);
+	struct sigaction prev_action = sigbus_data->prev_action;
 
+	// Check whether the offending address is inside of the wl_shm_pool's mapped
+	// space
 	uintptr_t addr = (uintptr_t)info->si_addr;
-	uintptr_t mapping_start = (uintptr_t)mapping->data;
-	if (addr < mapping_start || addr >= mapping_start + mapping->size) {
-		// The offending address is outside of the wl_shm_pool's mapped space
+	struct wlr_shm_mapping *mapping = NULL;
+	for (struct wlr_shm_sigbus_data *data = sigbus_data; data != NULL; data = data->next) {
+		uintptr_t mapping_start = (uintptr_t)data->mapping->data;
+		size_t mapping_size = data->mapping->size;
+		if (addr >= mapping_start && addr < mapping_start + mapping_size) {
+			mapping = data->mapping;
+			break;
+		}
+	}
+	if (mapping == NULL) {
 		goto reraise;
 	}
 
@@ -202,10 +213,10 @@ static void handle_sigbus(int sig, siginfo_t *info, void *context) {
 	return;
 
 reraise:
-	if (data.prev_action.sa_flags & SA_SIGINFO) {
-		data.prev_action.sa_sigaction(sig, info, context);
+	if (prev_action.sa_flags & SA_SIGINFO) {
+		prev_action.sa_sigaction(sig, info, context);
 	} else {
-		data.prev_action.sa_handler(sig);
+		prev_action.sa_handler(sig);
 	}
 }
 
@@ -218,21 +229,20 @@ static bool buffer_begin_data_ptr_access(struct wlr_buffer *wlr_buffer,
 		return false;
 	}
 
-	if (sigbus_data != NULL) {
-		wlr_log(WLR_ERROR, "Cannot concurrently access data of two wlr_shm_buffers");
-		return false;
-	}
-
 	// Install a SIGBUS handler. SIGBUS is triggered if the client shrinks the
 	// backing file, and then we try to access the mapping.
-	struct sigaction new_action = {
-		.sa_sigaction = handle_sigbus,
-		.sa_flags = SA_SIGINFO | SA_NODEFER,
-	};
 	struct sigaction prev_action;
-	if (sigaction(SIGBUS, &new_action, &prev_action) != 0) {
-		wlr_log_errno(WLR_ERROR, "sigaction failed");
-		return false;
+	if (sigbus_data == NULL) {
+		struct sigaction new_action = {
+			.sa_sigaction = handle_sigbus,
+			.sa_flags = SA_SIGINFO | SA_NODEFER,
+		};
+		if (sigaction(SIGBUS, &new_action, &prev_action) != 0) {
+			wlr_log_errno(WLR_ERROR, "sigaction failed");
+			return false;
+		}
+	} else {
+		prev_action = sigbus_data->prev_action;
 	}
 
 	struct wlr_shm_mapping *mapping = buffer->pool->mapping;
@@ -240,6 +250,7 @@ static bool buffer_begin_data_ptr_access(struct wlr_buffer *wlr_buffer,
 	buffer->sigbus_data = (struct wlr_shm_sigbus_data){
 		.mapping = mapping,
 		.prev_action = prev_action,
+		.next = sigbus_data,
 	};
 	sigbus_data = &buffer->sigbus_data;
 
@@ -252,14 +263,24 @@ static bool buffer_begin_data_ptr_access(struct wlr_buffer *wlr_buffer,
 static void buffer_end_data_ptr_access(struct wlr_buffer *wlr_buffer) {
 	struct wlr_shm_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
 
-	struct wlr_shm_sigbus_data data = *sigbus_data;
-
-	if (sigaction(SIGBUS, &data.prev_action, NULL) != 0) {
-		wlr_log_errno(WLR_ERROR, "sigaction failed");
+	if (sigbus_data == &buffer->sigbus_data) {
+		sigbus_data = buffer->sigbus_data.next;
+	} else {
+		for (struct wlr_shm_sigbus_data *cur = sigbus_data; cur != NULL; cur = cur->next) {
+			if (cur->next == &buffer->sigbus_data) {
+				cur->next = buffer->sigbus_data.next;
+				break;
+			}
+		}
 	}
-	sigbus_data = NULL;
 
-	mapping_consider_destroy(data.mapping);
+	if (sigbus_data == NULL) {
+		if (sigaction(SIGBUS, &buffer->sigbus_data.prev_action, NULL) != 0) {
+			wlr_log_errno(WLR_ERROR, "sigaction failed");
+		}
+	}
+
+	mapping_consider_destroy(buffer->sigbus_data.mapping);
 }
 
 static const struct wlr_buffer_impl buffer_impl = {
