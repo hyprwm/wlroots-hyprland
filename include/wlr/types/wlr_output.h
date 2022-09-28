@@ -79,6 +79,9 @@ enum wlr_output_state_mode_type {
  */
 struct wlr_output_state {
 	uint32_t committed; // enum wlr_output_state_field
+	// Set to true to allow temporary visual artifacts (e.g. black screen) while
+	// the update is being applied
+	bool allow_artifacts;
 	pixman_region32_t damage; // output-buffer-local coordinates
 	bool enabled;
 	float scale;

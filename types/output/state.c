@@ -4,6 +4,7 @@ void wlr_output_state_set_enabled(struct wlr_output_state *state,
 		bool enabled) {
 	state->committed |= WLR_OUTPUT_STATE_ENABLED;
 	state->enabled = enabled;
+	state->allow_artifacts = true;
 }
 
 void wlr_output_state_set_mode(struct wlr_output_state *state,
@@ -11,6 +12,7 @@ void wlr_output_state_set_mode(struct wlr_output_state *state,
 	state->committed |= WLR_OUTPUT_STATE_MODE;
 	state->mode_type = WLR_OUTPUT_STATE_MODE_FIXED;
 	state->mode = mode;
+	state->allow_artifacts = true;
 }
 
 void wlr_output_state_set_custom_mode(struct wlr_output_state *state,
@@ -20,6 +22,7 @@ void wlr_output_state_set_custom_mode(struct wlr_output_state *state,
 	state->custom_mode.width = width;
 	state->custom_mode.height = height;
 	state->custom_mode.refresh = refresh;
+	state->allow_artifacts = true;
 }
 
 void wlr_output_state_set_scale(struct wlr_output_state *state, float scale) {
