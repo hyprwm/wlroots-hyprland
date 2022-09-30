@@ -1050,6 +1050,7 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 
 	struct wlr_output_state output_state = {
 		.committed = WLR_OUTPUT_STATE_ENABLED,
+		.allow_artifacts = true,
 		.enabled = false,
 	};
 	struct wlr_drm_connector_state conn_state = {0};

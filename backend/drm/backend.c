@@ -115,6 +115,7 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 			}
 			struct wlr_output_state state = {
 				.committed = committed,
+				.allow_artifacts = true,
 				.enabled = mode != NULL,
 				.mode_type = WLR_OUTPUT_STATE_MODE_FIXED,
 				.mode = mode,
