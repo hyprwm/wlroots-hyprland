@@ -386,7 +386,7 @@ struct wlr_vk_format_props *vulkan_format_props_from_drm(
 // buffer import
 static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	wl_list_remove(&buffer->link);
-	wl_list_remove(&buffer->buffer_destroy.link);
+	wlr_addon_finish(&buffer->addon);
 
 	assert(buffer->renderer->current_render_buffer != buffer);
 
@@ -403,22 +403,15 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	free(buffer);
 }
 
-static struct wlr_vk_render_buffer *get_render_buffer(
-		struct wlr_vk_renderer *renderer, struct wlr_buffer *wlr_buffer) {
-	struct wlr_vk_render_buffer *buffer;
-	wl_list_for_each(buffer, &renderer->render_buffers, link) {
-		if (buffer->wlr_buffer == wlr_buffer) {
-			return buffer;
-		}
-	}
-	return NULL;
-}
-
-static void handle_render_buffer_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_vk_render_buffer *buffer =
-		wl_container_of(listener, buffer, buffer_destroy);
+static void handle_render_buffer_destroy(struct wlr_addon *addon) {
+	struct wlr_vk_render_buffer *buffer = wl_container_of(addon, buffer, addon);
 	destroy_render_buffer(buffer);
 }
+
+static struct wlr_addon_interface render_buffer_addon_impl = {
+	.name = "wlr_vk_render_buffer",
+	.destroy = handle_render_buffer_destroy,
+};
 
 static struct wlr_vk_render_buffer *create_render_buffer(
 		struct wlr_vk_renderer *renderer, struct wlr_buffer *wlr_buffer) {
@@ -496,8 +489,8 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		goto error_view;
 	}
 
-	buffer->buffer_destroy.notify = handle_render_buffer_destroy;
-	wl_signal_add(&wlr_buffer->events.destroy, &buffer->buffer_destroy);
+	wlr_addon_init(&buffer->addon, &wlr_buffer->addons, renderer,
+		&render_buffer_addon_impl);
 	wl_list_insert(&renderer->render_buffers, &buffer->link);
 
 	return buffer;
@@ -513,6 +506,18 @@ error_buffer:
 	wlr_dmabuf_attributes_finish(&dmabuf);
 	free(buffer);
 	return NULL;
+}
+
+static struct wlr_vk_render_buffer *get_render_buffer(
+		struct wlr_vk_renderer *renderer, struct wlr_buffer *wlr_buffer) {
+	struct wlr_addon *addon =
+		wlr_addon_find(&wlr_buffer->addons, renderer, &render_buffer_addon_impl);
+	if (addon == NULL) {
+		return NULL;
+	}
+
+	struct wlr_vk_render_buffer *buffer = wl_container_of(addon, buffer, addon);
+	return buffer;
 }
 
 // interface implementation

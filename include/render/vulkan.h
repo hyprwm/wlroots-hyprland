@@ -9,6 +9,7 @@
 #include <wlr/render/wlr_texture.h>
 #include <wlr/render/drm_format_set.h>
 #include <wlr/render/interface.h>
+#include <wlr/util/addon.h>
 
 struct wlr_vk_descriptor_pool;
 
@@ -132,6 +133,7 @@ struct wlr_vk_render_format_setup {
 // Renderer-internal represenation of an wlr_buffer imported for rendering.
 struct wlr_vk_render_buffer {
 	struct wlr_buffer *wlr_buffer;
+	struct wlr_addon addon;
 	struct wlr_vk_renderer *renderer;
 	struct wlr_vk_render_format_setup *render_setup;
 	struct wl_list link; // wlr_vk_renderer.buffers
@@ -142,8 +144,6 @@ struct wlr_vk_render_buffer {
 	uint32_t mem_count;
 	VkDeviceMemory memories[WLR_DMABUF_MAX_PLANES];
 	bool transitioned;
-
-	struct wl_listener buffer_destroy;
 };
 
 // Vulkan wlr_renderer implementation on top of a wlr_vk_device.
