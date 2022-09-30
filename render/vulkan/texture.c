@@ -194,7 +194,10 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 	}
 
 	wl_list_remove(&texture->link);
-	wl_list_remove(&texture->buffer_destroy.link);
+
+	if (texture->buffer != NULL) {
+		wlr_addon_finish(&texture->buffer_addon);
+	}
 
 	VkDevice dev = texture->renderer->dev->dev;
 	if (texture->ds && texture->ds_pool) {
@@ -238,7 +241,6 @@ static struct wlr_vk_texture *vulkan_texture_create(
 	wlr_texture_init(&texture->wlr_texture, &texture_impl, width, height);
 	texture->renderer = renderer;
 	wl_list_insert(&renderer->textures, &texture->link);
-	wl_list_init(&texture->buffer_destroy.link);
 	return texture;
 }
 
@@ -688,33 +690,37 @@ error:
 	return NULL;
 }
 
-static void texture_handle_buffer_destroy(struct wl_listener *listener,
-		void *data) {
+static void texture_handle_buffer_destroy(struct wlr_addon *addon) {
 	struct wlr_vk_texture *texture =
-		wl_container_of(listener, texture, buffer_destroy);
+		wl_container_of(addon, texture, buffer_addon);
 	vulkan_texture_destroy(texture);
 }
+
+static const struct wlr_addon_interface buffer_addon_impl = {
+	.name = "wlr_vk_texture",
+	.destroy = texture_handle_buffer_destroy,
+};
 
 static struct wlr_texture *vulkan_texture_from_dmabuf_buffer(
 		struct wlr_vk_renderer *renderer, struct wlr_buffer *buffer,
 		struct wlr_dmabuf_attributes *dmabuf) {
-	struct wlr_vk_texture *texture;
-	wl_list_for_each(texture, &renderer->textures, link) {
-		if (texture->buffer == buffer) {
-			wlr_buffer_lock(texture->buffer);
-			return &texture->wlr_texture;
-		}
+	struct wlr_addon *addon =
+		wlr_addon_find(&buffer->addons, renderer, &buffer_addon_impl);
+	if (addon != NULL) {
+		struct wlr_vk_texture *texture =
+			wl_container_of(addon, texture, buffer_addon);
+		wlr_buffer_lock(texture->buffer);
+		return &texture->wlr_texture;
 	}
 
-	texture = vulkan_texture_from_dmabuf(renderer, dmabuf);
+	struct wlr_vk_texture *texture = vulkan_texture_from_dmabuf(renderer, dmabuf);
 	if (texture == NULL) {
 		return false;
 	}
 
 	texture->buffer = wlr_buffer_lock(buffer);
-
-	texture->buffer_destroy.notify = texture_handle_buffer_destroy;
-	wl_signal_add(&buffer->events.destroy, &texture->buffer_destroy);
+	wlr_addon_init(&texture->buffer_addon, &buffer->addons, renderer,
+		&buffer_addon_impl);
 
 	return &texture->wlr_texture;
 }

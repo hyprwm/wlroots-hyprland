@@ -246,7 +246,7 @@ struct wlr_vk_texture {
 
 	// If imported from a wlr_buffer
 	struct wlr_buffer *buffer;
-	struct wl_listener buffer_destroy;
+	struct wlr_addon buffer_addon;
 };
 
 struct wlr_vk_texture *vulkan_get_texture(struct wlr_texture *wlr_texture);
