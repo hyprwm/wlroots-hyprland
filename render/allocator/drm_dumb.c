@@ -55,20 +55,20 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 		return NULL;
 	}
 
+	const struct wlr_pixel_format_info *info =
+		drm_get_pixel_format_info(format->format);
+	if (info == NULL) {
+		wlr_log(WLR_ERROR, "DRM format 0x%"PRIX32" not supported",
+			format->format);
+		return NULL;
+	}
+
 	struct wlr_drm_dumb_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (buffer == NULL) {
 		return NULL;
 	}
 	wlr_buffer_init(&buffer->base, &buffer_impl, width, height);
 	wl_list_insert(&alloc->buffers, &buffer->link);
-
-	const struct wlr_pixel_format_info *info =
-		drm_get_pixel_format_info(format->format);
-	if (info == NULL) {
-		wlr_log(WLR_ERROR, "DRM format 0x%"PRIX32" not supported",
-			format->format);
-		goto create_err;
-	}
 
 	struct drm_mode_create_dumb create = {0};
 	create.width = (uint32_t)width;
