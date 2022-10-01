@@ -266,7 +266,7 @@ static void toplevel_handle_output_bind(struct wl_listener *listener,
 	struct wl_resource *resource;
 	wl_resource_for_each(resource, &toplevel_output->toplevel->resources) {
 		if (wl_resource_get_client(resource) == client) {
-		    send_output_to_resource(resource, toplevel_output->output, true);
+			send_output_to_resource(resource, toplevel_output->output, true);
 		}
 	}
 
