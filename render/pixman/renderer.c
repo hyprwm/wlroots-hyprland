@@ -522,7 +522,9 @@ struct wlr_renderer *wlr_pixman_renderer_create(void) {
 
 	for (size_t i = 0; i < len; ++i) {
 		wlr_drm_format_set_add(&renderer->drm_formats, formats[i],
-				DRM_FORMAT_MOD_INVALID);
+			DRM_FORMAT_MOD_INVALID);
+		wlr_drm_format_set_add(&renderer->drm_formats, formats[i],
+			DRM_FORMAT_MOD_LINEAR);
 	}
 
 	return &renderer->wlr_renderer;
