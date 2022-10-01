@@ -111,7 +111,7 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 		.width = buffer->width,
 		.height = buffer->height,
 		.format = format->format,
-		.modifier = DRM_FORMAT_MOD_INVALID,
+		.modifier = DRM_FORMAT_MOD_LINEAR,
 		.n_planes = 1,
 		.offset[0] = 0,
 		.stride[0] = buffer->stride,
