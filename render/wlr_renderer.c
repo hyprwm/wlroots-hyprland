@@ -314,7 +314,15 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 	}
 #endif
 
-	if (!renderer && (is_auto || strcmp(renderer_name, "pixman") == 0)) {
+	bool has_render_node = false;
+	if (!renderer && is_auto && drm_fd >= 0) {
+		char *render_node = drmGetRenderDeviceNameFromFd(drm_fd);
+		has_render_node = render_node != NULL;
+		free(render_node);
+	}
+
+	if (!renderer && ((is_auto && !has_render_node) ||
+			strcmp(renderer_name, "pixman") == 0)) {
 		renderer = wlr_pixman_renderer_create();
 		if (!renderer) {
 			log_creation_failure(is_auto, "Failed to create a pixman renderer");
