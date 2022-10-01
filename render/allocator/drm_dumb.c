@@ -17,6 +17,7 @@
 #include <xf86drmMode.h>
 
 #include "render/allocator/drm_dumb.h"
+#include "render/drm_format_set.h"
 #include "render/pixel_format.h"
 
 static const struct wlr_buffer_impl buffer_impl;
@@ -47,6 +48,13 @@ static void finish_buffer(struct wlr_drm_dumb_buffer *buf) {
 static struct wlr_drm_dumb_buffer *create_buffer(
 		struct wlr_drm_dumb_allocator *alloc, int width, int height,
 		const struct wlr_drm_format *format) {
+	if (!wlr_drm_format_has(format, DRM_FORMAT_MOD_INVALID) &&
+			!wlr_drm_format_has(format, DRM_FORMAT_MOD_LINEAR)) {
+		wlr_log(WLR_ERROR, "DRM dumb allocator only supports INVALID and "
+			"LINEAR modifiers");
+		return NULL;
+	}
+
 	struct wlr_drm_dumb_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (buffer == NULL) {
 		return NULL;
