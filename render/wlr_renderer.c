@@ -302,7 +302,7 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 #endif
 
 #if WLR_HAS_VULKAN_RENDERER
-	if (!renderer && (is_auto || strcmp(renderer_name, "vulkan") == 0)) {
+	if (!renderer && strcmp(renderer_name, "vulkan") == 0) {
 		if (drm_fd < 0) {
 			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
 		} else {
