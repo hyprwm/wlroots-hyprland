@@ -70,6 +70,8 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 	wlr_buffer_init(&buffer->base, &buffer_impl, width, height);
 	wl_list_insert(&alloc->buffers, &buffer->link);
 
+	buffer->drm_fd = alloc->drm_fd;
+
 	struct drm_mode_create_dumb create = {0};
 	create.width = (uint32_t)width;
 	create.height = (uint32_t)height;
@@ -77,7 +79,7 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 
 	if (drmIoctl(alloc->drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create) != 0) {
 		wlr_log_errno(WLR_ERROR, "Failed to create DRM dumb buffer");
-		goto create_err;
+		goto create_destroy;
 	}
 
 	buffer->width = create.width;
@@ -86,8 +88,6 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 	buffer->stride = create.pitch;
 	buffer->handle = create.handle;
 	buffer->format = format->format;
-
-	buffer->drm_fd = alloc->drm_fd;
 
 	struct drm_mode_map_dumb map = {0};
 	map.handle = buffer->handle;
@@ -133,7 +133,6 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 
 create_destroy:
 	finish_buffer(buffer);
-create_err:
 	free(buffer);
 	return NULL;
 }
