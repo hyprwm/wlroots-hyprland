@@ -303,7 +303,7 @@ struct wlr_drm_format *output_pick_format(struct wlr_output *output,
 
 	if (format == NULL) {
 		wlr_log(WLR_DEBUG, "Failed to intersect display and render "
-			"modifiers for format 0x%"PRIX32 " on output '%s",
+			"modifiers for format 0x%"PRIX32 " on output %s",
 			fmt, output->name);
 		return NULL;
 	}
