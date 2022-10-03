@@ -248,21 +248,20 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	wlr_matrix_identity(mat);
 	wlr_matrix_scale(mat, dst_buffer->width, dst_buffer->height);
 
+	bool ok = false;
 	if (!wlr_renderer_begin_with_buffer(renderer, dst_buffer)) {
-		goto error_renderer_begin;
+		goto out;
 	}
 
 	wlr_renderer_clear(renderer, (float[]){ 0.0, 0.0, 0.0, 0.0 });
 	wlr_render_texture_with_matrix(renderer, src_tex, mat, 1.0f);
 
+	ok = true;
 	wlr_renderer_end(renderer);
 
+out:
 	wlr_texture_destroy(src_tex);
-	return true;
-
-error_renderer_begin:
-	wlr_texture_destroy(src_tex);
-	return false;
+	return ok;
 }
 
 static void frame_handle_output_commit(struct wl_listener *listener,
