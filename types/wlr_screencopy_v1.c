@@ -209,16 +209,18 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 	}
 
 	uint32_t renderer_flags = 0;
-	bool ok;
-	ok = wlr_renderer_begin_with_buffer(renderer, src_buffer);
-	ok = ok && wlr_renderer_read_pixels(renderer, format, &renderer_flags,
+	bool ok = false;
+	if (!wlr_renderer_begin_with_buffer(renderer, src_buffer)) {
+		goto out;
+	}
+	ok = wlr_renderer_read_pixels(renderer, format, &renderer_flags,
 		stride, width, height, x, y, 0, 0, data);
 	wlr_renderer_end(renderer);
 	*flags = renderer_flags & WLR_RENDERER_READ_PIXELS_Y_INVERT ?
 		ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT : 0;
 
+out:
 	wlr_buffer_end_data_ptr_access(frame->buffer);
-
 	return ok;
 }
 
