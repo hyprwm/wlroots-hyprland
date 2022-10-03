@@ -970,7 +970,7 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 }
 
 static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
-		uint32_t drm_format, uint32_t *flags, uint32_t stride,
+		uint32_t drm_format, uint32_t stride,
 		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
 		uint32_t dst_x, uint32_t dst_y, void *data) {
 	// TODO: implement!

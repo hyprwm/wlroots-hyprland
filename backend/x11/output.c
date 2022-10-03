@@ -407,7 +407,7 @@ static bool output_cursor_to_picture(struct wlr_x11_output *output,
 	}
 
 	bool result = wlr_renderer_read_pixels(
-		renderer, DRM_FORMAT_ARGB8888, NULL,
+		renderer, DRM_FORMAT_ARGB8888,
 		stride, buffer->width, buffer->height, 0, 0, 0, 0,
 		data);
 

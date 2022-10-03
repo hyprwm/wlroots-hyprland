@@ -415,7 +415,7 @@ static uint32_t gles2_preferred_read_format(
 }
 
 static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
-		uint32_t drm_format, uint32_t *flags, uint32_t stride,
+		uint32_t drm_format, uint32_t stride,
 		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
 		uint32_t dst_x, uint32_t dst_y, void *data) {
 	struct wlr_gles2_renderer *renderer =
@@ -463,10 +463,6 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 	}
 
 	pop_gles2_debug(renderer);
-
-	if (flags != NULL) {
-		*flags = 0;
-	}
 
 	return glGetError() == GL_NO_ERROR;
 }

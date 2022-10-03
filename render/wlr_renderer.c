@@ -194,13 +194,13 @@ uint32_t renderer_get_render_buffer_caps(struct wlr_renderer *r) {
 }
 
 bool wlr_renderer_read_pixels(struct wlr_renderer *r, uint32_t fmt,
-		uint32_t *flags, uint32_t stride, uint32_t width, uint32_t height,
+		uint32_t stride, uint32_t width, uint32_t height,
 		uint32_t src_x, uint32_t src_y, uint32_t dst_x, uint32_t dst_y,
 		void *data) {
 	if (!r->impl->read_pixels) {
 		return false;
 	}
-	return r->impl->read_pixels(r, fmt, flags, stride, width, height,
+	return r->impl->read_pixels(r, fmt, stride, width, height,
 		src_x, src_y, dst_x, dst_y, data);
 }
 

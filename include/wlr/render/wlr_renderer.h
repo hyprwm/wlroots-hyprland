@@ -14,10 +14,6 @@
 #include <wlr/backend.h>
 #include <wlr/render/wlr_texture.h>
 
-enum wlr_renderer_read_pixels_flags {
-	WLR_RENDERER_READ_PIXELS_Y_INVERT = 1,
-};
-
 struct wlr_renderer_impl;
 struct wlr_drm_format_set;
 struct wlr_buffer;
@@ -90,12 +86,9 @@ const struct wlr_drm_format_set *wlr_renderer_get_dmabuf_texture_formats(
 /**
  * Reads out of pixels of the currently bound surface into data. `stride` is in
  * bytes.
- *
- * If `flags` is not NULl, the caller indicates that it accepts frame flags
- * defined in enum wlr_renderer_read_pixels_flags.
  */
 bool wlr_renderer_read_pixels(struct wlr_renderer *r, uint32_t fmt,
-	uint32_t *flags, uint32_t stride, uint32_t width, uint32_t height,
+	uint32_t stride, uint32_t width, uint32_t height,
 	uint32_t src_x, uint32_t src_y, uint32_t dst_x, uint32_t dst_y, void *data);
 
 /**
