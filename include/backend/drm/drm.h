@@ -108,7 +108,6 @@ struct wlr_drm_connector {
 	struct wlr_drm_backend *backend;
 	char name[24];
 	drmModeConnection status;
-	bool desired_enabled;
 	uint32_t id;
 	uint64_t max_bpc;
 	struct wlr_drm_lease *lease;

@@ -663,18 +663,13 @@ struct wlr_drm_fb *plane_get_next_fb(struct wlr_drm_plane *plane) {
 	return plane->current_fb;
 }
 
-static void realloc_crtcs(struct wlr_drm_backend *drm);
+static void realloc_crtcs(struct wlr_drm_backend *drm,
+	struct wlr_drm_connector *want_conn);
 
 static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn) {
-	if (conn->crtc != NULL) {
-		return true;
+	if (conn->crtc == NULL) {
+		realloc_crtcs(conn->backend, conn);
 	}
-
-	bool prev_desired_enabled = conn->desired_enabled;
-	conn->desired_enabled = true;
-	realloc_crtcs(conn->backend);
-	conn->desired_enabled = prev_desired_enabled;
-
 	return conn->crtc != NULL;
 }
 
@@ -698,8 +693,6 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 			wlr_mode = conn->output.current_mode;
 		}
 	}
-
-	conn->desired_enabled = wlr_mode != NULL;
 
 	if (wlr_mode == NULL) {
 		if (conn->crtc != NULL) {
@@ -740,7 +733,6 @@ static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
 
 	wlr_output_update_mode(&conn->output, wlr_mode);
 	wlr_output_update_enabled(&conn->output, true);
-	conn->desired_enabled = true;
 
 	// When switching VTs, the mode is not updated but the buffers become
 	// invalid, so we need to manually damage the output here
@@ -924,7 +916,6 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 	dealloc_crtc(conn);
 
 	conn->status = DRM_MODE_DISCONNECTED;
-	conn->desired_enabled = false;
 	conn->possible_crtcs = 0;
 	conn->pending_page_flip_crtc = 0;
 
@@ -1068,7 +1059,8 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 	conn->crtc = NULL;
 }
 
-static void realloc_crtcs(struct wlr_drm_backend *drm) {
+static void realloc_crtcs(struct wlr_drm_backend *drm,
+		struct wlr_drm_connector *want_conn) {
 	assert(drm->num_crtcs > 0);
 
 	size_t num_outputs = wl_list_length(&drm->outputs);
@@ -1093,17 +1085,19 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 	wl_list_for_each(conn, &drm->outputs, link) {
 		connectors[i] = conn;
 
-		wlr_log(WLR_DEBUG, "  '%s' crtc=%d status=%d desired_enabled=%d",
-			conn->name, conn->crtc ? (int)(conn->crtc - drm->crtcs) : -1,
-			conn->status, conn->desired_enabled);
-
 		if (conn->crtc) {
 			previous_match[conn->crtc - drm->crtcs] = i;
 		}
 
-		// Only search CRTCs for user-enabled outputs (that are already
-		// connected or in need of a modeset)
-		if (conn->status == DRM_MODE_CONNECTED && conn->desired_enabled) {
+		// Only request a CRTC if the connected is currently enabled or it's the
+		// connector the user wants to enable
+		bool want_crtc = conn == want_conn || conn->output.enabled;
+
+		wlr_log(WLR_DEBUG, "  '%s' crtc=%d status=%d want_crtc=%d",
+			conn->name, conn->crtc ? (int)(conn->crtc - drm->crtcs) : -1,
+			conn->status, want_crtc);
+
+		if (conn->status == DRM_MODE_CONNECTED && want_crtc) {
 			connector_constraints[i] = conn->possible_crtcs;
 		} else {
 			// Will always fail to match anything
@@ -1148,8 +1142,8 @@ static void realloc_crtcs(struct wlr_drm_backend *drm) {
 		struct wlr_drm_connector *conn = connectors[i];
 		bool prev_enabled = conn->crtc;
 
-		wlr_log(WLR_DEBUG, "  '%s' crtc=%zd status=%d desired_enabled=%d",
-			conn->name, connector_match[i], conn->status, conn->desired_enabled);
+		wlr_log(WLR_DEBUG, "  '%s' crtc=%zd status=%d",
+			conn->name, connector_match[i], conn->status);
 
 		// We don't need to change anything.
 		if (prev_enabled && connector_match[i] == conn->crtc - drm->crtcs) {
@@ -1422,7 +1416,6 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			}
 
 			wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
-			wlr_conn->desired_enabled = wlr_conn->crtc != NULL;
 
 			wlr_conn->status = DRM_MODE_CONNECTED;
 			new_outputs[new_outputs_len++] = wlr_conn;
@@ -1452,7 +1445,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 		destroy_drm_connector(conn);
 	}
 
-	realloc_crtcs(drm);
+	realloc_crtcs(drm, NULL);
 
 	for (size_t i = 0; i < new_outputs_len; ++i) {
 		struct wlr_drm_connector *conn = new_outputs[i];
