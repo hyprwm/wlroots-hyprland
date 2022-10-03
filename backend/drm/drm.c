@@ -1424,7 +1424,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			// TODO: this results in connectors being enabled without a mode
 			// set
 			wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
-			wlr_conn->desired_enabled = true;
+			wlr_conn->desired_enabled = wlr_conn->crtc != NULL;
 
 			wlr_conn->status = DRM_MODE_CONNECTED;
 			new_outputs[new_outputs_len++] = wlr_conn;
