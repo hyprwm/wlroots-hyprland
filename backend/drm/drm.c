@@ -1421,8 +1421,6 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 				wlr_drm_conn_log(wlr_conn, WLR_ERROR, "No CRTC possible");
 			}
 
-			// TODO: this results in connectors being enabled without a mode
-			// set
 			wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
 			wlr_conn->desired_enabled = wlr_conn->crtc != NULL;
 
