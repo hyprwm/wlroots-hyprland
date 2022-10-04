@@ -13,15 +13,15 @@ wayland_scanner = find_program(
 
 protocols = {
 	# Stable upstream protocols
-	'xdg-shell': wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
 	'presentation-time': wl_protocol_dir / 'stable/presentation-time/presentation-time.xml',
 	'viewporter': wl_protocol_dir / 'stable/viewporter/viewporter.xml',
+	'xdg-shell': wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
 
 	# Staging upstream protocols
-	'xdg-activation-v1': wl_protocol_dir / 'staging/xdg-activation/xdg-activation-v1.xml',
 	'drm-lease-v1': wl_protocol_dir / 'staging/drm-lease/drm-lease-v1.xml',
 	'ext-session-lock-v1': wl_protocol_dir / 'staging/ext-session-lock/ext-session-lock-v1.xml',
 	'single-pixel-buffer-v1': wl_protocol_dir / 'staging/single-pixel-buffer/single-pixel-buffer-v1.xml',
+	'xdg-activation-v1': wl_protocol_dir / 'staging/xdg-activation/xdg-activation-v1.xml',
 
 	# Unstable upstream protocols
 	'fullscreen-shell-unstable-v1': wl_protocol_dir / 'unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml',
@@ -41,9 +41,9 @@ protocols = {
 
 	# Other protocols
 	'drm': 'drm.xml',
+	'input-method-unstable-v2': 'input-method-unstable-v2.xml',
 	'kde-idle': 'idle.xml',
 	'kde-server-decoration': 'server-decoration.xml',
-	'input-method-unstable-v2': 'input-method-unstable-v2.xml',
 	'virtual-keyboard-unstable-v1': 'virtual-keyboard-unstable-v1.xml',
 	'wlr-data-control-unstable-v1': 'wlr-data-control-unstable-v1.xml',
 	'wlr-export-dmabuf-unstable-v1': 'wlr-export-dmabuf-unstable-v1.xml',
