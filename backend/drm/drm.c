@@ -561,9 +561,6 @@ bool drm_connector_supports_vrr(struct wlr_drm_connector *conn) {
 	return true;
 }
 
-static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
-	const struct wlr_drm_connector_state *state);
-
 bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		const struct wlr_output_state *base) {
 	struct wlr_drm_backend *drm = conn->backend;
@@ -594,8 +591,8 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
-	if (pending.modeset) {
-		if (!drm_connector_set_mode(conn, &pending)) {
+	if (!pending.active) {
+		if (conn->crtc != NULL && !drm_crtc_commit(conn, &pending, 0, false)) {
 			return false;
 		}
 	} else if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
@@ -609,6 +606,22 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		if (!drm_crtc_commit(conn, &pending, 0, false)) {
 			return false;
 		}
+	}
+
+	if (pending.base->committed & WLR_OUTPUT_STATE_ENABLED) {
+		wlr_output_update_enabled(&conn->output, pending.active);
+	}
+	if (pending.base->committed & WLR_OUTPUT_STATE_MODE) {
+		struct wlr_output_mode *mode = NULL;
+		switch (pending.base->mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			mode = pending.base->mode;
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			mode = wlr_drm_connector_add_mode(&conn->output, &pending.mode);
+			break;
+		}
+		wlr_output_update_mode(&conn->output, mode);
 	}
 
 	return true;
@@ -671,74 +684,6 @@ static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn) {
 		realloc_crtcs(conn->backend, conn);
 	}
 	return conn->crtc != NULL;
-}
-
-static bool drm_connector_set_mode(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state) {
-	struct wlr_output_mode *wlr_mode = NULL;
-	if (state->active) {
-		if (state->base->committed & WLR_OUTPUT_STATE_MODE) {
-			switch (state->base->mode_type) {
-			case WLR_OUTPUT_STATE_MODE_FIXED:
-				wlr_mode = state->base->mode;
-				break;
-			case WLR_OUTPUT_STATE_MODE_CUSTOM:
-				wlr_mode = wlr_drm_connector_add_mode(&conn->output, &state->mode);
-				if (wlr_mode == NULL) {
-					return false;
-				}
-				break;
-			}
-		} else {
-			wlr_mode = conn->output.current_mode;
-		}
-	}
-
-	if (wlr_mode == NULL) {
-		if (conn->crtc != NULL) {
-			if (!drm_crtc_commit(conn, state, 0, false)) {
-				return false;
-			}
-		}
-		wlr_output_update_enabled(&conn->output, false);
-		return true;
-	}
-
-	if (conn->status != DRM_MODE_CONNECTED) {
-		wlr_drm_conn_log(conn, WLR_ERROR,
-			"Cannot modeset a disconnected output");
-		return false;
-	}
-
-	if (!drm_connector_alloc_crtc(conn)) {
-		wlr_drm_conn_log(conn, WLR_ERROR,
-			"Cannot perform modeset: no CRTC for this connector");
-		return false;
-	}
-
-	wlr_drm_conn_log(conn, WLR_INFO,
-		"Modesetting with '%" PRId32 "x%" PRId32 "@%" PRId32 "mHz'",
-		wlr_mode->width, wlr_mode->height, wlr_mode->refresh);
-
-	// drm_crtc_page_flip expects a FB to be available
-	struct wlr_drm_plane *plane = conn->crtc->primary;
-	if (!plane_get_next_fb(plane)) {
-		wlr_drm_conn_log(conn, WLR_ERROR, "Missing FB in modeset");
-		return false;
-	}
-
-	if (!drm_crtc_page_flip(conn, state)) {
-		return false;
-	}
-
-	wlr_output_update_mode(&conn->output, wlr_mode);
-	wlr_output_update_enabled(&conn->output, true);
-
-	// When switching VTs, the mode is not updated but the buffers become
-	// invalid, so we need to manually damage the output here
-	wlr_output_damage_whole(&conn->output);
-
-	return true;
 }
 
 static struct wlr_drm_mode *drm_mode_create(const drmModeModeInfo *modeinfo) {
