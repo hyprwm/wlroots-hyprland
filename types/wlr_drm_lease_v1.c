@@ -350,9 +350,13 @@ static void drm_lease_request_v1_handle_submit(
 
 	request->lease_resource = lease_resource;
 
-	/* TODO: reject the request if the user does not grant it */
 	wl_signal_emit_mutable(&request->device->manager->events.request,
 			request);
+
+	/* If the compositor didn't act upon the request, reject it */
+	if (!request->invalid && wl_resource_get_user_data(lease_resource) == NULL) {
+		wlr_drm_lease_request_v1_reject(request);
+	}
 
 	/* Request is done */
 	wl_resource_destroy(resource);
