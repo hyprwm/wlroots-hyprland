@@ -44,21 +44,6 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 	wl_signal_emit_mutable(&output_damage->events.frame, output_damage);
 }
 
-static void output_handle_precommit(struct wl_listener *listener, void *data) {
-	struct wlr_output_damage *output_damage =
-		wl_container_of(listener, output_damage, output_precommit);
-	const struct wlr_output_event_precommit *event = data;
-	const struct wlr_output_state *state = event->state;
-	struct wlr_output *output = output_damage->output;
-
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		// TODO: find a better way to access this info without a precommit
-		// handler
-		output_damage->pending_attach_render =
-			!output_is_direct_scanout(output, state->buffer);
-	}
-}
-
 static void output_handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_output_damage *output_damage =
 		wl_container_of(listener, output_damage, output_commit);
@@ -66,7 +51,7 @@ static void output_handle_commit(struct wl_listener *listener, void *data) {
 
 	if (event->committed & WLR_OUTPUT_STATE_BUFFER) {
 		pixman_region32_t *prev;
-		if (output_damage->pending_attach_render) {
+		if (!output_is_direct_scanout(output_damage->output, event->buffer)) {
 			// render-buffers have been swapped, rotate the damage
 
 			// same as decrementing, but works on unsigned integers
@@ -117,8 +102,6 @@ struct wlr_output_damage *wlr_output_damage_create(struct wlr_output *output) {
 	output_damage->output_damage.notify = output_handle_damage;
 	wl_signal_add(&output->events.frame, &output_damage->output_frame);
 	output_damage->output_frame.notify = output_handle_frame;
-	wl_signal_add(&output->events.precommit, &output_damage->output_precommit);
-	output_damage->output_precommit.notify = output_handle_precommit;
 	wl_signal_add(&output->events.commit, &output_damage->output_commit);
 	output_damage->output_commit.notify = output_handle_commit;
 
@@ -135,7 +118,6 @@ void wlr_output_damage_destroy(struct wlr_output_damage *output_damage) {
 	wl_list_remove(&output_damage->output_needs_frame.link);
 	wl_list_remove(&output_damage->output_damage.link);
 	wl_list_remove(&output_damage->output_frame.link);
-	wl_list_remove(&output_damage->output_precommit.link);
 	wl_list_remove(&output_damage->output_commit.link);
 	pixman_region32_fini(&output_damage->current);
 	for (size_t i = 0; i < WLR_OUTPUT_DAMAGE_PREVIOUS_LEN; ++i) {
