@@ -322,12 +322,14 @@ static void drm_lease_request_v1_handle_submit(
 			drm_lease_request_v1_from_resource(resource);
 	if (!request) {
 		wlr_log(WLR_DEBUG, "Request has been destroyed");
+		wp_drm_lease_v1_send_finished(lease_resource);
 		return;
 	}
 
 	/* Pre-emptively reject invalid lease requests */
 	if (request->invalid) {
 		wlr_log(WLR_ERROR, "Invalid request");
+		wp_drm_lease_v1_send_finished(lease_resource);
 		return;
 	} else if (request->n_connectors == 0) {
 		wl_resource_post_error(lease_resource,
@@ -341,6 +343,7 @@ static void drm_lease_request_v1_handle_submit(
 		if (conn->active_lease) {
 			wlr_log(WLR_ERROR, "Failed to create lease, connector %s has "
 					"already been leased", conn->output->name);
+			wp_drm_lease_v1_send_finished(lease_resource);
 			return;
 		}
 	}
