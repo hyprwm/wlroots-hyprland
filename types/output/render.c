@@ -209,13 +209,13 @@ bool output_ensure_buffer(struct wlr_output *output,
 	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		needs_new_buffer = true;
 	}
-	if (!needs_new_buffer) {
-		return true;
+	if (state->allow_artifacts && output->commit_seq == 0) {
+		// On first commit, require a new buffer if the compositor called a
+		// mode-setting function, even if the mode won't change. This makes it
+		// so the swapchain is created now.
+		needs_new_buffer = true;
 	}
-
-	// If the backend doesn't necessarily need a new buffer on modeset, don't
-	// bother allocating one.
-	if (!output->impl->test || output->impl->test(output, state)) {
+	if (!needs_new_buffer) {
 		return true;
 	}
 
