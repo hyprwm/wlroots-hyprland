@@ -55,7 +55,7 @@ static void output_handle_precommit(struct wl_listener *listener, void *data) {
 		// TODO: find a better way to access this info without a precommit
 		// handler
 		output_damage->pending_attach_render =
-			output_is_direct_scanout(output, state->buffer);
+			!output_is_direct_scanout(output, state->buffer);
 	}
 }
 
