@@ -489,7 +489,7 @@ void wlr_send_tablet_v2_tablet_tool_wheel(
 	struct wlr_tablet_v2_tablet_tool *tool, double degrees, int32_t clicks) {
 	if (tool->current_client) {
 		zwp_tablet_tool_v2_send_wheel(tool->current_client->resource,
-			clicks, degrees);
+			wl_fixed_from_double(degrees), clicks);
 
 		queue_tool_frame(tool->current_client);
 	}
