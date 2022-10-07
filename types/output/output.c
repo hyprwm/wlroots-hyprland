@@ -817,7 +817,8 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		output->needs_frame = false;
 	}
 
-	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
+	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
+			output->swapchain != NULL) {
 		wlr_swapchain_set_buffer_submitted(output->swapchain, pending.buffer);
 	}
 
