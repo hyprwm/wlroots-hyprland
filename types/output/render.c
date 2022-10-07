@@ -186,6 +186,11 @@ bool output_ensure_buffer(struct wlr_output *output,
 		bool *new_back_buffer) {
 	assert(*new_back_buffer == false);
 
+	// If we already have a buffer, we don't need to allocate a new one
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		return true;
+	}
+
 	// If we're lighting up an output or changing its mode, make sure to
 	// provide a new buffer
 	bool needs_new_buffer = false;
@@ -198,7 +203,7 @@ bool output_ensure_buffer(struct wlr_output *output,
 	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		needs_new_buffer = true;
 	}
-	if (!needs_new_buffer || (state->committed & WLR_OUTPUT_STATE_BUFFER)) {
+	if (!needs_new_buffer) {
 		return true;
 	}
 
