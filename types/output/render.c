@@ -191,6 +191,12 @@ bool output_ensure_buffer(struct wlr_output *output,
 		return true;
 	}
 
+	// If the compositor hasn't called wlr_output_init_render(), they will use
+	// their own logic to attach buffers
+	if (output->renderer == NULL) {
+		return true;
+	}
+
 	// If we're lighting up an output or changing its mode, make sure to
 	// provide a new buffer
 	bool needs_new_buffer = false;
