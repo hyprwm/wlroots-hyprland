@@ -1148,14 +1148,14 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 	VkSubresourceLayout img_sub_layout;
 	vkGetImageSubresourceLayout(dev, dst_image, &img_sub_res, &img_sub_layout);
 
-	const char *d;
-	res = vkMapMemory(dev, dst_img_memory, 0, VK_WHOLE_SIZE, 0, (void **)&d);
+	void *v;
+	res = vkMapMemory(dev, dst_img_memory, 0, VK_WHOLE_SIZE, 0, &v);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkMapMemory", res);
 		goto free_memory;
 	}
-	d += img_sub_layout.offset;
 
+	const char *d = (const char *)v + img_sub_layout.offset;
 	unsigned char *p = (unsigned char *)data + dst_y * stride;
 	uint32_t bpp = pixel_format_info->bpp;
 	uint32_t pack_stride = img_sub_layout.rowPitch;
