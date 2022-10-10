@@ -166,7 +166,9 @@ static bool output_attach_empty_back_buffer(struct wlr_output *output,
 
 static bool output_test_with_back_buffer(struct wlr_output *output,
 		const struct wlr_output_state *state) {
-	assert(output->impl->test != NULL);
+	if (output->impl->test == NULL) {
+		return true;
+	}
 
 	// Create a shallow copy of the state with the empty back buffer included
 	// to pass to the backend.
