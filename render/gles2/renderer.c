@@ -267,13 +267,10 @@ static bool gles2_render_subtexture_with_matrix(
 		}
 		break;
 	case GL_TEXTURE_EXTERNAL_OES:
+		// EGL_EXT_image_dma_buf_import_modifiers requires
+		// GL_OES_EGL_image_external
+		assert(renderer->exts.OES_egl_image_external);
 		shader = &renderer->shaders.tex_ext;
-
-		if (!renderer->exts.OES_egl_image_external) {
-			wlr_log(WLR_ERROR, "Failed to render texture: "
-				"GL_TEXTURE_EXTERNAL_OES not supported");
-			return false;
-		}
 		break;
 	default:
 		abort();
