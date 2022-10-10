@@ -18,10 +18,6 @@ struct wlr_vk_instance {
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT messenger;
 
-	// enabled extensions
-	size_t extension_count;
-	const char **extensions;
-
 	struct {
 		PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessengerEXT;
 		PFN_vkDestroyDebugUtilsMessengerEXT destroyDebugUtilsMessengerEXT;

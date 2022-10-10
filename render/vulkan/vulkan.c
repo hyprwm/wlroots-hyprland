@@ -131,9 +131,9 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 		return NULL;
 	}
 
-	bool debug_utils_found = false;
-	ini->extensions = calloc(1 + ext_count, sizeof(*ini->extensions));
-	if (!ini->extensions) {
+	size_t extensions_len = 0;
+	const char **extensions = calloc(1 + ext_count, sizeof(*extensions));
+	if (extensions) {
 		wlr_log_errno(WLR_ERROR, "allocation failed");
 		goto error;
 	}
@@ -146,14 +146,15 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 			continue;
 		}
 
-		ini->extensions[ini->extension_count++] = exts[i];
+		extensions[extensions_len++] = exts[i];
 	}
 
+	bool debug_utils_found = false;
 	if (debug) {
 		const char *name = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 		if (find_extensions(avail_ext_props, avail_extc, &name, 1) == NULL) {
 			debug_utils_found = true;
-			ini->extensions[ini->extension_count++] = name;
+			extensions[extensions_len++] = name;
 		}
 	}
 
@@ -174,8 +175,8 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 	VkInstanceCreateInfo instance_info = {0};
 	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instance_info.pApplicationInfo = &application_info;
-	instance_info.enabledExtensionCount = ini->extension_count;
-	instance_info.ppEnabledExtensionNames = ini->extensions;
+	instance_info.enabledExtensionCount = extensions_len;
+	instance_info.ppEnabledExtensionNames = extensions;
 	instance_info.enabledLayerCount = layer_count;
 	instance_info.ppEnabledLayerNames = layers;
 
@@ -208,6 +209,8 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 		wlr_vk_error("Could not create instance", res);
 		goto error;
 	}
+
+	free(extensions);
 
 	// debug callback
 	if (debug_utils_found) {
@@ -247,7 +250,6 @@ void vulkan_instance_destroy(struct wlr_vk_instance *ini) {
 		vkDestroyInstance(ini->instance, NULL);
 	}
 
-	free(ini->extensions);
 	free(ini);
 }
 
