@@ -133,7 +133,7 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 
 	size_t extensions_len = 0;
 	const char **extensions = calloc(1 + ext_count, sizeof(*extensions));
-	if (extensions) {
+	if (!extensions) {
 		wlr_log_errno(WLR_ERROR, "allocation failed");
 		goto error;
 	}
