@@ -922,7 +922,11 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count,
 		submit_infos, NULL);
-	if (res != VK_SUCCESS) {
+	if (res == VK_ERROR_DEVICE_LOST) {
+		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
+		wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
+		return;
+	} else if (res != VK_SUCCESS) {
 		wlr_vk_error("vkQueueSubmit", res);
 		return;
 	}
