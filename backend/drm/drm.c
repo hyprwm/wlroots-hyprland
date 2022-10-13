@@ -1157,6 +1157,35 @@ static struct wlr_drm_crtc *connector_get_current_crtc(
 	return NULL;
 }
 
+static drmModeModeInfo *connector_get_current_mode(
+		struct wlr_drm_connector *wlr_conn, const drmModeConnector *drm_conn) {
+	struct wlr_drm_backend *drm = wlr_conn->backend;
+
+	if (wlr_conn->crtc == NULL) {
+		return NULL;
+	}
+
+	if (wlr_conn->crtc->props.mode_id != 0) {
+		size_t size = 0;
+		drmModeModeInfo *mode = get_drm_prop_blob(drm->fd, wlr_conn->crtc->id,
+			wlr_conn->crtc->props.mode_id, &size);
+		assert(mode == NULL || size == sizeof(*mode));
+		return mode;
+	} else {
+		// Fallback to the legacy API
+		if (!wlr_conn->crtc->legacy_crtc->mode_valid) {
+			return NULL;
+		}
+		drmModeModeInfo *mode = malloc(sizeof(*mode));
+		if (mode == NULL) {
+			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			return NULL;
+		}
+		*mode = wlr_conn->crtc->legacy_crtc->mode;
+		return mode;
+	}
+}
+
 static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		const drmModeConnector *drm_conn) {
 	struct wlr_drm_backend *drm = wlr_conn->backend;
@@ -1225,21 +1254,8 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 
 	// Before iterating on the conn's modes, get the current KMS mode
 	// in use from the connector's CRTC.
-	drmModeModeInfo *current_modeinfo = NULL;
-	if (wlr_conn->crtc != NULL) {
-		if (wlr_conn->crtc->props.mode_id == 0) {
-			// Use the legacy drm interface.
-			if (wlr_conn->crtc->legacy_crtc->mode_valid) {
-				current_modeinfo = &wlr_conn->crtc->legacy_crtc->mode;
-			}
-		} else {
-			// Use the modern atomic drm interface.
-			size_t modeinfo_size = 0;
-			current_modeinfo = get_drm_prop_blob(drm->fd, wlr_conn->crtc->id,
-				wlr_conn->crtc->props.mode_id, &modeinfo_size);
-			assert(modeinfo_size == sizeof(drmModeModeInfo));
-		}
-	}
+	drmModeModeInfo *current_modeinfo =
+		connector_get_current_mode(wlr_conn, drm_conn);
 
 	wlr_log(WLR_INFO, "Detected modes:");
 
@@ -1277,11 +1293,7 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		wl_list_insert(wlr_conn->output.modes.prev, &mode->wlr_mode.link);
 	}
 
-	if (wlr_conn->crtc != NULL && wlr_conn->crtc->props.mode_id != 0) {
-		// free() the modeinfo pointer, but only
-		// if not using the legacy API.
-		free(current_modeinfo);
-	}
+	free(current_modeinfo);
 
 	wlr_conn->possible_crtcs =
 		drmModeConnectorGetPossibleCrtcs(drm->fd, drm_conn);
