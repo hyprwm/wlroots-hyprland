@@ -391,7 +391,8 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 	if (base->committed & WLR_OUTPUT_STATE_MODE) {
 		switch (base->mode_type) {
 		case WLR_OUTPUT_STATE_MODE_FIXED:;
-			struct wlr_drm_mode *mode = (struct wlr_drm_mode *)base->mode;
+			struct wlr_drm_mode *mode =
+				wl_container_of(base->mode, mode, wlr_mode);
 			state->mode = mode->drm_mode;
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
@@ -403,7 +404,7 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		}
 	} else if (state->active) {
 		struct wlr_drm_mode *mode =
-			(struct wlr_drm_mode *)conn->output.current_mode;
+			wl_container_of(conn->output.current_mode, mode, wlr_mode);
 		assert(mode != NULL);
 		state->mode = mode->drm_mode;
 	}
@@ -714,7 +715,7 @@ struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 
 	struct wlr_output_mode *wlr_mode;
 	wl_list_for_each(wlr_mode, &conn->output.modes, link) {
-		struct wlr_drm_mode *mode = (struct wlr_drm_mode *)wlr_mode;
+		struct wlr_drm_mode *mode = wl_container_of(wlr_mode, mode, wlr_mode);
 		if (memcmp(&mode->drm_mode, modeinfo, sizeof(*modeinfo)) == 0) {
 			return wlr_mode;
 		}
