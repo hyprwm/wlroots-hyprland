@@ -968,6 +968,11 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vkDestroySampler(dev->dev, renderer->sampler, NULL);
 	vkDestroyCommandPool(dev->dev, renderer->command_pool, NULL);
 
+	if (renderer->read_pixels_cache.initialized) {
+		vkFreeMemory(dev->dev, renderer->read_pixels_cache.dst_img_memory, NULL);
+		vkDestroyImage(dev->dev, renderer->read_pixels_cache.dst_image, NULL);
+	}
+
 	struct wlr_vk_instance *ini = dev->instance;
 	vulkan_device_destroy(dev);
 	vulkan_instance_destroy(ini);
@@ -978,7 +983,6 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		uint32_t drm_format, uint32_t stride,
 		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
 		uint32_t dst_x, uint32_t dst_y, void *data) {
-	bool success = false;
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(wlr_renderer);
 	VkDevice dev = vk_renderer->dev->dev;
 	VkImage src_image = vk_renderer->current_render_buffer->image;
@@ -1010,56 +1014,78 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		return false;
 	}
 
-	VkImageCreateInfo image_create_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.imageType = VK_IMAGE_TYPE_2D,
-		.format = dst_format,
-		.extent.width = width,
-		.extent.height = height,
-		.extent.depth = 1,
-		.arrayLayers = 1,
-		.mipLevels = 1,
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		.samples = VK_SAMPLE_COUNT_1_BIT,
-		.tiling = VK_IMAGE_TILING_LINEAR,
-		.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT
-	};
+	VkResult res;
 	VkImage dst_image;
-	VkResult res = vkCreateImage(dev, &image_create_info, NULL, &dst_image);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateImage", res);
-		return false;
-	}
-
-	VkMemoryRequirements mem_reqs;
-	vkGetImageMemoryRequirements(dev, dst_image, &mem_reqs);
-
-	int mem_type = vulkan_find_mem_type(vk_renderer->dev,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-			VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-			mem_reqs.memoryTypeBits);
-	if (mem_type < 0) {
-		wlr_log(WLR_ERROR, "vulkan_read_pixels: could not find adequate memory type");
-		goto destroy_image;
-	}
-
-	VkMemoryAllocateInfo mem_alloc_info = {
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	};
-	mem_alloc_info.allocationSize = mem_reqs.size;
-	mem_alloc_info.memoryTypeIndex = mem_type;
-
 	VkDeviceMemory dst_img_memory;
-	res = vkAllocateMemory(dev, &mem_alloc_info, NULL, &dst_img_memory);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkAllocateMemory", res);
-		goto destroy_image;
-	}
-	res = vkBindImageMemory(dev, dst_image, dst_img_memory, 0);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkBindImageMemory", res);
-		goto free_memory;
+	bool use_cached = vk_renderer->read_pixels_cache.initialized &&
+		vk_renderer->read_pixels_cache.drm_format == drm_format &&
+		vk_renderer->read_pixels_cache.width == width &&
+		vk_renderer->read_pixels_cache.height == height;
+
+	if (use_cached) {
+		dst_image = vk_renderer->read_pixels_cache.dst_image;
+		dst_img_memory = vk_renderer->read_pixels_cache.dst_img_memory;
+	} else {
+		VkImageCreateInfo image_create_info = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			.imageType = VK_IMAGE_TYPE_2D,
+			.format = dst_format,
+			.extent.width = width,
+			.extent.height = height,
+			.extent.depth = 1,
+			.arrayLayers = 1,
+			.mipLevels = 1,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.tiling = VK_IMAGE_TILING_LINEAR,
+			.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+		};
+		res = vkCreateImage(dev, &image_create_info, NULL, &dst_image);
+		if (res != VK_SUCCESS) {
+			wlr_vk_error("vkCreateImage", res);
+			return false;
+		}
+
+		VkMemoryRequirements mem_reqs;
+		vkGetImageMemoryRequirements(dev, dst_image, &mem_reqs);
+
+		int mem_type = vulkan_find_mem_type(vk_renderer->dev,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+				VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+				mem_reqs.memoryTypeBits);
+		if (mem_type < 0) {
+			wlr_log(WLR_ERROR, "vulkan_read_pixels: could not find adequate memory type");
+			goto destroy_image;
+		}
+
+		VkMemoryAllocateInfo mem_alloc_info = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		};
+		mem_alloc_info.allocationSize = mem_reqs.size;
+		mem_alloc_info.memoryTypeIndex = mem_type;
+
+		res = vkAllocateMemory(dev, &mem_alloc_info, NULL, &dst_img_memory);
+		if (res != VK_SUCCESS) {
+			wlr_vk_error("vkAllocateMemory", res);
+			goto destroy_image;
+		}
+		res = vkBindImageMemory(dev, dst_image, dst_img_memory, 0);
+		if (res != VK_SUCCESS) {
+			wlr_vk_error("vkBindImageMemory", res);
+			goto free_memory;
+		}
+
+		if (vk_renderer->read_pixels_cache.initialized) {
+			vkFreeMemory(dev, vk_renderer->read_pixels_cache.dst_img_memory, NULL);
+			vkDestroyImage(dev, vk_renderer->read_pixels_cache.dst_image, NULL);
+		}
+		vk_renderer->read_pixels_cache.initialized = true;
+		vk_renderer->read_pixels_cache.drm_format = drm_format;
+		vk_renderer->read_pixels_cache.dst_image = dst_image;
+		vk_renderer->read_pixels_cache.dst_img_memory = dst_img_memory;
+		vk_renderer->read_pixels_cache.width = width;
+		vk_renderer->read_pixels_cache.height = height;
 	}
 
 	VkCommandBuffer cb = vulkan_record_stage_cb(vk_renderer);
@@ -1137,7 +1163,7 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 			VK_ACCESS_MEMORY_READ_BIT);
 
 	if (!vulkan_submit_stage_wait(vk_renderer)) {
-		goto free_memory;
+		return false;
 	}
 
 	VkImageSubresource img_sub_res = {
@@ -1152,7 +1178,7 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 	res = vkMapMemory(dev, dst_img_memory, 0, VK_WHOLE_SIZE, 0, &v);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkMapMemory", res);
-		goto free_memory;
+		return false;
 	}
 
 	const char *d = (const char *)v + img_sub_layout.offset;
@@ -1167,14 +1193,15 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		}
 	}
 
-	success = true;
 	vkUnmapMemory(dev, dst_img_memory);
+	// Don't need to free anything else, since memory and image are cached
+	return true;
 free_memory:
 	vkFreeMemory(dev, dst_img_memory, NULL);
 destroy_image:
 	vkDestroyImage(dev, dst_image, NULL);
 
-	return success;
+	return false;
 }
 
 static int vulkan_get_drm_fd(struct wlr_renderer *wlr_renderer) {

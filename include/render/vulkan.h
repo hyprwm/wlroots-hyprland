@@ -189,6 +189,14 @@ struct wlr_vk_renderer {
 		bool recording;
 		struct wl_list buffers; // type wlr_vk_shared_buffer
 	} stage;
+
+	struct {
+		bool initialized;
+		uint32_t drm_format;
+		uint32_t width, height;
+		VkImage dst_image;
+		VkDeviceMemory dst_img_memory;
+	} read_pixels_cache;
 };
 
 // Creates a vulkan renderer for the given device.
