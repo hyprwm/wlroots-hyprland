@@ -1117,6 +1117,46 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 	}
 }
 
+static struct wlr_drm_crtc *connector_get_current_crtc(
+		struct wlr_drm_connector *wlr_conn, const drmModeConnector *drm_conn) {
+	struct wlr_drm_backend *drm = wlr_conn->backend;
+
+	uint32_t crtc_id = 0;
+	if (wlr_conn->props.crtc_id != 0) {
+		uint64_t value;
+		if (!get_drm_prop(drm->fd, wlr_conn->id,
+				wlr_conn->props.crtc_id, &value)) {
+			wlr_drm_conn_log(wlr_conn, WLR_ERROR,
+				"Failed to get CRTC_ID connector property");
+			return NULL;
+		}
+		crtc_id = (uint32_t)value;
+	} else if (drm_conn->encoder_id != 0) {
+		// Fallback to the legacy API
+		drmModeEncoder *enc = drmModeGetEncoder(drm->fd, drm_conn->encoder_id);
+		if (enc == NULL) {
+			wlr_drm_conn_log(wlr_conn, WLR_ERROR,
+				"drmModeGetEncoder() failed");
+			return NULL;
+		}
+		crtc_id = enc->crtc_id;
+		drmModeFreeEncoder(enc);
+	}
+	if (crtc_id == 0) {
+		return NULL;
+	}
+
+	for (size_t i = 0; i < drm->num_crtcs; ++i) {
+		if (drm->crtcs[i].id == crtc_id) {
+			return &drm->crtcs[i];
+		}
+	}
+
+	wlr_drm_conn_log(wlr_conn, WLR_ERROR,
+		"Failed to find current CRTC ID %" PRIu32, crtc_id);
+	return NULL;
+}
+
 static void disconnect_drm_connector(struct wlr_drm_connector *conn);
 
 void scan_drm_connectors(struct wlr_drm_backend *drm,
@@ -1170,14 +1210,11 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			wlr_log_errno(WLR_ERROR, "Failed to get DRM connector");
 			continue;
 		}
-		drmModeEncoder *curr_enc = drmModeGetEncoder(drm->fd,
-			drm_conn->encoder_id);
 
 		if (!wlr_conn) {
 			wlr_conn = calloc(1, sizeof(*wlr_conn));
 			if (!wlr_conn) {
 				wlr_log_errno(WLR_ERROR, "Allocation failed");
-				drmModeFreeEncoder(curr_enc);
 				drmModeFreeConnector(drm_conn);
 				continue;
 			}
@@ -1201,16 +1238,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			seen[index] = true;
 		}
 
-		if (curr_enc) {
-			for (size_t i = 0; i < drm->num_crtcs; ++i) {
-				if (drm->crtcs[i].id == curr_enc->crtc_id) {
-					wlr_conn->crtc = &drm->crtcs[i];
-					break;
-				}
-			}
-		} else {
-			wlr_conn->crtc = NULL;
-		}
+		wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
 
 		// This can only happen *after* hotplug, since we haven't read the
 		// connector properties yet
@@ -1371,7 +1399,6 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			disconnect_drm_connector(wlr_conn);
 		}
 
-		drmModeFreeEncoder(curr_enc);
 		drmModeFreeConnector(drm_conn);
 	}
 
