@@ -164,7 +164,7 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 		}
 
 		if (drmModeMoveCursor(drm->fd,
-			crtc->id, conn->cursor_x, conn->cursor_y) != 0) {
+				crtc->id, conn->cursor_x, conn->cursor_y) != 0) {
 			wlr_drm_conn_log_errno(conn, WLR_ERROR, "drmModeMoveCursor failed");
 			return false;
 		}
