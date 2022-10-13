@@ -29,6 +29,8 @@ static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
+static size_t last_output_num = 0;
+
 static void parse_xcb_setup(struct wlr_output *output,
 		xcb_connection_t *xcb) {
 	const xcb_setup_t *xcb_setup = xcb_get_setup(xcb);
@@ -518,15 +520,16 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 
 	wlr_output_update_custom_mode(wlr_output, 1024, 768, 0);
 
+	size_t output_num = ++last_output_num;
+
 	char name[64];
-	snprintf(name, sizeof(name), "X11-%zu", ++x11->last_output_num);
+	snprintf(name, sizeof(name), "X11-%zu", output_num);
 	wlr_output_set_name(wlr_output, name);
 
 	parse_xcb_setup(wlr_output, x11->xcb);
 
 	char description[128];
-	snprintf(description, sizeof(description),
-		"X11 output %zu", x11->last_output_num);
+	snprintf(description, sizeof(description), "X11 output %zu", output_num);
 	wlr_output_set_description(wlr_output, description);
 
 	// The X11 protocol requires us to set a colormap and border pixel if the

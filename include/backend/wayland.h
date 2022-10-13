@@ -25,7 +25,6 @@ struct wlr_wl_backend {
 	int drm_fd;
 	struct wl_list buffers; // wlr_wl_buffer.link
 	size_t requested_outputs;
-	size_t last_output_num;
 	struct wl_listener local_display_destroy;
 	char *activation_token;
 

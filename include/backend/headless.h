@@ -10,7 +10,6 @@ struct wlr_headless_backend {
 	struct wlr_backend backend;
 	struct wl_display *display;
 	struct wl_list outputs;
-	size_t last_output_num;
 	struct wl_listener display_destroy;
 	bool started;
 };

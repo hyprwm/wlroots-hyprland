@@ -10,6 +10,8 @@ static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BUFFER |
 	WLR_OUTPUT_STATE_MODE;
 
+static size_t last_output_num = 0;
+
 static struct wlr_headless_output *headless_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_headless(wlr_output));
@@ -116,13 +118,14 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 
 	output_set_custom_mode(output, width, height, 0);
 
+	size_t output_num = ++last_output_num;
+
 	char name[64];
-	snprintf(name, sizeof(name), "HEADLESS-%zu", ++backend->last_output_num);
+	snprintf(name, sizeof(name), "HEADLESS-%zu", output_num);
 	wlr_output_set_name(wlr_output, name);
 
 	char description[128];
-	snprintf(description, sizeof(description),
-		"Headless output %zu", backend->last_output_num);
+	snprintf(description, sizeof(description), "Headless output %zu", output_num);
 	wlr_output_set_description(wlr_output, description);
 
 	struct wl_event_loop *ev = wl_display_get_event_loop(backend->display);

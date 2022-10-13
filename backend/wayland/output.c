@@ -32,6 +32,8 @@ static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
+static size_t last_output_num = 0;
+
 static struct wlr_wl_output *get_wl_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_wl(wlr_output));
@@ -525,13 +527,14 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 
 	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 
+	size_t output_num = ++last_output_num;
+
 	char name[64];
-	snprintf(name, sizeof(name), "WL-%zu", ++backend->last_output_num);
+	snprintf(name, sizeof(name), "WL-%zu", output_num);
 	wlr_output_set_name(wlr_output, name);
 
 	char description[128];
-	snprintf(description, sizeof(description),
-		"Wayland output %zu", backend->last_output_num);
+	snprintf(description, sizeof(description), "Wayland output %zu", output_num);
 	wlr_output_set_description(wlr_output, description);
 
 	output->backend = backend;

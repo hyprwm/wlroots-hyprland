@@ -74,7 +74,6 @@ struct wlr_x11_backend {
 	uint32_t dri3_major_version, dri3_minor_version;
 
 	size_t requested_outputs;
-	size_t last_output_num;
 	struct wl_list outputs; // wlr_x11_output::link
 
 	struct wlr_keyboard keyboard;
