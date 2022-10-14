@@ -10,9 +10,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <wayland-server-core.h>
+#include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
-#include <wlr/xwayland.h>
+#include <wlr/xwayland/xwayland.h>
 #include "sockets.h"
 #include "xwayland/xwm.h"
 
