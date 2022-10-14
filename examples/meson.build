@@ -65,11 +65,6 @@ compositors = {
 }
 
 clients = {
-	'idle': {
-		'src': 'idle.c',
-		'dep': threads,
-		'proto': ['kde-idle'],
-	},
 	'idle-inhibit': {
 		'src': ['idle-inhibit.c', 'egl_common.c'],
 		'dep': [wayland_egl, egl, glesv2],

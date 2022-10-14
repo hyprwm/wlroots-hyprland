@@ -46,7 +46,6 @@ wlr_files += files(
 	'wlr_fullscreen_shell_v1.c',
 	'wlr_gamma_control_v1.c',
 	'wlr_idle_inhibit_v1.c',
-	'wlr_idle.c',
 	'wlr_idle_notify_v1.c',
 	'wlr_input_device.c',
 	'wlr_input_inhibitor.c',

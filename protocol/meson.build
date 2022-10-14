@@ -48,7 +48,6 @@ protocols = {
 	# Other protocols
 	'drm': 'drm.xml',
 	'input-method-unstable-v2': 'input-method-unstable-v2.xml',
-	'kde-idle': 'idle.xml',
 	'kde-server-decoration': 'server-decoration.xml',
 	'virtual-keyboard-unstable-v1': 'virtual-keyboard-unstable-v1.xml',
 	'wlr-data-control-unstable-v1': 'wlr-data-control-unstable-v1.xml',
