@@ -68,6 +68,7 @@ wlr_files += files(
 	'selection/outgoing.c',
 	'selection/selection.c',
 	'server.c',
+	'shell.c',
 	'sockets.c',
 	'xwayland.c',
 	'xwm.c',
