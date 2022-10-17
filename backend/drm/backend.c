@@ -120,7 +120,9 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 				.mode_type = WLR_OUTPUT_STATE_MODE_FIXED,
 				.mode = mode,
 			};
-			drm_connector_commit_state(conn, &state);
+			if (!drm_connector_commit_state(conn, &state)) {
+				wlr_drm_conn_log(conn, WLR_ERROR, "Failed to restore state after VT switch");
+			}
 		}
 	} else {
 		wlr_log(WLR_INFO, "DRM fd paused");
