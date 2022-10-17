@@ -592,18 +592,11 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
-	if (!pending.active) {
-		if (conn->crtc != NULL && !drm_crtc_commit(conn, &pending, 0, false)) {
-			return false;
-		}
-	} else if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (!drm_crtc_page_flip(conn, &pending)) {
 			return false;
 		}
-	} else if (pending.base->committed & (WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED |
-			WLR_OUTPUT_STATE_GAMMA_LUT)) {
-		assert(conn->crtc != NULL);
-		// TODO: maybe request a page-flip event here?
+	} else if (pending.active || conn->crtc != NULL) {
 		if (!drm_crtc_commit(conn, &pending, 0, false)) {
 			return false;
 		}
