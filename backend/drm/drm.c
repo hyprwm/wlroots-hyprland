@@ -348,37 +348,6 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	return ok;
 }
 
-static bool drm_crtc_page_flip(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state) {
-	struct wlr_drm_crtc *crtc = conn->crtc;
-	assert(crtc != NULL);
-
-	// wlr_drm_interface.crtc_commit will perform either a non-blocking
-	// page-flip, either a blocking modeset. When performing a blocking modeset
-	// we'll wait for all queued page-flips to complete, so we don't need this
-	// safeguard.
-	if (conn->pending_page_flip_crtc && !state->modeset) {
-		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
-			"a page-flip is already pending");
-		return false;
-	}
-
-	assert(state->active);
-	assert(plane_get_next_fb(crtc->primary));
-	if (!drm_crtc_commit(conn, state, DRM_MODE_PAGE_FLIP_EVENT, false)) {
-		return false;
-	}
-
-	conn->pending_page_flip_crtc = crtc->id;
-
-	// wlr_output's API guarantees that submitting a buffer will schedule a
-	// frame event. However the DRM backend will also schedule a frame event
-	// when performing a modeset. Set frame_pending to true so that
-	// wlr_output_schedule_frame doesn't trigger a synthetic frame event.
-	conn->output.frame_pending = true;
-	return true;
-}
-
 static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		struct wlr_drm_connector *conn,
 		const struct wlr_output_state *base) {
@@ -578,6 +547,11 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, base);
 
+	if (!pending.active && conn->crtc == NULL) {
+		// Disabling an already-disabled connector
+		return true;
+	}
+
 	if (pending.active) {
 		if (!drm_connector_alloc_crtc(conn)) {
 			wlr_drm_conn_log(conn, WLR_ERROR,
@@ -586,20 +560,26 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
+	uint32_t flags = 0;
 	if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (!drm_connector_set_pending_fb(conn, pending.base)) {
 			return false;
 		}
+		flags |= DRM_MODE_PAGE_FLIP_EVENT;
+
+		// wlr_drm_interface.crtc_commit will perform either a non-blocking
+		// page-flip, either a blocking modeset. When performing a blocking modeset
+		// we'll wait for all queued page-flips to complete, so we don't need this
+		// safeguard.
+		if (conn->pending_page_flip_crtc && !pending.modeset) {
+			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
+				"a page-flip is already pending");
+			return false;
+		}
 	}
 
-	if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!drm_crtc_page_flip(conn, &pending)) {
-			return false;
-		}
-	} else if (pending.active || conn->crtc != NULL) {
-		if (!drm_crtc_commit(conn, &pending, 0, false)) {
-			return false;
-		}
+	if (!drm_crtc_commit(conn, &pending, flags, false)) {
+		return false;
 	}
 
 	if (pending.base->committed & WLR_OUTPUT_STATE_ENABLED) {
@@ -616,6 +596,15 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 			break;
 		}
 		wlr_output_update_mode(&conn->output, mode);
+	}
+	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
+		conn->pending_page_flip_crtc = conn->crtc->id;
+
+		// wlr_output's API guarantees that submitting a buffer will schedule a
+		// frame event. However the DRM backend will also schedule a frame event
+		// when performing a modeset. Set frame_pending to true so that
+		// wlr_output_schedule_frame doesn't trigger a synthetic frame event.
+		conn->output.frame_pending = true;
 	}
 
 	return true;
