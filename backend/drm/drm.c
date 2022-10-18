@@ -1363,13 +1363,13 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 			snprintf(wlr_conn->name, sizeof(wlr_conn->name),
 				"%s-%"PRIu32, conn_name, drm_conn->connector_type_id);
 
+			wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
+
 			wl_list_insert(drm->outputs.prev, &wlr_conn->link);
 			wlr_log(WLR_INFO, "Found connector '%s'", wlr_conn->name);
 		} else {
 			seen[index] = true;
 		}
-
-		wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
 
 		// This can only happen *after* hotplug, since we haven't read the
 		// connector properties yet
