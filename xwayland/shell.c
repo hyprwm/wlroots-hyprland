@@ -161,10 +161,7 @@ static void shell_bind(struct wl_client *client, void *data, uint32_t version,
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_shell_v1 *shell =
 		wl_container_of(listener, shell, display_destroy);
-	wl_list_remove(&shell->display_destroy.link);
-	wl_list_remove(&shell->client_destroy.link);
-	wl_global_destroy(shell->global);
-	free(shell);
+	wlr_xwayland_shell_v1_destroy(shell);
 }
 
 struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
@@ -183,6 +180,7 @@ struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
 		return NULL;
 	}
 
+	wl_list_init(&shell->surfaces);
 	wl_signal_init(&shell->events.new_surface);
 
 	shell->display_destroy.notify = handle_display_destroy;
@@ -191,6 +189,22 @@ struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
 	wl_list_init(&shell->client_destroy.link);
 
 	return shell;
+}
+
+void wlr_xwayland_shell_v1_destroy(struct wlr_xwayland_shell_v1 *shell) {
+	if (shell == NULL) {
+		return;
+	}
+
+	struct wlr_xwayland_surface_v1 *xwl_surface, *tmp;
+	wl_list_for_each_safe(xwl_surface, tmp, &shell->surfaces, link) {
+		wlr_surface_destroy_role_object(xwl_surface->surface);
+	}
+
+	wl_list_remove(&shell->display_destroy.link);
+	wl_list_remove(&shell->client_destroy.link);
+	wl_global_destroy(shell->global);
+	free(shell);
 }
 
 static void shell_handle_client_destroy(struct wl_listener *listener, void *data) {

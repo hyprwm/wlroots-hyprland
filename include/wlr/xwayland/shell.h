@@ -27,6 +27,7 @@ struct wlr_xwayland_shell_v1 {
 	// private state
 
 	struct wl_client *client;
+	struct wl_list surfaces; // wlr_xwayland_surface_v1.link
 
 	struct wl_listener display_destroy;
 	struct wl_listener client_destroy;
@@ -42,6 +43,7 @@ struct wlr_xwayland_surface_v1 {
 	// private state
 
 	struct wl_resource *resource;
+	struct wl_list link;
 	struct wlr_xwayland_shell_v1 *shell;
 	bool added;
 
@@ -56,6 +58,11 @@ struct wlr_xwayland_surface_v1 {
  */
 struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
 	struct wl_display *display, uint32_t version);
+
+/**
+ * Destroy the xwayland_shell_v1 global.
+ */
+void wlr_xwayland_shell_v1_destroy(struct wlr_xwayland_shell_v1 *shell);
 
 /**
  * Allow a client to bind to the xwayland_shell_v1 global.
