@@ -143,6 +143,12 @@ static void shell_bind(struct wl_client *client, void *data, uint32_t version,
 		uint32_t id) {
 	struct wlr_xwayland_shell_v1 *shell = data;
 
+	if (client != shell->client) {
+		wl_client_post_implementation_error(client,
+			"Permission denied to bind to %s", xwayland_shell_v1_interface.name);
+		return;
+	}
+
 	struct wl_resource *resource = wl_resource_create(client,
 		&xwayland_shell_v1_interface, version, id);
 	if (resource == NULL) {
@@ -156,6 +162,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_shell_v1 *shell =
 		wl_container_of(listener, shell, display_destroy);
 	wl_list_remove(&shell->display_destroy.link);
+	wl_list_remove(&shell->client_destroy.link);
 	wl_global_destroy(shell->global);
 	free(shell);
 }
@@ -181,5 +188,25 @@ struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
 	shell->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &shell->display_destroy);
 
+	wl_list_init(&shell->client_destroy.link);
+
 	return shell;
+}
+
+static void shell_handle_client_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_shell_v1 *shell =
+		wl_container_of(listener, shell, client_destroy);
+	wlr_xwayland_shell_v1_set_client(shell, NULL);
+}
+
+void wlr_xwayland_shell_v1_set_client(struct wlr_xwayland_shell_v1 *shell,
+		struct wl_client *client) {
+	wl_list_remove(&shell->client_destroy.link);
+	shell->client = client;
+	if (client != NULL) {
+		shell->client_destroy.notify = shell_handle_client_destroy;
+		wl_client_add_destroy_listener(client, &shell->client_destroy);
+	} else {
+		wl_list_init(&shell->client_destroy.link);
+	}
 }
