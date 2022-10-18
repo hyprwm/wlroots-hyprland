@@ -224,3 +224,14 @@ void wlr_xwayland_shell_v1_set_client(struct wlr_xwayland_shell_v1 *shell,
 		wl_list_init(&shell->client_destroy.link);
 	}
 }
+
+struct wlr_surface *wlr_xwayland_shell_v1_surface_from_serial(
+		struct wlr_xwayland_shell_v1 *shell, uint64_t serial) {
+	struct wlr_xwayland_surface_v1 *xwl_surface;
+	wl_list_for_each(xwl_surface, &shell->surfaces, link) {
+		if (xwl_surface->serial == serial) {
+			return xwl_surface->surface;
+		}
+	}
+	return NULL;
+}

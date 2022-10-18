@@ -70,4 +70,12 @@ void wlr_xwayland_shell_v1_destroy(struct wlr_xwayland_shell_v1 *shell);
 void wlr_xwayland_shell_v1_set_client(struct wlr_xwayland_shell_v1 *shell,
 	struct wl_client *client);
 
+/**
+ * Get a Wayland surface from an xwayland_shell_v1 serial.
+ *
+ * Returns NULL if the serial hasn't been associated with any surface.
+ */
+struct wlr_surface *wlr_xwayland_shell_v1_surface_from_serial(
+	struct wlr_xwayland_shell_v1 *shell, uint64_t serial);
+
 #endif
