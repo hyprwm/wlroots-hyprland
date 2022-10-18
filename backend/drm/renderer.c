@@ -92,11 +92,13 @@ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 
 	struct wlr_texture *tex = wlr_texture_from_buffer(renderer, buffer);
 	if (tex == NULL) {
+		wlr_log(WLR_ERROR, "Failed to import source buffer into multi-GPU renderer");
 		return NULL;
 	}
 
 	struct wlr_buffer *dst = wlr_swapchain_acquire(surf->swapchain, NULL);
 	if (!dst) {
+		wlr_log(WLR_ERROR, "Failed to acquire multi-GPU swapchain buffer");
 		wlr_texture_destroy(tex);
 		return NULL;
 	}
@@ -106,6 +108,7 @@ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 	wlr_matrix_scale(mat, surf->swapchain->width, surf->swapchain->height);
 
 	if (!wlr_renderer_begin_with_buffer(renderer, dst)) {
+		wlr_log(WLR_ERROR, "Failed to bind multi-GPU destination buffer");
 		wlr_buffer_unlock(dst);
 		wlr_texture_destroy(tex);
 		return NULL;
