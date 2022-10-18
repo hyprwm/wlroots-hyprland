@@ -41,6 +41,7 @@ struct wlr_xwayland_server {
 	struct wl_display *wl_display;
 
 	struct {
+		struct wl_signal start;
 		struct wl_signal ready;
 		struct wl_signal destroy;
 	} events;

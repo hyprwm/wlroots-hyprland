@@ -365,6 +365,8 @@ static bool server_start(struct wlr_xwayland_server *server) {
 	server->pipe_source = wl_event_loop_add_fd(loop, notify_fd[0],
 		WL_EVENT_READABLE, xserver_handle_ready, server);
 
+	wl_signal_emit_mutable(&server->events.start, NULL);
+
 	server->pid = fork();
 	if (server->pid < 0) {
 		wlr_log_errno(WLR_ERROR, "fork failed");
@@ -460,6 +462,7 @@ struct wlr_xwayland_server *wlr_xwayland_server_create(
 	server->wl_fd[0] = server->wl_fd[1] = -1;
 	server->wm_fd[0] = server->wm_fd[1] = -1;
 
+	wl_signal_init(&server->events.start);
 	wl_signal_init(&server->events.ready);
 	wl_signal_init(&server->events.destroy);
 
