@@ -1139,6 +1139,33 @@ static struct wlr_drm_crtc *connector_get_current_crtc(
 	return NULL;
 }
 
+static struct wlr_drm_connector *create_drm_connector(struct wlr_drm_backend *drm,
+		const drmModeConnector *drm_conn) {
+	struct wlr_drm_connector *wlr_conn = calloc(1, sizeof(*wlr_conn));
+	if (!wlr_conn) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		return NULL;
+	}
+
+	wlr_conn->backend = drm;
+	wlr_conn->status = DRM_MODE_DISCONNECTED;
+	wlr_conn->id = drm_conn->connector_id;
+
+	const char *conn_name =
+		drmModeGetConnectorTypeName(drm_conn->connector_type);
+	if (conn_name == NULL) {
+		conn_name = "Unknown";
+	}
+
+	snprintf(wlr_conn->name, sizeof(wlr_conn->name),
+		"%s-%"PRIu32, conn_name, drm_conn->connector_type_id);
+
+	wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
+
+	wl_list_insert(drm->outputs.prev, &wlr_conn->link);
+	return wlr_conn;
+}
+
 static drmModeModeInfo *connector_get_current_mode(
 		struct wlr_drm_connector *wlr_conn, const drmModeConnector *drm_conn) {
 	struct wlr_drm_backend *drm = wlr_conn->backend;
@@ -1343,29 +1370,10 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 		}
 
 		if (!wlr_conn) {
-			wlr_conn = calloc(1, sizeof(*wlr_conn));
-			if (!wlr_conn) {
-				wlr_log_errno(WLR_ERROR, "Allocation failed");
-				drmModeFreeConnector(drm_conn);
+			wlr_conn = create_drm_connector(drm, drm_conn);
+			if (wlr_conn == NULL) {
 				continue;
 			}
-
-			wlr_conn->backend = drm;
-			wlr_conn->status = DRM_MODE_DISCONNECTED;
-			wlr_conn->id = drm_conn->connector_id;
-
-			const char *conn_name =
-				drmModeGetConnectorTypeName(drm_conn->connector_type);
-			if (conn_name == NULL) {
-				conn_name = "Unknown";
-			}
-
-			snprintf(wlr_conn->name, sizeof(wlr_conn->name),
-				"%s-%"PRIu32, conn_name, drm_conn->connector_type_id);
-
-			wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
-
-			wl_list_insert(drm->outputs.prev, &wlr_conn->link);
 			wlr_log(WLR_INFO, "Found connector '%s'", wlr_conn->name);
 		} else {
 			seen[index] = true;
