@@ -39,6 +39,7 @@ struct wlr_xwayland_server {
 	struct wlr_xwayland_server_options options;
 
 	struct wl_display *wl_display;
+	struct wl_event_source *idle_source;
 
 	struct {
 		struct wl_signal start;

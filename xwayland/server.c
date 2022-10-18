@@ -426,11 +426,20 @@ static bool server_start_lazy(struct wlr_xwayland_server *server) {
 	return true;
 }
 
+static void handle_idle(void *data) {
+	struct wlr_xwayland_server *server = data;
+	server->idle_source = NULL;
+	server_start(server);
+}
+
 void wlr_xwayland_server_destroy(struct wlr_xwayland_server *server) {
 	if (!server) {
 		return;
 	}
 
+	if (server->idle_source != NULL) {
+		wl_event_source_remove(server->idle_source);
+	}
 	server_finish_process(server);
 	server_finish_display(server);
 	wl_signal_emit_mutable(&server->events.destroy, NULL);
@@ -475,7 +484,9 @@ struct wlr_xwayland_server *wlr_xwayland_server_create(
 			goto error_display;
 		}
 	} else {
-		if (!server_start(server)) {
+		struct wl_event_loop *loop = wl_display_get_event_loop(wl_display);
+		server->idle_source = wl_event_loop_add_idle(loop, handle_idle, server);
+		if (server->idle_source == NULL) {
 			goto error_display;
 		}
 	}
