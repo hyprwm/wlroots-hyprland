@@ -1147,38 +1147,26 @@ static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
 #define _NET_WM_MOVERESIZE_CANCEL 11  // cancel operation
 
 static enum wlr_edges net_wm_edges_to_wlr(uint32_t net_wm_edges) {
-	enum wlr_edges edges = WLR_EDGE_NONE;
-
 	switch(net_wm_edges) {
 	case _NET_WM_MOVERESIZE_SIZE_TOPLEFT:
-		edges = WLR_EDGE_TOP | WLR_EDGE_LEFT;
-		break;
+		return WLR_EDGE_TOP | WLR_EDGE_LEFT;
 	case _NET_WM_MOVERESIZE_SIZE_TOP:
-		edges = WLR_EDGE_TOP;
-		break;
+		return WLR_EDGE_TOP;
 	case _NET_WM_MOVERESIZE_SIZE_TOPRIGHT:
-		edges = WLR_EDGE_TOP | WLR_EDGE_RIGHT;
-		break;
+		return WLR_EDGE_TOP | WLR_EDGE_RIGHT;
 	case _NET_WM_MOVERESIZE_SIZE_RIGHT:
-		edges = WLR_EDGE_RIGHT;
-		break;
+		return WLR_EDGE_RIGHT;
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT:
-		edges = WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT;
-		break;
+		return WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT;
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOM:
-		edges = WLR_EDGE_BOTTOM;
-		break;
+		return WLR_EDGE_BOTTOM;
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT:
-		edges = WLR_EDGE_BOTTOM | WLR_EDGE_LEFT;
-		break;
+		return WLR_EDGE_BOTTOM | WLR_EDGE_LEFT;
 	case _NET_WM_MOVERESIZE_SIZE_LEFT:
-		edges = WLR_EDGE_LEFT;
-		break;
+		return WLR_EDGE_LEFT;
 	default:
-		break;
+		return WLR_EDGE_NONE;
 	}
-
-	return edges;
 }
 
 static void xwm_handle_net_wm_moveresize_message(struct wlr_xwm *xwm,
