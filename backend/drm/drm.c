@@ -844,7 +844,6 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 	dealloc_crtc(conn);
 
 	conn->status = DRM_MODE_DISCONNECTED;
-	conn->possible_crtcs = 0;
 	conn->pending_page_flip_crtc = 0;
 
 	struct wlr_drm_mode *mode, *mode_tmp;
@@ -1160,6 +1159,12 @@ static struct wlr_drm_connector *create_drm_connector(struct wlr_drm_backend *dr
 	snprintf(wlr_conn->name, sizeof(wlr_conn->name),
 		"%s-%"PRIu32, conn_name, drm_conn->connector_type_id);
 
+	wlr_conn->possible_crtcs =
+		drmModeConnectorGetPossibleCrtcs(drm->fd, drm_conn);
+	if (wlr_conn->possible_crtcs == 0) {
+		wlr_drm_conn_log(wlr_conn, WLR_ERROR, "No CRTC possible");
+	}
+
 	wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
 
 	wl_list_insert(drm->outputs.prev, &wlr_conn->link);
@@ -1303,12 +1308,6 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 	}
 
 	free(current_modeinfo);
-
-	wlr_conn->possible_crtcs =
-		drmModeConnectorGetPossibleCrtcs(drm->fd, drm_conn);
-	if (wlr_conn->possible_crtcs == 0) {
-		wlr_drm_conn_log(wlr_conn, WLR_ERROR, "No CRTC possible");
-	}
 
 	wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
 
