@@ -21,6 +21,7 @@ struct wlr_drag;
 struct wlr_xwayland {
 	struct wlr_xwayland_server *server;
 	struct wlr_xwm *xwm;
+	struct wlr_xwayland_shell_v1 *shell_v1;
 	struct wlr_xwayland_cursor *cursor;
 
 	const char *display_name;
@@ -42,6 +43,7 @@ struct wlr_xwayland {
 	 */
 	int (*user_event_handler)(struct wlr_xwm *xwm, xcb_generic_event_t *event);
 
+	struct wl_listener server_start;
 	struct wl_listener server_ready;
 	struct wl_listener server_destroy;
 	struct wl_listener seat_destroy;
@@ -80,6 +82,7 @@ struct wlr_xwayland_surface {
 	xcb_window_t window_id;
 	struct wlr_xwm *xwm;
 	uint32_t surface_id;
+	uint64_t serial;
 
 	struct wl_list link;
 	struct wl_list stack_link;

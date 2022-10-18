@@ -11,7 +11,8 @@
 #include <wlr/util/edges.h>
 #include <wlr/util/log.h>
 #include <wlr/xcursor.h>
-#include <wlr/xwayland.h>
+#include <wlr/xwayland/shell.h>
+#include <wlr/xwayland/xwayland.h>
 #include <xcb/composite.h>
 #include <xcb/render.h>
 #include <xcb/res.h>
@@ -20,6 +21,7 @@
 
 const char *const atom_map[ATOM_LAST] = {
 	[WL_SURFACE_ID] = "WL_SURFACE_ID",
+	[WL_SURFACE_SERIAL] = "WL_SURFACE_SERIAL",
 	[WM_DELETE_WINDOW] = "WM_DELETE_WINDOW",
 	[WM_PROTOCOLS] = "WM_PROTOCOLS",
 	[WM_HINTS] = "WM_HINTS",
@@ -1118,6 +1120,35 @@ static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
 	}
 }
 
+static void xwm_handle_surface_serial_message(struct wlr_xwm *xwm,
+		xcb_client_message_event_t *ev) {
+	struct wlr_xwayland_surface *xsurface = lookup_surface(xwm, ev->window);
+	if (xsurface == NULL) {
+		wlr_log(WLR_DEBUG,
+			"Received client message WL_SURFACE_SERIAL but no X11 window %u",
+			ev->window);
+		return;
+	}
+	if (xsurface->serial != 0) {
+		wlr_log(WLR_DEBUG, "Received multiple client messages WL_SURFACE_SERIAL "
+			"for the same X11 window %u", ev->window);
+		return;
+	}
+
+	uint32_t serial_lo = ev->data.data32[0];
+	uint32_t serial_hi = ev->data.data32[1];
+	xsurface->serial = ((uint64_t)serial_hi << 32) | serial_lo;
+
+	struct wlr_surface *surface = wlr_xwayland_shell_v1_surface_from_serial(
+		xwm->xwayland->shell_v1, xsurface->serial);
+	if (surface != NULL) {
+		xwm_map_shell_surface(xwm, xsurface, surface);
+	} else {
+		wl_list_remove(&xsurface->unpaired_link);
+		wl_list_insert(&xwm->unpaired_surfaces, &xsurface->unpaired_link);
+	}
+}
+
 #define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0
 #define _NET_WM_MOVERESIZE_SIZE_TOP 1
 #define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT 2
@@ -1430,6 +1461,8 @@ static void xwm_handle_client_message(struct wlr_xwm *xwm,
 		xcb_client_message_event_t *ev) {
 	if (ev->type == xwm->atoms[WL_SURFACE_ID]) {
 		xwm_handle_surface_id_message(xwm, ev);
+	} else if (ev->type == xwm->atoms[WL_SURFACE_SERIAL]) {
+		xwm_handle_surface_serial_message(xwm, ev);
 	} else if (ev->type == xwm->atoms[NET_WM_STATE]) {
 		xwm_handle_net_wm_state_message(xwm, ev);
 	} else if (ev->type == xwm->atoms[NET_WM_MOVERESIZE]) {
@@ -1656,6 +1689,20 @@ static void handle_compositor_destroy(struct wl_listener *listener,
 	wl_list_init(&xwm->compositor_destroy.link);
 }
 
+static void handle_shell_v1_new_surface(struct wl_listener *listener,
+		void *data) {
+	struct wlr_xwm *xwm = wl_container_of(listener, xwm, shell_v1_new_surface);
+	struct wlr_xwayland_surface_v1 *shell_surface = data;
+
+	struct wlr_xwayland_surface *xsurface;
+	wl_list_for_each(xsurface, &xwm->unpaired_surfaces, unpaired_link) {
+		if (xsurface->serial == shell_surface->serial) {
+			xwm_map_shell_surface(xwm, xsurface, shell_surface->surface);
+			return;
+		}
+	}
+}
+
 void wlr_xwayland_surface_activate(struct wlr_xwayland_surface *xsurface,
 		bool activated) {
 	struct wlr_xwayland_surface *focused = xsurface->xwm->focus_surface;
@@ -1756,6 +1803,7 @@ void xwm_destroy(struct wlr_xwm *xwm) {
 	}
 	wl_list_remove(&xwm->compositor_new_surface.link);
 	wl_list_remove(&xwm->compositor_destroy.link);
+	wl_list_remove(&xwm->shell_v1_new_surface.link);
 	xcb_disconnect(xwm->xcb_conn);
 
 	struct pending_startup_id *pending, *next;
@@ -2096,6 +2144,10 @@ struct wlr_xwm *xwm_create(struct wlr_xwayland *xwayland, int wm_fd) {
 	xwm->compositor_destroy.notify = handle_compositor_destroy;
 	wl_signal_add(&xwayland->compositor->events.destroy,
 		&xwm->compositor_destroy);
+
+	xwm->shell_v1_new_surface.notify = handle_shell_v1_new_surface;
+	wl_signal_add(&xwayland->shell_v1->events.new_surface,
+		&xwm->shell_v1_new_surface);
 
 	xwm_create_wm_window(xwm);
 

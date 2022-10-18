@@ -17,6 +17,7 @@
 
 enum atom_name {
 	WL_SURFACE_ID,
+	WL_SURFACE_SERIAL,
 	WM_DELETE_WINDOW,
 	WM_PROTOCOLS,
 	WM_HINTS,
@@ -130,6 +131,7 @@ struct wlr_xwm {
 
 	struct wl_listener compositor_new_surface;
 	struct wl_listener compositor_destroy;
+	struct wl_listener shell_v1_new_surface;
 	struct wl_listener seat_set_selection;
 	struct wl_listener seat_set_primary_selection;
 	struct wl_listener seat_start_drag;

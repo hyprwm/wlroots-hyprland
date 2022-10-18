@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/log.h>
+#include <wlr/xwayland/shell.h>
 #include <wlr/xwayland/xwayland.h>
 #include "sockets.h"
 #include "xwayland/xwm.h"
@@ -31,6 +32,12 @@ static void handle_server_destroy(struct wl_listener *listener, void *data) {
 	// Server is being destroyed so avoid destroying it once again.
 	xwayland->server = NULL;
 	wlr_xwayland_destroy(xwayland);
+}
+
+static void handle_server_start(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland *xwayland =
+		wl_container_of(listener, xwayland, server_start);
+	wlr_xwayland_shell_v1_set_client(xwayland->shell_v1, xwayland->server->client);
 }
 
 static void handle_server_ready(struct wl_listener *listener, void *data) {
@@ -62,11 +69,13 @@ void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {
 	}
 
 	wl_list_remove(&xwayland->server_destroy.link);
+	wl_list_remove(&xwayland->server_start.link);
 	wl_list_remove(&xwayland->server_ready.link);
 	free(xwayland->cursor);
 
 	wlr_xwayland_set_seat(xwayland, NULL);
 	wlr_xwayland_server_destroy(xwayland->server);
+	wlr_xwayland_shell_v1_destroy(xwayland->shell_v1);
 	free(xwayland);
 }
 
@@ -84,6 +93,12 @@ struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 	wl_signal_init(&xwayland->events.ready);
 	wl_signal_init(&xwayland->events.remove_startup_info);
 
+	xwayland->shell_v1 = wlr_xwayland_shell_v1_create(wl_display, 1);
+	if (xwayland->shell_v1 == NULL) {
+		free(xwayland);
+		return NULL;
+	}
+
 	struct wlr_xwayland_server_options options = {
 		.lazy = lazy,
 		.enable_wm = true,
@@ -93,6 +108,7 @@ struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 	};
 	xwayland->server = wlr_xwayland_server_create(wl_display, &options);
 	if (xwayland->server == NULL) {
+		wlr_xwayland_shell_v1_destroy(xwayland->shell_v1);
 		free(xwayland);
 		return NULL;
 	}
@@ -101,6 +117,9 @@ struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 
 	xwayland->server_destroy.notify = handle_server_destroy;
 	wl_signal_add(&xwayland->server->events.destroy, &xwayland->server_destroy);
+
+	xwayland->server_start.notify = handle_server_start;
+	wl_signal_add(&xwayland->server->events.start, &xwayland->server_start);
 
 	xwayland->server_ready.notify = handle_server_ready;
 	wl_signal_add(&xwayland->server->events.ready, &xwayland->server_ready);
