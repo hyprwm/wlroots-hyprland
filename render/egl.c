@@ -107,6 +107,11 @@ static void log_modifier(uint64_t modifier, bool external_only) {
 }
 
 static void init_dmabuf_formats(struct wlr_egl *egl) {
+	bool no_modifiers = env_parse_bool("WLR_EGL_NO_MODIFIERS");
+	if (no_modifiers) {
+		wlr_log(WLR_INFO, "WLR_EGL_NO_MODIFIERS set, disabling modifiers for EGL");
+	}
+
 	int *formats;
 	int formats_len = get_egl_dmabuf_formats(egl, &formats);
 	if (formats_len < 0) {
@@ -121,8 +126,10 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 
 		uint64_t *modifiers;
 		EGLBoolean *external_only;
-		int modifiers_len =
-			get_egl_dmabuf_modifiers(egl, fmt, &modifiers, &external_only);
+		int modifiers_len = 0;
+		if (!no_modifiers) {
+			modifiers_len = get_egl_dmabuf_modifiers(egl, fmt, &modifiers, &external_only);
+		}
 		if (modifiers_len < 0) {
 			continue;
 		}
@@ -174,8 +181,10 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 	free(formats);
 
 	egl->has_modifiers = has_modifiers;
-	wlr_log(WLR_DEBUG, "EGL DMA-BUF format modifiers %s",
-		has_modifiers ? "supported" : "unsupported");
+	if (!no_modifiers) {
+		wlr_log(WLR_DEBUG, "EGL DMA-BUF format modifiers %s",
+			has_modifiers ? "supported" : "unsupported");
+	}
 }
 
 static struct wlr_egl *egl_create(void) {

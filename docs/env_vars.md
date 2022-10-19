@@ -12,6 +12,8 @@ wlroots reads these environment variables
   renderers: gles2, pixman, vulkan)
 * *WLR_RENDER_DRM_DEVICE*: specifies the DRM node to use for
   hardware-accelerated renderers.
+* *WLR_EGL_NO_MODIFIERS*: set to 1 to disable format modifiers in EGL, this can
+  be used to understand and work around driver bugs.
 
 ## DRM backend
 
