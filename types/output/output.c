@@ -215,6 +215,16 @@ void wlr_output_set_mode(struct wlr_output *output,
 
 void wlr_output_set_custom_mode(struct wlr_output *output, int32_t width,
 		int32_t height, int32_t refresh) {
+	// If there is a fixed mode which matches what the user wants, use that
+	struct wlr_output_mode *mode;
+	wl_list_for_each(mode, &output->modes, link) {
+		if (mode->width == width && mode->height == height &&
+				mode->refresh == refresh) {
+			wlr_output_set_mode(output, mode);
+			return;
+		}
+	}
+
 	wlr_output_state_set_custom_mode(&output->pending, width, height, refresh);
 }
 
