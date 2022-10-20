@@ -295,7 +295,13 @@ struct wlr_output_mode *wlr_output_preferred_mode(struct wlr_output *output);
 void wlr_output_set_mode(struct wlr_output *output,
 	struct wlr_output_mode *mode);
 /**
- * Sets a custom mode on the output. If modes are available, they are preferred.
+ * Sets a custom mode on the output.
+ *
+ * When the output advertises fixed modes, custom modes are not guaranteed to
+ * work correctly, they may result in visual artifacts. If a suitable fixed mode
+ * is available, compositors should prefer it and use wlr_output_set_mode()
+ * instead of custom modes.
+ *
  * Setting `refresh` to zero lets the backend pick a preferred value. The
  * output needs to be enabled.
  *
