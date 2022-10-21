@@ -976,14 +976,12 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 	wlr_drm_conn_log(conn, WLR_DEBUG, "De-allocating CRTC %zu",
 		conn->crtc - drm->crtcs);
 
-	struct wlr_output_state output_state = {
+	struct wlr_output_state state = {
 		.committed = WLR_OUTPUT_STATE_ENABLED,
 		.allow_artifacts = true,
 		.enabled = false,
 	};
-	struct wlr_drm_connector_state conn_state = {0};
-	drm_connector_state_init(&conn_state, conn, &output_state);
-	if (!drm_crtc_commit(conn, &conn_state, 0, false)) {
+	if (!drm_connector_commit_state(conn, &state)) {
 		// On GPU unplug, disabling the CRTC can fail with EPERM
 		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to disable CRTC %"PRIu32,
 			conn->crtc->id);
