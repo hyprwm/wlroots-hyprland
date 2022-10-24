@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <wlr/util/region.h>
 
-void wlr_region_scale(pixman_region32_t *dst, pixman_region32_t *src,
+void wlr_region_scale(pixman_region32_t *dst, const pixman_region32_t *src,
 		float scale) {
 	wlr_region_scale_xy(dst, src, scale, scale);
 }
 
-void wlr_region_scale_xy(pixman_region32_t *dst, pixman_region32_t *src,
+void wlr_region_scale_xy(pixman_region32_t *dst, const pixman_region32_t *src,
 		float scale_x, float scale_y) {
 	if (scale_x == 1.0 && scale_y == 1.0) {
 		pixman_region32_copy(dst, src);
@@ -17,7 +17,7 @@ void wlr_region_scale_xy(pixman_region32_t *dst, pixman_region32_t *src,
 	}
 
 	int nrects;
-	pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
+	const pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
 
 	pixman_box32_t *dst_rects = malloc(nrects * sizeof(pixman_box32_t));
 	if (dst_rects == NULL) {
@@ -36,7 +36,7 @@ void wlr_region_scale_xy(pixman_region32_t *dst, pixman_region32_t *src,
 	free(dst_rects);
 }
 
-void wlr_region_transform(pixman_region32_t *dst, pixman_region32_t *src,
+void wlr_region_transform(pixman_region32_t *dst, const pixman_region32_t *src,
 		enum wl_output_transform transform, int width, int height) {
 	if (transform == WL_OUTPUT_TRANSFORM_NORMAL) {
 		pixman_region32_copy(dst, src);
@@ -44,7 +44,7 @@ void wlr_region_transform(pixman_region32_t *dst, pixman_region32_t *src,
 	}
 
 	int nrects;
-	pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
+	const pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
 
 	pixman_box32_t *dst_rects = malloc(nrects * sizeof(pixman_box32_t));
 	if (dst_rects == NULL) {
@@ -109,7 +109,7 @@ void wlr_region_transform(pixman_region32_t *dst, pixman_region32_t *src,
 	free(dst_rects);
 }
 
-void wlr_region_expand(pixman_region32_t *dst, pixman_region32_t *src,
+void wlr_region_expand(pixman_region32_t *dst, const pixman_region32_t *src,
 		int distance) {
 	if (distance == 0) {
 		pixman_region32_copy(dst, src);
@@ -117,7 +117,7 @@ void wlr_region_expand(pixman_region32_t *dst, pixman_region32_t *src,
 	}
 
 	int nrects;
-	pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
+	const pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
 
 	pixman_box32_t *dst_rects = malloc(nrects * sizeof(pixman_box32_t));
 	if (dst_rects == NULL) {
@@ -136,7 +136,7 @@ void wlr_region_expand(pixman_region32_t *dst, pixman_region32_t *src,
 	free(dst_rects);
 }
 
-void wlr_region_rotated_bounds(pixman_region32_t *dst, pixman_region32_t *src,
+void wlr_region_rotated_bounds(pixman_region32_t *dst, const pixman_region32_t *src,
 		float rotation, int ox, int oy) {
 	if (rotation == 0) {
 		pixman_region32_copy(dst, src);
@@ -144,7 +144,7 @@ void wlr_region_rotated_bounds(pixman_region32_t *dst, pixman_region32_t *src,
 	}
 
 	int nrects;
-	pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
+	const pixman_box32_t *src_rects = pixman_region32_rectangles(src, &nrects);
 
 	pixman_box32_t *dst_rects = malloc(nrects * sizeof(pixman_box32_t));
 	if (dst_rects == NULL) {
@@ -185,7 +185,7 @@ void wlr_region_rotated_bounds(pixman_region32_t *dst, pixman_region32_t *src,
 	free(dst_rects);
 }
 
-static void region_confine(pixman_region32_t *region, double x1, double y1, double x2,
+static void region_confine(const pixman_region32_t *region, double x1, double y1, double x2,
 		double y2, double *x2_out, double *y2_out, pixman_box32_t box) {
 	double x_clamped = fmax(fmin(x2, box.x2 - 1), box.x1);
 	double y_clamped = fmax(fmin(y2, box.y2 - 1), box.y1);
@@ -242,7 +242,7 @@ static void region_confine(pixman_region32_t *region, double x1, double y1, doub
 	}
 }
 
-bool wlr_region_confine(pixman_region32_t *region, double x1, double y1, double x2,
+bool wlr_region_confine(const pixman_region32_t *region, double x1, double y1, double x2,
 		double y2, double *x2_out, double *y2_out) {
 	pixman_box32_t box;
 	if (pixman_region32_contains_point(region, floor(x1), floor(y1), &box)) {
