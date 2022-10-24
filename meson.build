@@ -128,7 +128,10 @@ drm = dependency('libdrm',
 	],
 )
 xkbcommon = dependency('xkbcommon')
-pixman = dependency('pixman-1')
+pixman = dependency('pixman-1',
+	fallback: 'pixman',
+	default_options: ['werror=false'],
+)
 math = cc.find_library('m')
 rt = cc.find_library('rt')
 
