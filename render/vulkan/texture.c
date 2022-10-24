@@ -137,7 +137,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 }
 
 static bool vulkan_texture_update_from_buffer(struct wlr_texture *wlr_texture,
-		struct wlr_buffer *buffer, pixman_region32_t *damage) {
+		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
 
 	void *data;
@@ -156,7 +156,7 @@ static bool vulkan_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	}
 
 	int rects_len = 0;
-	pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
+	const pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
 
 	for (int i = 0; i < rects_len; i++) {
 		pixman_box32_t rect = rects[i];

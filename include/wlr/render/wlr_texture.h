@@ -48,7 +48,7 @@ struct wlr_texture *wlr_texture_from_dmabuf(struct wlr_renderer *renderer,
   * region needs to be updated.
   */
 bool wlr_texture_update_from_buffer(struct wlr_texture *texture,
-	struct wlr_buffer *buffer, pixman_region32_t *damage);
+	struct wlr_buffer *buffer, const pixman_region32_t *damage);
 
 /**
  * Destroys the texture.

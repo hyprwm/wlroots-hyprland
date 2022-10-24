@@ -44,7 +44,7 @@ static bool check_stride(const struct wlr_pixel_format_info *fmt,
 }
 
 static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
-		struct wlr_buffer *buffer, pixman_region32_t *damage) {
+		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
 
 	if (texture->target != GL_TEXTURE_2D || texture->image != EGL_NO_IMAGE_KHR) {
@@ -86,7 +86,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	glBindTexture(GL_TEXTURE_2D, texture->tex);
 
 	int rects_len = 0;
-	pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
+	const pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
 
 	for (int i = 0; i < rects_len; i++) {
 		pixman_box32_t rect = rects[i];
