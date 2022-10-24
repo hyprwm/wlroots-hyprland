@@ -129,7 +129,7 @@ surface_damage_finish:
 }
 
 void wlr_output_render_software_cursors(struct wlr_output *output,
-		pixman_region32_t *damage) {
+		const pixman_region32_t *damage) {
 	int width, height;
 	wlr_output_transformed_resolution(output, &width, &height);
 

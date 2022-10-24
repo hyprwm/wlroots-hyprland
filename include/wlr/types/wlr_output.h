@@ -206,7 +206,7 @@ struct wlr_output {
 
 struct wlr_output_event_damage {
 	struct wlr_output *output;
-	pixman_region32_t *damage; // output-buffer-local coordinates
+	const pixman_region32_t *damage; // output-buffer-local coordinates
 };
 
 struct wlr_output_event_precommit {
@@ -421,7 +421,7 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output);
  * than what changed since last frame since multiple render buffers are used.
  */
 void wlr_output_set_damage(struct wlr_output *output,
-	pixman_region32_t *damage);
+	const pixman_region32_t *damage);
 /**
  * Test whether the pending output state would be accepted by the backend. If
  * this function returns true, wlr_output_commit() can only fail due to a
@@ -492,7 +492,7 @@ void wlr_output_lock_software_cursors(struct wlr_output *output, bool lock);
  * compositors render.
  */
 void wlr_output_render_software_cursors(struct wlr_output *output,
-	pixman_region32_t *damage);
+	const pixman_region32_t *damage);
 /**
  * Get the set of DRM formats suitable for the primary buffer, assuming a
  * buffer with the specified capabilities.

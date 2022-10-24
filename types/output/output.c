@@ -481,7 +481,7 @@ static void output_state_clear_buffer(struct wlr_output_state *state) {
 }
 
 void wlr_output_set_damage(struct wlr_output *output,
-		pixman_region32_t *damage) {
+		const pixman_region32_t *damage) {
 	pixman_region32_intersect_rect(&output->pending.damage, damage,
 		0, 0, output->width, output->height);
 	output->pending.committed |= WLR_OUTPUT_STATE_DAMAGE;
