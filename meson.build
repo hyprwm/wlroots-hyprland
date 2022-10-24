@@ -128,7 +128,6 @@ drm = dependency('libdrm',
 	],
 )
 xkbcommon = dependency('xkbcommon')
-udev = dependency('libudev')
 pixman = dependency('pixman-1')
 math = cc.find_library('m')
 rt = cc.find_library('rt')
@@ -138,7 +137,6 @@ wlr_deps = [
 	wayland_server,
 	drm,
 	xkbcommon,
-	udev,
 	pixman,
 	math,
 	rt,

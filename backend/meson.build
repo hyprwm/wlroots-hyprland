@@ -1,3 +1,6 @@
+udev = dependency('libudev')
+wlr_deps += udev
+
 wlr_files += files('backend.c')
 
 all_backends = ['drm', 'libinput', 'x11']
