@@ -52,7 +52,7 @@ void wlr_damage_ring_set_bounds(struct wlr_damage_ring *ring,
  * Returns true if the region intersects the ring bounds, false otherwise.
  */
 bool wlr_damage_ring_add(struct wlr_damage_ring *ring,
-	pixman_region32_t *damage);
+	const pixman_region32_t *damage);
 
 /**
  * Add a box to the current damage.

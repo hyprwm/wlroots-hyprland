@@ -39,7 +39,7 @@ void wlr_damage_ring_set_bounds(struct wlr_damage_ring *ring,
 }
 
 bool wlr_damage_ring_add(struct wlr_damage_ring *ring,
-		pixman_region32_t *damage) {
+		const pixman_region32_t *damage) {
 	pixman_region32_t clipped;
 	pixman_region32_init(&clipped);
 	pixman_region32_intersect_rect(&clipped, damage,
