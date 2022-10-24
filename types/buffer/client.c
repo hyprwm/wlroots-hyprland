@@ -83,7 +83,7 @@ struct wlr_client_buffer *wlr_client_buffer_create(struct wlr_buffer *buffer,
 }
 
 bool wlr_client_buffer_apply_damage(struct wlr_client_buffer *client_buffer,
-		struct wlr_buffer *next, pixman_region32_t *damage) {
+		struct wlr_buffer *next, const pixman_region32_t *damage) {
 	if (client_buffer->base.n_locks - client_buffer->n_ignore_locks > 1) {
 		// Someone else still has a reference to the buffer
 		return false;

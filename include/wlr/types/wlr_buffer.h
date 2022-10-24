@@ -178,6 +178,6 @@ bool wlr_resource_is_buffer(struct wl_resource *resource);
  * isn't mutable.
  */
 bool wlr_client_buffer_apply_damage(struct wlr_client_buffer *client_buffer,
-	struct wlr_buffer *next, pixman_region32_t *damage);
+	struct wlr_buffer *next, const pixman_region32_t *damage);
 
 #endif
