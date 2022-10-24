@@ -283,11 +283,10 @@ static bool output_commit_buffer(struct wlr_x11_output *output,
 
 	xcb_xfixes_region_t region = XCB_NONE;
 	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
-		pixman_region32_union(&output->exposed, &output->exposed,
-			(pixman_region32_t *) &state->damage);
+		pixman_region32_union(&output->exposed, &output->exposed, &state->damage);
 
 		int rects_len = 0;
-		pixman_box32_t *rects = pixman_region32_rectangles(&output->exposed, &rects_len);
+		const pixman_box32_t *rects = pixman_region32_rectangles(&output->exposed, &rects_len);
 
 		xcb_rectangle_t *xcb_rects = calloc(rects_len, sizeof(xcb_rectangle_t));
 		if (!xcb_rects) {
@@ -295,7 +294,7 @@ static bool output_commit_buffer(struct wlr_x11_output *output,
 		}
 
 		for (int i = 0; i < rects_len; i++) {
-			pixman_box32_t *box = &rects[i];
+			const pixman_box32_t *box = &rects[i];
 			xcb_rects[i] = (struct xcb_rectangle_t){
 				.x = box->x1,
 				.y = box->y1,

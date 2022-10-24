@@ -291,9 +291,9 @@ static bool output_commit(struct wlr_output *wlr_output,
 				output->surface);
 		}
 
-		pixman_region32_t *damage = NULL;
+		const pixman_region32_t *damage = NULL;
 		if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
-			damage = (pixman_region32_t *) &state->damage;
+			damage = &state->damage;
 		}
 
 		if (output->frame_callback != NULL) {
@@ -318,10 +318,10 @@ static bool output_commit(struct wlr_output *wlr_output,
 				0, 0, INT32_MAX, INT32_MAX);
 		} else {
 			int rects_len;
-			pixman_box32_t *rects =
+			const pixman_box32_t *rects =
 				pixman_region32_rectangles(damage, &rects_len);
 			for (int i = 0; i < rects_len; i++) {
-				pixman_box32_t *r = &rects[i];
+				const pixman_box32_t *r = &rects[i];
 				wl_surface_damage_buffer(output->surface, r->x1, r->y1,
 					r->x2 - r->x1, r->y2 - r->y1);
 			}
