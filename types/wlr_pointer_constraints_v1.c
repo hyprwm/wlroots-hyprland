@@ -72,7 +72,7 @@ static void pointer_constraint_set_region(
 	pixman_region32_clear(&constraint->pending.region);
 
 	if (region_resource) {
-		pixman_region32_t *region = wlr_region_from_resource(region_resource);
+		const pixman_region32_t *region = wlr_region_from_resource(region_resource);
 		pixman_region32_copy(&constraint->pending.region, region);
 	}
 

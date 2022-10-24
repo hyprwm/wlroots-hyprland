@@ -123,7 +123,7 @@ static void surface_handle_set_opaque_region(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
 	surface->pending.committed |= WLR_SURFACE_STATE_OPAQUE_REGION;
 	if (region_resource) {
-		pixman_region32_t *region = wlr_region_from_resource(region_resource);
+		const pixman_region32_t *region = wlr_region_from_resource(region_resource);
 		pixman_region32_copy(&surface->pending.opaque, region);
 	} else {
 		pixman_region32_clear(&surface->pending.opaque);
@@ -136,7 +136,7 @@ static void surface_handle_set_input_region(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
 	surface->pending.committed |= WLR_SURFACE_STATE_INPUT_REGION;
 	if (region_resource) {
-		pixman_region32_t *region = wlr_region_from_resource(region_resource);
+		const pixman_region32_t *region = wlr_region_from_resource(region_resource);
 		pixman_region32_copy(&surface->pending.input, region);
 	} else {
 		pixman_region32_fini(&surface->pending.input);

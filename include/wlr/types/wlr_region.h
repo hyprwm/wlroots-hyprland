@@ -25,6 +25,6 @@ struct wl_resource;
  *
  * To allow clients to create wl_region objects, call wlr_compositor_create().
  */
-pixman_region32_t *wlr_region_from_resource(struct wl_resource *resource);
+const pixman_region32_t *wlr_region_from_resource(struct wl_resource *resource);
 
 #endif
