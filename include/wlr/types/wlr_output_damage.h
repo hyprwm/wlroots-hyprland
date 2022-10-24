@@ -82,7 +82,7 @@ bool wlr_output_damage_attach_render(struct wlr_output_damage *output_damage,
  * Accumulates damage and schedules a `frame` event.
  */
 void wlr_output_damage_add(struct wlr_output_damage *output_damage,
-	pixman_region32_t *damage);
+	const pixman_region32_t *damage);
 /**
  * Damages the whole output and schedules a `frame` event.
  */

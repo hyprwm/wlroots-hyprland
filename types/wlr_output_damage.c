@@ -168,7 +168,7 @@ bool wlr_output_damage_attach_render(struct wlr_output_damage *output_damage,
 }
 
 void wlr_output_damage_add(struct wlr_output_damage *output_damage,
-		pixman_region32_t *damage) {
+		const pixman_region32_t *damage) {
 	int width, height;
 	wlr_output_transformed_resolution(output_damage->output, &width, &height);
 
