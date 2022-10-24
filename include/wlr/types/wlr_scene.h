@@ -338,14 +338,14 @@ void wlr_scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
  * the whole buffer node will be damaged.
  */
 void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buffer,
-	struct wlr_buffer *buffer, pixman_region32_t *region);
+	struct wlr_buffer *buffer, const pixman_region32_t *region);
 
 /**
  * Sets the buffer's opaque region. This is an optimization hint used to
  * determine if buffers which reside under this one need to be rendered or not.
  */
 void wlr_scene_buffer_set_opaque_region(struct wlr_scene_buffer *scene_buffer,
-	pixman_region32_t *region);
+	const pixman_region32_t *region);
 
 /**
  * Set the source rectangle describing the region of the buffer which will be

@@ -560,7 +560,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 }
 
 void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buffer,
-		struct wlr_buffer *buffer, pixman_region32_t *damage) {
+		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	// specifying a region for a NULL buffer doesn't make sense. We need to know
 	// about the buffer to scale the buffer local coordinates down to scene
 	// coordinates.
@@ -682,7 +682,7 @@ void wlr_scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
 }
 
 void wlr_scene_buffer_set_opaque_region(struct wlr_scene_buffer *scene_buffer,
-		pixman_region32_t *region) {
+		const pixman_region32_t *region) {
 	if (pixman_region32_equal(&scene_buffer->opaque_region, region)) {
 		return;
 	}
