@@ -590,6 +590,7 @@ static GLuint compile_shader(struct wlr_gles2_renderer *renderer,
 	GLint ok;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
 	if (ok == GL_FALSE) {
+		wlr_log(WLR_ERROR, "Failed to compile shader");
 		glDeleteShader(shader);
 		shader = 0;
 	}
@@ -626,6 +627,7 @@ static GLuint link_program(struct wlr_gles2_renderer *renderer,
 	GLint ok;
 	glGetProgramiv(prog, GL_LINK_STATUS, &ok);
 	if (ok == GL_FALSE) {
+		wlr_log(WLR_ERROR, "Failed to link shader");
 		glDeleteProgram(prog);
 		goto error;
 	}
