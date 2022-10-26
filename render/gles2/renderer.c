@@ -19,6 +19,13 @@
 #include "render/pixel_format.h"
 #include "types/wlr_matrix.h"
 
+#include "quad_vert_src.h"
+#include "quad_frag_src.h"
+#include "tex_vert_src.h"
+#include "tex_rgba_frag_src.h"
+#include "tex_rgbx_frag_src.h"
+#include "tex_external_frag_src.h"
+
 static const GLfloat verts[] = {
 	1, 0, // top right
 	0, 0, // top left
@@ -667,13 +674,6 @@ static void load_gl_proc(void *proc_ptr, const char *name) {
 	*(void **)proc_ptr = proc;
 }
 
-extern const GLchar quad_vertex_src[];
-extern const GLchar quad_fragment_src[];
-extern const GLchar tex_vertex_src[];
-extern const GLchar tex_fragment_src_rgba[];
-extern const GLchar tex_fragment_src_rgbx[];
-extern const GLchar tex_fragment_src_external[];
-
 struct wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd) {
 	struct wlr_egl *egl = wlr_egl_create_with_drm_fd(drm_fd);
 	if (egl == NULL) {
@@ -786,7 +786,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 
 	GLuint prog;
 	renderer->shaders.quad.program = prog =
-		link_program(renderer, quad_vertex_src, quad_fragment_src);
+		link_program(renderer, quad_vert_src, quad_frag_src);
 	if (!renderer->shaders.quad.program) {
 		goto error;
 	}
@@ -795,7 +795,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
 	renderer->shaders.tex_rgba.program = prog =
-		link_program(renderer, tex_vertex_src, tex_fragment_src_rgba);
+		link_program(renderer, tex_vert_src, tex_rgba_frag_src);
 	if (!renderer->shaders.tex_rgba.program) {
 		goto error;
 	}
@@ -806,7 +806,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
 	renderer->shaders.tex_rgbx.program = prog =
-		link_program(renderer, tex_vertex_src, tex_fragment_src_rgbx);
+		link_program(renderer, tex_vert_src, tex_rgbx_frag_src);
 	if (!renderer->shaders.tex_rgbx.program) {
 		goto error;
 	}
@@ -818,7 +818,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 
 	if (renderer->exts.OES_egl_image_external) {
 		renderer->shaders.tex_ext.program = prog =
-			link_program(renderer, tex_vertex_src, tex_fragment_src_external);
+			link_program(renderer, tex_vert_src, tex_external_frag_src);
 		if (!renderer->shaders.tex_ext.program) {
 			goto error;
 		}
