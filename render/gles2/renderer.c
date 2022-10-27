@@ -19,9 +19,8 @@
 #include "render/pixel_format.h"
 #include "types/wlr_matrix.h"
 
-#include "quad_vert_src.h"
+#include "common_vert_src.h"
 #include "quad_frag_src.h"
-#include "tex_vert_src.h"
 #include "tex_rgba_frag_src.h"
 #include "tex_rgbx_frag_src.h"
 #include "tex_external_frag_src.h"
@@ -786,7 +785,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 
 	GLuint prog;
 	renderer->shaders.quad.program = prog =
-		link_program(renderer, quad_vert_src, quad_frag_src);
+		link_program(renderer, common_vert_src, quad_frag_src);
 	if (!renderer->shaders.quad.program) {
 		goto error;
 	}
@@ -795,7 +794,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.quad.pos_attrib = glGetAttribLocation(prog, "pos");
 
 	renderer->shaders.tex_rgba.program = prog =
-		link_program(renderer, tex_vert_src, tex_rgba_frag_src);
+		link_program(renderer, common_vert_src, tex_rgba_frag_src);
 	if (!renderer->shaders.tex_rgba.program) {
 		goto error;
 	}
@@ -806,7 +805,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
 	renderer->shaders.tex_rgbx.program = prog =
-		link_program(renderer, tex_vert_src, tex_rgbx_frag_src);
+		link_program(renderer, common_vert_src, tex_rgbx_frag_src);
 	if (!renderer->shaders.tex_rgbx.program) {
 		goto error;
 	}
@@ -818,7 +817,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 
 	if (renderer->exts.OES_egl_image_external) {
 		renderer->shaders.tex_ext.program = prog =
-			link_program(renderer, tex_vert_src, tex_external_frag_src);
+			link_program(renderer, common_vert_src, tex_external_frag_src);
 		if (!renderer->shaders.tex_ext.program) {
 			goto error;
 		}

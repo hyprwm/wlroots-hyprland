@@ -1,9 +1,8 @@
 embed = find_program('./embed.sh', native: true)
 
 shaders = [
-	'quad.vert',
+	'common.vert',
 	'quad.frag',
-	'tex.vert',
 	'tex_rgba.frag',
 	'tex_rgbx.frag',
 	'tex_external.frag',
