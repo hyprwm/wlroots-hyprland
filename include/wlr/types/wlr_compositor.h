@@ -76,6 +76,7 @@ struct wlr_surface_role {
 	void (*commit)(struct wlr_surface *surface);
 	void (*precommit)(struct wlr_surface *surface,
 		const struct wlr_surface_state *state);
+	void (*destroy)(struct wlr_surface *surface);
 };
 
 struct wlr_surface_output {
@@ -189,8 +190,13 @@ typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
  * the role cannot be set.
  */
 bool wlr_surface_set_role(struct wlr_surface *surface,
-		const struct wlr_surface_role *role, void *role_data,
-		struct wl_resource *error_resource, uint32_t error_code);
+	const struct wlr_surface_role *role, void *role_data,
+	struct wl_resource *error_resource, uint32_t error_code);
+
+/**
+ * Destroy the role object for this surface. This doesn't reset the role.
+ */
+void wlr_surface_destroy_role_object(struct wlr_surface *surface);
 
 /**
  * Whether or not this surface currently has an attached buffer. A surface has

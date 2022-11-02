@@ -622,6 +622,8 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 		surface_output_destroy(surface_output);
 	}
 
+	wlr_surface_destroy_role_object(surface);
+
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
 
 	wlr_addon_set_finish(&surface->addons);
@@ -730,6 +732,16 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
 	surface->role = role;
 	surface->role_data = role_data;
 	return true;
+}
+
+void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
+	if (surface->role_data == NULL) {
+		return;
+	}
+	if (surface->role->destroy != NULL) {
+		surface->role->destroy(surface);
+	}
+	surface->role_data = NULL;
 }
 
 uint32_t wlr_surface_lock_pending(struct wlr_surface *surface) {
