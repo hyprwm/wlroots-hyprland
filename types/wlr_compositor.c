@@ -36,6 +36,14 @@ static int max(int fst, int snd) {
 
 static void surface_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
+	struct wlr_surface *surface = wlr_surface_from_resource(resource);
+	if (surface->role_data != NULL) {
+		// TODO: send WL_SURFACE_ERROR_DEFUNCT_ROLE_OBJECT
+		// https://gitlab.freedesktop.org/wayland/wayland/-/merge_requests/278
+		wl_resource_post_error(resource, -1,
+			"surface was destroyed before its role object");
+		return;
+	}
 	wl_resource_destroy(resource);
 }
 
