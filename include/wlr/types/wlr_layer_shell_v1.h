@@ -89,8 +89,6 @@ struct wlr_layer_surface_v1 {
 
 	struct wlr_layer_surface_v1_state current, pending;
 
-	struct wl_listener surface_destroy;
-
 	struct {
 		/**
 		 * The destroy signal indicates that the struct wlr_layer_surface is

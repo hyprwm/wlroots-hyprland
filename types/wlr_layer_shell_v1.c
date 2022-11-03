@@ -10,6 +10,8 @@
 #include <wlr/util/log.h>
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+// Note: zwlr_layer_surface_v1 becomes inert on wlr_layer_surface_v1_destroy()
+
 #define LAYER_SHELL_VERSION 4
 
 static void resource_handle_destroy(struct wl_client *client,
@@ -275,26 +277,13 @@ static void layer_surface_unmap(struct wlr_layer_surface_v1 *surface) {
 	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
 		layer_surface_configure_destroy(configure);
 	}
-
-}
-
-static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
-	if (surface->configured && surface->mapped) {
-		layer_surface_unmap(surface);
-	}
-	wl_signal_emit_mutable(&surface->events.destroy, surface);
-	wl_resource_set_user_data(surface->resource, NULL);
-	surface->surface->role_data = NULL;
-	wl_list_remove(&surface->surface_destroy.link);
-	free(surface->namespace);
-	free(surface);
 }
 
 static void layer_surface_resource_destroy(struct wl_resource *resource) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_from_resource(resource);
 	if (surface != NULL) {
-		layer_surface_destroy(surface);
+		wlr_surface_destroy_role_object(surface->surface);
 	}
 }
 
@@ -320,7 +309,7 @@ uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 
 void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
 	zwlr_layer_surface_v1_send_closed(surface->resource);
-	layer_surface_destroy(surface);
+	wlr_surface_destroy_role_object(surface->surface);
 }
 
 static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
@@ -393,18 +382,28 @@ static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
 	}
 }
 
+static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
+	struct wlr_layer_surface_v1 *surface =
+		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
+	if (surface == NULL) {
+		return;
+	}
+
+	if (surface->configured && surface->mapped) {
+		layer_surface_unmap(surface);
+	}
+	wl_signal_emit_mutable(&surface->events.destroy, surface);
+	wl_resource_set_user_data(surface->resource, NULL);
+	free(surface->namespace);
+	free(surface);
+}
+
 static const struct wlr_surface_role layer_surface_role = {
 	.name = "zwlr_layer_surface_v1",
 	.commit = layer_surface_role_commit,
 	.precommit = layer_surface_role_precommit,
+	.destroy = layer_surface_role_destroy,
 };
-
-static void handle_surface_destroyed(struct wl_listener *listener,
-		void *data) {
-	struct wlr_layer_surface_v1 *layer_surface =
-		wl_container_of(listener, layer_surface, surface_destroy);
-	layer_surface_destroy(layer_surface);
-}
 
 static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 		struct wl_resource *client_resource, uint32_t id,
@@ -466,10 +465,6 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	wl_signal_init(&surface->events.map);
 	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.new_popup);
-
-	wl_signal_add(&surface->surface->events.destroy,
-		&surface->surface_destroy);
-	surface->surface_destroy.notify = handle_surface_destroyed;
 
 	wlr_log(WLR_DEBUG, "new layer_surface %p (res %p)",
 			surface, surface->resource);
