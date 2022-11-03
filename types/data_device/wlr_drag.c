@@ -116,8 +116,6 @@ static void drag_icon_set_mapped(struct wlr_drag_icon *icon, bool mapped) {
 	}
 }
 
-static void drag_icon_destroy(struct wlr_drag_icon *icon);
-
 static void drag_destroy(struct wlr_drag *drag) {
 	if (drag->cancelling) {
 		return;
@@ -156,7 +154,9 @@ static void drag_destroy(struct wlr_drag *drag) {
 		wl_list_remove(&drag->source_destroy.link);
 	}
 
-	drag_icon_destroy(drag->icon);
+	if (drag->icon != NULL) {
+		wlr_surface_destroy_role_object(drag->icon->surface);
+	}
 	free(drag);
 }
 
@@ -357,25 +357,6 @@ static void drag_handle_drag_source_destroy(struct wl_listener *listener,
 	drag_destroy(drag);
 }
 
-
-static void drag_icon_destroy(struct wlr_drag_icon *icon) {
-	if (icon == NULL) {
-		return;
-	}
-	drag_icon_set_mapped(icon, false);
-	wl_signal_emit_mutable(&icon->events.destroy, icon);
-	icon->surface->role_data = NULL;
-	wl_list_remove(&icon->surface_destroy.link);
-	free(icon);
-}
-
-static void drag_icon_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_drag_icon *icon =
-		wl_container_of(listener, icon, surface_destroy);
-	drag_icon_destroy(icon);
-}
-
 static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
 	struct wlr_drag_icon *icon = surface->role_data;
@@ -386,9 +367,21 @@ static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	drag_icon_set_mapped(icon, wlr_surface_has_buffer(surface));
 }
 
+static void drag_icon_surface_role_destroy(struct wlr_surface *surface) {
+	assert(surface->role == &drag_icon_surface_role);
+	struct wlr_drag_icon *icon = surface->role_data;
+	if (icon == NULL) {
+		return;
+	}
+	drag_icon_set_mapped(icon, false);
+	wl_signal_emit_mutable(&icon->events.destroy, icon);
+	free(icon);
+}
+
 const struct wlr_surface_role drag_icon_surface_role = {
 	.name = "wl_data_device-icon",
 	.commit = drag_icon_surface_role_commit,
+	.destroy = drag_icon_surface_role_destroy,
 };
 
 static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
@@ -405,9 +398,6 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 	wl_signal_init(&icon->events.unmap);
 	wl_signal_init(&icon->events.destroy);
 
-	wl_signal_add(&icon->surface->events.destroy, &icon->surface_destroy);
-	icon->surface_destroy.notify = drag_icon_handle_surface_destroy;
-
 	icon->surface->role_data = icon;
 
 	if (wlr_surface_has_buffer(surface)) {
@@ -416,7 +406,6 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 
 	return icon;
 }
-
 
 struct wlr_drag *wlr_drag_create(struct wlr_seat_client *seat_client,
 		struct wlr_data_source *source, struct wlr_surface *icon_surface) {
