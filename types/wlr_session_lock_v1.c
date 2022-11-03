@@ -8,6 +8,9 @@
 #include <wlr/util/log.h>
 #include "ext-session-lock-v1-protocol.h"
 
+// Note: ext_session_lock_surface_v1 objects become inert
+// when the corresponding ext_session_lock_v1 is destroyed
+
 #define SESSION_LOCK_VERSION 1
 
 static void resource_handle_destroy(struct wl_client *client,
@@ -176,14 +179,13 @@ static void lock_surface_role_precommit(struct wlr_surface *surface,
 	}
 }
 
-static const struct wlr_surface_role lock_surface_role = {
-	.name = "ext_session_lock_surface_v1",
-	.commit = lock_surface_role_commit,
-	.precommit = lock_surface_role_precommit,
-};
+static void lock_surface_role_destroy(struct wlr_surface *surface) {
+	struct wlr_session_lock_surface_v1 *lock_surface =
+		wlr_session_lock_surface_v1_from_wlr_surface(surface);
+	if (lock_surface == NULL) {
+		return;
+	}
 
-static void lock_surface_destroy(
-		struct wlr_session_lock_surface_v1 *lock_surface) {
 	wl_signal_emit_mutable(&lock_surface->events.destroy, NULL);
 
 	wl_list_remove(&lock_surface->link);
@@ -198,32 +200,30 @@ static void lock_surface_destroy(
 	assert(wl_list_empty(&lock_surface->events.destroy.listener_list));
 
 	wl_list_remove(&lock_surface->output_destroy.link);
-	wl_list_remove(&lock_surface->surface_destroy.link);
 
-	lock_surface->surface->role_data = NULL;
 	wl_resource_set_user_data(lock_surface->resource, NULL);
 	free(lock_surface);
 }
+
+static const struct wlr_surface_role lock_surface_role = {
+	.name = "ext_session_lock_surface_v1",
+	.commit = lock_surface_role_commit,
+	.precommit = lock_surface_role_precommit,
+	.destroy = lock_surface_role_destroy,
+};
 
 static void lock_surface_handle_output_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
 		wl_container_of(listener, lock_surface, output_destroy);
-	lock_surface_destroy(lock_surface);
-}
-
-static void lock_surface_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_session_lock_surface_v1 *lock_surface =
-		wl_container_of(listener, lock_surface, surface_destroy);
-	lock_surface_destroy(lock_surface);
+	wlr_surface_destroy_role_object(lock_surface->surface);
 }
 
 static void lock_surface_resource_destroy(struct wl_resource *resource) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
 		lock_surface_from_resource(resource);
 	if (lock_surface != NULL) {
-		lock_surface_destroy(lock_surface);
+		wlr_surface_destroy_role_object(lock_surface->surface);
 	}
 }
 
@@ -308,9 +308,6 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 	wl_signal_add(&output->events.destroy, &lock_surface->output_destroy);
 	lock_surface->output_destroy.notify = lock_surface_handle_output_destroy;
 
-	wl_signal_add(&surface->events.destroy, &lock_surface->surface_destroy);
-	lock_surface->surface_destroy.notify = lock_surface_handle_surface_destroy;
-
 	wl_signal_emit_mutable(&lock->events.new_surface, lock_surface);
 }
 
@@ -339,7 +336,7 @@ void wlr_session_lock_v1_send_locked(struct wlr_session_lock_v1 *lock) {
 static void lock_destroy(struct wlr_session_lock_v1 *lock) {
 	struct wlr_session_lock_surface_v1 *lock_surface, *tmp;
 	wl_list_for_each_safe(lock_surface, tmp, &lock->surfaces, link) {
-		lock_surface_destroy(lock_surface);
+		wlr_surface_destroy_role_object(lock_surface->surface);
 	}
 	assert(wl_list_empty(&lock->surfaces));
 

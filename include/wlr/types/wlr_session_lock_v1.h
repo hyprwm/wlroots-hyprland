@@ -78,7 +78,6 @@ struct wlr_session_lock_surface_v1 {
 	// private state
 
 	struct wl_listener output_destroy;
-	struct wl_listener surface_destroy;
 };
 
 struct wlr_session_lock_manager_v1 *wlr_session_lock_manager_v1_create(
