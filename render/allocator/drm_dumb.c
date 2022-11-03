@@ -55,41 +55,30 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 
 	buffer->drm_fd = alloc->drm_fd;
 
-	struct drm_mode_create_dumb create = {0};
-	create.width = (uint32_t)width;
-	create.height = (uint32_t)height;
-	create.bpp = info->bpp;
-
-	if (drmIoctl(alloc->drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create) != 0) {
+	if (drmModeCreateDumbBuffer(alloc->drm_fd, width, height, info->bpp, 0,
+			&buffer->handle, &buffer->stride, &buffer->size) != 0) {
 		wlr_log_errno(WLR_ERROR, "Failed to create DRM dumb buffer");
 		goto create_destroy;
 	}
 
-	buffer->width = create.width;
-	buffer->height = create.height;
-
-	buffer->stride = create.pitch;
-	buffer->handle = create.handle;
+	buffer->width = width;
+	buffer->height = height;
 	buffer->format = format->format;
 
-	struct drm_mode_map_dumb map = {0};
-	map.handle = buffer->handle;
-
-	if (drmIoctl(alloc->drm_fd, DRM_IOCTL_MODE_MAP_DUMB, &map) != 0) {
+	uint64_t offset;
+	if (drmModeMapDumbBuffer(alloc->drm_fd, buffer->handle, &offset) != 0) {
 		wlr_log_errno(WLR_ERROR, "Failed to map DRM dumb buffer");
 		goto create_destroy;
 	}
 
-	buffer->data = mmap(NULL, create.size, PROT_READ | PROT_WRITE, MAP_SHARED,
-			alloc->drm_fd, map.offset);
+	buffer->data = mmap(NULL, buffer->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+		alloc->drm_fd, offset);
 	if (buffer->data == MAP_FAILED) {
 		wlr_log_errno(WLR_ERROR, "Failed to mmap DRM dumb buffer");
 		goto create_destroy;
 	}
 
-	buffer->size = create.size;
-
-	memset(buffer->data, 0, create.size);
+	memset(buffer->data, 0, buffer->size);
 
 	int prime_fd;
 	if (drmPrimeHandleToFD(alloc->drm_fd, buffer->handle, DRM_CLOEXEC,
@@ -149,8 +138,7 @@ static void buffer_destroy(struct wlr_buffer *wlr_buffer) {
 	wlr_dmabuf_attributes_finish(&buf->dmabuf);
 
 	if (buf->drm_fd >= 0) {
-		struct drm_mode_destroy_dumb destroy = { .handle = buf->handle };
-		if (drmIoctl(buf->drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy)) {
+		if (drmModeDestroyDumbBuffer(buf->drm_fd, buf->handle) != 0) {
 			wlr_log_errno(WLR_ERROR, "Failed to destroy DRM dumb buffer");
 		}
 	}
