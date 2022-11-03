@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 	struct server server = {0};
 	server.surface_offset = 0;
 	server.display = wl_display_create();
-	server.backend = wlr_backend_autocreate(server.display);
+	server.backend = wlr_backend_autocreate(server.display, NULL);
 	server.scene = wlr_scene_create();
 
 	server.renderer = wlr_renderer_autocreate(server.backend);

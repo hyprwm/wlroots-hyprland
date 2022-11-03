@@ -34,8 +34,12 @@ struct wlr_backend {
  * Automatically initializes the most suitable backend given the environment.
  * Will always return a multi-backend. The backend is created but not started.
  * Returns NULL on failure.
+ *
+ * If session_ptr is not NULL, it's populated with the session which has been
+ * created with the backend, if any.
  */
-struct wlr_backend *wlr_backend_autocreate(struct wl_display *display);
+struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
+	struct wlr_session **session_ptr);
 /**
  * Start the backend. This may signal new_input or new_output immediately, but
  * may also wait until the display's event loop begins. Returns false on

@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
 		.display = display
 	};
 
-	struct wlr_backend *wlr = wlr_backend_autocreate(display);
+	struct wlr_backend *wlr = wlr_backend_autocreate(display, NULL);
 	if (!wlr) {
 		exit(1);
 	}
