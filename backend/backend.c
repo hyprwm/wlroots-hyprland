@@ -66,13 +66,6 @@ void wlr_backend_destroy(struct wlr_backend *backend) {
 	}
 }
 
-struct wlr_session *wlr_backend_get_session(struct wlr_backend *backend) {
-	if (backend->impl->get_session) {
-		return backend->impl->get_session(backend);
-	}
-	return NULL;
-}
-
 static uint64_t get_current_time_ms(void) {
 	struct timespec ts = {0};
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -388,8 +381,6 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 #endif
 
 success:
-	struct wlr_multi_backend *multi = wl_container_of(backend, multi, backend);
-	multi->session = session;
 	if (session_ptr != NULL) {
 		*session_ptr = session;
 	}

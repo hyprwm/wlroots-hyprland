@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wlr/backend/interface.h>
-#include <wlr/backend/session.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/util/log.h>
 #include "backend/backend.h"
@@ -63,12 +62,6 @@ static void multi_backend_destroy(struct wlr_backend *wlr_backend) {
 	free(backend);
 }
 
-static struct wlr_session *multi_backend_get_session(
-		struct wlr_backend *_backend) {
-	struct wlr_multi_backend *backend = multi_backend_from_backend(_backend);
-	return backend->session;
-}
-
 static clockid_t multi_backend_get_presentation_clock(
 		struct wlr_backend *backend) {
 	struct wlr_multi_backend *multi = multi_backend_from_backend(backend);
@@ -121,7 +114,6 @@ static uint32_t multi_backend_get_buffer_caps(struct wlr_backend *backend) {
 static const struct wlr_backend_impl backend_impl = {
 	.start = multi_backend_start,
 	.destroy = multi_backend_destroy,
-	.get_session = multi_backend_get_session,
 	.get_presentation_clock = multi_backend_get_presentation_clock,
 	.get_drm_fd = multi_backend_get_drm_fd,
 	.get_buffer_caps = multi_backend_get_buffer_caps,

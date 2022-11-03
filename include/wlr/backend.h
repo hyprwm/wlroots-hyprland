@@ -52,11 +52,6 @@ bool wlr_backend_start(struct wlr_backend *backend);
  */
 void wlr_backend_destroy(struct wlr_backend *backend);
 /**
- * Obtains the struct wlr_session reference from this backend if there is any.
- * Might return NULL for backends that don't use a session.
- */
-struct wlr_session *wlr_backend_get_session(struct wlr_backend *backend);
-/**
  * Returns the clock used by the backend for presentation feedback.
  */
 clockid_t wlr_backend_get_presentation_clock(struct wlr_backend *backend);
