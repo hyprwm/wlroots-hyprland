@@ -40,7 +40,6 @@ struct wlr_subsurface {
 	bool mapped;
 	bool added;
 
-	struct wl_listener surface_destroy;
 	struct wl_listener surface_client_commit;
 	struct wl_listener parent_destroy;
 

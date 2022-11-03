@@ -6,6 +6,8 @@
 #include "types/wlr_region.h"
 #include "types/wlr_subcompositor.h"
 
+// Note: wl_subsurface becomes inert on parent surface destroy
+
 #define SUBCOMPOSITOR_VERSION 1
 
 static bool subsurface_is_synchronized(struct wlr_subsurface *subsurface) {
@@ -25,33 +27,6 @@ static bool subsurface_is_synchronized(struct wlr_subsurface *subsurface) {
 
 static void subsurface_unmap(struct wlr_subsurface *subsurface);
 
-static void subsurface_destroy(struct wlr_subsurface *subsurface) {
-	if (subsurface == NULL) {
-		return;
-	}
-
-	if (subsurface->has_cache) {
-		wlr_surface_unlock_cached(subsurface->surface,
-			subsurface->cached_seq);
-	}
-
-	subsurface_unmap(subsurface);
-
-	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
-
-	wl_list_remove(&subsurface->surface_destroy.link);
-	wl_list_remove(&subsurface->surface_client_commit.link);
-	wl_list_remove(&subsurface->current.link);
-	wl_list_remove(&subsurface->pending.link);
-	wl_list_remove(&subsurface->parent_destroy.link);
-
-	wl_resource_set_user_data(subsurface->resource, NULL);
-	if (subsurface->surface) {
-		subsurface->surface->role_data = NULL;
-	}
-	free(subsurface);
-}
-
 static const struct wl_subsurface_interface subsurface_implementation;
 
 /**
@@ -69,7 +44,9 @@ static struct wlr_subsurface *subsurface_from_resource(
 
 static void subsurface_resource_destroy(struct wl_resource *resource) {
 	struct wlr_subsurface *subsurface = subsurface_from_resource(resource);
-	subsurface_destroy(subsurface);
+	if (subsurface != NULL) {
+		wlr_surface_destroy_role_object(subsurface->surface);
+	}
 }
 
 static void subsurface_handle_destroy(struct wl_client *client,
@@ -288,10 +265,36 @@ static void subsurface_role_precommit(struct wlr_surface *surface,
 	}
 }
 
+static void subsurface_role_destroy(struct wlr_surface *surface) {
+	struct wlr_subsurface *subsurface =
+		wlr_subsurface_from_wlr_surface(surface);
+	if (subsurface == NULL) {
+		return;
+	}
+
+	if (subsurface->has_cache) {
+		wlr_surface_unlock_cached(subsurface->surface,
+			subsurface->cached_seq);
+	}
+
+	subsurface_unmap(subsurface);
+
+	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
+
+	wl_list_remove(&subsurface->surface_client_commit.link);
+	wl_list_remove(&subsurface->current.link);
+	wl_list_remove(&subsurface->pending.link);
+	wl_list_remove(&subsurface->parent_destroy.link);
+
+	wl_resource_set_user_data(subsurface->resource, NULL);
+	free(subsurface);
+}
+
 const struct wlr_surface_role subsurface_role = {
 	.name = "wl_subsurface",
 	.commit = subsurface_role_commit,
 	.precommit = subsurface_role_precommit,
+	.destroy = subsurface_role_destroy,
 };
 
 static void subsurface_handle_parent_destroy(struct wl_listener *listener,
@@ -300,14 +303,7 @@ static void subsurface_handle_parent_destroy(struct wl_listener *listener,
 		wl_container_of(listener, subsurface, parent_destroy);
 	// Once the parent is destroyed, the client has no way to use the
 	// wl_subsurface object anymore, so we can destroy it.
-	subsurface_destroy(subsurface);
-}
-
-static void subsurface_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_subsurface *subsurface =
-		wl_container_of(listener, subsurface, surface_destroy);
-	subsurface_destroy(subsurface);
+	wlr_surface_destroy_role_object(subsurface->surface);
 }
 
 static void subsurface_handle_surface_client_commit(
@@ -397,8 +393,6 @@ static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
 	wl_signal_init(&subsurface->events.map);
 	wl_signal_init(&subsurface->events.unmap);
 
-	wl_signal_add(&surface->events.destroy, &subsurface->surface_destroy);
-	subsurface->surface_destroy.notify = subsurface_handle_surface_destroy;
 	wl_signal_add(&surface->events.client_commit,
 		&subsurface->surface_client_commit);
 	subsurface->surface_client_commit.notify =
