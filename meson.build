@@ -129,6 +129,7 @@ drm = dependency('libdrm',
 )
 xkbcommon = dependency('xkbcommon')
 pixman = dependency('pixman-1',
+	version: '>=0.42.0',
 	fallback: 'pixman',
 	default_options: ['werror=false'],
 )
