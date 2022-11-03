@@ -285,8 +285,8 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 	}
 
 	struct wlr_session *session = NULL;
-	struct wlr_backend *backend = wlr_multi_backend_create(display);
-	if (!backend) {
+	struct wlr_backend *multi = wlr_multi_backend_create(display);
+	if (!multi) {
 		wlr_log(WLR_ERROR, "could not allocate multibackend");
 		return NULL;
 	}
@@ -305,7 +305,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		char *saveptr;
 		char *name = strtok_r(names, ",", &saveptr);
 		while (name != NULL) {
-			if (!attempt_backend_by_name(display, backend, name, &session)) {
+			if (!attempt_backend_by_name(display, multi, name, &session)) {
 				wlr_log(WLR_ERROR, "failed to add backend '%s'", name);
 				free(names);
 				goto error;
@@ -324,7 +324,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 			goto error;
 		}
 
-		wlr_multi_backend_add(backend, wl_backend);
+		wlr_multi_backend_add(multi, wl_backend);
 		goto success;
 	}
 
@@ -337,7 +337,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 			goto error;
 		}
 
-		wlr_multi_backend_add(backend, x11_backend);
+		wlr_multi_backend_add(multi, x11_backend);
 		goto success;
 	}
 #endif
@@ -356,7 +356,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		wlr_log(WLR_ERROR, "Failed to start libinput backend");
 		goto error;
 	}
-	wlr_multi_backend_add(backend, libinput);
+	wlr_multi_backend_add(multi, libinput);
 #else
 	if (env_parse_bool("WLR_LIBINPUT_NO_DEVICES")) {
 		wlr_log(WLR_INFO, "WLR_LIBINPUT_NO_DEVICES is set, "
@@ -371,23 +371,23 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 
 #if WLR_HAS_DRM_BACKEND
 	struct wlr_backend *primary_drm =
-		attempt_drm_backend(display, backend, session);
+		attempt_drm_backend(display, multi, session);
 	if (!primary_drm) {
 		wlr_log(WLR_ERROR, "Failed to open any DRM device");
 		goto error;
 	}
 
-	drm_backend_monitor_create(backend, primary_drm, session);
+	drm_backend_monitor_create(multi, primary_drm, session);
 #endif
 
 success:
 	if (session_ptr != NULL) {
 		*session_ptr = session;
 	}
-	return backend;
+	return multi;
 
 error:
-	wlr_backend_destroy(backend);
+	wlr_backend_destroy(multi);
 	wlr_session_destroy(session);
 	return NULL;
 }
