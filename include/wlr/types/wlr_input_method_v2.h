@@ -66,8 +66,6 @@ struct wlr_input_popup_surface_v2 {
 
 	struct wlr_surface *surface;
 
-	struct wl_listener surface_destroy;
-
 	struct {
 		struct wl_signal map;
 		struct wl_signal unmap;
