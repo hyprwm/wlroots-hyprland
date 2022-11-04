@@ -13,7 +13,6 @@
 
 struct wlr_vk_descriptor_pool;
 
-// Central vulkan state that should only be needed once per compositor.
 struct wlr_vk_instance {
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT messenger;
@@ -31,8 +30,6 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug);
 void vulkan_instance_destroy(struct wlr_vk_instance *ini);
 
 // Logical vulkan device state.
-// Ownership can be shared by multiple renderers, reference counted
-// with `renderers`.
 struct wlr_vk_device {
 	struct wlr_vk_instance *instance;
 
