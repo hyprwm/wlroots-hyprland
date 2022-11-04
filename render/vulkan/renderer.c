@@ -860,6 +860,8 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	// and we have a renderpass dependency for that.
 	uint64_t stage_timeline_point;
 	VkTimelineSemaphoreSubmitInfoKHR stage_timeline_submit_info;
+	uint64_t stage_wait_timeline_point;
+	VkPipelineStageFlags stage_wait_stage;
 	if (stage_cb != NULL) {
 		stage_timeline_point = end_command_buffer(stage_cb, renderer);
 		if (stage_timeline_point == 0) {
@@ -878,6 +880,18 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		stage_sub->commandBufferCount = 1u;
 		stage_sub->pCommandBuffers = &pre_cb;
 		++submit_count;
+
+		if (renderer->stage.last_timeline_point > 0) {
+			stage_wait_timeline_point = renderer->stage.last_timeline_point;
+			stage_wait_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			stage_sub->waitSemaphoreCount = 1;
+			stage_sub->pWaitSemaphores = &renderer->timeline_semaphore;
+			stage_sub->pWaitDstStageMask = &stage_wait_stage;
+			stage_timeline_submit_info.waitSemaphoreValueCount = 1;
+			stage_timeline_submit_info.pWaitSemaphoreValues = &stage_wait_timeline_point;
+		}
+
+		renderer->stage.last_timeline_point = stage_timeline_point;
 	}
 
 	uint64_t render_timeline_point = end_command_buffer(render_cb, renderer);

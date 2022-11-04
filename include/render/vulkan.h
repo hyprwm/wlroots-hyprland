@@ -195,6 +195,7 @@ struct wlr_vk_renderer {
 
 	struct {
 		struct wlr_vk_command_buffer *cb;
+		uint64_t last_timeline_point;
 		struct wl_list buffers; // wlr_vk_shared_buffer.link
 	} stage;
 
