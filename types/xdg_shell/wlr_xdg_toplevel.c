@@ -101,8 +101,8 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	}
 	assert(nstates <= sizeof(states) / sizeof(states[0]));
 
-	uint32_t width = configure->width;
-	uint32_t height = configure->height;
+	int32_t width = configure->width;
+	int32_t height = configure->height;
 	struct wl_array wl_states = {
 		.size = nstates * sizeof(states[0]),
 		.data = states,
@@ -532,7 +532,7 @@ void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel) {
 }
 
 uint32_t wlr_xdg_toplevel_set_size(struct wlr_xdg_toplevel *toplevel,
-		uint32_t width, uint32_t height) {
+		int32_t width, int32_t height) {
 	toplevel->scheduled.width = width;
 	toplevel->scheduled.height = height;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);

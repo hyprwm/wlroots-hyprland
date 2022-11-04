@@ -135,9 +135,9 @@ enum wlr_xdg_surface_role {
 struct wlr_xdg_toplevel_state {
 	bool maximized, fullscreen, resizing, activated;
 	uint32_t tiled; // enum wlr_edges
-	uint32_t width, height;
-	uint32_t max_width, max_height;
-	uint32_t min_width, min_height;
+	int32_t width, height;
+	int32_t max_width, max_height;
+	int32_t min_width, min_height;
 };
 
 enum wlr_xdg_toplevel_wm_capabilities {
@@ -156,9 +156,9 @@ struct wlr_xdg_toplevel_configure {
 	uint32_t fields; // enum wlr_xdg_toplevel_configure_field
 	bool maximized, fullscreen, resizing, activated;
 	uint32_t tiled; // enum wlr_edges
-	uint32_t width, height;
+	int32_t width, height;
 	struct {
-		uint32_t width, height;
+		int32_t width, height;
 	} bounds;
 	uint32_t wm_capabilities; // enum wlr_xdg_toplevel_wm_capabilities
 };
@@ -307,7 +307,7 @@ struct wlr_xdg_toplevel_show_window_menu_event {
 	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_seat_client *seat;
 	uint32_t serial;
-	uint32_t x, y;
+	int32_t x, y;
 };
 
 /**
@@ -358,7 +358,7 @@ void wlr_xdg_surface_ping(struct wlr_xdg_surface *surface);
  * configure serial.
  */
 uint32_t wlr_xdg_toplevel_set_size(struct wlr_xdg_toplevel *toplevel,
-		uint32_t width, uint32_t height);
+		int32_t width, int32_t height);
 
 /**
  * Request that this toplevel show itself in an activated or deactivated
