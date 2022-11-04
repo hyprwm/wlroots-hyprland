@@ -1120,6 +1120,11 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 
 	assert(!renderer->current_render_buffer);
 
+	VkResult res = vkDeviceWaitIdle(renderer->dev->dev);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkDeviceWaitIdle", res);
+	}
+
 	// stage.cb automatically freed with command pool
 	struct wlr_vk_shared_buffer *buf, *tmp_buf;
 	wl_list_for_each_safe(buf, tmp_buf, &renderer->stage.buffers, link) {
