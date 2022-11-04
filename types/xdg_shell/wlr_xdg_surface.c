@@ -216,9 +216,9 @@ static void xdg_surface_handle_set_window_geometry(struct wl_client *client,
 	}
 
 	if (width <= 0 || height <= 0) {
-		wlr_log(WLR_ERROR, "Client tried to set invalid geometry");
-		//XXX: Switch to the proper error value once available
-		wl_resource_post_error(resource, -1, "Tried to set invalid xdg-surface geometry");
+		wl_resource_post_error(resource,
+			XDG_SURFACE_ERROR_INVALID_SIZE,
+			"Tried to set invalid xdg-surface geometry");
 		return;
 	}
 

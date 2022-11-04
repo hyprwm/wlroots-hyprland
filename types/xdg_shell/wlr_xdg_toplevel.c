@@ -116,6 +116,22 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 }
 
 void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
+	struct wlr_xdg_toplevel_state *pending = &toplevel->pending;
+
+	// 1) Negative values are prohibited
+	// 2) If both min and max are set (aren't 0), min ≤ max
+	if (pending->min_width < 0 || pending->min_height < 0 ||
+			pending->max_width < 0 || pending->max_height < 0 ||
+			(pending->max_width != 0 && pending->max_width < pending->min_width) ||
+			(pending->max_height != 0 && pending->max_height < pending->min_height)) {
+		wl_resource_post_error(toplevel->resource,
+			XDG_TOPLEVEL_ERROR_INVALID_SIZE,
+			"client provided an invalid min or max size");
+		return;
+	}
+
+	toplevel->current = toplevel->pending;
+
 	if (!toplevel->added) {
 		// on the first commit, send a configure request to tell the client it
 		// is added
@@ -133,8 +149,6 @@ void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 		}
 		return;
 	}
-
-	toplevel->current = toplevel->pending;
 }
 
 static const struct xdg_toplevel_interface xdg_toplevel_implementation;
