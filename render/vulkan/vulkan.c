@@ -489,6 +489,8 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	load_device_proc(dev, "vkGetMemoryFdPropertiesKHR",
 		&dev->api.getMemoryFdPropertiesKHR);
 	load_device_proc(dev, "vkWaitSemaphoresKHR", &dev->api.waitSemaphoresKHR);
+	load_device_proc(dev, "vkGetSemaphoreCounterValueKHR",
+		&dev->api.getSemaphoreCounterValueKHR);
 
 	// - check device format support -
 	size_t max_fmts;

@@ -45,6 +45,7 @@ struct wlr_vk_device {
 	struct {
 		PFN_vkGetMemoryFdPropertiesKHR getMemoryFdPropertiesKHR;
 		PFN_vkWaitSemaphoresKHR waitSemaphoresKHR;
+		PFN_vkGetSemaphoreCounterValueKHR getSemaphoreCounterValueKHR;
 	} api;
 
 	uint32_t format_prop_count;
@@ -136,6 +137,14 @@ struct wlr_vk_render_buffer {
 	bool transitioned;
 };
 
+struct wlr_vk_command_buffer {
+	VkCommandBuffer vk;
+	bool recording;
+	uint64_t timeline_point;
+};
+
+#define VULKAN_COMMAND_BUFFERS_CAP 64
+
 // Vulkan wlr_renderer implementation on top of a wlr_vk_device.
 struct wlr_vk_renderer {
 	struct wlr_renderer wlr_renderer;
@@ -156,13 +165,13 @@ struct wlr_vk_renderer {
 	uint64_t timeline_point;
 
 	struct wlr_vk_render_buffer *current_render_buffer;
+	struct wlr_vk_command_buffer *current_command_buffer;
 
 	// current frame id. Used in wlr_vk_texture.last_used
 	// Increased every time a frame is ended for the renderer
 	uint32_t frame;
 	VkRect2D scissor; // needed for clearing
 
-	VkCommandBuffer cb;
 	VkPipeline bound_pipe;
 
 	uint32_t render_width;
@@ -180,6 +189,9 @@ struct wlr_vk_renderer {
 	struct wl_list foreign_textures; // wlr_vk_texture.foreign_link
 
 	struct wl_list render_buffers; // wlr_vk_render_buffer.link
+
+	// Pool of command buffers
+	struct wlr_vk_command_buffer command_buffers[VULKAN_COMMAND_BUFFERS_CAP];
 
 	struct {
 		VkCommandBuffer cb;

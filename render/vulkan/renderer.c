@@ -398,6 +398,127 @@ struct wlr_vk_format_props *vulkan_format_props_from_drm(
 	return NULL;
 }
 
+static bool init_command_buffer(struct wlr_vk_command_buffer *cb,
+		struct wlr_vk_renderer *renderer) {
+	VkResult res;
+
+	VkCommandBuffer vk_cb = VK_NULL_HANDLE;
+	VkCommandBufferAllocateInfo cmd_buf_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = renderer->command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1,
+	};
+	res = vkAllocateCommandBuffers(renderer->dev->dev, &cmd_buf_info, &vk_cb);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkAllocateCommandBuffers", res);
+		return false;
+	}
+
+	*cb = (struct wlr_vk_command_buffer){
+		.vk = vk_cb,
+	};
+	return true;
+}
+
+static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
+		struct wlr_vk_renderer *renderer) {
+	VkResult res;
+
+	assert(cb->vk != VK_NULL_HANDLE && !cb->recording);
+
+	VkSemaphoreWaitInfoKHR wait_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
+		.semaphoreCount = 1,
+		.pSemaphores = &renderer->timeline_semaphore,
+		.pValues = &cb->timeline_point,
+	};
+	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkWaitSemaphoresKHR", res);
+		return false;
+	}
+
+	return true;
+}
+
+static struct wlr_vk_command_buffer *get_command_buffer(
+		struct wlr_vk_renderer *renderer) {
+	VkResult res;
+
+	uint64_t current_point;
+	res = renderer->dev->api.getSemaphoreCounterValueKHR(renderer->dev->dev,
+		renderer->timeline_semaphore, &current_point);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkGetSemaphoreCounterValueKHR", res);
+		return NULL;
+	}
+
+	// First try to find an existing command buffer which isn't busy
+	struct wlr_vk_command_buffer *unused = NULL;
+	struct wlr_vk_command_buffer *wait = NULL;
+	for (size_t i = 0; i < VULKAN_COMMAND_BUFFERS_CAP; i++) {
+		struct wlr_vk_command_buffer *cb = &renderer->command_buffers[i];
+		if (cb->vk == VK_NULL_HANDLE) {
+			unused = cb;
+			break;
+		}
+		if (cb->recording) {
+			continue;
+		}
+
+		if (cb->timeline_point <= current_point) {
+			return cb;
+		}
+		if (wait == NULL || cb->timeline_point < wait->timeline_point) {
+			wait = cb;
+		}
+	}
+
+	// If there is an unused slot, initialize it
+	if (unused != NULL) {
+		if (!init_command_buffer(unused, renderer)) {
+			return NULL;
+		}
+		return unused;
+	}
+
+	// Block until a busy command buffer becomes available
+	if (!wait_command_buffer(wait, renderer)) {
+		return NULL;
+	}
+	return wait;
+}
+
+static struct wlr_vk_command_buffer *acquire_command_buffer(
+		struct wlr_vk_renderer *renderer) {
+	struct wlr_vk_command_buffer *cb = get_command_buffer(renderer);
+	if (cb == NULL) {
+		return NULL;
+	}
+
+	assert(!cb->recording);
+	cb->recording = true;
+
+	return cb;
+}
+
+static uint64_t end_command_buffer(struct wlr_vk_command_buffer *cb,
+		struct wlr_vk_renderer *renderer) {
+	assert(cb->recording);
+	cb->recording = false;
+
+	VkResult res = vkEndCommandBuffer(cb->vk);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkEndCommandBuffer", res);
+		return 0;
+	}
+
+	renderer->timeline_point++;
+	cb->timeline_point = renderer->timeline_point;
+	return cb->timeline_point;
+}
+
 // buffer import
 static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	wl_list_remove(&buffer->link);
@@ -573,11 +694,18 @@ static void vulkan_begin(struct wlr_renderer *wlr_renderer,
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	assert(renderer->current_render_buffer);
 
-	VkCommandBuffer cb = renderer->cb;
+	struct wlr_vk_command_buffer *cb = acquire_command_buffer(renderer);
+	if (cb == NULL) {
+		return;
+	}
+
+	assert(renderer->current_command_buffer == NULL);
+	renderer->current_command_buffer = cb;
+
 	VkCommandBufferBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
-	vkBeginCommandBuffer(cb, &begin_info);
+	vkBeginCommandBuffer(cb->vk, &begin_info);
 
 	// begin render pass
 	VkFramebuffer fb = renderer->current_render_buffer->framebuffer;
@@ -592,11 +720,11 @@ static void vulkan_begin(struct wlr_renderer *wlr_renderer,
 		.framebuffer = fb,
 		.clearValueCount = 0,
 	};
-	vkCmdBeginRenderPass(cb, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(cb->vk, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	VkViewport vp = {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
-	vkCmdSetViewport(cb, 0, 1, &vp);
-	vkCmdSetScissor(cb, 0, 1, &rect);
+	vkCmdSetViewport(cb->vk, 0, 1, &vp);
+	vkCmdSetScissor(cb->vk, 0, 1, &rect);
 
 	// Refresh projection matrix.
 	// matrix_projection() assumes a GL coordinate system so we need
@@ -613,14 +741,17 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	assert(renderer->current_render_buffer);
 
-	VkCommandBuffer render_cb = renderer->cb;
+	struct wlr_vk_command_buffer *render_cb = renderer->current_command_buffer;
+	assert(render_cb != NULL);
+	renderer->current_command_buffer = NULL;
+
 	VkCommandBuffer pre_cb = vulkan_record_stage_cb(renderer);
 
 	renderer->render_width = 0u;
 	renderer->render_height = 0u;
 	renderer->bound_pipe = VK_NULL_HANDLE;
 
-	vkCmdEndRenderPass(render_cb);
+	vkCmdEndRenderPass(render_cb->vk);
 
 	// insert acquire and release barriers for dmabuf-images
 	unsigned barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
@@ -708,14 +839,12 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 0, NULL, 0, NULL, barrier_count, acquire_barriers);
 
-	vkCmdPipelineBarrier(render_cb, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+	vkCmdPipelineBarrier(render_cb->vk, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL,
 		barrier_count, release_barriers);
 
 	free(acquire_barriers);
 	free(release_barriers);
-
-	vkEndCommandBuffer(renderer->cb);
 
 	unsigned submit_count = 0u;
 	VkSubmitInfo submit_infos[2] = {0};
@@ -735,18 +864,21 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		++submit_count;
 	}
 
-	renderer->timeline_point++;
+	uint64_t render_timeline_point = end_command_buffer(render_cb, renderer);
+	if (render_timeline_point == 0) {
+		return;
+	}
 
 	VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info = {
 		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
 		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &renderer->timeline_point,
+		.pSignalSemaphoreValues = &render_timeline_point,
 	};
 
 	VkSubmitInfo *render_sub = &submit_infos[submit_count];
 	render_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	render_sub->pNext = &timeline_submit_info;
-	render_sub->pCommandBuffers = &render_cb;
+	render_sub->pCommandBuffers = &render_cb->vk;
 	render_sub->commandBufferCount = 1u;
 	render_sub->signalSemaphoreCount = 1;
 	render_sub->pSignalSemaphores = &renderer->timeline_semaphore,
@@ -762,15 +894,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	// sadly this is required due to the current api/rendering model of wlr
 	// ideally we could use gpu and cpu in parallel (_without_ the
 	// implicit synchronization overhead and mess of opengl drivers)
-	VkSemaphoreWaitInfoKHR wait_info = {
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
-		.semaphoreCount = 1,
-		.pSemaphores = &renderer->timeline_semaphore,
-		.pValues = &renderer->timeline_point,
-	};
-	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkWaitSemaphoresKHR", res);
+	if (!wait_command_buffer(render_cb, renderer)) {
 		return;
 	}
 
@@ -789,7 +913,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
 		const float matrix[static 9], float alpha) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->cb;
+	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
 	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
 	assert(texture->renderer == renderer);
@@ -840,7 +964,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 static void vulkan_clear(struct wlr_renderer *wlr_renderer,
 		const float color[static 4]) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->cb;
+	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
 	VkClearAttachment att = {
 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -869,7 +993,7 @@ static void vulkan_clear(struct wlr_renderer *wlr_renderer,
 static void vulkan_scissor(struct wlr_renderer *wlr_renderer,
 		struct wlr_box *box) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->cb;
+	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
 	uint32_t w = renderer->render_width;
 	uint32_t h = renderer->render_height;
@@ -893,7 +1017,7 @@ static const uint32_t *vulkan_get_shm_texture_formats(
 static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 		const float color[static 4], const float matrix[static 9]) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->cb;
+	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
 	VkPipeline pipe = renderer->current_render_buffer->render_setup->quad_pipe;
 	if (pipe != renderer->bound_pipe) {
@@ -1750,18 +1874,6 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 		&renderer->command_pool);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkCreateCommandPool", res);
-		goto error;
-	}
-
-	VkCommandBufferAllocateInfo cbai = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandBufferCount = 1u,
-		.commandPool = renderer->command_pool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	};
-	res = vkAllocateCommandBuffers(dev->dev, &cbai, &renderer->cb);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkAllocateCommandBuffers", res);
 		goto error;
 	}
 
