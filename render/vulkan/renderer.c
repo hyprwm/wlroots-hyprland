@@ -329,38 +329,52 @@ error_alloc:
 	};
 }
 
+static struct wlr_vk_command_buffer *acquire_command_buffer(
+	struct wlr_vk_renderer *renderer);
+static uint64_t end_command_buffer(struct wlr_vk_command_buffer *cb,
+	struct wlr_vk_renderer *renderer);
+static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
+	struct wlr_vk_renderer *renderer);
+
 VkCommandBuffer vulkan_record_stage_cb(struct wlr_vk_renderer *renderer) {
-	if (!renderer->stage.recording) {
+	if (renderer->stage.cb == NULL) {
+		renderer->stage.cb = acquire_command_buffer(renderer);
+		if (renderer->stage.cb == NULL) {
+			return VK_NULL_HANDLE;
+		}
+
 		VkCommandBufferBeginInfo begin_info = {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		};
-		vkBeginCommandBuffer(renderer->stage.cb, &begin_info);
-		renderer->stage.recording = true;
+		vkBeginCommandBuffer(renderer->stage.cb->vk, &begin_info);
 	}
 
-	return renderer->stage.cb;
+	return renderer->stage.cb->vk;
 }
 
 bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
-	if (!renderer->stage.recording) {
+	if (renderer->stage.cb == NULL) {
 		return false;
 	}
 
-	vkEndCommandBuffer(renderer->stage.cb);
-	renderer->stage.recording = false;
+	struct wlr_vk_command_buffer *cb = renderer->stage.cb;
+	renderer->stage.cb = NULL;
 
-	renderer->timeline_point++;
+	uint64_t timeline_point = end_command_buffer(cb, renderer);
+	if (timeline_point == 0) {
+		return false;
+	}
 
 	VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info = {
 		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
 		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &renderer->timeline_point,
+		.pSignalSemaphoreValues = &timeline_point,
 	};
 	VkSubmitInfo submit_info = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext = &timeline_submit_info,
 		.commandBufferCount = 1,
-		.pCommandBuffers = &renderer->stage.cb,
+		.pCommandBuffers = &cb->vk,
 		.signalSemaphoreCount = 1,
 		.pSignalSemaphores = &renderer->timeline_semaphore,
 	};
@@ -370,22 +384,10 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	VkSemaphoreWaitInfoKHR wait_info = {
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
-		.semaphoreCount = 1,
-		.pSemaphores = &renderer->timeline_semaphore,
-		.pValues = &renderer->timeline_point,
-	};
-	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkWaitSemaphoresKHR", res);
-		return false;
-	}
-
 	// NOTE: don't release stage allocations here since they may still be
 	// used for reading. Will be done next frame.
 
-	return true;
+	return wait_command_buffer(cb, renderer);
 }
 
 struct wlr_vk_format_props *vulkan_format_props_from_drm(
@@ -849,16 +851,30 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	unsigned submit_count = 0u;
 	VkSubmitInfo submit_infos[2] = {0};
 
+	struct wlr_vk_command_buffer *stage_cb = renderer->stage.cb;
+	renderer->stage.cb = NULL;
+
 	// No semaphores needed here.
 	// We don't need a semaphore from the stage/transfer submission
 	// to the render submissions since they are on the same queue
 	// and we have a renderpass dependency for that.
-	if (renderer->stage.recording) {
-		vkEndCommandBuffer(renderer->stage.cb);
-		renderer->stage.recording = false;
+	uint64_t stage_timeline_point;
+	VkTimelineSemaphoreSubmitInfoKHR stage_timeline_submit_info;
+	if (stage_cb != NULL) {
+		stage_timeline_point = end_command_buffer(stage_cb, renderer);
+		if (stage_timeline_point == 0) {
+			return;
+		}
+
+		stage_timeline_submit_info = (VkTimelineSemaphoreSubmitInfoKHR){
+			.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+			.signalSemaphoreValueCount = 1,
+			.pSignalSemaphoreValues = &stage_timeline_point,
+		};
 
 		VkSubmitInfo *stage_sub = &submit_infos[submit_count];
 		stage_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		stage_sub->pNext = &stage_timeline_submit_info;
 		stage_sub->commandBufferCount = 1u;
 		stage_sub->pCommandBuffers = &pre_cb;
 		++submit_count;
@@ -869,7 +885,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		return;
 	}
 
-	VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info = {
+	VkTimelineSemaphoreSubmitInfoKHR render_timeline_submit_info = {
 		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
 		.signalSemaphoreValueCount = 1,
 		.pSignalSemaphoreValues = &render_timeline_point,
@@ -877,7 +893,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	VkSubmitInfo *render_sub = &submit_infos[submit_count];
 	render_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	render_sub->pNext = &timeline_submit_info;
+	render_sub->pNext = &render_timeline_submit_info;
 	render_sub->pCommandBuffers = &render_cb->vk;
 	render_sub->commandBufferCount = 1u;
 	render_sub->signalSemaphoreCount = 1;
@@ -1890,20 +1906,6 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 		&renderer->timeline_semaphore);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkCreateSemaphore", res);
-		goto error;
-	}
-
-	// staging command buffer
-	VkCommandBufferAllocateInfo cmd_buf_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandPool = renderer->command_pool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1u,
-	};
-	res = vkAllocateCommandBuffers(dev->dev, &cmd_buf_info,
-		&renderer->stage.cb);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkAllocateCommandBuffers", res);
 		goto error;
 	}
 

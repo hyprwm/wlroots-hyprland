@@ -194,8 +194,7 @@ struct wlr_vk_renderer {
 	struct wlr_vk_command_buffer command_buffers[VULKAN_COMMAND_BUFFERS_CAP];
 
 	struct {
-		VkCommandBuffer cb;
-		bool recording;
+		struct wlr_vk_command_buffer *cb;
 		struct wl_list buffers; // wlr_vk_shared_buffer.link
 	} stage;
 
