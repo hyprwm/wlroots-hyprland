@@ -349,32 +349,41 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 	vkEndCommandBuffer(renderer->stage.cb);
 	renderer->stage.recording = false;
 
+	renderer->timeline_point++;
+
+	VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info = {
+		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+		.signalSemaphoreValueCount = 1,
+		.pSignalSemaphoreValues = &renderer->timeline_point,
+	};
 	VkSubmitInfo submit_info = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = 1u,
+		.pNext = &timeline_submit_info,
+		.commandBufferCount = 1,
 		.pCommandBuffers = &renderer->stage.cb,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &renderer->timeline_semaphore,
 	};
-	VkResult res = vkQueueSubmit(renderer->dev->queue, 1,
-		&submit_info, renderer->fence);
+	VkResult res = vkQueueSubmit(renderer->dev->queue, 1, &submit_info, NULL);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkQueueSubmit", res);
 		return false;
 	}
 
-	res = vkWaitForFences(renderer->dev->dev, 1, &renderer->fence, true,
-		UINT64_MAX);
+	VkSemaphoreWaitInfoKHR wait_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
+		.semaphoreCount = 1,
+		.pSemaphores = &renderer->timeline_semaphore,
+		.pValues = &renderer->timeline_point,
+	};
+	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
 	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkWaitForFences", res);
+		wlr_vk_error("vkWaitSemaphoresKHR", res);
 		return false;
 	}
 
 	// NOTE: don't release stage allocations here since they may still be
 	// used for reading. Will be done next frame.
-	res = vkResetFences(renderer->dev->dev, 1, &renderer->fence);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkResetFences", res);
-		return false;
-	}
 
 	return true;
 }
@@ -726,14 +735,25 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		++submit_count;
 	}
 
+	renderer->timeline_point++;
+
+	VkTimelineSemaphoreSubmitInfoKHR timeline_submit_info = {
+		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+		.signalSemaphoreValueCount = 1,
+		.pSignalSemaphoreValues = &renderer->timeline_point,
+	};
+
 	VkSubmitInfo *render_sub = &submit_infos[submit_count];
 	render_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	render_sub->pNext = &timeline_submit_info;
 	render_sub->pCommandBuffers = &render_cb;
 	render_sub->commandBufferCount = 1u;
+	render_sub->signalSemaphoreCount = 1;
+	render_sub->pSignalSemaphores = &renderer->timeline_semaphore,
 	++submit_count;
 
 	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count,
-		submit_infos, renderer->fence);
+		submit_infos, NULL);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkQueueSubmit", res);
 		return;
@@ -742,10 +762,15 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	// sadly this is required due to the current api/rendering model of wlr
 	// ideally we could use gpu and cpu in parallel (_without_ the
 	// implicit synchronization overhead and mess of opengl drivers)
-	res = vkWaitForFences(renderer->dev->dev, 1, &renderer->fence, true,
-		UINT64_MAX);
+	VkSemaphoreWaitInfoKHR wait_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
+		.semaphoreCount = 1,
+		.pSemaphores = &renderer->timeline_semaphore,
+		.pValues = &renderer->timeline_point,
+	};
+	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
 	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkWaitForFences", res);
+		wlr_vk_error("vkWaitSemaphoresKHR", res);
 		return;
 	}
 
@@ -758,11 +783,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 
 	wl_list_init(&renderer->destroy_textures); // reset the list
-	res = vkResetFences(renderer->dev->dev, 1, &renderer->fence);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkResetFences", res);
-		return;
-	}
 }
 
 static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
@@ -979,7 +999,7 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vkDestroyShaderModule(dev->dev, renderer->tex_frag_module, NULL);
 	vkDestroyShaderModule(dev->dev, renderer->quad_frag_module, NULL);
 
-	vkDestroyFence(dev->dev, renderer->fence, NULL);
+	vkDestroySemaphore(dev->dev, renderer->timeline_semaphore, NULL);
 	vkDestroyPipelineLayout(dev->dev, renderer->pipe_layout, NULL);
 	vkDestroyDescriptorSetLayout(dev->dev, renderer->ds_layout, NULL);
 	vkDestroySampler(dev->dev, renderer->sampler, NULL);
@@ -1745,13 +1765,19 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 		goto error;
 	}
 
-	VkFenceCreateInfo fence_info = {
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	VkSemaphoreTypeCreateInfoKHR semaphore_type_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+		.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+		.initialValue = 0,
 	};
-	res = vkCreateFence(dev->dev, &fence_info, NULL,
-		&renderer->fence);
+	VkSemaphoreCreateInfo semaphore_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = &semaphore_type_info,
+	};
+	res = vkCreateSemaphore(dev->dev, &semaphore_info, NULL,
+		&renderer->timeline_semaphore);
 	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateFence", res);
+		wlr_vk_error("vkCreateSemaphore", res);
 		goto error;
 	}
 

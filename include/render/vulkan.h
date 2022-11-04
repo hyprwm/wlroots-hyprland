@@ -44,6 +44,7 @@ struct wlr_vk_device {
 
 	struct {
 		PFN_vkGetMemoryFdPropertiesKHR getMemoryFdPropertiesKHR;
+		PFN_vkWaitSemaphoresKHR waitSemaphoresKHR;
 	} api;
 
 	uint32_t format_prop_count;
@@ -151,7 +152,8 @@ struct wlr_vk_renderer {
 	VkPipelineLayout pipe_layout;
 	VkSampler sampler;
 
-	VkFence fence;
+	VkSemaphore timeline_semaphore;
+	uint64_t timeline_point;
 
 	struct wlr_vk_render_buffer *current_render_buffer;
 

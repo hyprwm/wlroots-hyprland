@@ -424,6 +424,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
 		VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
 		VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
+		VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, // or vulkan 1.2
 	};
 	size_t extensions_len = sizeof(extensions) / sizeof(extensions[0]);
 
@@ -464,8 +465,13 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		.pQueuePriorities = &prio,
 	};
 
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
+		.timelineSemaphore = VK_TRUE,
+	};
 	VkDeviceCreateInfo dev_info = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.pNext = &timeline_features,
 		.queueCreateInfoCount = 1u,
 		.pQueueCreateInfos = &qinfo,
 		.enabledExtensionCount = extensions_len,
@@ -482,6 +488,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 
 	load_device_proc(dev, "vkGetMemoryFdPropertiesKHR",
 		&dev->api.getMemoryFdPropertiesKHR);
+	load_device_proc(dev, "vkWaitSemaphoresKHR", &dev->api.waitSemaphoresKHR);
 
 	// - check device format support -
 	size_t max_fmts;
