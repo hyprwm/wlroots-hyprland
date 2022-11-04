@@ -25,13 +25,9 @@ struct wlr_vk_instance {
 };
 
 // Creates and initializes a vulkan instance.
-// Will try to enable the given extensions but not fail if they are not
-// available which can later be checked by the caller.
 // The debug parameter determines if validation layers are enabled and a
 // debug messenger created.
-// `compositor_name` and `compositor_version` are passed to the vulkan driver.
-struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
-	const char **exts, bool debug);
+struct wlr_vk_instance *vulkan_instance_create(bool debug);
 void vulkan_instance_destroy(struct wlr_vk_instance *ini);
 
 // Logical vulkan device state.

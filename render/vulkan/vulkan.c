@@ -84,8 +84,7 @@ static VkBool32 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 
 
 // instance
-struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
-		const char **exts, bool debug) {
+struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 	// we require vulkan 1.1
 	PFN_vkEnumerateInstanceVersion pfEnumInstanceVersion =
 		(PFN_vkEnumerateInstanceVersion)
@@ -132,22 +131,7 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 	}
 
 	size_t extensions_len = 0;
-	const char **extensions = calloc(1 + ext_count, sizeof(*extensions));
-	if (!extensions) {
-		wlr_log_errno(WLR_ERROR, "allocation failed");
-		goto error;
-	}
-
-	// find extensions
-	for (unsigned i = 0; i < ext_count; ++i) {
-		if (find_extensions(avail_ext_props, avail_extc, &exts[i], 1)) {
-			wlr_log(WLR_DEBUG, "vulkan instance extension %s not found",
-				exts[i]);
-			continue;
-		}
-
-		extensions[extensions_len++] = exts[i];
-	}
+	const char *extensions[1] = {0};
 
 	bool debug_utils_found = false;
 	if (debug) {
@@ -157,6 +141,8 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 			extensions[extensions_len++] = name;
 		}
 	}
+
+	assert(extensions_len <= sizeof(extensions) / sizeof(extensions[0]));
 
 	VkApplicationInfo application_info = {0};
 	application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -209,8 +195,6 @@ struct wlr_vk_instance *vulkan_instance_create(size_t ext_count,
 		wlr_vk_error("Could not create instance", res);
 		goto error;
 	}
-
-	free(extensions);
 
 	// debug callback
 	if (debug_utils_found) {

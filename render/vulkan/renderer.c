@@ -1713,7 +1713,7 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	// NOTE: we could add functionality to allow the compositor passing its
 	// name and version to this function. Just use dummies until then,
 	// shouldn't be relevant to the driver anyways
-	struct wlr_vk_instance *ini = vulkan_instance_create(0, NULL, default_debug);
+	struct wlr_vk_instance *ini = vulkan_instance_create(default_debug);
 	if (!ini) {
 		wlr_log(WLR_ERROR, "creating vulkan instance for renderer failed");
 		return NULL;
