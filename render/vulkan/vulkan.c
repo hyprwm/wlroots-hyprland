@@ -131,11 +131,12 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 
 	assert(extensions_len <= sizeof(extensions) / sizeof(extensions[0]));
 
-	VkApplicationInfo application_info = {0};
-	application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	application_info.pEngineName = "wlroots";
-	application_info.engineVersion = WLR_VERSION_NUM;
-	application_info.apiVersion = VK_API_VERSION_1_1;
+	VkApplicationInfo application_info = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pEngineName = "wlroots",
+		.engineVersion = WLR_VERSION_NUM,
+		.apiVersion = VK_API_VERSION_1_1,
+	};
 
 	const char *layers[] = {
 		"VK_LAYER_KHRONOS_validation",
@@ -145,13 +146,14 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 
 	unsigned layer_count = debug * (sizeof(layers) / sizeof(layers[0]));
 
-	VkInstanceCreateInfo instance_info = {0};
-	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instance_info.pApplicationInfo = &application_info;
-	instance_info.enabledExtensionCount = extensions_len;
-	instance_info.ppEnabledExtensionNames = extensions;
-	instance_info.enabledLayerCount = layer_count;
-	instance_info.ppEnabledLayerNames = layers;
+	VkInstanceCreateInfo instance_info = {
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pApplicationInfo = &application_info,
+		.enabledExtensionCount = extensions_len,
+		.ppEnabledExtensionNames = extensions,
+		.enabledLayerCount = layer_count,
+		.ppEnabledLayerNames = layers,
+	};
 
 	VkDebugUtilsMessageSeverityFlagsEXT severity =
 		// VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
@@ -162,12 +164,13 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-	VkDebugUtilsMessengerCreateInfoEXT debug_info = {0};
-	debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	debug_info.messageSeverity = severity;
-	debug_info.messageType = types;
-	debug_info.pfnUserCallback = &debug_callback;
-	debug_info.pUserData = ini;
+	VkDebugUtilsMessengerCreateInfoEXT debug_info = {
+		.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		.messageSeverity = severity,
+		.messageType = types,
+		.pfnUserCallback = &debug_callback,
+		.pUserData = ini,
+	};
 
 	if (debug_utils_found) {
 		// already adding the debug utils messenger extension to
@@ -320,18 +323,21 @@ VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd) 
 		bool has_driver_props = check_extension(avail_ext_props, avail_extc,
 			VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME);
 
-		VkPhysicalDeviceProperties2 props = {0};
-		props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		VkPhysicalDeviceProperties2 props = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		};
 
-		VkPhysicalDeviceDrmPropertiesEXT drm_props = {0};
-		drm_props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+		VkPhysicalDeviceDrmPropertiesEXT drm_props = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT,
+		};
 		if (has_drm_props) {
 			drm_props.pNext = props.pNext;
 			props.pNext = &drm_props;
 		}
 
-		VkPhysicalDeviceDriverPropertiesKHR driver_props = {0};
-		driver_props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+		VkPhysicalDeviceDriverPropertiesKHR driver_props = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
+		};
 		if (has_driver_props) {
 			driver_props.pNext = props.pNext;
 			props.pNext = &driver_props;
@@ -442,19 +448,20 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	}
 
 	const float prio = 1.f;
-	VkDeviceQueueCreateInfo qinfo = {};
-	qinfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	qinfo.queueFamilyIndex = dev->queue_family;
-	qinfo.queueCount = 1;
-	qinfo.pQueuePriorities = &prio;
+	VkDeviceQueueCreateInfo qinfo = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		.queueFamilyIndex = dev->queue_family,
+		.queueCount = 1,
+		.pQueuePriorities = &prio,
+	};
 
-	VkDeviceCreateInfo dev_info = {0};
-	dev_info.pNext = NULL;
-	dev_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	dev_info.queueCreateInfoCount = 1u;
-	dev_info.pQueueCreateInfos = &qinfo;
-	dev_info.enabledExtensionCount = extensions_len;
-	dev_info.ppEnabledExtensionNames = extensions;
+	VkDeviceCreateInfo dev_info = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.queueCreateInfoCount = 1u,
+		.pQueueCreateInfos = &qinfo,
+		.enabledExtensionCount = extensions_len,
+		.ppEnabledExtensionNames = extensions,
+	};
 
 	res = vkCreateDevice(phdev, &dev_info, NULL, &dev->dev);
 	if (res != VK_SUCCESS) {

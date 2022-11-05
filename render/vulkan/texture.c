@@ -269,20 +269,20 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	texture->format = &fmt->format;
 
 	// create image
-	VkImageCreateInfo img_info = {0};
-	img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	img_info.imageType = VK_IMAGE_TYPE_2D;
-	img_info.format = texture->format->vk_format;
-	img_info.mipLevels = 1;
-	img_info.arrayLayers = 1;
-	img_info.samples = VK_SAMPLE_COUNT_1_BIT;
-	img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	img_info.extent = (VkExtent3D) { width, height, 1 };
-	img_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageCreateInfo img_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = texture->format->vk_format,
+		.mipLevels = 1,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.extent = (VkExtent3D) { width, height, 1 },
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
+		.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+	};
 
-	img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-	img_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	res = vkCreateImage(dev, &img_info, NULL, &texture->image);
@@ -295,17 +295,18 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	VkMemoryRequirements mem_reqs;
 	vkGetImageMemoryRequirements(dev, texture->image, &mem_reqs);
 
-	VkMemoryAllocateInfo mem_info = {0};
-	mem_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	mem_info.allocationSize = mem_reqs.size;
-
 	int mem_type_index = vulkan_find_mem_type(renderer->dev,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mem_reqs.memoryTypeBits);
 	if (mem_type_index == -1) {
 		wlr_log(WLR_ERROR, "failed to find suitable vulkan memory type");
 		goto error;
 	}
-	mem_info.memoryTypeIndex = mem_type_index;
+
+	VkMemoryAllocateInfo mem_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.allocationSize = mem_reqs.size,
+		.memoryTypeIndex = mem_type_index,
+	};
 
 	res = vkAllocateMemory(dev, &mem_info, NULL, &texture->memories[0]);
 	if (res != VK_SUCCESS) {
@@ -324,21 +325,26 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	assert(format_info);
 
 	// view
-	VkImageViewCreateInfo view_info = {0};
-	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	view_info.format = texture->format->vk_format;
-	view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.a = format_info->has_alpha
-		? VK_COMPONENT_SWIZZLE_IDENTITY
-		: VK_COMPONENT_SWIZZLE_ONE;
+	VkImageViewCreateInfo view_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = texture->format->vk_format,
+		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.a = format_info->has_alpha
+			? VK_COMPONENT_SWIZZLE_IDENTITY
+			: VK_COMPONENT_SWIZZLE_ONE,
 
-	view_info.subresourceRange = (VkImageSubresourceRange) {
-		VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1
+		.subresourceRange = (VkImageSubresourceRange) {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+		.image = texture->image,
 	};
-	view_info.image = texture->image;
 
 	res = vkCreateImageView(dev, &view_info, NULL,
 		&texture->image_view);
@@ -354,16 +360,18 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		goto error;
 	}
 
-	VkDescriptorImageInfo ds_img_info = {0};
-	ds_img_info.imageView = texture->image_view;
-	ds_img_info.imageLayout = layout;
+	VkDescriptorImageInfo ds_img_info = {
+		.imageView = texture->image_view,
+		.imageLayout = layout,
+	};
 
-	VkWriteDescriptorSet ds_write = {0};
-	ds_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	ds_write.descriptorCount = 1;
-	ds_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	ds_write.dstSet = texture->ds;
-	ds_write.pImageInfo = &ds_img_info;
+	VkWriteDescriptorSet ds_write = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.dstSet = texture->ds,
+		.pImageInfo = &ds_img_info,
+	};
 
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 
@@ -462,30 +470,31 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	VkExternalMemoryHandleTypeFlagBits htype =
 		VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
 
-	VkImageCreateInfo img_info = {0};
-	img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	img_info.imageType = VK_IMAGE_TYPE_2D;
-	img_info.format = fmt->format.vk_format;
-	img_info.mipLevels = 1;
-	img_info.arrayLayers = 1;
-	img_info.samples = VK_SAMPLE_COUNT_1_BIT;
-	img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	img_info.extent = (VkExtent3D) { attribs->width, attribs->height, 1 };
-	img_info.usage = for_render ?
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT :
-		VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageCreateInfo img_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = fmt->format.vk_format,
+		.mipLevels = 1,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.extent = (VkExtent3D) { attribs->width, attribs->height, 1 },
+		.usage = for_render ?
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT :
+			VK_IMAGE_USAGE_SAMPLED_BIT,
+	};
 	if (disjoint) {
 		img_info.flags = VK_IMAGE_CREATE_DISJOINT_BIT;
 	}
 
-	VkExternalMemoryImageCreateInfo eimg = {0};
-	eimg.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-	eimg.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+	VkExternalMemoryImageCreateInfo eimg = {
+		.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
+		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+	};
 	img_info.pNext = &eimg;
 
 	VkSubresourceLayout plane_layouts[WLR_DMABUF_MAX_PLANES] = {0};
-	VkImageDrmFormatModifierExplicitCreateInfoEXT mod_info = {0};
 
 	img_info.tiling = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
 	for (unsigned i = 0u; i < plane_count; ++i) {
@@ -494,10 +503,12 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		plane_layouts[i].size = 0;
 	}
 
-	mod_info.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT;
-	mod_info.drmFormatModifierPlaneCount = plane_count;
-	mod_info.drmFormatModifier = mod->props.drmFormatModifier;
-	mod_info.pPlaneLayouts = plane_layouts;
+	VkImageDrmFormatModifierExplicitCreateInfoEXT mod_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
+		.drmFormatModifierPlaneCount = plane_count,
+		.drmFormatModifier = mod->props.drmFormatModifier,
+		.pPlaneLayouts = plane_layouts,
+	};
 	eimg.pNext = &mod_info;
 
 	VkImage image;
@@ -512,8 +523,9 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	VkBindImagePlaneMemoryInfo planei[WLR_DMABUF_MAX_PLANES] = {0};
 
 	for (unsigned i = 0u; i < mem_count; ++i) {
-		struct VkMemoryFdPropertiesKHR fdp = {0};
-		fdp.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
+		VkMemoryFdPropertiesKHR fdp = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR,
+		};
 		res = renderer->dev->api.getMemoryFdPropertiesKHR(dev, htype,
 			attribs->fd[i], &fdp);
 		if (res != VK_SUCCESS) {
@@ -521,19 +533,23 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 			goto error_image;
 		}
 
-		VkImageMemoryRequirementsInfo2 memri = {0};
-		memri.image = image;
-		memri.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+		VkImageMemoryRequirementsInfo2 memri = {
+			.image = image,
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+		};
 
-		VkImagePlaneMemoryRequirementsInfo planeri = {0};
+		VkImagePlaneMemoryRequirementsInfo planeri;
 		if (disjoint) {
-			planeri.sType = VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO;
-			planeri.planeAspect = mem_plane_aspect(i);
+			planeri = (VkImagePlaneMemoryRequirementsInfo){
+				.sType = VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO,
+				.planeAspect = mem_plane_aspect(i),
+			};
 			memri.pNext = &planeri;
 		}
 
-		VkMemoryRequirements2 memr = {0};
-		memr.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+		VkMemoryRequirements2 memr = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+		};
 
 		vkGetImageMemoryRequirements2(dev, &memri, &memr);
 		int mem = vulkan_find_mem_type(renderer->dev, 0,
@@ -553,20 +569,23 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 			goto error_image;
 		}
 
-		VkMemoryAllocateInfo memi = {0};
-		memi.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memi.allocationSize = memr.memoryRequirements.size;
-		memi.memoryTypeIndex = mem;
+		VkMemoryAllocateInfo memi = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			.allocationSize = memr.memoryRequirements.size,
+			.memoryTypeIndex = mem,
+		};
 
-		VkImportMemoryFdInfoKHR importi = {0};
-		importi.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR;
-		importi.fd = dfd;
-		importi.handleType = htype;
+		VkImportMemoryFdInfoKHR importi = {
+			.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
+			.fd = dfd,
+			.handleType = htype,
+		};
 		memi.pNext = &importi;
 
-		VkMemoryDedicatedAllocateInfo dedi = {0};
-		dedi.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
-		dedi.image = image;
+		VkMemoryDedicatedAllocateInfo dedi = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+			.image = image,
+		};
 		importi.pNext = &dedi;
 
 		res = vkAllocateMemory(dev, &memi, NULL, &mems[i]);
@@ -640,21 +659,26 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	assert(format_info);
 
 	// view
-	VkImageViewCreateInfo view_info = {0};
-	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	view_info.format = texture->format->vk_format;
-	view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	view_info.components.a = format_info->has_alpha
-		? VK_COMPONENT_SWIZZLE_IDENTITY
-		: VK_COMPONENT_SWIZZLE_ONE;
+	VkImageViewCreateInfo view_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = texture->format->vk_format,
+		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.a = format_info->has_alpha
+			? VK_COMPONENT_SWIZZLE_IDENTITY
+			: VK_COMPONENT_SWIZZLE_ONE,
 
-	view_info.subresourceRange = (VkImageSubresourceRange) {
-		VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1
+		.subresourceRange = (VkImageSubresourceRange) {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+		.image = texture->image,
 	};
-	view_info.image = texture->image;
 
 	res = vkCreateImageView(dev, &view_info, NULL, &texture->image_view);
 	if (res != VK_SUCCESS) {
@@ -669,16 +693,18 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		goto error;
 	}
 
-	VkDescriptorImageInfo ds_img_info = {0};
-	ds_img_info.imageView = texture->image_view;
-	ds_img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkDescriptorImageInfo ds_img_info = {
+		.imageView = texture->image_view,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
 
-	VkWriteDescriptorSet ds_write = {0};
-	ds_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	ds_write.descriptorCount = 1;
-	ds_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	ds_write.dstSet = texture->ds;
-	ds_write.pImageInfo = &ds_img_info;
+	VkWriteDescriptorSet ds_write = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.dstSet = texture->ds,
+		.pImageInfo = &ds_img_info,
+	};
 
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 	texture->dmabuf_imported = true;
