@@ -12,25 +12,14 @@
 #include <wlr/config.h>
 #include "render/vulkan.h"
 
-// Returns the name of the first extension that could not be found or NULL.
-static const char *find_extensions(const VkExtensionProperties *avail,
-		unsigned availc, const char **req, unsigned reqc) {
-	// check if all required extensions are supported
-	for (size_t i = 0; i < reqc; ++i) {
-		bool found = false;
-		for (size_t j = 0; j < availc; ++j) {
-			if (!strcmp(avail[j].extensionName, req[i])) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			return req[i];
+static bool check_extension(const VkExtensionProperties *avail,
+		uint32_t avail_len, const char *name) {
+	for (size_t i = 0; i < avail_len; i++) {
+		if (strcmp(avail[i].extensionName, name) == 0) {
+			return true;
 		}
 	}
-
-	return NULL;
+	return false;
 }
 
 static VkBool32 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -134,12 +123,10 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 	const char *extensions[1] = {0};
 
 	bool debug_utils_found = false;
-	if (debug) {
-		const char *name = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-		if (find_extensions(avail_ext_props, avail_extc, &name, 1) == NULL) {
-			debug_utils_found = true;
-			extensions[extensions_len++] = name;
-		}
+	if (debug && check_extension(avail_ext_props, avail_extc,
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
+		debug_utils_found = true;
+		extensions[extensions_len++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
 
 	assert(extensions_len <= sizeof(extensions) / sizeof(extensions[0]));
@@ -328,10 +315,10 @@ VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd) 
 			continue;
 		}
 
-		const char *name = VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME;
-		bool has_drm_props = find_extensions(avail_ext_props, avail_extc, &name, 1) == NULL;
-		name = VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME;
-		bool has_driver_props = find_extensions(avail_ext_props, avail_extc, &name, 1) == NULL;
+		bool has_drm_props = check_extension(avail_ext_props, avail_extc,
+			VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME);
+		bool has_driver_props = check_extension(avail_ext_props, avail_extc,
+			VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME);
 
 		VkPhysicalDeviceProperties2 props = {0};
 		props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -425,12 +412,12 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	};
 	size_t extensions_len = sizeof(extensions) / sizeof(extensions[0]);
 
-	const char *not_found =
-		find_extensions(avail_ext_props, avail_extc, extensions, extensions_len);
-	if (not_found) {
-		wlr_log(WLR_ERROR, "vulkan: required device extension %s not found",
-			not_found);
-		goto error;
+	for (size_t i = 0; i < extensions_len; i++) {
+		if (!check_extension(avail_ext_props, avail_extc, extensions[i])) {
+			wlr_log(WLR_ERROR, "vulkan: required device extension %s not found",
+				extensions[i]);
+			goto error;
+		}
 	}
 
 	// queue families
