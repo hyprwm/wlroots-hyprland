@@ -369,6 +369,15 @@ VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd) 
 	return VK_NULL_HANDLE;
 }
 
+static void load_device_proc(struct wlr_vk_device *dev, const char *name,
+		void *proc_ptr) {
+	void *proc = (void *)vkGetDeviceProcAddr(dev->dev, name);
+	if (proc == NULL) {
+		abort();
+	}
+	*(void **)proc_ptr = proc;
+}
+
 struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		VkPhysicalDevice phdev) {
 	VkResult res;
@@ -469,17 +478,10 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		goto error;
 	}
 
-
 	vkGetDeviceQueue(dev->dev, dev->queue_family, 0, &dev->queue);
 
-	// load api
-	dev->api.getMemoryFdPropertiesKHR = (PFN_vkGetMemoryFdPropertiesKHR)
-		vkGetDeviceProcAddr(dev->dev, "vkGetMemoryFdPropertiesKHR");
-
-	if (!dev->api.getMemoryFdPropertiesKHR) {
-		wlr_log(WLR_ERROR, "Failed to retrieve required dev function pointers");
-		goto error;
-	}
+	load_device_proc(dev, "vkGetMemoryFdPropertiesKHR",
+		&dev->api.getMemoryFdPropertiesKHR);
 
 	// - check device format support -
 	size_t max_fmts;
