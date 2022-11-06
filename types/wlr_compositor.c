@@ -425,7 +425,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 		struct wlr_surface_state *next) {
 	assert(next->cached_state_locks == 0);
 
-	if (surface->role && surface->role->precommit) {
+	if (surface->role_data != NULL && surface->role->precommit != NULL) {
 		surface->role->precommit(surface, next);
 	}
 
@@ -484,7 +484,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 		surface->pending.seq++;
 	}
 
-	if (surface->role && surface->role->commit) {
+	if (surface->role_data != NULL && surface->role->commit != NULL) {
 		surface->role->commit(surface);
 	}
 

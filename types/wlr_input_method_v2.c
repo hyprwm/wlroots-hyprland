@@ -149,9 +149,7 @@ static void popup_surface_set_mapped(
 
 static void popup_surface_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
-	if (popup_surface == NULL) {
-		return;
-	}
+
 	popup_surface_set_mapped(popup_surface, wlr_surface_has_buffer(surface)
 		&& popup_surface->input_method->client_active);
 }
@@ -159,9 +157,7 @@ static void popup_surface_surface_role_commit(struct wlr_surface *surface) {
 static void popup_surface_surface_role_precommit(struct wlr_surface *surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
-	if (popup_surface == NULL) {
-		return;
-	}
+
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
 		popup_surface_set_mapped(popup_surface, false);
@@ -170,9 +166,7 @@ static void popup_surface_surface_role_precommit(struct wlr_surface *surface,
 
 static void popup_surface_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
-	if (popup_surface == NULL) {
-		return;
-	}
+
 	popup_surface_set_mapped(popup_surface, false);
 	wl_signal_emit_mutable(&popup_surface->events.destroy, NULL);
 	wl_list_remove(&popup_surface->link);

@@ -315,9 +315,6 @@ void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
 static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	const uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
@@ -370,9 +367,6 @@ static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -385,9 +379,6 @@ static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
 static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	if (surface->configured && surface->mapped) {
 		layer_surface_unmap(surface);

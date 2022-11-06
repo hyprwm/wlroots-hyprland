@@ -360,9 +360,6 @@ static void drag_handle_drag_source_destroy(struct wl_listener *listener,
 static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
 	struct wlr_drag_icon *icon = surface->role_data;
-	if (icon == NULL) {
-		return;
-	}
 
 	drag_icon_set_mapped(icon, wlr_surface_has_buffer(surface));
 }
@@ -370,9 +367,7 @@ static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 static void drag_icon_surface_role_destroy(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
 	struct wlr_drag_icon *icon = surface->role_data;
-	if (icon == NULL) {
-		return;
-	}
+
 	drag_icon_set_mapped(icon, false);
 	wl_signal_emit_mutable(&icon->events.destroy, icon);
 	free(icon);

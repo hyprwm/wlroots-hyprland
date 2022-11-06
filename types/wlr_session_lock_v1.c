@@ -135,9 +135,6 @@ static const struct ext_session_lock_surface_v1_interface lock_surface_implement
 static void lock_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
 		wlr_session_lock_surface_v1_from_wlr_surface(surface);
-	if (lock_surface == NULL) {
-		return;
-	}
 
 	if (!lock_surface->configured) {
 		wl_resource_post_error(lock_surface->resource,
@@ -167,9 +164,6 @@ static void lock_surface_role_precommit(struct wlr_surface *surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
 		wlr_session_lock_surface_v1_from_wlr_surface(surface);
-	if (lock_surface == NULL) {
-		return;
-	}
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		wl_resource_post_error(lock_surface->resource,
@@ -182,9 +176,6 @@ static void lock_surface_role_precommit(struct wlr_surface *surface,
 static void lock_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
 		wlr_session_lock_surface_v1_from_wlr_surface(surface);
-	if (lock_surface == NULL) {
-		return;
-	}
 
 	wl_signal_emit_mutable(&lock_surface->events.destroy, NULL);
 

@@ -285,9 +285,6 @@ static void xdg_surface_handle_surface_commit(struct wl_listener *listener,
 void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	surface->current = surface->pending;
 
@@ -319,9 +316,6 @@ void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -334,9 +328,6 @@ void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
 
 	reset_xdg_surface(surface);
 

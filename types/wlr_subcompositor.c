@@ -244,9 +244,6 @@ static void subsurface_unmap(struct wlr_subsurface *subsurface) {
 static void subsurface_role_commit(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface =
 		wlr_subsurface_from_wlr_surface(surface);
-	if (subsurface == NULL) {
-		return;
-	}
 
 	subsurface_consider_map(subsurface, true);
 }
@@ -255,9 +252,6 @@ static void subsurface_role_precommit(struct wlr_surface *surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_subsurface *subsurface =
 		wlr_subsurface_from_wlr_surface(surface);
-	if (subsurface == NULL) {
-		return;
-	}
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -268,9 +262,6 @@ static void subsurface_role_precommit(struct wlr_surface *surface,
 static void subsurface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface =
 		wlr_subsurface_from_wlr_surface(surface);
-	if (subsurface == NULL) {
-		return;
-	}
 
 	if (subsurface->has_cache) {
 		wlr_surface_unlock_cached(subsurface->surface,
