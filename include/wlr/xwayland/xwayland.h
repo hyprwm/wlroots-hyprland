@@ -151,8 +151,6 @@ struct wlr_xwayland_surface {
 		struct wl_signal ping_timeout;
 	} events;
 
-	struct wl_listener surface_destroy;
-
 	void *data;
 };
 
