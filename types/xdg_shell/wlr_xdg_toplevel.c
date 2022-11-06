@@ -453,6 +453,7 @@ const struct wlr_surface_role xdg_toplevel_surface_role = {
 	.name = "xdg_toplevel",
 	.commit = xdg_surface_role_commit,
 	.precommit = xdg_surface_role_precommit,
+	.destroy = xdg_surface_role_destroy,
 };
 
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,

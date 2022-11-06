@@ -256,7 +256,7 @@ static void xdg_surface_handle_resource_destroy(struct wl_resource *resource) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_resource(resource);
 	if (surface != NULL) {
-		destroy_xdg_surface(surface);
+		wlr_surface_destroy_role_object(surface->surface);
 	}
 }
 
@@ -331,11 +331,20 @@ void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 	}
 }
 
-static void xdg_surface_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_xdg_surface *xdg_surface =
-		wl_container_of(listener, xdg_surface, surface_destroy);
-	destroy_xdg_surface(xdg_surface);
+void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
+	struct wlr_xdg_surface *surface =
+		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+	if (surface == NULL) {
+		return;
+	}
+
+	reset_xdg_surface(surface);
+
+	wl_list_remove(&surface->link);
+	wl_list_remove(&surface->surface_commit.link);
+
+	wl_resource_set_user_data(surface->resource, NULL);
+	free(surface);
 }
 
 struct wlr_xdg_surface *create_xdg_surface(
@@ -380,10 +389,6 @@ struct wlr_xdg_surface *create_xdg_surface(
 	wl_signal_init(&surface->events.configure);
 	wl_signal_init(&surface->events.ack_configure);
 
-	wl_signal_add(&surface->surface->events.destroy,
-		&surface->surface_destroy);
-	surface->surface_destroy.notify = xdg_surface_handle_surface_destroy;
-
 	wl_signal_add(&surface->surface->events.commit,
 		&surface->surface_commit);
 	surface->surface_commit.notify = xdg_surface_handle_surface_commit;
@@ -423,18 +428,6 @@ void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	}
 
 	surface->role = WLR_XDG_SURFACE_ROLE_NONE;
-}
-
-void destroy_xdg_surface(struct wlr_xdg_surface *surface) {
-	reset_xdg_surface(surface);
-
-	wl_resource_set_user_data(surface->resource, NULL);
-	surface->surface->role_data = NULL;
-
-	wl_list_remove(&surface->link);
-	wl_list_remove(&surface->surface_destroy.link);
-	wl_list_remove(&surface->surface_commit.link);
-	free(surface);
 }
 
 struct wlr_xdg_surface *wlr_xdg_surface_from_resource(

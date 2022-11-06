@@ -258,7 +258,6 @@ struct wlr_xdg_surface {
 
 	struct wlr_xdg_surface_state current, pending;
 
-	struct wl_listener surface_destroy;
 	struct wl_listener surface_commit;
 
 	struct {

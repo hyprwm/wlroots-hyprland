@@ -191,7 +191,7 @@ static void destroy_xdg_popup_grab(struct wlr_xdg_popup_grab *xdg_grab) {
 
 	struct wlr_xdg_popup *popup, *tmp;
 	wl_list_for_each_safe(popup, tmp, &xdg_grab->popups, grab_link) {
-		destroy_xdg_surface(popup->base);
+		wlr_surface_destroy_role_object(popup->base->surface);
 	}
 
 	wl_list_remove(&xdg_grab->link);
@@ -361,6 +361,7 @@ const struct wlr_surface_role xdg_popup_surface_role = {
 	.name = "xdg_popup",
 	.commit = xdg_surface_role_commit,
 	.precommit = xdg_surface_role_precommit,
+	.destroy = xdg_surface_role_destroy,
 };
 
 void create_xdg_popup(struct wlr_xdg_surface *surface,
