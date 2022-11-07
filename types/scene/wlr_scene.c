@@ -370,6 +370,8 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	// if there are active outputs on this node, we should always have a primary
 	// output
 	assert(!scene_buffer->active_outputs || scene_buffer->primary_output);
+
+	wl_signal_emit_mutable(&scene_buffer->events.outputs_update, NULL);
 }
 
 static bool scene_node_update_iterator(struct wlr_scene_node *node,
@@ -548,6 +550,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 		scene_buffer->buffer = wlr_buffer_lock(buffer);
 	}
 
+	wl_signal_init(&scene_buffer->events.outputs_update);
 	wl_signal_init(&scene_buffer->events.output_enter);
 	wl_signal_init(&scene_buffer->events.output_leave);
 	wl_signal_init(&scene_buffer->events.output_present);
