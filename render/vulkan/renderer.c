@@ -1318,17 +1318,20 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 	VkDevice dev = renderer->dev->dev;
 
 	// shaders
-	VkPipelineShaderStageCreateInfo vert_stage = {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		NULL, 0, VK_SHADER_STAGE_VERTEX_BIT, renderer->vert_module,
-		"main", NULL
+	VkPipelineShaderStageCreateInfo tex_stages[2] = {
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_VERTEX_BIT,
+			.module = renderer->vert_module,
+			.pName = "main",
+		},
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.module = renderer->tex_frag_module,
+			.pName = "main",
+		},
 	};
-
-	VkPipelineShaderStageCreateInfo tex_stages[2] = {vert_stage, {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		NULL, 0, VK_SHADER_STAGE_FRAGMENT_BIT, renderer->tex_frag_module,
-		"main", NULL
-	}};
 
 	// info
 	VkPipelineInputAssemblyStateCreateInfo assembly = {
