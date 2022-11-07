@@ -815,7 +815,8 @@ bool wlr_surface_point_accepts_input(struct wlr_surface *surface,
 		double sx, double sy) {
 	return sx >= 0 && sx < surface->current.width &&
 		sy >= 0 && sy < surface->current.height &&
-		pixman_region32_contains_point(&surface->current.input, floor(sx), floor(sy), NULL);
+		pixman_region32_contains_point(&surface->input_region,
+			floor(sx), floor(sy), NULL);
 }
 
 struct wlr_surface *wlr_surface_surface_at(struct wlr_surface *surface,
