@@ -425,6 +425,7 @@ static bool init_command_buffer(struct wlr_vk_command_buffer *cb,
 	*cb = (struct wlr_vk_command_buffer){
 		.vk = vk_cb,
 	};
+	wl_list_init(&cb->destroy_textures);
 	return true;
 }
 
@@ -449,6 +450,15 @@ static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
 	return true;
 }
 
+static void release_command_buffer_resources(struct wlr_vk_command_buffer *cb) {
+	struct wlr_vk_texture *texture, *texture_tmp;
+	wl_list_for_each_safe(texture, texture_tmp, &cb->destroy_textures, destroy_link) {
+		wl_list_remove(&texture->destroy_link);
+		texture->last_used_cb = NULL;
+		wlr_texture_destroy(&texture->wlr_texture);
+	}
+}
+
 static struct wlr_vk_command_buffer *get_command_buffer(
 		struct wlr_vk_renderer *renderer) {
 	VkResult res;
@@ -459,6 +469,15 @@ static struct wlr_vk_command_buffer *get_command_buffer(
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkGetSemaphoreCounterValueKHR", res);
 		return NULL;
+	}
+
+	// Destroy textures for completed command buffers
+	for (size_t i = 0; i < VULKAN_COMMAND_BUFFERS_CAP; i++) {
+		struct wlr_vk_command_buffer *cb = &renderer->command_buffers[i];
+		if (cb->vk != VK_NULL_HANDLE && !cb->recording &&
+				cb->timeline_point <= current_point) {
+			release_command_buffer_resources(cb);
+		}
 	}
 
 	// First try to find an existing command buffer which isn't busy
@@ -943,15 +962,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		return;
 	}
 
-	++renderer->frame;
 	release_stage_allocations(renderer);
-
-	// destroy pending textures
-	wl_list_for_each_safe(texture, tmp_tex, &renderer->destroy_textures, destroy_link) {
-		wlr_texture_destroy(&texture->wlr_texture);
-	}
-
-	wl_list_init(&renderer->destroy_textures); // reset the list
 }
 
 static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
@@ -1007,7 +1018,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 	vkCmdDraw(cb, 4, 1, 0, 0);
-	texture->last_used = renderer->frame;
+	texture->last_used_cb = renderer->current_command_buffer;
 
 	return true;
 }
@@ -1144,6 +1155,14 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	VkResult res = vkDeviceWaitIdle(renderer->dev->dev);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkDeviceWaitIdle", res);
+	}
+
+	for (size_t i = 0; i < VULKAN_COMMAND_BUFFERS_CAP; i++) {
+		struct wlr_vk_command_buffer *cb = &renderer->command_buffers[i];
+		if (cb->vk == VK_NULL_HANDLE) {
+			continue;
+		}
+		release_command_buffer_resources(cb);
 	}
 
 	// stage.cb automatically freed with command pool
@@ -1931,7 +1950,6 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 	renderer->dev = dev;
 	wlr_renderer_init(&renderer->wlr_renderer, &renderer_impl);
 	wl_list_init(&renderer->stage.buffers);
-	wl_list_init(&renderer->destroy_textures);
 	wl_list_init(&renderer->foreign_textures);
 	wl_list_init(&renderer->textures);
 	wl_list_init(&renderer->descriptor_pools);

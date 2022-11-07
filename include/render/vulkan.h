@@ -148,6 +148,8 @@ struct wlr_vk_command_buffer {
 	VkCommandBuffer vk;
 	bool recording;
 	uint64_t timeline_point;
+	// Textures to destroy after the command buffer completes
+	struct wl_list destroy_textures; // wlr_vk_texture.destroy_link
 };
 
 #define VULKAN_COMMAND_BUFFERS_CAP 64
@@ -174,9 +176,6 @@ struct wlr_vk_renderer {
 	struct wlr_vk_render_buffer *current_render_buffer;
 	struct wlr_vk_command_buffer *current_command_buffer;
 
-	// current frame id. Used in wlr_vk_texture.last_used
-	// Increased every time a frame is ended for the renderer
-	uint32_t frame;
 	VkRect2D scissor; // needed for clearing
 
 	VkPipeline bound_pipe;
@@ -190,8 +189,6 @@ struct wlr_vk_renderer {
 	struct wl_list render_format_setups; // wlr_vk_render_format_setup.link
 
 	struct wl_list textures; // wlr_vk_texture.link
-	// Textures to destroy after frame
-	struct wl_list destroy_textures; // wlr_vk_texture.destroy_link
 	// Textures to return to foreign queue
 	struct wl_list foreign_textures; // wlr_vk_texture.foreign_link
 
@@ -258,13 +255,13 @@ struct wlr_vk_texture {
 	const struct wlr_vk_format *format;
 	VkDescriptorSet ds;
 	struct wlr_vk_descriptor_pool *ds_pool;
-	uint32_t last_used; // to track when it can be destroyed
+	struct wlr_vk_command_buffer *last_used_cb; // to track when it can be destroyed
 	bool dmabuf_imported;
 	bool owned; // if dmabuf_imported: whether we have ownership of the image
 	bool transitioned; // if dma_imported: whether we transitioned it away from preinit
 	bool has_alpha; // whether the image is has alpha channel
 	struct wl_list foreign_link; // wlr_vk_renderer.foreign_textures
-	struct wl_list destroy_link; // wlr_vk_renderer.destroy_textures
+	struct wl_list destroy_link; // wlr_vk_command_buffer.destroy_textures
 	struct wl_list link; // wlr_vk_renderer.textures
 
 	// If imported from a wlr_buffer

@@ -156,7 +156,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_ACCESS_SHADER_READ_BIT);
-	texture->last_used = renderer->frame;
+	texture->last_used_cb = renderer->stage.cb;
 
 	free(copies);
 
@@ -200,9 +200,9 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 	// it has to be executed before the texture can be destroyed.
 	// Add it to the renderer->destroy_textures list, destroying
 	// _after_ the stage command buffer has exectued
-	if (texture->last_used == texture->renderer->frame) {
+	if (texture->last_used_cb != NULL) {
 		assert(texture->destroy_link.next == NULL); // not already inserted
-		wl_list_insert(&texture->renderer->destroy_textures,
+		wl_list_insert(&texture->last_used_cb->destroy_textures,
 			&texture->destroy_link);
 		return;
 	}
@@ -734,6 +734,10 @@ error:
 static void texture_handle_buffer_destroy(struct wlr_addon *addon) {
 	struct wlr_vk_texture *texture =
 		wl_container_of(addon, texture, buffer_addon);
+	// We might keep the texture around, waiting for pending command buffers to
+	// complete before free'ing descriptor sets. Make sure we don't
+	// use-after-free the destroyed wlr_buffer.
+	texture->buffer = NULL;
 	vulkan_texture_destroy(texture);
 }
 
