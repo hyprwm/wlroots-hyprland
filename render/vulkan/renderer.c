@@ -170,12 +170,12 @@ static void shared_buffer_destroy(struct wlr_vk_renderer *r,
 		return;
 	}
 
-	if (buffer->allocs_size > 0) {
-		wlr_log(WLR_ERROR, "shared_buffer_finish: %d allocations left",
-			(unsigned) buffer->allocs_size);
+	if (buffer->allocs.size > 0) {
+		wlr_log(WLR_ERROR, "shared_buffer_finish: %zu allocations left",
+			buffer->allocs.size / sizeof(struct wlr_vk_allocation));
 	}
 
-	free(buffer->allocs);
+	wl_array_release(&buffer->allocs);
 	if (buffer->buffer) {
 		vkDestroyBuffer(r->dev->dev, buffer->buffer, NULL);
 	}
@@ -190,7 +190,7 @@ static void shared_buffer_destroy(struct wlr_vk_renderer *r,
 static void release_stage_allocations(struct wlr_vk_renderer *renderer) {
 	struct wlr_vk_shared_buffer *buf;
 	wl_list_for_each(buf, &renderer->stage.buffers, link) {
-		buf->allocs_size = 0u;
+		buf->allocs.size = 0;
 	}
 }
 
@@ -202,8 +202,10 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 	struct wlr_vk_shared_buffer *buf;
 	wl_list_for_each_reverse(buf, &r->stage.buffers, link) {
 		VkDeviceSize start = 0u;
-		if (buf->allocs_size > 0) {
-			struct wlr_vk_allocation *last = &buf->allocs[buf->allocs_size - 1];
+		if (buf->allocs.size > 0) {
+			const struct wlr_vk_allocation *allocs = buf->allocs.data;
+			size_t allocs_len = buf->allocs.size / sizeof(struct wlr_vk_allocation);
+			const struct wlr_vk_allocation *last = &allocs[allocs_len - 1];
 			start = last->start + last->size;
 		}
 
@@ -212,22 +214,16 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 			continue;
 		}
 
-		++buf->allocs_size;
-		if (buf->allocs_size > buf->allocs_capacity) {
-			buf->allocs_capacity = buf->allocs_size * 2;
-			void *allocs = realloc(buf->allocs,
-				buf->allocs_capacity * sizeof(*buf->allocs));
-			if (!allocs) {
-				wlr_log_errno(WLR_ERROR, "Allocation failed");
-				goto error_alloc;
-			}
-
-			buf->allocs = allocs;
+		struct wlr_vk_allocation *a = wl_array_add(&buf->allocs, sizeof(*a));
+		if (a == NULL) {
+			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			goto error_alloc;
 		}
 
-		struct wlr_vk_allocation *a = &buf->allocs[buf->allocs_size - 1];
-		a->start = start;
-		a->size = size;
+		*a = (struct wlr_vk_allocation){
+			.start = start,
+			.size = size,
+		};
 		return (struct wlr_vk_buffer_span) {
 			.buffer = buf,
 			.alloc = *a,
@@ -300,9 +296,8 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 		goto error;
 	}
 
-	size_t start_count = 8u;
-	buf->allocs = calloc(start_count, sizeof(*buf->allocs));
-	if (!buf->allocs) {
+	struct wlr_vk_allocation *a = wl_array_add(&buf->allocs, sizeof(*a));
+	if (a == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		goto error;
 	}
@@ -311,13 +306,13 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 	buf->buf_size = bsize;
 	wl_list_insert(&r->stage.buffers, &buf->link);
 
-	buf->allocs_capacity = start_count;
-	buf->allocs_size = 1u;
-	buf->allocs[0].start = 0u;
-	buf->allocs[0].size = size;
+	*a = (struct wlr_vk_allocation){
+		.start = 0,
+		.size = size,
+	};
 	return (struct wlr_vk_buffer_span) {
 		.buffer = buf,
-		.alloc = buf->allocs[0],
+		.alloc = *a,
 	};
 
 error:

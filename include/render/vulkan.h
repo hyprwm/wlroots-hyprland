@@ -275,10 +275,7 @@ struct wlr_vk_shared_buffer {
 	VkBuffer buffer;
 	VkDeviceMemory memory;
 	VkDeviceSize buf_size;
-
-	size_t allocs_size;
-	size_t allocs_capacity;
-	struct wlr_vk_allocation *allocs;
+	struct wl_array allocs; // struct wlr_vk_allocation
 };
 
 // Suballocated range on a buffer.
