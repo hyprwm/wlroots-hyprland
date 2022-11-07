@@ -111,7 +111,7 @@ void vulkan_format_props_finish(struct wlr_vk_format_props *props);
 // For each format we want to render, we need a separate renderpass
 // and therefore also separate pipelines.
 struct wlr_vk_render_format_setup {
-	struct wl_list link;
+	struct wl_list link; // wlr_vk_renderer.render_format_setups
 	VkFormat render_format; // used in renderpass
 	VkRenderPass render_pass;
 
@@ -168,19 +168,21 @@ struct wlr_vk_renderer {
 	float projection[9];
 
 	size_t last_pool_size;
-	struct wl_list descriptor_pools; // type wlr_vk_descriptor_pool
-	struct wl_list render_format_setups;
+	struct wl_list descriptor_pools; // wlr_vk_descriptor_pool.link
+	struct wl_list render_format_setups; // wlr_vk_render_format_setup.link
 
-	struct wl_list textures; // wlr_gles2_texture.link
-	struct wl_list destroy_textures; // wlr_vk_texture to destroy after frame
-	struct wl_list foreign_textures; // wlr_vk_texture to return to foreign queue
+	struct wl_list textures; // wlr_vk_texture.link
+	// Textures to destroy after frame
+	struct wl_list destroy_textures; // wlr_vk_texture.destroy_link
+	// Textures to return to foreign queue
+	struct wl_list foreign_textures; // wlr_vk_texture.foreign_link
 
-	struct wl_list render_buffers; // wlr_vk_render_buffer
+	struct wl_list render_buffers; // wlr_vk_render_buffer.link
 
 	struct {
 		VkCommandBuffer cb;
 		bool recording;
-		struct wl_list buffers; // type wlr_vk_shared_buffer
+		struct wl_list buffers; // wlr_vk_shared_buffer.link
 	} stage;
 
 	struct {
@@ -237,9 +239,9 @@ struct wlr_vk_texture {
 	bool dmabuf_imported;
 	bool owned; // if dmabuf_imported: whether we have ownership of the image
 	bool transitioned; // if dma_imported: whether we transitioned it away from preinit
-	struct wl_list foreign_link;
-	struct wl_list destroy_link;
-	struct wl_list link; // wlr_gles2_renderer.textures
+	struct wl_list foreign_link; // wlr_vk_renderer.foreign_textures
+	struct wl_list destroy_link; // wlr_vk_renderer.destroy_textures
+	struct wl_list link; // wlr_vk_renderer.textures
 
 	// If imported from a wlr_buffer
 	struct wlr_buffer *buffer;
@@ -258,7 +260,7 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture);
 struct wlr_vk_descriptor_pool {
 	VkDescriptorPool pool;
 	uint32_t free; // number of textures that can be allocated
-	struct wl_list link;
+	struct wl_list link; // wlr_vk_renderer.descriptor_pools
 };
 
 struct wlr_vk_allocation {
@@ -269,7 +271,7 @@ struct wlr_vk_allocation {
 // List of suballocated staging buffers.
 // Used to upload to/read from device local images.
 struct wlr_vk_shared_buffer {
-	struct wl_list link;
+	struct wl_list link; // wlr_vk_renderer.stage.buffers
 	VkBuffer buffer;
 	VkDeviceMemory memory;
 	VkDeviceSize buf_size;
