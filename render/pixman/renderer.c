@@ -260,11 +260,10 @@ static bool pixman_render_subtexture_with_matrix(
 
 	pixman_image_set_transform(texture->image, &transform);
 
-	double x = fbox->x * m[0] + fbox->y * m[1] + 1.0 * m[6];
-	double y = fbox->x * m[3] + fbox->y * m[4] + 1.0 * m[7];
-
-	pixman_image_composite32(PIXMAN_OP_OVER, texture->image, mask, buffer->image,
-		x, y, 0, 0, 0, 0, renderer->width, renderer->height);
+	// TODO clip properly with src_x and src_y
+	pixman_image_composite32(PIXMAN_OP_OVER, texture->image, mask,
+			buffer->image, 0, 0, 0, 0, 0, 0, renderer->width,
+			renderer->height);
 
 	if (texture->buffer != NULL) {
 		wlr_buffer_end_data_ptr_access(texture->buffer);
