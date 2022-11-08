@@ -105,23 +105,24 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 		}
 	}
 
-	VkBufferImageCopy copy;
-	copy.imageExtent.width = width;
-	copy.imageExtent.height = height;
-	copy.imageExtent.depth = 1;
-	copy.imageOffset.x = dst_x;
-	copy.imageOffset.y = dst_y;
-	copy.imageOffset.z = 0;
-	copy.bufferOffset = buf_off;
-	copy.bufferRowLength = width;
-	copy.bufferImageHeight = height;
-	copy.imageSubresource.mipLevel = 0;
-	copy.imageSubresource.baseArrayLayer = 0;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
 	assert((uint32_t)(map - (char *)vmap) == bsize);
 	vkUnmapMemory(dev, span.buffer->memory);
+
+	VkBufferImageCopy copy = {
+		.imageExtent.width = width,
+		.imageExtent.height = height,
+		.imageExtent.depth = 1,
+		.imageOffset.x = dst_x,
+		.imageOffset.y = dst_y,
+		.imageOffset.z = 0,
+		.bufferOffset = buf_off,
+		.bufferRowLength = width,
+		.bufferImageHeight = height,
+		.imageSubresource.mipLevel = 0,
+		.imageSubresource.baseArrayLayer = 0,
+		.imageSubresource.layerCount = 1,
+		.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	};
 
 	vkCmdCopyBufferToImage(cb, span.buffer->buffer, texture->image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
