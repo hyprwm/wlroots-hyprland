@@ -10,6 +10,9 @@
 #define WLR_TYPES_WLR_DAMAGE_RING_H
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <pixman.h>
 
 /* For triple buffering, a history of two frames is required. */
 #define WLR_DAMAGE_RING_PREVIOUS_LEN 2
