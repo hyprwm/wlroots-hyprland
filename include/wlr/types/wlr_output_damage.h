@@ -6,6 +6,11 @@
 #error "Add -DWLR_USE_UNSTABLE to enable unstable wlroots features"
 #endif
 
+/*
+ * NOTE: wlr/types/wlr_output_damage.h is deprecated and will be removed in
+ * the next release. Use wlr/types/wlr_damage_ring.h instead.
+ */
+
 #ifndef WLR_TYPES_WLR_OUTPUT_DAMAGE_H
 #define WLR_TYPES_WLR_OUTPUT_DAMAGE_H
 
