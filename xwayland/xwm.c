@@ -36,6 +36,7 @@ const char *const atom_map[ATOM_LAST] = {
 	[NET_WM_PID] = "_NET_WM_PID",
 	[NET_WM_NAME] = "_NET_WM_NAME",
 	[NET_WM_STATE] = "_NET_WM_STATE",
+	[NET_WM_STRUT_PARTIAL] = "_NET_WM_STRUT_PARTIAL",
 	[NET_WM_WINDOW_TYPE] = "_NET_WM_WINDOW_TYPE",
 	[WM_TAKE_FOCUS] = "WM_TAKE_FOCUS",
 	[WINDOW] = "WINDOW",
@@ -181,6 +182,7 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 	wl_signal_init(&surface->events.set_window_type);
 	wl_signal_init(&surface->events.set_hints);
 	wl_signal_init(&surface->events.set_decorations);
+	wl_signal_init(&surface->events.set_strut_partial);
 	wl_signal_init(&surface->events.set_override_redirect);
 	wl_signal_init(&surface->events.ping_timeout);
 	wl_signal_init(&surface->events.set_geometry);
@@ -440,6 +442,7 @@ static void xwayland_surface_destroy(struct wlr_xwayland_surface *xsurface) {
 	free(xsurface->startup_id);
 	free(xsurface->hints);
 	free(xsurface->size_hints);
+	free(xsurface->strut_partial);
 	free(xsurface);
 }
 
@@ -761,6 +764,38 @@ static void read_surface_motif_hints(struct wlr_xwm *xwm,
 	}
 }
 
+static void read_surface_strut_partial(struct wlr_xwm *xwm,
+		struct wlr_xwayland_surface *xsurface,
+		xcb_get_property_reply_t *reply) {
+	if (reply->type != XCB_ATOM_CARDINAL || reply->format != 32 ||
+			xcb_get_property_value_length(reply) !=
+			sizeof(xcb_ewmh_wm_strut_partial_t)) {
+		return;
+	}
+
+	free(xsurface->strut_partial);
+	xsurface->strut_partial = calloc(1, sizeof(xcb_ewmh_wm_strut_partial_t));
+	if (xsurface->strut_partial == NULL) {
+		return;
+	}
+	xcb_ewmh_get_wm_strut_partial_from_reply(xsurface->strut_partial, reply);
+
+	/*
+	 * Translate right/bottom into root x/y coordinates here since
+	 * the compositor is ignorant of X11 screen width/height.
+	 *
+	 * (This could result in an incorrect position if the X11 screen
+	 * size changes but _NET_WM_STRUT_PARTIAL doesn't. It's probably
+	 * not worth the additional code to fix this corner case.)
+	 */
+	xsurface->strut_partial->right =
+		xwm->screen->width_in_pixels - xsurface->strut_partial->right;
+	xsurface->strut_partial->bottom =
+		xwm->screen->height_in_pixels - xsurface->strut_partial->bottom;
+
+	wl_signal_emit_mutable(&xsurface->events.set_strut_partial, xsurface);
+}
+
 static void read_surface_net_wm_state(struct wlr_xwm *xwm,
 		struct wlr_xwayland_surface *xsurface,
 		xcb_get_property_reply_t *reply) {
@@ -827,6 +862,8 @@ static void read_surface_property(struct wlr_xwm *xwm,
 		read_surface_normal_hints(xwm, xsurface, reply);
 	} else if (property == xwm->atoms[MOTIF_WM_HINTS]) {
 		read_surface_motif_hints(xwm, xsurface, reply);
+	} else if (property == xwm->atoms[NET_WM_STRUT_PARTIAL]) {
+		read_surface_strut_partial(xwm, xsurface, reply);
 	} else if (property == xwm->atoms[WM_WINDOW_ROLE]) {
 		read_surface_role(xwm, xsurface, reply);
 	} else if (property == xwm->atoms[NET_STARTUP_ID]) {
@@ -910,6 +947,7 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 		xwm->atoms[MOTIF_WM_HINTS],
 		xwm->atoms[NET_STARTUP_ID],
 		xwm->atoms[NET_WM_STATE],
+		xwm->atoms[NET_WM_STRUT_PARTIAL],
 		xwm->atoms[NET_WM_WINDOW_TYPE],
 		xwm->atoms[NET_WM_NAME],
 	};

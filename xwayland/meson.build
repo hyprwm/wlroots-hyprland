@@ -2,6 +2,7 @@ xwayland_libs = []
 xwayland_required = [
 	'xcb',
 	'xcb-composite',
+	'xcb-ewmh',
 	'xcb-icccm',
 	'xcb-render',
 	'xcb-res',

@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <wayland-server-core.h>
 #include <xcb/xcb.h>
+#include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 #include <wlr/util/addon.h>
 
@@ -121,6 +122,11 @@ struct wlr_xwayland_surface {
 	uint32_t decorations;
 	xcb_icccm_wm_hints_t *hints;
 	xcb_size_hints_t *size_hints;
+	/*
+	 * _NET_WM_STRUT_PARTIAL (used by e.g. XWayland panels;
+	 * right/bottom are translated into root x/y coordinates)
+	 */
+	xcb_ewmh_wm_strut_partial_t *strut_partial;
 
 	bool pinging;
 	struct wl_event_source *ping_timer;
@@ -154,6 +160,7 @@ struct wlr_xwayland_surface {
 		struct wl_signal set_window_type;
 		struct wl_signal set_hints;
 		struct wl_signal set_decorations;
+		struct wl_signal set_strut_partial;
 		struct wl_signal set_override_redirect;
 		struct wl_signal set_geometry;
 		struct wl_signal ping_timeout;
