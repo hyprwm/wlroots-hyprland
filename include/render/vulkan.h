@@ -253,6 +253,7 @@ struct wlr_vk_texture {
 	bool dmabuf_imported;
 	bool owned; // if dmabuf_imported: whether we have ownership of the image
 	bool transitioned; // if dma_imported: whether we transitioned it away from preinit
+	bool has_alpha; // whether the image is has alpha channel
 	struct wl_list foreign_link; // wlr_vk_renderer.foreign_textures
 	struct wl_list destroy_link; // wlr_vk_renderer.destroy_textures
 	struct wl_list link; // wlr_vk_renderer.textures

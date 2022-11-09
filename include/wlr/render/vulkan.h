@@ -32,6 +32,7 @@ bool wlr_texture_is_vk(struct wlr_texture *texture);
 
 void wlr_vk_texture_get_image_attribs(struct wlr_texture *texture,
 	struct wlr_vk_image_attribs *attribs);
+bool wlr_vk_texture_has_alpha(struct wlr_texture *texture);
 
 #endif
 

@@ -322,6 +322,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(drm_fmt);
 	assert(format_info);
+	texture->has_alpha = format_info->has_alpha;
 
 	// view
 	VkImageViewCreateInfo view_info = {
@@ -331,7 +332,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.a = format_info->has_alpha
+		.components.a = texture->has_alpha
 			? VK_COMPONENT_SWIZZLE_IDENTITY
 			: VK_COMPONENT_SWIZZLE_ONE,
 
@@ -656,6 +657,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 
 	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(attribs->format);
 	assert(format_info);
+	texture->has_alpha = format_info->has_alpha;
 
 	// view
 	VkImageViewCreateInfo view_info = {
@@ -665,7 +667,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.a = format_info->has_alpha
+		.components.a = texture->has_alpha
 			? VK_COMPONENT_SWIZZLE_IDENTITY
 			: VK_COMPONENT_SWIZZLE_ONE,
 
@@ -778,4 +780,9 @@ void wlr_vk_texture_get_image_attribs(struct wlr_texture *texture,
 	attribs->format = vk_texture->format->vk_format;
 	attribs->layout = vk_texture->transitioned ?
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+bool wlr_vk_texture_has_alpha(struct wlr_texture *texture) {
+	struct wlr_vk_texture *vk_texture = vulkan_get_texture(texture);
+	return vk_texture->has_alpha;
 }
