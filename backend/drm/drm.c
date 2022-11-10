@@ -1302,9 +1302,9 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 			wlr_conn->crtc->mode_id = mode_id;
 		}
 
-		wlr_log(WLR_INFO, "  %"PRId32"x%"PRId32"@%"PRId32" %s",
+		wlr_log(WLR_INFO, "  %"PRId32"x%"PRId32" @ %.3f Hz %s",
 			mode->wlr_mode.width, mode->wlr_mode.height,
-			mode->wlr_mode.refresh,
+			(float)mode->wlr_mode.refresh / 1000,
 			mode->wlr_mode.preferred ? "(preferred)" : "");
 
 		wl_list_insert(wlr_conn->output.modes.prev, &mode->wlr_mode.link);
