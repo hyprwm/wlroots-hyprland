@@ -581,6 +581,12 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
 	}
 
+	if (pending.modeset) {
+		wlr_drm_conn_log(conn, WLR_INFO, "Modesetting with %dx%d @ %.3f Hz",
+			pending.mode.hdisplay, pending.mode.vdisplay,
+			(float)calculate_refresh_rate(&pending.mode) / 1000);
+	}
+
 	if (!drm_crtc_commit(conn, &pending, flags, false)) {
 		return false;
 	}
