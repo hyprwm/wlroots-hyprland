@@ -577,6 +577,9 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 			return false;
 		}
 	}
+	if (pending.modeset) {
+		flags |= DRM_MODE_PAGE_FLIP_EVENT;
+	}
 
 	if (!drm_crtc_commit(conn, &pending, flags, false)) {
 		return false;
