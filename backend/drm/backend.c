@@ -107,7 +107,8 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 		wl_list_for_each(conn, &drm->outputs, link) {
 			struct wlr_output_mode *mode = NULL;
 			uint32_t committed = WLR_OUTPUT_STATE_ENABLED;
-			if (conn->output.enabled && conn->output.current_mode != NULL) {
+			if (conn->status != DRM_MODE_DISCONNECTED && conn->output.enabled
+					&& conn->output.current_mode != NULL) {
 				committed |= WLR_OUTPUT_STATE_MODE;
 				mode = conn->output.current_mode;
 			}
