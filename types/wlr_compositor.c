@@ -373,9 +373,6 @@ static void surface_apply_damage(struct wlr_surface *surface) {
 	struct wlr_client_buffer *buffer = wlr_client_buffer_create(
 			surface->current.buffer, surface->renderer);
 
-	wlr_buffer_unlock(surface->current.buffer);
-	surface->current.buffer = NULL;
-
 	if (buffer == NULL) {
 		wlr_log(WLR_ERROR, "Failed to upload buffer");
 		return;
@@ -495,6 +492,12 @@ static void surface_commit_state(struct wlr_surface *surface,
 	}
 
 	wl_signal_emit_mutable(&surface->events.commit, surface);
+
+	// Release the buffer after emitting the commit event, so that listeners can
+	// access it. Don't leave the buffer locked so that wl_shm buffers can be
+	// released immediately on commit when they are uploaded to the GPU.
+	wlr_buffer_unlock(surface->current.buffer);
+	surface->current.buffer = NULL;
 }
 
 static void surface_handle_commit(struct wl_client *client,
