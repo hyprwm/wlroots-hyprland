@@ -124,8 +124,8 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 	for (int i = 0; i < formats_len; i++) {
 		uint32_t fmt = formats[i];
 
-		uint64_t *modifiers;
-		EGLBoolean *external_only;
+		uint64_t *modifiers = NULL;
+		EGLBoolean *external_only = NULL;
 		int modifiers_len = 0;
 		if (!no_modifiers) {
 			modifiers_len = get_egl_dmabuf_modifiers(egl, fmt, &modifiers, &external_only);
