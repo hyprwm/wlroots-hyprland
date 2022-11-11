@@ -2,7 +2,6 @@
 #include <string.h>
 #include <wayland-server.h>
 #include <wlr/interfaces/wlr_buffer.h>
-#include <wlr/types/wlr_drm.h>
 #include <wlr/util/log.h>
 #include "types/wlr_buffer.h"
 
@@ -47,27 +46,18 @@ static const struct wlr_buffer_resource_interface *get_buffer_resource_iface(
 struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource) {
 	assert(resource && wlr_resource_is_buffer(resource));
 
-	struct wlr_buffer *buffer;
-	if (wlr_drm_buffer_is_resource(resource)) {
-		struct wlr_drm_buffer *drm_buffer =
-			wlr_drm_buffer_from_resource(resource);
-		buffer = wlr_buffer_lock(&drm_buffer->base);
-	} else {
-		const struct wlr_buffer_resource_interface *iface =
-				get_buffer_resource_iface(resource);
-		if (!iface) {
-			wlr_log(WLR_ERROR, "Unknown buffer type");
-			return NULL;
-		}
-
-		struct wlr_buffer *custom_buffer = iface->from_resource(resource);
-		if (!custom_buffer) {
-			wlr_log(WLR_ERROR, "Failed to create %s buffer", iface->name);
-			return NULL;
-		}
-
-		buffer = wlr_buffer_lock(custom_buffer);
+	const struct wlr_buffer_resource_interface *iface =
+			get_buffer_resource_iface(resource);
+	if (!iface) {
+		wlr_log(WLR_ERROR, "Unknown buffer type");
+		return NULL;
 	}
 
-	return buffer;
+	struct wlr_buffer *buffer = iface->from_resource(resource);
+	if (!buffer) {
+		wlr_log(WLR_ERROR, "Failed to create %s buffer", iface->name);
+		return NULL;
+	}
+
+	return wlr_buffer_lock(buffer);
 }

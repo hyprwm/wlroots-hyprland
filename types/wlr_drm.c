@@ -170,6 +170,17 @@ static void drm_bind(struct wl_client *client, void *data,
 	}
 }
 
+static struct wlr_buffer *buffer_from_resource(struct wl_resource *resource) {
+	struct wlr_drm_buffer *buffer = wlr_drm_buffer_from_resource(resource);
+	return &buffer->base;
+}
+
+static const struct wlr_buffer_resource_interface buffer_resource_interface = {
+	.name = "wlr_drm_buffer",
+	.is_instance = wlr_drm_buffer_is_resource,
+	.from_resource = buffer_from_resource,
+};
+
 static void drm_destroy(struct wlr_drm *drm) {
 	wl_signal_emit_mutable(&drm->events.destroy, NULL);
 
@@ -242,6 +253,8 @@ struct wlr_drm *wlr_drm_create(struct wl_display *display,
 
 	drm->renderer_destroy.notify = handle_renderer_destroy;
 	wl_signal_add(&renderer->events.destroy, &drm->renderer_destroy);
+
+	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 
 	return drm;
 }
