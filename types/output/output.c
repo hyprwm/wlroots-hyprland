@@ -992,22 +992,6 @@ void wlr_output_update_needs_frame(struct wlr_output *output) {
 	wl_signal_emit_mutable(&output->events.needs_frame, output);
 }
 
-void wlr_output_damage_whole(struct wlr_output *output) {
-	int width, height;
-	wlr_output_transformed_resolution(output, &width, &height);
-
-	pixman_region32_t damage;
-	pixman_region32_init_rect(&damage, 0, 0, width, height);
-
-	struct wlr_output_event_damage event = {
-		.output = output,
-		.damage = &damage,
-	};
-	wl_signal_emit_mutable(&output->events.damage, &event);
-
-	pixman_region32_fini(&damage);
-}
-
 const struct wlr_drm_format_set *wlr_output_get_primary_formats(
 		struct wlr_output *output, uint32_t buffer_caps) {
 	if (!output->impl->get_primary_formats) {

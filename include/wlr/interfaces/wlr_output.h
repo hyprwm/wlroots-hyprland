@@ -130,10 +130,6 @@ void wlr_output_update_enabled(struct wlr_output *output, bool enabled);
  */
 void wlr_output_update_needs_frame(struct wlr_output *output);
 /**
- * Notify compositors that the output needs to be fully repainted.
- */
-void wlr_output_damage_whole(struct wlr_output *output);
-/**
  * Send a frame event.
  *
  * See wlr_output.events.frame.
