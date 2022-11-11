@@ -302,6 +302,10 @@ uint32_t wlr_surface_lock_pending(struct wlr_surface *surface);
  */
 void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq);
 
+/**
+ * Create the wl_compositor global, which can be used by clients to create
+ * surfaces and regions.
+ */
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
 	struct wlr_renderer *renderer);
 
