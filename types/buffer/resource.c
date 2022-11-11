@@ -3,7 +3,6 @@
 #include <wayland-server.h>
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/types/wlr_drm.h>
-#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/util/log.h>
 #include "types/wlr_buffer.h"
 
@@ -49,11 +48,7 @@ struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource) {
 	assert(resource && wlr_resource_is_buffer(resource));
 
 	struct wlr_buffer *buffer;
-	if (wlr_dmabuf_v1_resource_is_buffer(resource)) {
-		struct wlr_dmabuf_v1_buffer *dmabuf =
-			wlr_dmabuf_v1_buffer_from_buffer_resource(resource);
-		buffer = wlr_buffer_lock(&dmabuf->base);
-	} else if (wlr_drm_buffer_is_resource(resource)) {
+	if (wlr_drm_buffer_is_resource(resource)) {
 		struct wlr_drm_buffer *drm_buffer =
 			wlr_drm_buffer_from_resource(resource);
 		buffer = wlr_buffer_lock(&drm_buffer->base);

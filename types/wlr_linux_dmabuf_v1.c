@@ -885,6 +885,18 @@ static void linux_dmabuf_bind(struct wl_client *client, void *data,
 	}
 }
 
+static struct wlr_buffer *buffer_from_resource(struct wl_resource *resource) {
+	struct wlr_dmabuf_v1_buffer *buffer =
+		wlr_dmabuf_v1_buffer_from_buffer_resource(resource);
+	return &buffer->base;
+}
+
+static const struct wlr_buffer_resource_interface buffer_resource_interface = {
+	.name = "wlr_dmabuf_v1_buffer",
+	.is_instance = wlr_dmabuf_v1_resource_is_buffer,
+	.from_resource = buffer_from_resource,
+};
+
 static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 	wl_signal_emit_mutable(&linux_dmabuf->events.destroy, linux_dmabuf);
 
@@ -949,6 +961,8 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *displa
 
 	linux_dmabuf->renderer_destroy.notify = handle_renderer_destroy;
 	wl_signal_add(&renderer->events.destroy, &linux_dmabuf->renderer_destroy);
+
+	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 
 	return linux_dmabuf;
 }
