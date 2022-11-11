@@ -1099,12 +1099,6 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		}
 
 		conn->crtc = &drm->crtcs[connector_match[i]];
-
-		// Only realloc buffers if we have actually been modeset
-		if (conn->status != DRM_MODE_CONNECTED || !conn->output.enabled) {
-			continue;
-		}
-		wlr_output_damage_whole(&conn->output);
 	}
 }
 
