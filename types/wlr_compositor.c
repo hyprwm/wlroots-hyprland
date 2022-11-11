@@ -370,6 +370,10 @@ static void surface_apply_damage(struct wlr_surface *surface) {
 		}
 	}
 
+	if (surface->renderer == NULL) {
+		return;
+	}
+
 	struct wlr_client_buffer *buffer = wlr_client_buffer_create(
 			surface->current.buffer, surface->renderer);
 
@@ -699,8 +703,12 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	pixman_region32_init(&surface->input_region);
 	wlr_addon_set_init(&surface->addons);
 
-	wl_signal_add(&renderer->events.destroy, &surface->renderer_destroy);
-	surface->renderer_destroy.notify = surface_handle_renderer_destroy;
+	if (renderer != NULL) {
+		wl_signal_add(&renderer->events.destroy, &surface->renderer_destroy);
+		surface->renderer_destroy.notify = surface_handle_renderer_destroy;
+	} else {
+		wl_list_init(&surface->renderer_destroy.link);
+	}
 
 	return surface;
 }

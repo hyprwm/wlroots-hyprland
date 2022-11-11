@@ -90,7 +90,7 @@ struct wlr_surface_output {
 
 struct wlr_surface {
 	struct wl_resource *resource;
-	struct wlr_renderer *renderer;
+	struct wlr_renderer *renderer; // may be NULL
 	/**
 	 * The surface's buffer, if any. A surface has an attached buffer when it
 	 * commits with a non-null buffer in its pending state. A surface will not
@@ -168,7 +168,7 @@ struct wlr_renderer;
 
 struct wlr_compositor {
 	struct wl_global *global;
-	struct wlr_renderer *renderer;
+	struct wlr_renderer *renderer; // may be NULL
 
 	struct wl_listener display_destroy;
 
@@ -305,6 +305,9 @@ void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq);
 /**
  * Create the wl_compositor global, which can be used by clients to create
  * surfaces and regions.
+ *
+ * If a renderer is supplied, the compositor will create struct wlr_texture
+ * objects from client buffers on surface commit.
  */
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
 	struct wlr_renderer *renderer);
