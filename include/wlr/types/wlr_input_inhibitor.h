@@ -10,6 +10,11 @@
 #define WLR_TYPES_INPUT_INHIBITOR_H
 #include <wayland-server-core.h>
 
+/*
+ * NOTE: Following the protocol deprecation, wlr/types/wlr_input_inhibitor.h is
+ * deprecated and will be removed in the next release.
+ */
+
 struct wlr_input_inhibit_manager {
 	struct wl_global *global;
 	struct wl_client *active_client;
