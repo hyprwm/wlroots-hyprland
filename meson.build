@@ -1,7 +1,7 @@
 project(
 	'wlroots',
 	'c',
-	version: '0.16.0',
+	version: '0.17.0-dev',
 	license: 'MIT',
 	meson_version: '>=0.59.0',
 	default_options: [
@@ -15,7 +15,7 @@ project(
 # necessary for bugfix releases. Increasing soversion is required because
 # wlroots never guarantees ABI stability -- only API stability is guaranteed
 # between minor releases.
-soversion = 11
+soversion = 12
 
 little_endian = target_machine.endian() == 'little'
 big_endian = target_machine.endian() == 'big'
