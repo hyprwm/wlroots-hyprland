@@ -138,21 +138,13 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 		.apiVersion = VK_API_VERSION_1_1,
 	};
 
-	const char *layers[] = {
-		"VK_LAYER_KHRONOS_validation",
-		// "VK_LAYER_RENDERDOC_Capture",
-		// "VK_LAYER_live_introspection",
-	};
-
-	unsigned layer_count = debug * (sizeof(layers) / sizeof(layers[0]));
-
 	VkInstanceCreateInfo instance_info = {
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pApplicationInfo = &application_info,
 		.enabledExtensionCount = extensions_len,
 		.ppEnabledExtensionNames = extensions,
-		.enabledLayerCount = layer_count,
-		.ppEnabledLayerNames = layers,
+		.enabledLayerCount = 0,
+		.ppEnabledLayerNames = NULL,
 	};
 
 	VkDebugUtilsMessageSeverityFlagsEXT severity =
