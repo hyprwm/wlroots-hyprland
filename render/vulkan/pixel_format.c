@@ -10,19 +10,29 @@ static const struct wlr_vk_format formats[] = {
 	{
 		.drm_format = DRM_FORMAT_ARGB8888,
 		.vk_format = VK_FORMAT_B8G8R8A8_SRGB,
+		.is_srgb = true,
 	},
 	{
 		.drm_format = DRM_FORMAT_XRGB8888,
 		.vk_format = VK_FORMAT_B8G8R8A8_SRGB,
+		.is_srgb = true,
 	},
 	{
 		.drm_format = DRM_FORMAT_XBGR8888,
 		.vk_format = VK_FORMAT_R8G8B8A8_SRGB,
+		.is_srgb = true,
 	},
 	{
 		.drm_format = DRM_FORMAT_ABGR8888,
 		.vk_format = VK_FORMAT_R8G8B8A8_SRGB,
+		.is_srgb = true,
 	},
+#if WLR_LITTLE_ENDIAN
+	{
+		.drm_format = DRM_FORMAT_RGB565,
+		.vk_format = VK_FORMAT_R5G6B5_UNORM_PACK16,
+	},
+#endif
 };
 
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
@@ -139,7 +149,9 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		const char *render_status, *texture_status;
 
 		// check that specific modifier for render usage
-		if ((m.drmFormatModifierTilingFeatures & render_features) == render_features) {
+		// also, only allow rendering to formats with SRGB encoding
+		if ((m.drmFormatModifierTilingFeatures & render_features) == render_features &&
+				props->format.is_srgb) {
 			fmti.usage = render_usage;
 
 			modi.drmFormatModifier = m.drmFormatModifier;

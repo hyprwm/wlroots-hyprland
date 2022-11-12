@@ -78,6 +78,7 @@ int vulkan_find_mem_type(struct wlr_vk_device *device,
 struct wlr_vk_format {
 	uint32_t drm_format;
 	VkFormat vk_format;
+	bool is_srgb;
 };
 
 // Returns all known format mappings.
@@ -110,6 +111,13 @@ struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 	struct wlr_vk_format_props *props, uint64_t mod, bool render);
 void vulkan_format_props_finish(struct wlr_vk_format_props *props);
 
+// Constants used to pick the color transform for the texture drawing
+// fragment shader. Must match those in shaders/texture.frag
+enum wlr_vk_texture_transform {
+	WLR_VK_TEXTURE_TRANSFORM_IDENTITY = 0,
+	WLR_VK_TEXTURE_TRANSFORM_SRGB = 1,
+};
+
 // For each format we want to render, we need a separate renderpass
 // and therefore also separate pipelines.
 struct wlr_vk_render_format_setup {
@@ -117,7 +125,8 @@ struct wlr_vk_render_format_setup {
 	VkFormat render_format; // used in renderpass
 	VkRenderPass render_pass;
 
-	VkPipeline tex_pipe;
+	VkPipeline tex_identity_pipe;
+	VkPipeline tex_srgb_pipe;
 	VkPipeline quad_pipe;
 };
 

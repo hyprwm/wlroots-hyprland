@@ -164,7 +164,8 @@ static void destroy_render_format_setup(struct wlr_vk_renderer *renderer,
 
 	VkDevice dev = renderer->dev->dev;
 	vkDestroyRenderPass(dev, setup->render_pass, NULL);
-	vkDestroyPipeline(dev, setup->tex_pipe, NULL);
+	vkDestroyPipeline(dev, setup->tex_identity_pipe, NULL);
+	vkDestroyPipeline(dev, setup->tex_srgb_pipe, NULL);
 	vkDestroyPipeline(dev, setup->quad_pipe, NULL);
 }
 
@@ -970,7 +971,13 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		wl_list_insert(&renderer->foreign_textures, &texture->foreign_link);
 	}
 
-	VkPipeline pipe = renderer->current_render_buffer->render_setup->tex_pipe;
+	VkPipeline pipe;
+	// SRGB formats already have the transfer function applied
+	if (texture->format->is_srgb) {
+		pipe = renderer->current_render_buffer->render_setup->tex_identity_pipe;
+	} else {
+		pipe = renderer->current_render_buffer->render_setup->tex_srgb_pipe;
+	}
 	if (pipe != renderer->bound_pipe) {
 		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
 		renderer->bound_pipe = pipe;
@@ -1501,9 +1508,25 @@ static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
 // Initializes the pipeline for rendering textures and using the given
 // VkRenderPass and VkPipelineLayout.
 static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
-		VkRenderPass rp, VkPipelineLayout pipe_layout, VkPipeline *pipe) {
+		VkRenderPass rp, VkPipelineLayout pipe_layout,
+		enum wlr_vk_texture_transform transform, VkPipeline *pipe) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
+
+	uint32_t color_transform_type = transform;
+
+	VkSpecializationMapEntry spec_entry = {
+		.constantID = 0,
+		.offset = 0,
+		.size = sizeof(uint32_t),
+	};
+
+	VkSpecializationInfo specialization = {
+		.mapEntryCount = 1,
+		.pMapEntries = &spec_entry,
+		.dataSize = sizeof(uint32_t),
+		.pData = &color_transform_type,
+	};
 
 	// shaders
 	VkPipelineShaderStageCreateInfo tex_stages[2] = {
@@ -1518,6 +1541,7 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
 			.module = renderer->tex_frag_module,
 			.pName = "main",
+			.pSpecializationInfo = &specialization,
 		},
 	};
 
@@ -1657,7 +1681,7 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	// tex frag
+	// tex frags
 	sinfo = (VkShaderModuleCreateInfo){
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.codeSize = sizeof(texture_frag_data),
@@ -1774,7 +1798,12 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	}
 
 	if (!init_tex_pipeline(renderer, setup->render_pass, renderer->pipe_layout,
-			&setup->tex_pipe)) {
+			WLR_VK_TEXTURE_TRANSFORM_IDENTITY, &setup->tex_identity_pipe)) {
+		goto error;
+	}
+
+	if (!init_tex_pipeline(renderer, setup->render_pass, renderer->pipe_layout,
+			WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_srgb_pipe)) {
 		goto error;
 	}
 
