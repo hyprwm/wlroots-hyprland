@@ -44,6 +44,7 @@ void wlr_renderer_init(struct wlr_renderer *renderer,
 	renderer->impl = impl;
 
 	wl_signal_init(&renderer->events.destroy);
+	wl_signal_init(&renderer->events.lost);
 }
 
 void wlr_renderer_destroy(struct wlr_renderer *r) {

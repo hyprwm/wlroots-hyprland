@@ -26,6 +26,12 @@ struct wlr_fbox;
 struct wlr_renderer {
 	struct {
 		struct wl_signal destroy;
+		/**
+		 * Emitted when the GPU is lost, e.g. on GPU reset.
+		 *
+		 * Compositors should destroy the renderer and re-create it.
+		 */
+		struct wl_signal lost;
 	} events;
 
 	// private state
