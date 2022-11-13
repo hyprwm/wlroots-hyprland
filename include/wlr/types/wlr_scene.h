@@ -28,6 +28,7 @@ struct wlr_output;
 struct wlr_output_layout;
 struct wlr_xdg_surface;
 struct wlr_layer_surface_v1;
+struct wlr_drag_icon;
 
 struct wlr_scene_node;
 struct wlr_scene_buffer;
@@ -471,5 +472,12 @@ struct wlr_scene_layer_surface_v1 *wlr_scene_layer_surface_v1_create(
 void wlr_scene_layer_surface_v1_configure(
 	struct wlr_scene_layer_surface_v1 *scene_layer_surface,
 	const struct wlr_box *full_area, struct wlr_box *usable_area);
+
+/**
+ * Add a node displaying a drag icon and all its sub-surfaces to the
+ * scene-graph.
+ */
+struct wlr_scene_tree *wlr_scene_drag_icon_create(
+	struct wlr_scene_tree *parent, struct wlr_drag_icon *drag_icon);
 
 #endif

@@ -8,6 +8,7 @@ wlr_files += files(
 	'output/render.c',
 	'output/state.c',
 	'output/transform.c',
+	'scene/drag_icon.c',
 	'scene/subsurface_tree.c',
 	'scene/surface.c',
 	'scene/wlr_scene.c',
