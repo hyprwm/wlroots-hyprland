@@ -492,7 +492,10 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	free(layer_shell);
 }
 
-struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display) {
+struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display,
+		uint32_t version) {
+	assert(version <= LAYER_SHELL_VERSION);
+
 	struct wlr_layer_shell_v1 *layer_shell =
 		calloc(1, sizeof(struct wlr_layer_shell_v1));
 	if (!layer_shell) {
@@ -500,8 +503,7 @@ struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display)
 	}
 
 	struct wl_global *global = wl_global_create(display,
-		&zwlr_layer_shell_v1_interface, LAYER_SHELL_VERSION,
-		layer_shell, layer_shell_bind);
+		&zwlr_layer_shell_v1_interface, version, layer_shell, layer_shell_bind);
 	if (!global) {
 		free(layer_shell);
 		return NULL;

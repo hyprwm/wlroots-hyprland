@@ -122,7 +122,8 @@ struct wlr_layer_surface_v1 {
 	void *data;
 };
 
-struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display);
+struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display,
+	uint32_t version);
 
 /**
  * Notifies the layer surface to configure itself with this width/height. The
