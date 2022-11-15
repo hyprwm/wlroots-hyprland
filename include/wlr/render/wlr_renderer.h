@@ -20,6 +20,9 @@ struct wlr_buffer;
 struct wlr_box;
 struct wlr_fbox;
 
+/**
+ * A renderer for basic 2D operations.
+ */
 struct wlr_renderer {
 	const struct wlr_renderer_impl *impl;
 
@@ -31,12 +34,35 @@ struct wlr_renderer {
 	} events;
 };
 
+/**
+ * Automatically create a new renderer.
+ *
+ * Selects an appropriate renderer type to use depending on the backend,
+ * platform, environment, etc.
+ */
 struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend);
 
+/**
+ * Start a render pass with the provided viewport.
+ *
+ * This should be called after wlr_output_attach_render(). Compositors must call
+ * wlr_renderer_end() when they are done.
+ */
 void wlr_renderer_begin(struct wlr_renderer *r, uint32_t width, uint32_t height);
+/**
+ * Start a render pass on the provided struct wlr_buffer.
+ *
+ * Compositors must call wlr_renderer_end() when they are done.
+ */
 bool wlr_renderer_begin_with_buffer(struct wlr_renderer *r,
 	struct wlr_buffer *buffer);
+/**
+ * End a render pass.
+ */
 void wlr_renderer_end(struct wlr_renderer *r);
+/**
+ * Clear the viewport with the provided color.
+ */
 void wlr_renderer_clear(struct wlr_renderer *r, const float color[static 4]);
 /**
  * Defines a scissor box. Only pixels that lie within the scissor box can be
