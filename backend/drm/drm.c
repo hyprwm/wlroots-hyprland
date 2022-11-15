@@ -595,9 +595,6 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		return false;
 	}
 
-	if (pending.base->committed & WLR_OUTPUT_STATE_ENABLED) {
-		wlr_output_update_enabled(&conn->output, pending.active);
-	}
 	if (pending.base->committed & WLR_OUTPUT_STATE_MODE) {
 		struct wlr_output_mode *mode = NULL;
 		switch (pending.base->mode_type) {

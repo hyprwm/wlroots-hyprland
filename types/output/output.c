@@ -789,6 +789,10 @@ bool wlr_output_commit_state(struct wlr_output *output,
 
 	output->commit_seq++;
 
+	if (pending.committed & WLR_OUTPUT_STATE_ENABLED) {
+		wlr_output_update_enabled(output, pending.enabled);
+	}
+
 	bool scale_updated = pending.committed & WLR_OUTPUT_STATE_SCALE;
 	if (scale_updated) {
 		output->scale = pending.scale;
