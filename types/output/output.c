@@ -374,6 +374,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.enable);
 	wl_signal_init(&output->events.mode);
 	wl_signal_init(&output->events.description);
+	wl_signal_init(&output->events.request_state);
 	wl_signal_init(&output->events.destroy);
 	output_state_init(&output->pending);
 
