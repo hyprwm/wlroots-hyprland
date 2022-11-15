@@ -157,15 +157,16 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_content_type_manager_v1 *wlr_content_type_manager_v1_create(
-		struct wl_display *display) {
+		struct wl_display *display, uint32_t version) {
+	assert(version <= CONTENT_TYPE_VERSION);
+
 	struct wlr_content_type_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}
 
 	manager->global = wl_global_create(display,
-		&wp_content_type_manager_v1_interface, CONTENT_TYPE_VERSION,
-		manager, manager_bind);
+		&wp_content_type_manager_v1_interface, version, manager, manager_bind);
 	if (manager->global == NULL) {
 		free(manager);
 		return NULL;
