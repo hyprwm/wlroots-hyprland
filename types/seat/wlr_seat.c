@@ -75,6 +75,10 @@ static void seat_client_handle_resource_destroy(
 		client->seat->keyboard_state.focused_client = NULL;
 	}
 
+	if (client->seat->drag && client == client->seat->drag->seat_client) {
+		client->seat->drag->seat_client = NULL;
+	}
+
 	struct wl_resource *resource, *tmp;
 	wl_resource_for_each_safe(resource, tmp, &client->pointers) {
 		wl_resource_destroy(resource);

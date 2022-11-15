@@ -55,14 +55,14 @@ static void drag_set_focus(struct wlr_drag *drag,
 		goto out;
 	}
 
-	if (!drag->source &&
+	if (!drag->source && drag->seat_client &&
 			wl_resource_get_client(surface->resource) !=
 			drag->seat_client->client) {
 		goto out;
 	}
 
 	struct wlr_seat_client *focus_client = wlr_seat_client_for_wl_client(
-		drag->seat_client->seat, wl_resource_get_client(surface->resource));
+		drag->seat, wl_resource_get_client(surface->resource));
 	if (!focus_client) {
 		goto out;
 	}
@@ -71,7 +71,7 @@ static void drag_set_focus(struct wlr_drag *drag,
 		drag->source->accepted = false;
 
 		uint32_t serial =
-			wl_display_next_serial(drag->seat_client->seat->display);
+			wl_display_next_serial(drag->seat->display);
 
 		struct wl_resource *device_resource;
 		wl_resource_for_each(device_resource, &focus_client->data_devices) {
