@@ -18,8 +18,9 @@ static void drag_icon_handle_surface_commit(struct wl_listener *listener, void *
 	struct wlr_scene_drag_icon *icon =
 		wl_container_of(listener, icon, drag_icon_surface_commit);
 	struct wlr_surface *surface = icon->drag_icon->surface;
-	wlr_scene_node_set_position(&icon->surface_tree->node,
-		surface->sx, surface->sy);
+	struct wlr_scene_node *node = &icon->surface_tree->node;
+	wlr_scene_node_set_position(node,
+		node->x + surface->current.dx, node->y + surface->current.dy);
 }
 
 static void drag_icon_handle_map(struct wl_listener *listener, void *data) {
@@ -74,8 +75,6 @@ struct wlr_scene_tree *wlr_scene_drag_icon_create(
 		return NULL;
 	}
 
-	wlr_scene_node_set_position(&icon->surface_tree->node,
-		drag_icon->surface->sx, drag_icon->surface->sy);
 	wlr_scene_node_set_enabled(&icon->tree->node, drag_icon->mapped);
 
 	icon->tree_destroy.notify = drag_icon_handle_tree_destroy;

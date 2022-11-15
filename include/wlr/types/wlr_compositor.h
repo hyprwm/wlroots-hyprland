@@ -99,10 +99,6 @@ struct wlr_surface {
 	 */
 	struct wlr_client_buffer *buffer;
 	/**
-	 * The buffer position, in surface-local units.
-	 */
-	int sx, sy;
-	/**
 	 * The last commit's buffer damage, in buffer-local coordinates. This
 	 * contains both the damage accumulated by the client via
 	 * `wlr_surface_state.surface_damage` and `wlr_surface_state.buffer_damage`.

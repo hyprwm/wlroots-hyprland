@@ -439,8 +439,6 @@ static void surface_commit_state(struct wlr_surface *surface,
 
 	bool invalid_buffer = next->committed & WLR_SURFACE_STATE_BUFFER;
 
-	surface->sx += next->dx;
-	surface->sy += next->dy;
 	surface_update_damage(&surface->buffer_damage, &surface->current, next);
 
 	pixman_region32_clear(&surface->external_damage);
