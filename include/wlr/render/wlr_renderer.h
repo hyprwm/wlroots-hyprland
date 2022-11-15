@@ -24,14 +24,16 @@ struct wlr_fbox;
  * A renderer for basic 2D operations.
  */
 struct wlr_renderer {
+	struct {
+		struct wl_signal destroy;
+	} events;
+
+	// private state
+
 	const struct wlr_renderer_impl *impl;
 
 	bool rendering;
 	bool rendering_with_buffer;
-
-	struct {
-		struct wl_signal destroy;
-	} events;
 };
 
 /**
