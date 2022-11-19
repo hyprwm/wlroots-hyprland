@@ -163,6 +163,12 @@ void wlr_keyboard_finish(struct wlr_keyboard *kb) {
 }
 
 void wlr_keyboard_led_update(struct wlr_keyboard *kb, uint32_t leds) {
+	if (kb->leds == leds) {
+		return;
+	}
+
+	kb->leds = leds;
+
 	if (kb->impl && kb->impl->led_update) {
 		kb->impl->led_update(kb, leds);
 	}
