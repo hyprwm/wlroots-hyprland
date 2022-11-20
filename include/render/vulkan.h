@@ -140,6 +140,7 @@ struct wlr_vk_render_format_setup {
 	VkPipeline tex_srgb_pipe;
 	VkPipeline tex_nv12_pipe;
 	VkPipeline quad_pipe;
+	VkPipeline output_pipe;
 };
 
 // Renderer-internal represenation of an wlr_buffer imported for rendering.
@@ -156,6 +157,13 @@ struct wlr_vk_render_buffer {
 	uint32_t mem_count;
 	VkDeviceMemory memories[WLR_DMABUF_MAX_PLANES];
 	bool transitioned;
+
+	VkImage blend_image;
+	VkImageView blend_image_view;
+	VkDeviceMemory blend_memory;
+	VkDescriptorSet blend_descriptor_set;
+	struct wlr_vk_descriptor_pool *blend_attachment_pool;
+	bool blend_transitioned;
 };
 
 struct wlr_vk_command_buffer {
@@ -184,11 +192,17 @@ struct wlr_vk_renderer {
 	VkShaderModule vert_module;
 	VkShaderModule tex_frag_module;
 	VkShaderModule quad_frag_module;
+	VkShaderModule output_module;
 
 	VkDescriptorSetLayout ds_layout, nv12_ds_layout;
 	VkPipelineLayout pipe_layout, nv12_pipe_layout;
 	VkSampler sampler, nv12_sampler;
 	VkSamplerYcbcrConversion nv12_conversion;
+	// for blend->output subpass
+	VkPipelineLayout output_pipe_layout;
+	VkDescriptorSetLayout output_ds_layout;
+	size_t last_output_pool_size;
+	struct wl_list output_descriptor_pools; // wlr_vk_descriptor_pool.link
 
 	VkSemaphore timeline_semaphore;
 	uint64_t timeline_point;
@@ -207,6 +221,7 @@ struct wlr_vk_renderer {
 	size_t last_pool_size;
 	struct wl_list descriptor_pools; // wlr_vk_descriptor_pool.link
 	struct wl_list render_format_setups; // wlr_vk_render_format_setup.link
+
 
 	struct wl_list textures; // wlr_vk_texture.link
 	// Textures to return to foreign queue
@@ -257,6 +272,12 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(
 struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 	struct wlr_vk_renderer *renderer, VkDescriptorSetLayout ds_layout,
 	VkDescriptorSet *ds);
+
+// Tries to allocate a descriptor set for the blending image. Will
+// additionally return the pool it was allocated from when successful
+// (for freeing it later).
+struct wlr_vk_descriptor_pool *vulkan_alloc_blend_ds(
+	struct wlr_vk_renderer *renderer, VkDescriptorSet *ds);
 
 // Frees the given descriptor set from the pool its pool.
 void vulkan_free_ds(struct wlr_vk_renderer *renderer,

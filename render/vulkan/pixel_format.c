@@ -293,10 +293,9 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		char render_status[256], texture_status[256];
 
 		// check that specific modifier for render usage
-		// also, only allow rendering to formats with SRGB encoding
 		const char *errmsg = "unknown error";
 		if ((m.drmFormatModifierTilingFeatures & render_features) == render_features &&
-				props->format.is_srgb && !props->format.is_ycbcr) {
+				!props->format.is_ycbcr) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, render_usage, &m, &p, &errmsg)) {
 				props->dmabuf.render_mods[props->dmabuf.render_mod_count++] = p;
