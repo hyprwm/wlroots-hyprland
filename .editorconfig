@@ -7,7 +7,7 @@ charset = utf-8
 trim_trailing_whitespace = true
 indent_style = tab
 indent_size = 4
-max_line_length = 80
+max_line_length = 100
 
 [*.xml]
 indent_style = space
