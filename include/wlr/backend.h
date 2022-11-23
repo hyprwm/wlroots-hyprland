@@ -10,8 +10,8 @@
 #define WLR_BACKEND_H
 
 #include <wayland-server-core.h>
-#include <wlr/backend/session.h>
 
+struct wlr_session;
 struct wlr_backend_impl;
 
 /**
