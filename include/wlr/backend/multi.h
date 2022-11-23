@@ -10,7 +10,6 @@
 #define WLR_BACKEND_MULTI_H
 
 #include <wlr/backend.h>
-#include <wlr/backend/session.h>
 
 /**
  * Creates a multi-backend. Multi-backends wrap an arbitrary number of backends
