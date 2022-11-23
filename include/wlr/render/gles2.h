@@ -10,7 +10,6 @@
 #define WLR_RENDER_GLES2_H
 
 #include <GLES2/gl2.h>
-#include <wlr/backend.h>
 #include <wlr/render/wlr_renderer.h>
 
 struct wlr_egl;

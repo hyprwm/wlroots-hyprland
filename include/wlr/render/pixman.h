@@ -10,7 +10,6 @@
 #define WLR_RENDER_PIXMAN_H
 
 #include <pixman.h>
-#include <wlr/backend.h>
 #include <wlr/render/wlr_renderer.h>
 
 struct wlr_renderer *wlr_pixman_renderer_create(void);
