@@ -18,6 +18,7 @@
 #include "backend/multi.h"
 #include "render/allocator/allocator.h"
 #include "util/env.h"
+#include "util/time.h"
 
 #if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
@@ -66,12 +67,6 @@ void wlr_backend_destroy(struct wlr_backend *backend) {
 	}
 }
 
-static uint64_t get_current_time_ms(void) {
-	struct timespec ts = {0};
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
-}
-
 static struct wlr_session *session_create_and_wait(struct wl_display *disp) {
 	struct wlr_session *session = wlr_session_create(disp);
 
@@ -83,8 +78,8 @@ static struct wlr_session *session_create_and_wait(struct wl_display *disp) {
 	if (!session->active) {
 		wlr_log(WLR_INFO, "Waiting for a session to become active");
 
-		uint64_t started_at = get_current_time_ms();
-		uint64_t timeout = WAIT_SESSION_TIMEOUT;
+		int64_t started_at = get_current_time_msec();
+		int64_t timeout = WAIT_SESSION_TIMEOUT;
 		struct wl_event_loop *event_loop =
 			wl_display_get_event_loop(session->display);
 
@@ -96,7 +91,7 @@ static struct wlr_session *session_create_and_wait(struct wl_display *disp) {
 				return NULL;
 			}
 
-			uint64_t now = get_current_time_ms();
+			int64_t now = get_current_time_msec();
 			if (now >= started_at + WAIT_SESSION_TIMEOUT) {
 				break;
 			}

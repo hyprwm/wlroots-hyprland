@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
 #include <wayland-server-core.h>
 #include <wlr/backend/session.h>
 #include <wlr/config.h>
@@ -17,6 +16,7 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include "backend/session/session.h"
+#include "util/time.h"
 
 #include <libseat.h>
 
@@ -436,12 +436,6 @@ static struct udev_enumerate *enumerate_drm_cards(struct udev *udev) {
 	return en;
 }
 
-static uint64_t get_current_time_ms(void) {
-	struct timespec ts = {0};
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
-}
-
 struct find_gpus_add_handler {
 	bool added;
 	struct wl_listener listener;
@@ -476,8 +470,8 @@ ssize_t wlr_session_find_gpus(struct wlr_session *session,
 		handler.listener.notify = find_gpus_handle_add;
 		wl_signal_add(&session->events.add_drm_card, &handler.listener);
 
-		uint64_t started_at = get_current_time_ms();
-		uint64_t timeout = WAIT_GPU_TIMEOUT;
+		int64_t started_at = get_current_time_msec();
+		int64_t timeout = WAIT_GPU_TIMEOUT;
 		struct wl_event_loop *event_loop =
 			wl_display_get_event_loop(session->display);
 		while (!handler.added) {
@@ -489,7 +483,7 @@ ssize_t wlr_session_find_gpus(struct wlr_session *session,
 				return -1;
 			}
 
-			uint64_t now = get_current_time_ms();
+			int64_t now = get_current_time_msec();
 			if (now >= started_at + WAIT_GPU_TIMEOUT) {
 				break;
 			}
