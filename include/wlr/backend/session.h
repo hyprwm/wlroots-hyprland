@@ -1,7 +1,6 @@
 #ifndef WLR_BACKEND_SESSION_H
 #define WLR_BACKEND_SESSION_H
 
-#include <libudev.h>
 #include <stdbool.h>
 #include <sys/types.h>
 #include <wayland-server-core.h>
