@@ -11,9 +11,9 @@
 
 #include <stdint.h>
 #include <wayland-server-core.h>
-#include <wlr/backend.h>
 #include <wlr/render/wlr_texture.h>
 
+struct wlr_backend;
 struct wlr_renderer_impl;
 struct wlr_drm_format_set;
 struct wlr_buffer;

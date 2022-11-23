@@ -12,6 +12,10 @@
 #include <wlr/config.h>
 #include "render/vulkan.h"
 
+#if defined(__linux__)
+#include <sys/sysmacros.h>
+#endif
+
 static bool check_extension(const VkExtensionProperties *avail,
 		uint32_t avail_len, const char *name) {
 	for (size_t i = 0; i < avail_len; i++) {
