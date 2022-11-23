@@ -6,3 +6,4 @@ option('renderers', type: 'array', choices: ['auto', 'gles2', 'vulkan'], value: 
 option('backends', type: 'array', choices: ['auto', 'drm', 'libinput', 'x11'], value: ['auto'], description: 'Select built-in backends')
 option('allocators', type: 'array', choices: ['auto', 'gbm'], value: ['auto'],
 	description: 'Select built-in allocators')
+option('session', type: 'feature', value: 'auto', description: 'Enable session support')

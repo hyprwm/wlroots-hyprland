@@ -21,6 +21,9 @@ endif
 if not features.get('vulkan-renderer')
 	exclude_files += 'render/vulkan.h'
 endif
+if not features.get('session')
+	exclude_files += 'backend/session.h'
+endif
 
 install_subdir('wlr',
 	install_dir: get_option('includedir'),

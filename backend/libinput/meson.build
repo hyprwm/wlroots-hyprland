@@ -10,7 +10,7 @@ libinput = dependency(
 	not_found_message: '\n'.join(msg),
 )
 
-if not libinput.found()
+if not (libinput.found() and features['session'])
 	subdir_done()
 endif
 

@@ -9,7 +9,6 @@
 #include <wlr/backend/headless.h>
 #include <wlr/backend/interface.h>
 #include <wlr/backend/multi.h>
-#include <wlr/backend/session.h>
 #include <wlr/backend/wayland.h>
 #include <wlr/config.h>
 #include <wlr/render/wlr_renderer.h>
@@ -19,6 +18,10 @@
 #include "render/allocator/allocator.h"
 #include "util/env.h"
 #include "util/time.h"
+
+#if WLR_HAS_SESSION
+#include <wlr/backend/session.h>
+#endif
 
 #if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
@@ -67,6 +70,7 @@ void wlr_backend_destroy(struct wlr_backend *backend) {
 	}
 }
 
+#if WLR_HAS_SESSION
 static struct wlr_session *session_create_and_wait(struct wl_display *disp) {
 	struct wlr_session *session = wlr_session_create(disp);
 
@@ -106,6 +110,7 @@ static struct wlr_session *session_create_and_wait(struct wl_display *disp) {
 
 	return session;
 }
+#endif
 
 clockid_t wlr_backend_get_presentation_clock(struct wlr_backend *backend) {
 	if (backend->impl->get_presentation_clock) {
@@ -247,7 +252,9 @@ static bool attempt_backend_by_name(struct wl_display *display,
 	} else if (strcmp(name, "drm") == 0 || strcmp(name, "libinput") == 0) {
 		// DRM and libinput need a session
 		if (*session_ptr == NULL) {
+#if WLR_HAS_SESSION
 			*session_ptr = session_create_and_wait(display);
+#endif
 			if (*session_ptr == NULL) {
 				wlr_log(WLR_ERROR, "failed to start a session");
 				return false;
@@ -343,7 +350,9 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 #endif
 
 	// Attempt DRM+libinput
+#if WLR_HAS_SESSION
 	session = session_create_and_wait(display);
+#endif
 	if (!session) {
 		wlr_log(WLR_ERROR, "Failed to start a DRM session");
 		goto error;
@@ -388,6 +397,8 @@ success:
 
 error:
 	wlr_backend_destroy(multi);
+#if WLR_HAS_SESSION
 	wlr_session_destroy(session);
+#endif
 	return NULL;
 }

@@ -48,9 +48,9 @@ Install dependencies:
 * GBM (optional, for the GBM allocator)
 * libinput (optional, for the libinput backend)
 * xkbcommon
-* udev
+* udev (optional, for the session)
 * pixman
-* [libseat]
+* [libseat] (optional, for the session)
 * [hwdata] (optional, for the DRM backend)
 
 If you choose to enable X11 support:

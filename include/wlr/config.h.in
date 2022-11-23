@@ -12,4 +12,6 @@
 
 #mesondefine WLR_HAS_XWAYLAND
 
+#mesondefine WLR_HAS_SESSION
+
 #endif

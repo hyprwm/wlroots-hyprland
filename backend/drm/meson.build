@@ -1,3 +1,7 @@
+if not features['session']
+	subdir_done()
+endif
+
 hwdata = dependency('hwdata', required: false, native: true)
 if hwdata.found()
 	hwdata_dir = hwdata.get_variable(pkgconfig: 'pkgdatadir')
