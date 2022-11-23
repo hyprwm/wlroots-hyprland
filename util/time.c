@@ -15,7 +15,7 @@ void timespec_from_nsec(struct timespec *r, int64_t nsec) {
 	r->tv_nsec = nsec % NSEC_PER_SEC;
 }
 
-uint32_t get_current_time_msec(void) {
+int64_t get_current_time_msec(void) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	return timespec_to_msec(&now);

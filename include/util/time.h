@@ -6,7 +6,7 @@
 /**
  * Get the current time, in milliseconds.
  */
-uint32_t get_current_time_msec(void);
+int64_t get_current_time_msec(void);
 
 /**
  * Convert a timespec to milliseconds.
