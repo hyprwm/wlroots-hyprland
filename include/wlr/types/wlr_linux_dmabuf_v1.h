@@ -72,9 +72,11 @@ struct wlr_linux_dmabuf_v1 {
 };
 
 /**
- * Create linux-dmabuf interface.
+ * Create the linux-dmabuf-unstable-v1 global.
+ *
+ * The default DMA-BUF feedback is initialized from the struct wlr_renderer.
  */
-struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *display,
+struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
 	struct wlr_renderer *renderer);
 
 /**
