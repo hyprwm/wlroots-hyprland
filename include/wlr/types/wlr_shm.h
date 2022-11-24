@@ -24,6 +24,17 @@ struct wlr_shm;
 
 /**
  * Create the wl_shm global.
+ *
+ * Compositors using struct wlr_renderer should use wlr_shm_create_with_renderer()
+ * instead.
+ */
+struct wlr_shm *wlr_shm_create(struct wl_display *display, uint32_t version,
+	const uint32_t *formats, size_t formats_len);
+
+/**
+ * Create the wl_shm global.
+ *
+ * The pixel formats advertised to clients are taken from the struct wlr_renderer.
  */
 struct wlr_shm *wlr_shm_create_with_renderer(struct wl_display *display,
 	uint32_t version, struct wlr_renderer *renderer);
