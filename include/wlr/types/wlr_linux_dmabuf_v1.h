@@ -77,7 +77,7 @@ struct wlr_linux_dmabuf_v1 {
  * The default DMA-BUF feedback is initialized from the struct wlr_renderer.
  */
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
-	struct wlr_renderer *renderer);
+	uint32_t version, struct wlr_renderer *renderer);
 
 /**
  * Set a surface's DMA-BUF feedback.

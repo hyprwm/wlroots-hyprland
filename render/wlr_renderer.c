@@ -232,7 +232,7 @@ bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
 			wlr_log(WLR_INFO, "Cannot get renderer DRM FD, disabling wl_drm");
 		}
 
-		if (wlr_linux_dmabuf_v1_create_with_renderer(wl_display, r) == NULL) {
+		if (wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, r) == NULL) {
 			return false;
 		}
 	}

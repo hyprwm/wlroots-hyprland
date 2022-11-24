@@ -927,7 +927,9 @@ static void handle_renderer_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
-		struct wlr_renderer *renderer) {
+		uint32_t version, struct wlr_renderer *renderer) {
+	assert(version <= LINUX_DMABUF_VERSION);
+
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
 		calloc(1, sizeof(struct wlr_linux_dmabuf_v1));
 	if (linux_dmabuf == NULL) {
@@ -939,9 +941,8 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 	wl_list_init(&linux_dmabuf->surfaces);
 	wl_signal_init(&linux_dmabuf->events.destroy);
 
-	linux_dmabuf->global =
-		wl_global_create(display, &zwp_linux_dmabuf_v1_interface,
-			LINUX_DMABUF_VERSION, linux_dmabuf, linux_dmabuf_bind);
+	linux_dmabuf->global = wl_global_create(display, &zwp_linux_dmabuf_v1_interface,
+		version, linux_dmabuf, linux_dmabuf_bind);
 	if (!linux_dmabuf->global) {
 		wlr_log(WLR_ERROR, "could not create linux dmabuf v1 wl global");
 		free(linux_dmabuf);
