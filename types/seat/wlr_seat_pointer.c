@@ -326,7 +326,7 @@ void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		send_source = true;
 	}
 
-	double low_res_value;
+	double low_res_value = 0.0;
 	int32_t low_res_value_discrete = 0;
 	update_value120_accumulators(client, orientation, value, value_discrete,
 		&low_res_value, &low_res_value_discrete);
