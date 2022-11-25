@@ -30,3 +30,11 @@ install_subdir('wlr',
 	install_dir: get_option('includedir'),
 	exclude_files: exclude_files,
 )
+
+foreach name, have : internal_features
+	internal_config.set10('HAS_' + name.underscorify().to_upper(), have)
+endforeach
+wlr_files += configure_file(
+	output: 'config.h',
+	configuration: internal_config,
+)

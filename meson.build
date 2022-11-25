@@ -99,6 +99,7 @@ internal_features = {
 	'xcb-errors': false,
 	'egl': false,
 }
+internal_config = configuration_data()
 
 wayland_project_options = ['tests=false', 'documentation=false']
 wayland_server = dependency('wayland-server',
@@ -157,13 +158,6 @@ subdir('xcursor')
 subdir('xwayland')
 
 subdir('include')
-
-foreach name, have : internal_features
-	add_project_arguments(
-		'-DHAS_@0@=@1@'.format(name.underscorify().to_upper(), have.to_int()),
-		language: 'c',
-	)
-endforeach
 
 wlr_inc = include_directories('include')
 proto_inc = include_directories('protocol')

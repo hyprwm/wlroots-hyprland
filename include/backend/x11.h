@@ -9,10 +9,6 @@
 #include <xcb/xcb.h>
 #include <xcb/present.h>
 
-#if HAS_XCB_ERRORS
-#include <xcb/xcb_errors.h>
-#endif
-
 #include <pixman.h>
 #include <wlr/backend/x11.h>
 #include <wlr/interfaces/wlr_keyboard.h>
@@ -20,6 +16,12 @@
 #include <wlr/interfaces/wlr_touch.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/render/drm_format_set.h>
+
+#include "config.h"
+
+#if HAS_XCB_ERRORS
+#include <xcb/xcb_errors.h>
+#endif
 
 #define XCB_EVENT_RESPONSE_TYPE_MASK 0x7f
 

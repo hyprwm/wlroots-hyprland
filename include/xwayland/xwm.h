@@ -5,10 +5,12 @@
 #include <wlr/config.h>
 #include <wlr/xwayland.h>
 #include <xcb/render.h>
+#include "config.h"
+#include "xwayland/selection.h"
+
 #if HAS_XCB_ERRORS
 #include <xcb/xcb_errors.h>
 #endif
-#include "xwayland/selection.h"
 
 /* This is in xcb/xcb_event.h, but pulling xcb-util just for a constant
  * others redefine anyway is meh
