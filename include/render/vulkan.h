@@ -150,6 +150,8 @@ struct wlr_vk_command_buffer {
 	uint64_t timeline_point;
 	// Textures to destroy after the command buffer completes
 	struct wl_list destroy_textures; // wlr_vk_texture.destroy_link
+	// Staging shared buffers to release after the command buffer completes
+	struct wl_list stage_buffers; // wlr_vk_shared_buffer.link
 };
 
 #define VULKAN_COMMAND_BUFFERS_CAP 64
@@ -292,7 +294,7 @@ struct wlr_vk_allocation {
 // List of suballocated staging buffers.
 // Used to upload to/read from device local images.
 struct wlr_vk_shared_buffer {
-	struct wl_list link; // wlr_vk_renderer.stage.buffers
+	struct wl_list link; // wlr_vk_renderer.stage.buffers or wlr_vk_command_buffer.stage_buffers
 	VkBuffer buffer;
 	VkDeviceMemory memory;
 	VkDeviceSize buf_size;

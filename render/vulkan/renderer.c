@@ -192,13 +192,6 @@ static void shared_buffer_destroy(struct wlr_vk_renderer *r,
 	free(buffer);
 }
 
-static void release_stage_allocations(struct wlr_vk_renderer *renderer) {
-	struct wlr_vk_shared_buffer *buf;
-	wl_list_for_each(buf, &renderer->stage.buffers, link) {
-		buf->allocs.size = 0;
-	}
-}
-
 struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 		VkDeviceSize size, VkDeviceSize alignment) {
 	// try to find free span
@@ -426,6 +419,7 @@ static bool init_command_buffer(struct wlr_vk_command_buffer *cb,
 		.vk = vk_cb,
 	};
 	wl_list_init(&cb->destroy_textures);
+	wl_list_init(&cb->stage_buffers);
 	return true;
 }
 
@@ -450,12 +444,21 @@ static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
 	return true;
 }
 
-static void release_command_buffer_resources(struct wlr_vk_command_buffer *cb) {
+static void release_command_buffer_resources(struct wlr_vk_command_buffer *cb,
+		struct wlr_vk_renderer *renderer) {
 	struct wlr_vk_texture *texture, *texture_tmp;
 	wl_list_for_each_safe(texture, texture_tmp, &cb->destroy_textures, destroy_link) {
 		wl_list_remove(&texture->destroy_link);
 		texture->last_used_cb = NULL;
 		wlr_texture_destroy(&texture->wlr_texture);
+	}
+
+	struct wlr_vk_shared_buffer *buf, *buf_tmp;
+	wl_list_for_each_safe(buf, buf_tmp, &cb->stage_buffers, link) {
+		buf->allocs.size = 0;
+
+		wl_list_remove(&buf->link);
+		wl_list_insert(&renderer->stage.buffers, &buf->link);
 	}
 }
 
@@ -476,7 +479,7 @@ static struct wlr_vk_command_buffer *get_command_buffer(
 		struct wlr_vk_command_buffer *cb = &renderer->command_buffers[i];
 		if (cb->vk != VK_NULL_HANDLE && !cb->recording &&
 				cb->timeline_point <= current_point) {
-			release_command_buffer_resources(cb);
+			release_command_buffer_resources(cb, renderer);
 		}
 	}
 
@@ -955,14 +958,21 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		return;
 	}
 
+	struct wlr_vk_shared_buffer *stage_buf, *stage_buf_tmp;
+	wl_list_for_each_safe(stage_buf, stage_buf_tmp, &renderer->stage.buffers, link) {
+		if (stage_buf->allocs.size == 0) {
+			continue;
+		}
+		wl_list_remove(&stage_buf->link);
+		wl_list_insert(&stage_cb->stage_buffers, &stage_buf->link);
+	}
+
 	// sadly this is required due to the current api/rendering model of wlr
 	// ideally we could use gpu and cpu in parallel (_without_ the
 	// implicit synchronization overhead and mess of opengl drivers)
 	if (!wait_command_buffer(render_cb, renderer)) {
 		return;
 	}
-
-	release_stage_allocations(renderer);
 }
 
 static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
@@ -1162,7 +1172,7 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 		if (cb->vk == VK_NULL_HANDLE) {
 			continue;
 		}
-		release_command_buffer_resources(cb);
+		release_command_buffer_resources(cb, renderer);
 	}
 
 	// stage.cb automatically freed with command pool
