@@ -200,7 +200,7 @@ static void release_stage_allocations(struct wlr_vk_renderer *renderer) {
 }
 
 struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
-		VkDeviceSize size) {
+		VkDeviceSize size, VkDeviceSize alignment) {
 	// try to find free span
 	// simple greedy allocation algorithm - should be enough for this usecase
 	// since all allocations are freed together after the frame
@@ -215,6 +215,10 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 		}
 
 		assert(start <= buf->buf_size);
+
+		// ensure the proposed start is a multiple of alignment
+		start += alignment - 1 - ((start + alignment - 1) % alignment);
+
 		if (buf->buf_size - start < size) {
 			continue;
 		}

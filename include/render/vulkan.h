@@ -231,9 +231,11 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer);
 
 // Suballocates a buffer span with the given size that can be mapped
 // and used as staging buffer. The allocation is implicitly released when the
-// stage cb has finished execution.
+// stage cb has finished execution. The start of the span will be a multiple
+// of the given alignment.
 struct wlr_vk_buffer_span vulkan_get_stage_span(
-	struct wlr_vk_renderer *renderer, VkDeviceSize size);
+	struct wlr_vk_renderer *renderer, VkDeviceSize size,
+	VkDeviceSize alignment);
 
 // Tries to allocate a texture descriptor set. Will additionally
 // return the pool it was allocated from when successful (for freeing it later).

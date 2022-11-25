@@ -73,7 +73,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 	}
 
 	// get staging buffer
-	struct wlr_vk_buffer_span span = vulkan_get_stage_span(renderer, bsize);
+	struct wlr_vk_buffer_span span = vulkan_get_stage_span(renderer, bsize, bytespb);
 	if (!span.buffer || span.alloc.size != bsize) {
 		wlr_log(WLR_ERROR, "Failed to retrieve staging buffer");
 		free(copies);
