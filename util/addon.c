@@ -18,7 +18,7 @@ void wlr_addon_set_finish(struct wlr_addon_set *set) {
 
 void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
 		const void *owner, const struct wlr_addon_interface *impl) {
-	assert(owner && impl);
+	assert(impl);
 	memset(addon, 0, sizeof(*addon));
 	struct wlr_addon *iter;
 	wl_list_for_each(iter, &set->addons, link) {
