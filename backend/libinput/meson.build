@@ -29,7 +29,5 @@ features += { 'libinput-backend': true }
 wlr_deps += libinput
 
 # libinput hold gestures and high resolution scroll are available since 1.19.0
-add_project_arguments([
-	'-DLIBINPUT_HAS_HOLD_GESTURES=@0@'.format(libinput.version().version_compare('>=1.19.0').to_int()),
-	'-DLIBINPUT_HAS_SCROLL_VALUE120=@0@'.format(libinput.version().version_compare('>=1.19.0').to_int()),
-], language: 'c')
+internal_config.set10('LIBINPUT_HAS_HOLD_GESTURES', libinput.version().version_compare('>=1.19.0'))
+internal_config.set10('LIBINPUT_HAS_SCROLL_VALUE120', libinput.version().version_compare('>=1.19.0'))

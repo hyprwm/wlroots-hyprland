@@ -12,6 +12,8 @@
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_touch.h>
 
+#include "config.h"
+
 struct wlr_libinput_backend {
 	struct wlr_backend backend;
 
