@@ -10,6 +10,7 @@
 #include <wlr/util/log.h>
 #include <xf86drm.h>
 
+#include "config.h"
 #include "render/allocator/gbm.h"
 #include "render/drm_format_set.h"
 

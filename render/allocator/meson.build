@@ -21,5 +21,5 @@ if gbm.found()
 	features += { 'gbm-allocator': true }
 
 	has = cc.has_function('gbm_bo_get_fd_for_plane', dependencies: [gbm])
-	add_project_arguments('-DHAS_GBM_BO_GET_FD_FOR_PLANE=@0@'.format(has.to_int()), language: 'c')
+	internal_config.set10('HAS_GBM_BO_GET_FD_FOR_PLANE', has)
 endif
