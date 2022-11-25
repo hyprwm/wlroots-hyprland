@@ -15,8 +15,8 @@
 #include <wayland-server-core.h>
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
+#include "config.h"
 #include "sockets.h"
-#include "xwayland/config.h"
 
 static void safe_close(int fd) {
 	if (fd >= 0) {

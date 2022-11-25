@@ -13,8 +13,6 @@ if not features.get('x11-backend')
 endif
 if not features.get('xwayland')
 	exclude_files += 'xwayland.h'
-else
-	subdir('xwayland')
 endif
 if not features.get('gles2-renderer')
 	exclude_files += ['render/egl.h', 'render/gles2.h']
