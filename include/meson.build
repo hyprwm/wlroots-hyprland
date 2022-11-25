@@ -30,7 +30,7 @@ install_subdir('wlr',
 )
 
 foreach name, have : internal_features
-	internal_config.set10('HAS_' + name.underscorify().to_upper(), have)
+	internal_config.set10('HAVE_' + name.underscorify().to_upper(), have)
 endforeach
 wlr_files += configure_file(
 	output: 'config.h',

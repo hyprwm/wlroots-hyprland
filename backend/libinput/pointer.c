@@ -124,7 +124,7 @@ void handle_pointer_axis(struct libinput_event *event,
 	wl_signal_emit_mutable(&pointer->events.frame, pointer);
 }
 
-#if LIBINPUT_HAS_SCROLL_VALUE120
+#if HAVE_LIBINPUT_SCROLL_VALUE120
 void handle_pointer_axis_value120(struct libinput_event *event,
 		struct wlr_pointer *pointer, enum wlr_axis_source source) {
 	struct libinput_event_pointer *pevent =

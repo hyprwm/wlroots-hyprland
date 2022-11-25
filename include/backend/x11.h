@@ -19,7 +19,7 @@
 
 #include "config.h"
 
-#if HAS_XCB_ERRORS
+#if HAVE_XCB_ERRORS
 #include <xcb/xcb_errors.h>
 #endif
 
@@ -99,7 +99,7 @@ struct wlr_x11_backend {
 	// The time we last received an event
 	xcb_timestamp_t time;
 
-#if HAS_XCB_ERRORS
+#if HAVE_XCB_ERRORS
 	xcb_errors_context_t *errors_context;
 #endif
 
