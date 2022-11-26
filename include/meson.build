@@ -3,6 +3,7 @@ subdir('wlr')
 exclude_files = ['meson.build', 'config.h.in', 'version.h.in']
 if not features.get('drm-backend')
 	exclude_files += 'backend/drm.h'
+	exclude_files += 'types/wlr_drm_lease_v1.h'
 endif
 if not features.get('libinput-backend')
 	exclude_files += 'backend/libinput.h'
