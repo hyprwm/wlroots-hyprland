@@ -1424,13 +1424,16 @@ static bool scene_node_try_direct_scanout(struct wlr_scene_node *node,
 		return false;
 	}
 
-	wlr_output_attach_buffer(output, buffer->buffer);
-	if (!wlr_output_test(output)) {
-		wlr_output_rollback(output);
+	struct wlr_output_state state = {
+		.committed = WLR_OUTPUT_STATE_BUFFER,
+		.buffer = buffer->buffer,
+	};
+
+	if (!wlr_output_test_state(output, &state)) {
 		return false;
 	}
 
-	return wlr_output_commit(output);
+	return wlr_output_commit_state(output, &state);
 }
 
 bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
