@@ -107,7 +107,7 @@ struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 			return NULL;
 		}
 
-		size_t count = renderer->last_pool_size;
+		size_t count = 2 * renderer->last_pool_size;
 		if (!count) {
 			count = start_descriptor_pool_size;
 		}
@@ -134,6 +134,7 @@ struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 			return NULL;
 		}
 
+		renderer->last_pool_size = count;
 		wl_list_insert(&renderer->descriptor_pools, &pool->link);
 	}
 
