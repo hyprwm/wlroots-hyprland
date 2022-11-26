@@ -1,8 +1,21 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include "types/wlr_scene.h"
+
+static void handle_scene_buffer_outputs_update(
+		struct wl_listener *listener, void *data) {
+	struct wlr_scene_surface *surface =
+		wl_container_of(listener, surface, outputs_update);
+
+	if (surface->buffer->primary_output == NULL) {
+		return;
+	}
+	double scale = surface->buffer->primary_output->output->scale;
+	wlr_fractional_scale_v1_notify_scale(surface->surface, scale);
+}
 
 static void handle_scene_buffer_output_enter(
 		struct wl_listener *listener, void *data) {
@@ -140,6 +153,7 @@ static void surface_addon_destroy(struct wlr_addon *addon) {
 
 	wlr_addon_finish(&surface->addon);
 
+	wl_list_remove(&surface->outputs_update.link);
 	wl_list_remove(&surface->output_enter.link);
 	wl_list_remove(&surface->output_leave.link);
 	wl_list_remove(&surface->output_present.link);
@@ -183,6 +197,9 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent
 	surface->buffer = scene_buffer;
 	surface->surface = wlr_surface;
 	scene_buffer->point_accepts_input = scene_buffer_point_accepts_input;
+
+	surface->outputs_update.notify = handle_scene_buffer_outputs_update;
+	wl_signal_add(&scene_buffer->events.outputs_update, &surface->outputs_update);
 
 	surface->output_enter.notify = handle_scene_buffer_output_enter;
 	wl_signal_add(&scene_buffer->events.output_enter, &surface->output_enter);
