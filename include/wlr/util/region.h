@@ -39,8 +39,8 @@ void wlr_region_transform(pixman_region32_t *dst, const pixman_region32_t *src,
 	enum wl_output_transform transform, int width, int height);
 
 /**
- * Expands the region of `distance`. If `distance` is negative, it shrinks the
- * region.
+ * Expands the region by distance on both axis. distance must be
+ * a non-negative number.
  */
 void wlr_region_expand(pixman_region32_t *dst, const pixman_region32_t *src,
 	int distance);
