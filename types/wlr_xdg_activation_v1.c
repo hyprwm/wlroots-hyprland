@@ -127,9 +127,9 @@ static void token_handle_commit(struct wl_client *client,
 		return;
 	}
 
-	xdg_activation_token_v1_send_done(token_resource, token->token);
+	wl_signal_emit_mutable(&token->activation->events.new_token, token);
 
-	// TODO: consider emitting a new_token event
+	xdg_activation_token_v1_send_done(token_resource, token->token);
 
 	return;
 
@@ -361,6 +361,7 @@ struct wlr_xdg_activation_v1 *wlr_xdg_activation_v1_create(
 	wl_list_init(&activation->tokens);
 	wl_signal_init(&activation->events.destroy);
 	wl_signal_init(&activation->events.request_activate);
+	wl_signal_init(&activation->events.new_token);
 
 	activation->global = wl_global_create(display,
 		&xdg_activation_v1_interface, XDG_ACTIVATION_V1_VERSION, activation,
