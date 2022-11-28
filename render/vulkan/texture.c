@@ -453,7 +453,7 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	assert(plane_count < WLR_DMABUF_MAX_PLANES);
 	struct wlr_vk_format_modifier_props *mod =
 		vulkan_format_props_find_modifier(fmt, attribs->modifier, for_render);
-	if (!mod || !(mod->dmabuf_flags & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT)) {
+	if (!mod) {
 		wlr_log(WLR_ERROR, "Format %"PRIx32" (%.4s) can't be used with modifier "
 			"%"PRIx64, attribs->format, (const char*) &attribs->format,
 			attribs->modifier);

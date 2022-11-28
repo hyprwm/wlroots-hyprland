@@ -88,9 +88,7 @@ const struct wlr_vk_format *vulkan_get_format_from_drm(uint32_t drm_format);
 
 struct wlr_vk_format_modifier_props {
 	VkDrmFormatModifierPropertiesEXT props;
-	VkExternalMemoryFeatureFlags dmabuf_flags;
 	VkExtent2D max_extent;
-	bool export_imported;
 };
 
 struct wlr_vk_format_props {

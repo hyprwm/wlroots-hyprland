@@ -168,14 +168,9 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 					VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) {
 				unsigned c = props->render_mod_count;
 				VkExtent3D me = ifmtp.imageFormatProperties.maxExtent;
-				VkExternalMemoryProperties emp = efmtp.externalMemoryProperties;
 				props->render_mods[c].props = m;
 				props->render_mods[c].max_extent.width = me.width;
 				props->render_mods[c].max_extent.height = me.height;
-				props->render_mods[c].dmabuf_flags = emp.externalMemoryFeatures;
-				props->render_mods[c].export_imported =
-					(emp.exportFromImportedHandleTypes &
-					 VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
 				++props->render_mod_count;
 
 				found = true;
@@ -208,14 +203,9 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 					VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) {
 				unsigned c = props->texture_mod_count;
 				VkExtent3D me = ifmtp.imageFormatProperties.maxExtent;
-				VkExternalMemoryProperties emp = efmtp.externalMemoryProperties;
 				props->texture_mods[c].props = m;
 				props->texture_mods[c].max_extent.width = me.width;
 				props->texture_mods[c].max_extent.height = me.height;
-				props->texture_mods[c].dmabuf_flags = emp.externalMemoryFeatures;
-				props->texture_mods[c].export_imported =
-					(emp.exportFromImportedHandleTypes &
-					 VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
 				++props->texture_mod_count;
 
 				found = true;
