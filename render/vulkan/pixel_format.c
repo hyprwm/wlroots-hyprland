@@ -340,24 +340,15 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 		format_name ? format_name : "<unknown>", format->drm);
 	free(format_name);
 
-	// get general features and modifiers
-	VkFormatProperties2 fmtp = {0};
-	fmtp.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-
-	VkDrmFormatModifierPropertiesListEXT modp = {0};
-	modp.sType = VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT;
-	fmtp.pNext = &modp;
+	VkDrmFormatModifierPropertiesListEXT modp = {
+		.sType = VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT,
+	};
+	VkFormatProperties2 fmtp = {
+		.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+		.pNext = &modp,
+	};
 
 	vkGetPhysicalDeviceFormatProperties2(dev->phdev, format->vk, &fmtp);
-
-	// detailed check
-	VkPhysicalDeviceImageFormatInfo2 fmti = {0};
-	fmti.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
-	fmti.type = VK_IMAGE_TYPE_2D;
-	fmti.format = format->vk;
-
-	VkImageFormatProperties2 ifmtp = {0};
-	ifmtp.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
 
 	bool add_fmt_props = false;
 	struct wlr_vk_format_props props = {0};
@@ -366,13 +357,18 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 	// non-dmabuf texture properties
 	const char *shm_texture_status;
 	if ((fmtp.formatProperties.optimalTilingFeatures & tex_features) == tex_features) {
-		fmti.pNext = NULL;
-		ifmtp.pNext = NULL;
-		fmti.tiling = VK_IMAGE_TILING_OPTIMAL;
-		fmti.usage = tex_usage;
+		VkPhysicalDeviceImageFormatInfo2 fmti = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+			.type = VK_IMAGE_TYPE_2D,
+			.format = format->vk,
+			.tiling = VK_IMAGE_TILING_OPTIMAL,
+			.usage = tex_usage,
+		};
+		VkImageFormatProperties2 ifmtp = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+		};
 
-		res = vkGetPhysicalDeviceImageFormatProperties2(
-			dev->phdev, &fmti, &ifmtp);
+		res = vkGetPhysicalDeviceImageFormatProperties2(dev->phdev, &fmti, &ifmtp);
 		if (res != VK_SUCCESS) {
 			if (res != VK_ERROR_FORMAT_NOT_SUPPORTED) {
 				wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2",
