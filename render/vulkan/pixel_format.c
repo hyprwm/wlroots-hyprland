@@ -414,7 +414,7 @@ void vulkan_format_props_finish(struct wlr_vk_format_props *props) {
 	free(props->render_mods);
 }
 
-struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
+const struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 		struct wlr_vk_format_props *props, uint64_t mod, bool render) {
 	if (render) {
 		for (unsigned i = 0u; i < props->render_mod_count; ++i) {
