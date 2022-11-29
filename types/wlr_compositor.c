@@ -438,6 +438,8 @@ static void surface_commit_state(struct wlr_surface *surface,
 		surface->role->precommit(surface, next);
 	}
 
+	wl_signal_emit_mutable(&surface->events.precommit, next);
+
 	bool invalid_buffer = next->committed & WLR_SURFACE_STATE_BUFFER;
 
 	surface_update_damage(&surface->buffer_damage, &surface->current, next);
@@ -692,6 +694,7 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	surface->pending.seq = 1;
 
 	wl_signal_init(&surface->events.client_commit);
+	wl_signal_init(&surface->events.precommit);
 	wl_signal_init(&surface->events.commit);
 	wl_signal_init(&surface->events.destroy);
 	wl_signal_init(&surface->events.new_subsurface);
