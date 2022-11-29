@@ -8,29 +8,29 @@
 // Reversed endianess of shm and vulkan format names
 static const struct wlr_vk_format formats[] = {
 	{
-		.drm_format = DRM_FORMAT_ARGB8888,
-		.vk_format = VK_FORMAT_B8G8R8A8_SRGB,
+		.drm = DRM_FORMAT_ARGB8888,
+		.vk = VK_FORMAT_B8G8R8A8_SRGB,
 		.is_srgb = true,
 	},
 	{
-		.drm_format = DRM_FORMAT_XRGB8888,
-		.vk_format = VK_FORMAT_B8G8R8A8_SRGB,
+		.drm = DRM_FORMAT_XRGB8888,
+		.vk = VK_FORMAT_B8G8R8A8_SRGB,
 		.is_srgb = true,
 	},
 	{
-		.drm_format = DRM_FORMAT_XBGR8888,
-		.vk_format = VK_FORMAT_R8G8B8A8_SRGB,
+		.drm = DRM_FORMAT_XBGR8888,
+		.vk = VK_FORMAT_R8G8B8A8_SRGB,
 		.is_srgb = true,
 	},
 	{
-		.drm_format = DRM_FORMAT_ABGR8888,
-		.vk_format = VK_FORMAT_R8G8B8A8_SRGB,
+		.drm = DRM_FORMAT_ABGR8888,
+		.vk = VK_FORMAT_R8G8B8A8_SRGB,
 		.is_srgb = true,
 	},
 #if WLR_LITTLE_ENDIAN
 	{
-		.drm_format = DRM_FORMAT_RGB565,
-		.vk_format = VK_FORMAT_R5G6B5_UNORM_PACK16,
+		.drm = DRM_FORMAT_RGB565,
+		.vk = VK_FORMAT_R5G6B5_UNORM_PACK16,
 	},
 #endif
 };
@@ -42,7 +42,7 @@ const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
 
 const struct wlr_vk_format *vulkan_get_format_from_drm(uint32_t drm_format) {
 	for (unsigned i = 0; i < sizeof(formats) / sizeof(formats[0]); ++i) {
-		if (formats[i].drm_format == drm_format) {
+		if (formats[i].drm == drm_format) {
 			return &formats[i];
 		}
 	}
@@ -97,8 +97,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		return false;
 	}
 
-	vkGetPhysicalDeviceFormatProperties2(dev->phdev,
-		props->format.vk_format, &fmtp);
+	vkGetPhysicalDeviceFormatProperties2(dev->phdev, props->format.vk, &fmtp);
 
 	props->render_mods = calloc(modp.drmFormatModifierCount,
 		sizeof(*props->render_mods));
@@ -175,7 +174,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 				found = true;
 				wlr_drm_format_set_add(&dev->dmabuf_render_formats,
-					props->format.drm_format, m.drmFormatModifier);
+					props->format.drm, m.drmFormatModifier);
 
 				render_status = "✓ render";
 			} else {
@@ -210,7 +209,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 				found = true;
 				wlr_drm_format_set_add(&dev->dmabuf_texture_formats,
-					props->format.drm_format, m.drmFormatModifier);
+					props->format.drm, m.drmFormatModifier);
 
 				texture_status = "✓ texture";
 			} else {
@@ -236,9 +235,9 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 		const struct wlr_vk_format *format) {
 	VkResult res;
 
-	char *format_name = drmGetFormatName(format->drm_format);
+	char *format_name = drmGetFormatName(format->drm);
 	wlr_log(WLR_DEBUG, "  %s (0x%08"PRIX32")",
-		format_name ? format_name : "<unknown>", format->drm_format);
+		format_name ? format_name : "<unknown>", format->drm);
 	free(format_name);
 
 	// get general features and modifiers
@@ -249,14 +248,13 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 	modp.sType = VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT;
 	fmtp.pNext = &modp;
 
-	vkGetPhysicalDeviceFormatProperties2(dev->phdev,
-		format->vk_format, &fmtp);
+	vkGetPhysicalDeviceFormatProperties2(dev->phdev, format->vk, &fmtp);
 
 	// detailed check
 	VkPhysicalDeviceImageFormatInfo2 fmti = {0};
 	fmti.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
 	fmti.type = VK_IMAGE_TYPE_2D;
-	fmti.format = format->vk_format;
+	fmti.format = format->vk;
 
 	VkImageFormatProperties2 ifmtp = {0};
 	ifmtp.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -290,7 +288,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 
 			shm_texture_status = "✓ texture";
 
-			dev->shm_formats[dev->shm_format_count] = format->drm_format;
+			dev->shm_formats[dev->shm_format_count] = format->drm;
 			++dev->shm_format_count;
 
 			add_fmt_props = true;

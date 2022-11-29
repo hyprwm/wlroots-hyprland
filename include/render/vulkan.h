@@ -79,8 +79,8 @@ int vulkan_find_mem_type(struct wlr_vk_device *device,
 	VkMemoryPropertyFlags flags, uint32_t req_bits);
 
 struct wlr_vk_format {
-	uint32_t drm_format;
-	VkFormat vk_format;
+	uint32_t drm;
+	VkFormat vk;
 	bool is_srgb;
 };
 

@@ -43,8 +43,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 	struct wlr_vk_renderer *renderer = texture->renderer;
 	VkDevice dev = texture->renderer->dev->dev;
 
-	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(
-			texture->format->drm_format);
+	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(texture->format->drm);
 	assert(format_info);
 
 	uint32_t bsize = 0;
@@ -177,7 +176,7 @@ static bool vulkan_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 
 	bool ok = true;
 
-	if (format != texture->format->drm_format) {
+	if (format != texture->format->drm) {
 		ok = false;
 		goto out;
 	}
@@ -287,7 +286,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = VK_IMAGE_TYPE_2D,
-		.format = texture->format->vk_format,
+		.format = texture->format->vk,
 		.mipLevels = 1,
 		.arrayLayers = 1,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
@@ -342,7 +341,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->format->vk_format,
+		.format = texture->format->vk,
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -488,7 +487,7 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = VK_IMAGE_TYPE_2D,
-		.format = fmt->format.vk_format,
+		.format = fmt->format.vk,
 		.mipLevels = 1,
 		.arrayLayers = 1,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
@@ -678,7 +677,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->format->vk_format,
+		.format = texture->format->vk,
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -796,7 +795,7 @@ void wlr_vk_texture_get_image_attribs(struct wlr_texture *texture,
 		struct wlr_vk_image_attribs *attribs) {
 	struct wlr_vk_texture *vk_texture = vulkan_get_texture(texture);
 	attribs->image = vk_texture->image;
-	attribs->format = vk_texture->format->vk_format;
+	attribs->format = vk_texture->format->vk;
 	attribs->layout = vk_texture->transitioned ?
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
 }

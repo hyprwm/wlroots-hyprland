@@ -392,7 +392,7 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 struct wlr_vk_format_props *vulkan_format_props_from_drm(
 		struct wlr_vk_device *dev, uint32_t drm_fmt) {
 	for (size_t i = 0u; i < dev->format_prop_count; ++i) {
-		if (dev->format_props[i].format.drm_format == drm_fmt) {
+		if (dev->format_props[i].format.drm == drm_fmt) {
 			return &dev->format_props[i];
 		}
 	}
@@ -618,7 +618,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = buffer->image,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = fmt->format.vk_format,
+		.format = fmt->format.vk,
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -638,8 +638,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		goto error_view;
 	}
 
-	buffer->render_setup = find_or_create_render_setup(
-		renderer, fmt->format.vk_format);
+	buffer->render_setup = find_or_create_render_setup(renderer, fmt->format.vk);
 	if (!buffer->render_setup) {
 		goto error_view;
 	}
@@ -1315,7 +1314,7 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 				"matching drm format 0x%08x available", drm_format);
 		return false;
 	}
-	VkFormat dst_format = wlr_vk_format->vk_format;
+	VkFormat dst_format = wlr_vk_format->vk;
 	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format;
 	VkFormatProperties dst_format_props = {0}, src_format_props = {0};
 	vkGetPhysicalDeviceFormatProperties(vk_renderer->dev->phdev, dst_format, &dst_format_props);
