@@ -119,6 +119,29 @@ static const struct wlr_vk_format formats[] = {
 		.vk = VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 	},
 #endif
+
+	// Vulkan 16-bits-per-channel formats have an inverted channel order
+	// compared to DRM formats, just like the 8-bits-per-channel ones.
+	// On little endian systems the memory representation of each channel
+	// matches the DRM formats'.
+#if WLR_LITTLE_ENDIAN
+	{
+		.drm = DRM_FORMAT_ABGR16161616,
+		.vk = VK_FORMAT_R16G16B16A16_UNORM,
+	},
+	{
+		.drm = DRM_FORMAT_XBGR16161616,
+		.vk = VK_FORMAT_R16G16B16A16_UNORM,
+	},
+	{
+		.drm = DRM_FORMAT_ABGR16161616F,
+		.vk = VK_FORMAT_R16G16B16A16_SFLOAT,
+	},
+	{
+		.drm = DRM_FORMAT_XBGR16161616F,
+		.vk = VK_FORMAT_R16G16B16A16_SFLOAT,
+	},
+#endif
 };
 
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
