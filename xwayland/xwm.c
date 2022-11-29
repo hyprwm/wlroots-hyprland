@@ -875,7 +875,7 @@ static const struct wlr_surface_role xwayland_surface_role = {
 	.destroy = xwayland_surface_role_destroy,
 };
 
-static void xwm_map_shell_surface(struct wlr_xwm *xwm,
+static void xwayland_surface_associate(struct wlr_xwm *xwm,
 		struct wlr_xwayland_surface *xsurface, struct wlr_surface *surface) {
 	if (!wlr_surface_set_role(surface, &xwayland_surface_role, xsurface,
 			NULL, 0)) {
@@ -1112,7 +1112,7 @@ static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
 	if (resource) {
 		struct wlr_surface *surface = wlr_surface_from_resource(resource);
 		xsurface->surface_id = 0;
-		xwm_map_shell_surface(xwm, xsurface, surface);
+		xwayland_surface_associate(xwm, xsurface, surface);
 	} else {
 		xsurface->surface_id = id;
 		wl_list_remove(&xsurface->unpaired_link);
@@ -1142,7 +1142,7 @@ static void xwm_handle_surface_serial_message(struct wlr_xwm *xwm,
 	struct wlr_surface *surface = wlr_xwayland_shell_v1_surface_from_serial(
 		xwm->xwayland->shell_v1, xsurface->serial);
 	if (surface != NULL) {
-		xwm_map_shell_surface(xwm, xsurface, surface);
+		xwayland_surface_associate(xwm, xsurface, surface);
 	} else {
 		wl_list_remove(&xsurface->unpaired_link);
 		wl_list_insert(&xwm->unpaired_surfaces, &xsurface->unpaired_link);
@@ -1672,7 +1672,7 @@ static void handle_compositor_new_surface(struct wl_listener *listener,
 	struct wlr_xwayland_surface *xsurface;
 	wl_list_for_each(xsurface, &xwm->unpaired_surfaces, unpaired_link) {
 		if (xsurface->surface_id == surface_id) {
-			xwm_map_shell_surface(xwm, xsurface, surface);
+			xwayland_surface_associate(xwm, xsurface, surface);
 			xcb_flush(xwm->xcb_conn);
 			return;
 		}
@@ -1697,7 +1697,7 @@ static void handle_shell_v1_new_surface(struct wl_listener *listener,
 	struct wlr_xwayland_surface *xsurface;
 	wl_list_for_each(xsurface, &xwm->unpaired_surfaces, unpaired_link) {
 		if (xsurface->serial == shell_surface->serial) {
-			xwm_map_shell_surface(xwm, xsurface, shell_surface->surface);
+			xwayland_surface_associate(xwm, xsurface, shell_surface->surface);
 			return;
 		}
 	}
