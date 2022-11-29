@@ -5,8 +5,11 @@
 #include <xf86drm.h>
 #include "render/vulkan.h"
 
-// Reversed endianess of shm and vulkan format names
 static const struct wlr_vk_format formats[] = {
+	// Vulkan non-packed 8-bits-per-channel formats have an inverted channel
+	// order compared to the DRM formats, because DRM format channel order
+	// is little-endian while Vulkan format channel order is in memory byte
+	// order.
 	{
 		.drm = DRM_FORMAT_ARGB8888,
 		.vk = VK_FORMAT_B8G8R8A8_SRGB,
@@ -27,6 +30,9 @@ static const struct wlr_vk_format formats[] = {
 		.vk = VK_FORMAT_R8G8B8A8_SRGB,
 		.is_srgb = true,
 	},
+
+	// Vulkan packed formats have the same channel order as DRM formats on
+	// little endian systems.
 #if WLR_LITTLE_ENDIAN
 	{
 		.drm = DRM_FORMAT_RGB565,
