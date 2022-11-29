@@ -236,8 +236,9 @@ static void xdg_surface_handle_destroy(struct wl_client *client,
 	}
 
 	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-		wlr_log(WLR_ERROR, "Tried to destroy an xdg_surface before its role "
-			"object");
+		wl_resource_post_error(resource,
+			XDG_SURFACE_ERROR_DEFUNCT_ROLE_OBJECT,
+			"surface was destroyed before its role object");
 		return;
 	}
 
