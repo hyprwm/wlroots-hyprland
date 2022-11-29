@@ -53,6 +53,18 @@ static const struct wlr_pixel_format_info pixel_format_info[] = {
 		.has_alpha = true,
 	},
 	{
+		.drm_format = DRM_FORMAT_R8,
+		.bpp = 8,
+	},
+	{
+		.drm_format = DRM_FORMAT_GR88,
+		.bpp = 16,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGB888,
+		.bpp = 24,
+	},
+	{
 		.drm_format = DRM_FORMAT_BGR888,
 		.opaque_substitute = DRM_FORMAT_INVALID,
 		.bpp = 24,
@@ -71,6 +83,16 @@ static const struct wlr_pixel_format_info pixel_format_info[] = {
 		.has_alpha = true,
 	},
 	{
+		.drm_format = DRM_FORMAT_BGRX4444,
+		.bpp = 16,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRA4444,
+		.opaque_substitute = DRM_FORMAT_BGRX4444,
+		.bpp = 16,
+		.has_alpha = true,
+	},
+	{
 		.drm_format = DRM_FORMAT_RGBX5551,
 		.opaque_substitute = DRM_FORMAT_INVALID,
 		.bpp = 16,
@@ -79,6 +101,26 @@ static const struct wlr_pixel_format_info pixel_format_info[] = {
 	{
 		.drm_format = DRM_FORMAT_RGBA5551,
 		.opaque_substitute = DRM_FORMAT_RGBX5551,
+		.bpp = 16,
+		.has_alpha = true,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRX5551,
+		.bpp = 16,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRA5551,
+		.opaque_substitute = DRM_FORMAT_BGRX5551,
+		.bpp = 16,
+		.has_alpha = true,
+	},
+	{
+		.drm_format = DRM_FORMAT_XRGB1555,
+		.bpp = 16,
+	},
+	{
+		.drm_format = DRM_FORMAT_ARGB1555,
+		.opaque_substitute = DRM_FORMAT_XRGB1555,
 		.bpp = 16,
 		.has_alpha = true,
 	},
