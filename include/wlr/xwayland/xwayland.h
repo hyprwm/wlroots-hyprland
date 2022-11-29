@@ -13,6 +13,7 @@
 #include <wayland-server-core.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
+#include <wlr/util/addon.h>
 
 struct wlr_xwm;
 struct wlr_data_source;
@@ -89,6 +90,10 @@ struct wlr_xwayland_surface {
 	struct wl_list unpaired_link;
 
 	struct wlr_surface *surface;
+	struct wlr_addon surface_addon;
+	struct wl_listener surface_commit;
+	struct wl_listener surface_precommit;
+
 	int16_t x, y;
 	uint16_t width, height;
 	uint16_t saved_width, saved_height;
@@ -227,15 +232,17 @@ void wlr_xwayland_set_seat(struct wlr_xwayland *xwayland,
 	struct wlr_seat *seat);
 
 /**
- * Returns true if the surface has the xwayland surface role.
+ * Check whether a surface is an Xwayland surface.
+ *
+ * As an edge case, if the surface has been created by Xwayland but has no X11
+ * window associated, false is returned.
  */
 bool wlr_surface_is_xwayland_surface(struct wlr_surface *surface);
 
 /**
  * Get a struct wlr_xwayland_surface from a struct wlr_surface.
- * Asserts that the surface has the xwayland surface role.
- * May return NULL even if the surface has the xwayland surface role if the
- * corresponding xwayland surface has been unmapped or destroyed.
+ *
+ * This function asserts that the surface is an Xwayland surface.
  */
 struct wlr_xwayland_surface *wlr_xwayland_surface_from_wlr_surface(
 	struct wlr_surface *surface);

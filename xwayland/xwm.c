@@ -99,16 +99,18 @@ struct pending_startup_id {
 	struct wl_list link;
 };
 
-static const struct wlr_surface_role xwayland_surface_role;
+static const struct wlr_addon_interface surface_addon_impl;
 
 bool wlr_surface_is_xwayland_surface(struct wlr_surface *surface) {
-	return surface->role == &xwayland_surface_role;
+	return wlr_addon_find(&surface->addons, NULL, &surface_addon_impl) != NULL;
 }
 
 struct wlr_xwayland_surface *wlr_xwayland_surface_from_wlr_surface(
 		struct wlr_surface *surface) {
-	assert(wlr_surface_is_xwayland_surface(surface));
-	return (struct wlr_xwayland_surface *)surface->role_data;
+	struct wlr_addon *addon = wlr_addon_find(&surface->addons, NULL, &surface_addon_impl);
+	assert(addon != NULL);
+	struct wlr_xwayland_surface *xsurface = wl_container_of(addon, xsurface, surface_addon);
+	return xsurface;
 }
 
 // TODO: replace this with hash table?
@@ -386,10 +388,26 @@ static void xsurface_set_net_wm_state(struct wlr_xwayland_surface *xsurface) {
 		i, property);
 }
 
-static void xwayland_surface_destroy(
-		struct wlr_xwayland_surface *xsurface) {
+static void xwayland_surface_set_mapped(struct wlr_xwayland_surface *xsurface, bool mapped);
+
+static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
+	xwayland_surface_set_mapped(xsurface, false);
+
+	// Make sure we're not on the unpaired surface list or we
+	// could be assigned a surface during surface creation that
+	// was mapped before this unmap request.
+	wl_list_remove(&xsurface->unpaired_link);
+	wl_list_init(&xsurface->unpaired_link);
+	wl_list_remove(&xsurface->surface_commit.link);
+	wl_list_remove(&xsurface->surface_precommit.link);
+	wlr_addon_finish(&xsurface->surface_addon);
+	xsurface->surface_id = 0;
+	xsurface->surface = NULL;
+}
+
+static void xwayland_surface_destroy(struct wlr_xwayland_surface *xsurface) {
 	if (xsurface->surface != NULL) {
-		wlr_surface_destroy_role_object(xsurface->surface);
+		xwayland_surface_dissociate(xsurface);
 	}
 
 	wl_signal_emit_mutable(&xsurface->events.destroy, xsurface);
@@ -823,71 +841,61 @@ static void read_surface_property(struct wlr_xwm *xwm,
 	free(reply);
 }
 
-static void xwayland_surface_role_commit(struct wlr_surface *wlr_surface) {
-	assert(wlr_surface->role == &xwayland_surface_role);
-	struct wlr_xwayland_surface *surface = wlr_surface->role_data;
-
-	if (!surface->mapped && wlr_surface_has_buffer(surface->surface)) {
-		surface->mapped = true;
-		wl_signal_emit_mutable(&surface->events.map, surface);
-		xwm_set_net_client_list(surface->xwm);
+static void xwayland_surface_set_mapped(struct wlr_xwayland_surface *xsurface, bool mapped) {
+	if (xsurface->mapped == mapped) {
+		return;
 	}
+
+	xsurface->mapped = mapped;
+
+	if (mapped) {
+		wl_signal_emit_mutable(&xsurface->events.map, xsurface);
+	} else {
+		wl_signal_emit_mutable(&xsurface->events.unmap, xsurface);
+	}
+
+	xwm_set_net_client_list(xsurface->xwm);
 }
 
-static void xwayland_surface_role_precommit(struct wlr_surface *wlr_surface,
-		const struct wlr_surface_state *state) {
-	assert(wlr_surface->role == &xwayland_surface_role);
-	struct wlr_xwayland_surface *surface = wlr_surface->role_data;
+static void xwayland_surface_handle_commit(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_commit);
+	bool mapped = wlr_surface_has_buffer(xsurface->surface);
+	xwayland_surface_set_mapped(xsurface, mapped);
+}
 
+static void xwayland_surface_handle_precommit(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_precommit);
+	const struct wlr_surface_state *state = data;
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
-		if (surface->mapped) {
-			surface->mapped = false;
-			wl_signal_emit_mutable(&surface->events.unmap, surface);
-			xwm_set_net_client_list(surface->xwm);
-		}
+		xwayland_surface_set_mapped(xsurface, false);
 	}
 }
 
-static void xwayland_surface_role_destroy(struct wlr_surface *wlr_surface) {
-	assert(wlr_surface->role == &xwayland_surface_role);
-	struct wlr_xwayland_surface *surface = wlr_surface->role_data;
-
-	if (surface->mapped) {
-		wl_signal_emit_mutable(&surface->events.unmap, surface);
-		surface->mapped = false;
-		xwm_set_net_client_list(surface->xwm);
-	}
-
-	// Make sure we're not on the unpaired surface list or we
-	// could be assigned a surface during surface creation that
-	// was mapped before this unmap request.
-	wl_list_remove(&surface->unpaired_link);
-	wl_list_init(&surface->unpaired_link);
-	surface->surface_id = 0;
-	surface->surface = NULL;
+static void xwayland_surface_handle_addon_destroy(struct wlr_addon *addon) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(addon, xsurface, surface_addon);
+	xwayland_surface_dissociate(xsurface);
 }
 
-static const struct wlr_surface_role xwayland_surface_role = {
+static const struct wlr_addon_interface surface_addon_impl = {
 	.name = "wlr_xwayland_surface",
-	.commit = xwayland_surface_role_commit,
-	.precommit = xwayland_surface_role_precommit,
-	.destroy = xwayland_surface_role_destroy,
+	.destroy = xwayland_surface_handle_addon_destroy,
 };
 
 static void xwayland_surface_associate(struct wlr_xwm *xwm,
 		struct wlr_xwayland_surface *xsurface, struct wlr_surface *surface) {
-	if (!wlr_surface_set_role(surface, &xwayland_surface_role, xsurface,
-			NULL, 0)) {
-		wlr_log(WLR_ERROR, "Failed to set xwayland surface role");
-		return;
-	}
-
 	wl_list_remove(&xsurface->unpaired_link);
 	wl_list_init(&xsurface->unpaired_link);
 	xsurface->surface_id = 0;
 
 	xsurface->surface = surface;
+	wlr_addon_init(&xsurface->surface_addon, &surface->addons, NULL, &surface_addon_impl);
+
+	xsurface->surface_commit.notify = xwayland_surface_handle_commit;
+	wl_signal_add(&surface->events.commit, &xsurface->surface_commit);
+
+	xsurface->surface_precommit.notify = xwayland_surface_handle_precommit;
+	wl_signal_add(&surface->events.commit, &xsurface->surface_precommit);
 
 	// read all surface properties
 	const xcb_atom_t props[] = {
@@ -1080,7 +1088,7 @@ static void xwm_handle_unmap_notify(struct wlr_xwm *xwm,
 	}
 
 	if (xsurface->surface != NULL) {
-		wlr_surface_destroy_role_object(xsurface->surface);
+		xwayland_surface_dissociate(xsurface);
 	}
 
 	xsurface_set_wm_state(xsurface, XCB_ICCCM_WM_STATE_WITHDRAWN);
