@@ -11,6 +11,26 @@ static const struct wlr_vk_format formats[] = {
 	// is little-endian while Vulkan format channel order is in memory byte
 	// order.
 	{
+		.drm = DRM_FORMAT_R8,
+		.vk = VK_FORMAT_R8_SRGB,
+		.is_srgb = true,
+	},
+	{
+		.drm = DRM_FORMAT_GR88,
+		.vk = VK_FORMAT_R8G8_SRGB,
+		.is_srgb = true,
+	},
+	{
+		.drm = DRM_FORMAT_RGB888,
+		.vk = VK_FORMAT_B8G8R8_SRGB,
+		.is_srgb = true,
+	},
+	{
+		.drm = DRM_FORMAT_BGR888,
+		.vk = VK_FORMAT_R8G8B8_SRGB,
+		.is_srgb = true,
+	},
+	{
 		.drm = DRM_FORMAT_ARGB8888,
 		.vk = VK_FORMAT_B8G8R8A8_SRGB,
 		.is_srgb = true,
