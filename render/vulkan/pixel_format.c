@@ -264,15 +264,15 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 	vkGetPhysicalDeviceFormatProperties2(dev->phdev, props->format.vk, &fmtp);
 
-	props->render_mods =
-		calloc(modp.drmFormatModifierCount, sizeof(*props->render_mods));
-	props->texture_mods =
-		calloc(modp.drmFormatModifierCount, sizeof(*props->texture_mods));
-	if (!props->render_mods || !props->texture_mods) {
+	props->dmabuf.render_mods =
+		calloc(modp.drmFormatModifierCount, sizeof(*props->dmabuf.render_mods));
+	props->dmabuf.texture_mods =
+		calloc(modp.drmFormatModifierCount, sizeof(*props->dmabuf.texture_mods));
+	if (!props->dmabuf.render_mods || !props->dmabuf.texture_mods) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(modp.pDrmFormatModifierProperties);
-		free(props->render_mods);
-		free(props->texture_mods);
+		free(props->dmabuf.render_mods);
+		free(props->dmabuf.texture_mods);
 		return false;
 	}
 
@@ -288,7 +288,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 				props->format.is_srgb) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, render_usage, &m, &p, &errmsg)) {
-				props->render_mods[props->render_mod_count++] = p;
+				props->dmabuf.render_mods[props->dmabuf.render_mod_count++] = p;
 				wlr_drm_format_set_add(&dev->dmabuf_render_formats,
 					props->format.drm, m.drmFormatModifier);
 				found = true;
@@ -307,7 +307,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		if ((m.drmFormatModifierTilingFeatures & dma_tex_features) == dma_tex_features) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, dma_tex_usage, &m, &p, &errmsg)) {
-				props->texture_mods[props->texture_mod_count++] = p;
+				props->dmabuf.texture_mods[props->dmabuf.texture_mod_count++] = p;
 				wlr_drm_format_set_add(&dev->dmabuf_texture_formats,
 					props->format.drm, m.drmFormatModifier);
 				found = true;
@@ -380,9 +380,9 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 			}
 		} else {
 			VkExtent3D me = ifmtp.imageFormatProperties.maxExtent;
-			props.max_extent.width = me.width;
-			props.max_extent.height = me.height;
-			props.features = fmtp.formatProperties.optimalTilingFeatures;
+			props.shm.max_extent.width = me.width;
+			props.shm.max_extent.height = me.height;
+			props.shm.features = fmtp.formatProperties.optimalTilingFeatures;
 
 			shm_texture_status = "✓ texture";
 
@@ -410,25 +410,26 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 }
 
 void vulkan_format_props_finish(struct wlr_vk_format_props *props) {
-	free(props->texture_mods);
-	free(props->render_mods);
+	free(props->dmabuf.texture_mods);
+	free(props->dmabuf.render_mods);
 }
 
 const struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 		struct wlr_vk_format_props *props, uint64_t mod, bool render) {
+	uint32_t len;
+	const struct wlr_vk_format_modifier_props *mods;
 	if (render) {
-		for (unsigned i = 0u; i < props->render_mod_count; ++i) {
-			if (props->render_mods[i].props.drmFormatModifier == mod) {
-				return &props->render_mods[i];
-			}
-		}
+		len = props->dmabuf.render_mod_count;
+		mods = props->dmabuf.render_mods;
 	} else {
-		for (unsigned i = 0u; i < props->texture_mod_count; ++i) {
-			if (props->texture_mods[i].props.drmFormatModifier == mod) {
-				return &props->texture_mods[i];
-			}
-		}
+		len = props->dmabuf.texture_mod_count;
+		mods = props->dmabuf.texture_mods;
 	}
 
+	for (uint32_t i = 0; i < len; ++i) {
+		if (mods[i].props.drmFormatModifier == mod) {
+			return &mods[i];
+		}
+	}
 	return NULL;
 }

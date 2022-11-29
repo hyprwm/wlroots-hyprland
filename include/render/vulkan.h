@@ -96,14 +96,19 @@ struct wlr_vk_format_modifier_props {
 
 struct wlr_vk_format_props {
 	struct wlr_vk_format format;
-	VkExtent2D max_extent; // relevant if not created as dma_buf
-	VkFormatFeatureFlags features; // relevant if not created as dma_buf
 
-	uint32_t render_mod_count;
-	struct wlr_vk_format_modifier_props *render_mods;
+	struct {
+		VkExtent2D max_extent;
+		VkFormatFeatureFlags features;
+	} shm;
 
-	uint32_t texture_mod_count;
-	struct wlr_vk_format_modifier_props *texture_mods;
+	struct {
+		uint32_t render_mod_count;
+		struct wlr_vk_format_modifier_props *render_mods;
+
+		uint32_t texture_mod_count;
+		struct wlr_vk_format_modifier_props *texture_mods;
+	} dmabuf;
 };
 
 void vulkan_format_props_query(struct wlr_vk_device *dev,
