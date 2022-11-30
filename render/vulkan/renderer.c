@@ -88,11 +88,6 @@ static void mat3_to_mat4(const float mat3[9], float mat4[4][4]) {
 struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 		struct wlr_vk_renderer *renderer, VkDescriptorSet *ds) {
 	VkResult res;
-	VkDescriptorSetAllocateInfo ds_info = {
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &renderer->ds_layout,
-	};
 
 	bool found = false;
 	struct wlr_vk_descriptor_pool *pool;
@@ -140,7 +135,12 @@ struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 		wl_list_insert(&renderer->descriptor_pools, &pool->link);
 	}
 
-	ds_info.descriptorPool = pool->pool;
+	VkDescriptorSetAllocateInfo ds_info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &renderer->ds_layout,
+		.descriptorPool = pool->pool,
+	};
 	res = vkAllocateDescriptorSets(renderer->dev->dev, &ds_info, ds);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkAllocateDescriptorSets", res);
