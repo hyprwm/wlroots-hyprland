@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <drm_fourcc.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -9,6 +10,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/util/log.h>
+#include <xf86drm.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
 #include "render/drm_format_set.h"
 #include "util/shm.h"
@@ -197,15 +199,18 @@ static void buffer_handle_resource_destroy(struct wl_resource *buffer_resource) 
 
 static bool check_import_dmabuf(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		struct wlr_dmabuf_attributes *attribs) {
-	struct wlr_texture *texture =
-		wlr_texture_from_dmabuf(linux_dmabuf->renderer, attribs);
-	if (texture == NULL) {
-		return false;
+	// TODO: check number of planes
+	for (int i = 0; i < attribs->n_planes; i++) {
+		uint32_t handle = 0;
+		if (drmPrimeFDToHandle(linux_dmabuf->main_device_fd, attribs->fd[i], &handle) != 0) {
+			wlr_log_errno(WLR_DEBUG, "Failed to import DMA-BUF FD");
+			return false;
+		}
+		if (drmCloseBufferHandle(linux_dmabuf->main_device_fd, handle) != 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to close buffer handle");
+			return false;
+		}
 	}
-
-	// We can import the image, good. No need to keep it since wlr_surface will
-	// import it again on commit.
-	wlr_texture_destroy(texture);
 	return true;
 }
 
@@ -657,22 +662,6 @@ static bool feedback_tranche_init_with_renderer(
 	return true;
 }
 
-static struct wlr_linux_dmabuf_feedback_v1_compiled *compile_default_feedback(
-		struct wlr_renderer *renderer) {
-	struct wlr_linux_dmabuf_feedback_v1_tranche tranche = {0};
-	if (!feedback_tranche_init_with_renderer(&tranche, renderer)) {
-		return NULL;
-	}
-
-	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
-		.main_device = tranche.target_device,
-		.tranches = &tranche,
-		.tranches_len = 1,
-	};
-
-	return feedback_compile(&feedback);
-}
-
 static void feedback_tranche_send(
 		const struct wlr_linux_dmabuf_feedback_v1_compiled_tranche *tranche,
 		struct wl_resource *resource) {
@@ -906,6 +895,7 @@ static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 	}
 
 	compiled_feedback_destroy(linux_dmabuf->default_feedback);
+	close(linux_dmabuf->main_device_fd);
 
 	wl_list_remove(&linux_dmabuf->display_destroy.link);
 	wl_list_remove(&linux_dmabuf->renderer_destroy.link);
@@ -926,6 +916,52 @@ static void handle_renderer_destroy(struct wl_listener *listener, void *data) {
 	linux_dmabuf_v1_destroy(linux_dmabuf);
 }
 
+static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
+		const struct wlr_linux_dmabuf_feedback_v1 *feedback) {
+	struct wlr_linux_dmabuf_feedback_v1_compiled *compiled = feedback_compile(feedback);
+	if (compiled == NULL) {
+		return false;
+	}
+
+	drmDevice *device = NULL;
+	if (drmGetDeviceFromDevId(feedback->main_device, 0, &device) != 0) {
+		wlr_log_errno(WLR_ERROR, "drmGetDeviceFromDevId failed");
+		goto error_compiled;
+	}
+
+	const char *name = NULL;
+	if (device->available_nodes & (1 << DRM_NODE_RENDER)) {
+		name = device->nodes[DRM_NODE_RENDER];
+	} else {
+		// Likely a split display/render setup
+		assert(device->available_nodes & (1 << DRM_NODE_PRIMARY));
+		name = device->nodes[DRM_NODE_PRIMARY];
+		wlr_log(WLR_DEBUG, "DRM device %s has no render node, "
+			"falling back to primary node", name);
+	}
+
+	int main_device_fd = open(name, O_RDWR | O_CLOEXEC);
+	drmFreeDevice(&device);
+	if (main_device_fd < 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to open DRM device %s", name);
+		goto error_compiled;
+	}
+
+	compiled_feedback_destroy(linux_dmabuf->default_feedback);
+	linux_dmabuf->default_feedback = compiled;
+
+	if (linux_dmabuf->main_device_fd >= 0) {
+		close(linux_dmabuf->main_device_fd);
+	}
+	linux_dmabuf->main_device_fd = main_device_fd;
+
+	return true;
+
+error_compiled:
+	compiled_feedback_destroy(compiled);
+	return false;
+}
+
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
 		uint32_t version, struct wlr_renderer *renderer) {
 	assert(version <= LINUX_DMABUF_VERSION);
@@ -937,6 +973,7 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 		return NULL;
 	}
 	linux_dmabuf->renderer = renderer;
+	linux_dmabuf->main_device_fd = -1;
 
 	wl_list_init(&linux_dmabuf->surfaces);
 	wl_signal_init(&linux_dmabuf->events.destroy);
@@ -945,16 +982,20 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 		version, linux_dmabuf, linux_dmabuf_bind);
 	if (!linux_dmabuf->global) {
 		wlr_log(WLR_ERROR, "could not create linux dmabuf v1 wl global");
-		free(linux_dmabuf);
-		return NULL;
+		goto error_linux_dmabuf;
 	}
 
-	linux_dmabuf->default_feedback = compile_default_feedback(renderer);
-	if (linux_dmabuf->default_feedback == NULL) {
-		wlr_log(WLR_ERROR, "Failed to init default linux-dmabuf feedback");
-		wl_global_destroy(linux_dmabuf->global);
-		free(linux_dmabuf);
-		return NULL;
+	struct wlr_linux_dmabuf_feedback_v1_tranche tranche = {0};
+	if (!feedback_tranche_init_with_renderer(&tranche, renderer)) {
+		goto error_global;
+	}
+	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
+		.main_device = tranche.target_device,
+		.tranches = &tranche,
+		.tranches_len = 1,
+	};
+	if (!set_default_feedback(linux_dmabuf, &feedback)) {
+		goto error_global;
 	}
 
 	linux_dmabuf->display_destroy.notify = handle_display_destroy;
@@ -966,6 +1007,12 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 
 	return linux_dmabuf;
+
+error_global:
+	wl_global_destroy(linux_dmabuf->global);
+error_linux_dmabuf:
+	free(linux_dmabuf);
+	return NULL;
 }
 
 bool wlr_linux_dmabuf_v1_set_surface_feedback(

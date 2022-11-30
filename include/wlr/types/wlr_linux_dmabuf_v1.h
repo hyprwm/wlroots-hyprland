@@ -67,6 +67,8 @@ struct wlr_linux_dmabuf_v1 {
 	struct wlr_linux_dmabuf_feedback_v1_compiled *default_feedback;
 	struct wl_list surfaces; // wlr_linux_dmabuf_v1_surface.link
 
+	int main_device_fd; // to sanity check FDs sent by clients
+
 	struct wl_listener display_destroy;
 	struct wl_listener renderer_destroy;
 };
