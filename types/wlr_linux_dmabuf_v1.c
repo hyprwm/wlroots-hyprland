@@ -893,7 +893,6 @@ static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 	close(linux_dmabuf->main_device_fd);
 
 	wl_list_remove(&linux_dmabuf->display_destroy.link);
-	wl_list_remove(&linux_dmabuf->renderer_destroy.link);
 
 	wl_global_destroy(linux_dmabuf->global);
 	free(linux_dmabuf);
@@ -902,12 +901,6 @@ static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
 		wl_container_of(listener, linux_dmabuf, display_destroy);
-	linux_dmabuf_v1_destroy(linux_dmabuf);
-}
-
-static void handle_renderer_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
-		wl_container_of(listener, linux_dmabuf, renderer_destroy);
 	linux_dmabuf_v1_destroy(linux_dmabuf);
 }
 
@@ -985,7 +978,6 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 		wlr_log(WLR_ERROR, "could not create simple dmabuf manager");
 		return NULL;
 	}
-	linux_dmabuf->renderer = renderer;
 	linux_dmabuf->main_device_fd = -1;
 
 	wl_list_init(&linux_dmabuf->surfaces);
@@ -1013,9 +1005,6 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 
 	linux_dmabuf->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &linux_dmabuf->display_destroy);
-
-	linux_dmabuf->renderer_destroy.notify = handle_renderer_destroy;
-	wl_signal_add(&renderer->events.destroy, &linux_dmabuf->renderer_destroy);
 
 	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 

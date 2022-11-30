@@ -57,7 +57,6 @@ struct wlr_linux_dmabuf_feedback_v1_tranche {
 /* the protocol interface */
 struct wlr_linux_dmabuf_v1 {
 	struct wl_global *global;
-	struct wlr_renderer *renderer;
 
 	struct {
 		struct wl_signal destroy;
@@ -72,7 +71,6 @@ struct wlr_linux_dmabuf_v1 {
 	int main_device_fd; // to sanity check FDs sent by clients
 
 	struct wl_listener display_destroy;
-	struct wl_listener renderer_destroy;
 };
 
 /**
