@@ -833,8 +833,14 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	// insert acquire and release barriers for dmabuf-images
 	unsigned barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
-	VkImageMemoryBarrier* acquire_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
-	VkImageMemoryBarrier* release_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
+	VkImageMemoryBarrier *acquire_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
+	VkImageMemoryBarrier *release_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
+	if (acquire_barriers == NULL || release_barriers == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		free(acquire_barriers);
+		free(release_barriers);
+		return;
+	}
 
 	struct wlr_vk_texture *texture, *tmp_tex;
 	unsigned idx = 0;
