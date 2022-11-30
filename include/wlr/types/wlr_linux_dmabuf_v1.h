@@ -14,6 +14,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/render/dmabuf.h>
+#include <wlr/render/drm_format_set.h>
 
 struct wlr_surface;
 
@@ -65,6 +66,7 @@ struct wlr_linux_dmabuf_v1 {
 	// private state
 
 	struct wlr_linux_dmabuf_feedback_v1_compiled *default_feedback;
+	struct wlr_drm_format_set default_formats; // for legacy clients
 	struct wl_list surfaces; // wlr_linux_dmabuf_v1_surface.link
 
 	int main_device_fd; // to sanity check FDs sent by clients

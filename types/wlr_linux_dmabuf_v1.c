@@ -844,14 +844,8 @@ static void linux_dmabuf_send_modifiers(struct wl_resource *resource,
 
 static void linux_dmabuf_send_formats(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		struct wl_resource *resource) {
-	const struct wlr_drm_format_set *formats =
-		wlr_renderer_get_dmabuf_texture_formats(linux_dmabuf->renderer);
-	if (formats == NULL) {
-		return;
-	}
-
-	for (size_t i = 0; i < formats->len; i++) {
-		const struct wlr_drm_format *fmt = formats->formats[i];
+	for (size_t i = 0; i < linux_dmabuf->default_formats.len; i++) {
+		const struct wlr_drm_format *fmt = linux_dmabuf->default_formats.formats[i];
 		linux_dmabuf_send_modifiers(resource, fmt);
 	}
 }
@@ -895,6 +889,7 @@ static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 	}
 
 	compiled_feedback_destroy(linux_dmabuf->default_feedback);
+	wlr_drm_format_set_finish(&linux_dmabuf->default_formats);
 	close(linux_dmabuf->main_device_fd);
 
 	wl_list_remove(&linux_dmabuf->display_destroy.link);
@@ -947,6 +942,19 @@ static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		goto error_compiled;
 	}
 
+	struct wlr_drm_format_set formats = {0};
+	for (size_t i = 0; i < feedback->tranches_len; i++) {
+		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &feedback->tranches[i];
+		for (size_t j = 0; j < tranche->formats->len; j++) {
+			const struct wlr_drm_format *fmt = tranche->formats->formats[j];
+			for (size_t k = 0; k < fmt->len; k++) {
+				if (!wlr_drm_format_set_add(&formats, fmt->format, fmt->modifiers[k])) {
+					goto error_formats;
+				}
+			}
+		}
+	}
+
 	compiled_feedback_destroy(linux_dmabuf->default_feedback);
 	linux_dmabuf->default_feedback = compiled;
 
@@ -955,8 +963,13 @@ static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 	}
 	linux_dmabuf->main_device_fd = main_device_fd;
 
+	wlr_drm_format_set_finish(&linux_dmabuf->default_formats);
+	linux_dmabuf->default_formats = formats;
+
 	return true;
 
+error_formats:
+	wlr_drm_format_set_finish(&formats);
 error_compiled:
 	compiled_feedback_destroy(compiled);
 	return false;
