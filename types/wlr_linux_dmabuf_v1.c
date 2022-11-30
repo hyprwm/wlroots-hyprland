@@ -968,8 +968,8 @@ error_compiled:
 	return false;
 }
 
-struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
-		uint32_t version, struct wlr_renderer *renderer) {
+struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *display,
+		uint32_t version, const struct wlr_linux_dmabuf_feedback_v1 *default_feedback) {
 	assert(version <= LINUX_DMABUF_VERSION);
 
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
@@ -990,16 +990,7 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 		goto error_linux_dmabuf;
 	}
 
-	struct wlr_linux_dmabuf_feedback_v1_tranche tranche = {0};
-	if (!feedback_tranche_init_with_renderer(&tranche, renderer)) {
-		goto error_global;
-	}
-	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
-		.main_device = tranche.target_device,
-		.tranches = &tranche,
-		.tranches_len = 1,
-	};
-	if (!set_default_feedback(linux_dmabuf, &feedback)) {
+	if (!set_default_feedback(linux_dmabuf, default_feedback)) {
 		goto error_global;
 	}
 
@@ -1015,6 +1006,20 @@ error_global:
 error_linux_dmabuf:
 	free(linux_dmabuf);
 	return NULL;
+}
+
+struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
+		uint32_t version, struct wlr_renderer *renderer) {
+	struct wlr_linux_dmabuf_feedback_v1_tranche tranche = {0};
+	if (!feedback_tranche_init_with_renderer(&tranche, renderer)) {
+		return NULL;
+	}
+	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
+		.main_device = tranche.target_device,
+		.tranches = &tranche,
+		.tranches_len = 1,
+	};
+	return wlr_linux_dmabuf_v1_create(display, version, &feedback);
 }
 
 bool wlr_linux_dmabuf_v1_set_surface_feedback(
