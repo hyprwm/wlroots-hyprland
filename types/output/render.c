@@ -15,8 +15,8 @@
 
 bool wlr_output_init_render(struct wlr_output *output,
 		struct wlr_allocator *allocator, struct wlr_renderer *renderer) {
-	assert(output->allocator == NULL && allocator != NULL);
-	assert(output->renderer == NULL && renderer != NULL);
+	assert(allocator != NULL && renderer != NULL);
+	assert(output->back_buffer == NULL);
 
 	uint32_t backend_caps = backend_get_buffer_caps(output->backend);
 	uint32_t renderer_caps = renderer_get_render_buffer_caps(renderer);
@@ -30,6 +30,12 @@ bool wlr_output_init_render(struct wlr_output *output,
 			"don't match");
 		return false;
 	}
+
+	wlr_swapchain_destroy(output->swapchain);
+	output->swapchain = NULL;
+
+	wlr_swapchain_destroy(output->cursor_swapchain);
+	output->cursor_swapchain = NULL;
 
 	output->allocator = allocator;
 	output->renderer = renderer;

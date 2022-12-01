@@ -278,7 +278,8 @@ void wlr_output_create_global(struct wlr_output *output);
 void wlr_output_destroy_global(struct wlr_output *output);
 /**
  * Initialize the output's rendering subsystem with the provided allocator and
- * renderer. Can only be called once.
+ * renderer. After initialization, this function may invoked again to reinitialize
+ * the allocator and renderer to different values.
  *
  * Call this function prior to any call to wlr_output_attach_render(),
  * wlr_output_commit() or wlr_output_cursor_create().
