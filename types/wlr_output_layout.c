@@ -13,7 +13,6 @@ struct wlr_output_layout_output_state {
 
 	bool auto_configured;
 
-	struct wl_listener mode;
 	struct wl_listener commit;
 };
 
@@ -38,7 +37,6 @@ static void output_layout_output_destroy(
 		struct wlr_output_layout_output *l_output) {
 	wl_signal_emit_mutable(&l_output->events.destroy, l_output);
 	wlr_output_destroy_global(l_output->output);
-	wl_list_remove(&l_output->state->mode.link);
 	wl_list_remove(&l_output->state->commit.link);
 	wl_list_remove(&l_output->link);
 	wlr_addon_finish(&l_output->addon);
@@ -126,20 +124,15 @@ static void output_update_global(struct wlr_output *output) {
 	}
 }
 
-static void handle_output_mode(struct wl_listener *listener, void *data) {
-	struct wlr_output_layout_output_state *state =
-		wl_container_of(listener, state, mode);
-	output_layout_reconfigure(state->layout);
-	output_update_global(state->l_output->output);
-}
-
 static void handle_output_commit(struct wl_listener *listener, void *data) {
 	struct wlr_output_layout_output_state *state =
 		wl_container_of(listener, state, commit);
 	struct wlr_output_event_commit *event = data;
 
-	if (event->committed & (WLR_OUTPUT_STATE_SCALE | WLR_OUTPUT_STATE_TRANSFORM)) {
+	if (event->committed & (WLR_OUTPUT_STATE_SCALE | WLR_OUTPUT_STATE_TRANSFORM |
+			WLR_OUTPUT_STATE_MODE)) {
 		output_layout_reconfigure(state->layout);
+		output_update_global(state->l_output->output);
 	}
 }
 
@@ -180,8 +173,6 @@ static struct wlr_output_layout_output *output_layout_output_create(
 	 */
 	wl_list_insert(layout->outputs.prev, &l_output->link);
 
-	wl_signal_add(&output->events.mode, &l_output->state->mode);
-	l_output->state->mode.notify = handle_output_mode;
 	wl_signal_add(&output->events.commit, &l_output->state->commit);
 	l_output->state->commit.notify = handle_output_commit;
 
