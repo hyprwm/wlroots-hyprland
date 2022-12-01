@@ -23,4 +23,13 @@ bool dmabuf_check_sync_file_import_export(void);
  */
 bool dmabuf_import_sync_file(int dmabuf_fd, uint32_t flags, int sync_file_fd);
 
+/**
+ * Export a sync_file from a DMA-BUF with DMA_BUF_IOCTL_EXPORT_SYNC_FILE.
+ *
+ * The sync_file FD is returned on success, -1 is returned on error.
+ *
+ * This can be used to make explicit sync interoperate with implicit sync.
+ */
+int dmabuf_export_sync_file(int dmabuf_fd, uint32_t flags);
+
 #endif

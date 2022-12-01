@@ -51,6 +51,7 @@ bool dmabuf_check_sync_file_import_export(void) {
 }
 
 // TODO: drop these definitions once widespread
+
 #if !defined(DMA_BUF_IOCTL_IMPORT_SYNC_FILE)
 
 struct dma_buf_import_sync_file {
@@ -59,6 +60,17 @@ struct dma_buf_import_sync_file {
 };
 
 #define DMA_BUF_IOCTL_IMPORT_SYNC_FILE _IOW(DMA_BUF_BASE, 3, struct dma_buf_import_sync_file)
+
+#endif
+
+#if !defined(DMA_BUF_IOCTL_EXPORT_SYNC_FILE)
+
+struct dma_buf_export_sync_file {
+	__u32 flags;
+	__s32 fd;
+};
+
+#define DMA_BUF_IOCTL_EXPORT_SYNC_FILE _IOWR(DMA_BUF_BASE, 2, struct dma_buf_export_sync_file)
 
 #endif
 
@@ -72,4 +84,16 @@ bool dmabuf_import_sync_file(int dmabuf_fd, uint32_t flags, int sync_file_fd) {
 		return false;
 	}
 	return true;
+}
+
+int dmabuf_export_sync_file(int dmabuf_fd, uint32_t flags) {
+	struct dma_buf_export_sync_file data = {
+		.flags = flags,
+		.fd = -1,
+	};
+	if (drmIoctl(dmabuf_fd, DMA_BUF_IOCTL_EXPORT_SYNC_FILE, &data) != 0) {
+		wlr_log_errno(WLR_ERROR, "drmIoctl(EXPORT_SYNC_FILE) failed");
+		return -1;
+	}
+	return data.fd;
 }
