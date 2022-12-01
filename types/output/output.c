@@ -182,12 +182,7 @@ struct wlr_output *wlr_output_from_resource(struct wl_resource *resource) {
 }
 
 void wlr_output_update_enabled(struct wlr_output *output, bool enabled) {
-	if (output->enabled == enabled) {
-		return;
-	}
-
 	output->enabled = enabled;
-	wl_signal_emit_mutable(&output->events.enable, output);
 }
 
 static void output_update_matrix(struct wlr_output *output) {
@@ -264,8 +259,6 @@ void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
 		send_current_mode(resource);
 	}
 	wlr_output_schedule_done(output);
-
-	wl_signal_emit_mutable(&output->events.mode, output);
 }
 
 void wlr_output_set_transform(struct wlr_output *output,
@@ -371,8 +364,6 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.commit);
 	wl_signal_init(&output->events.present);
 	wl_signal_init(&output->events.bind);
-	wl_signal_init(&output->events.enable);
-	wl_signal_init(&output->events.mode);
 	wl_signal_init(&output->events.description);
 	wl_signal_init(&output->events.request_state);
 	wl_signal_init(&output->events.destroy);

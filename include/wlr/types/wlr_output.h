@@ -175,8 +175,6 @@ struct wlr_output {
 		struct wl_signal present; // wlr_output_event_present
 		// Emitted after a client bound the wl_output global
 		struct wl_signal bind; // wlr_output_event_bind
-		struct wl_signal enable;
-		struct wl_signal mode;
 		struct wl_signal description;
 		struct wl_signal request_state;
 		struct wl_signal destroy;
