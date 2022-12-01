@@ -21,6 +21,8 @@ struct wlr_texture_impl;
 struct wlr_texture {
 	const struct wlr_texture_impl *impl;
 	uint32_t width, height;
+
+	struct wlr_renderer *renderer;
 };
 
 /**

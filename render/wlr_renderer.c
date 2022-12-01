@@ -153,6 +153,7 @@ bool wlr_render_subtexture_with_matrix(struct wlr_renderer *r,
 		struct wlr_texture *texture, const struct wlr_fbox *box,
 		const float matrix[static 9], float alpha) {
 	assert(r->rendering);
+	assert(texture->renderer == r);
 	return r->impl->render_subtexture_with_matrix(r, texture,
 		box, matrix, alpha);
 }

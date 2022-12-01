@@ -59,7 +59,7 @@ struct wlr_texture_impl {
 	void (*destroy)(struct wlr_texture *texture);
 };
 
-void wlr_texture_init(struct wlr_texture *texture,
+void wlr_texture_init(struct wlr_texture *texture, struct wlr_renderer *rendener,
 	const struct wlr_texture_impl *impl, uint32_t width, uint32_t height);
 
 #endif

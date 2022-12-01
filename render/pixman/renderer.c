@@ -354,8 +354,8 @@ static struct wlr_pixman_texture *pixman_texture_create(
 		return NULL;
 	}
 
-	wlr_texture_init(&texture->wlr_texture, &texture_impl, width, height);
-	texture->renderer = renderer;
+	wlr_texture_init(&texture->wlr_texture, &renderer->wlr_renderer,
+		&texture_impl, width, height);
 
 	texture->format_info = drm_get_pixel_format_info(drm_format);
 	if (!texture->format_info) {
