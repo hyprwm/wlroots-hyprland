@@ -1196,12 +1196,6 @@ static void scene_output_handle_commit(struct wl_listener *listener, void *data)
 	}
 }
 
-static void scene_output_handle_mode(struct wl_listener *listener, void *data) {
-	struct wlr_scene_output *scene_output = wl_container_of(listener,
-		scene_output, output_mode);
-	scene_output_update_geometry(scene_output);
-}
-
 static void scene_output_handle_damage(struct wl_listener *listener, void *data) {
 	struct wlr_scene_output *scene_output = wl_container_of(listener,
 		scene_output, output_damage);
@@ -1253,9 +1247,6 @@ struct wlr_scene_output *wlr_scene_output_create(struct wlr_scene *scene,
 	scene_output->output_commit.notify = scene_output_handle_commit;
 	wl_signal_add(&output->events.commit, &scene_output->output_commit);
 
-	scene_output->output_mode.notify = scene_output_handle_mode;
-	wl_signal_add(&output->events.mode, &scene_output->output_mode);
-
 	scene_output->output_damage.notify = scene_output_handle_damage;
 	wl_signal_add(&output->events.damage, &scene_output->output_damage);
 
@@ -1292,7 +1283,6 @@ void wlr_scene_output_destroy(struct wlr_scene_output *scene_output) {
 	wlr_damage_ring_finish(&scene_output->damage_ring);
 	wl_list_remove(&scene_output->link);
 	wl_list_remove(&scene_output->output_commit.link);
-	wl_list_remove(&scene_output->output_mode.link);
 	wl_list_remove(&scene_output->output_damage.link);
 	wl_list_remove(&scene_output->output_needs_frame.link);
 

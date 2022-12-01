@@ -180,7 +180,6 @@ struct wlr_scene_output {
 	bool prev_scanout;
 
 	struct wl_listener output_commit;
-	struct wl_listener output_mode;
 	struct wl_listener output_damage;
 	struct wl_listener output_needs_frame;
 
