@@ -961,6 +961,8 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		stage_sub->pNext = &stage_timeline_submit_info;
 		stage_sub->commandBufferCount = 1u;
 		stage_sub->pCommandBuffers = &pre_cb;
+		stage_sub->signalSemaphoreCount = 1;
+		stage_sub->pSignalSemaphores = &renderer->timeline_semaphore;
 		++submit_count;
 
 		if (renderer->stage.last_timeline_point > 0) {
