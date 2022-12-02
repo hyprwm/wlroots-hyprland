@@ -1030,7 +1030,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	render_sub->pCommandBuffers = &render_cb->vk;
 	render_sub->commandBufferCount = 1u;
 	render_sub->signalSemaphoreCount = render_signal_len;
-	render_sub->pSignalSemaphores = render_signal,
+	render_sub->pSignalSemaphores = render_signal;
 	++submit_count;
 
 	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count,
