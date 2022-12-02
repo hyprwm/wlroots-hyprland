@@ -853,30 +853,35 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		}
 
 		// acquire
-		acquire_barriers[idx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		acquire_barriers[idx].srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
-		acquire_barriers[idx].dstQueueFamilyIndex = renderer->dev->queue_family;
-		acquire_barriers[idx].image = texture->image;
-		acquire_barriers[idx].oldLayout = src_layout;
-		acquire_barriers[idx].newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		acquire_barriers[idx].srcAccessMask = 0u; // ignored anyways
-		acquire_barriers[idx].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		acquire_barriers[idx].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		acquire_barriers[idx].subresourceRange.layerCount = 1;
-		acquire_barriers[idx].subresourceRange.levelCount = 1;
+		acquire_barriers[idx] = (VkImageMemoryBarrier){
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+			.dstQueueFamilyIndex = renderer->dev->queue_family,
+			.image = texture->image,
+			.oldLayout = src_layout,
+			.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.srcAccessMask = 0, // ignored anyways
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.subresourceRange.layerCount = 1,
+			.subresourceRange.levelCount = 1,
+		};
 
-		// releaes
-		release_barriers[idx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		release_barriers[idx].srcQueueFamilyIndex = renderer->dev->queue_family;
-		release_barriers[idx].dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
-		release_barriers[idx].image = texture->image;
-		release_barriers[idx].oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		release_barriers[idx].newLayout = VK_IMAGE_LAYOUT_GENERAL;
-		release_barriers[idx].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		release_barriers[idx].dstAccessMask = 0u; // ignored anyways
-		release_barriers[idx].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		release_barriers[idx].subresourceRange.layerCount = 1;
-		release_barriers[idx].subresourceRange.levelCount = 1;
+		// release
+		release_barriers[idx] = (VkImageMemoryBarrier){
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcQueueFamilyIndex = renderer->dev->queue_family,
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+			.image = texture->image,
+			.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_GENERAL,
+			.srcAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.dstAccessMask = 0, // ignored anyways
+			.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.subresourceRange.layerCount = 1,
+			.subresourceRange.levelCount = 1,
+		};
+
 		++idx;
 
 		wl_list_remove(&texture->foreign_link);
@@ -891,32 +896,37 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 
 	// acquire render buffer before rendering
-	acquire_barriers[idx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	acquire_barriers[idx].srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
-	acquire_barriers[idx].dstQueueFamilyIndex = renderer->dev->queue_family;
-	acquire_barriers[idx].image = renderer->current_render_buffer->image;
-	acquire_barriers[idx].oldLayout = src_layout;
-	acquire_barriers[idx].newLayout = VK_IMAGE_LAYOUT_GENERAL;
-	acquire_barriers[idx].srcAccessMask = 0u; // ignored anyways
-	acquire_barriers[idx].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	acquire_barriers[idx].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	acquire_barriers[idx].subresourceRange.layerCount = 1;
-	acquire_barriers[idx].subresourceRange.levelCount = 1;
+	acquire_barriers[idx] = (VkImageMemoryBarrier){
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+		.dstQueueFamilyIndex = renderer->dev->queue_family,
+		.image = renderer->current_render_buffer->image,
+		.oldLayout = src_layout,
+		.newLayout = VK_IMAGE_LAYOUT_GENERAL,
+		.srcAccessMask = 0, // ignored anyways
+		.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.subresourceRange.layerCount = 1,
+		.subresourceRange.levelCount = 1,
+	};
 
 	// release render buffer after rendering
-	release_barriers[idx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	release_barriers[idx].srcQueueFamilyIndex = renderer->dev->queue_family;
-	release_barriers[idx].dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
-	release_barriers[idx].image = renderer->current_render_buffer->image;
-	release_barriers[idx].oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-	release_barriers[idx].newLayout = VK_IMAGE_LAYOUT_GENERAL;
-	release_barriers[idx].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	release_barriers[idx].dstAccessMask = 0u; // ignored anyways
-	release_barriers[idx].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	release_barriers[idx].subresourceRange.layerCount = 1;
-	release_barriers[idx].subresourceRange.levelCount = 1;
+	release_barriers[idx] = (VkImageMemoryBarrier){
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcQueueFamilyIndex = renderer->dev->queue_family,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+		.image = renderer->current_render_buffer->image,
+		.oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+		.newLayout = VK_IMAGE_LAYOUT_GENERAL,
+		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dstAccessMask = 0, // ignored anyways
+		.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.subresourceRange.layerCount = 1,
+		.subresourceRange.levelCount = 1,
+	};
+
 	++idx;
 
 	vkCmdPipelineBarrier(pre_cb, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
