@@ -220,10 +220,12 @@ static bool query_modifier_usage_support(struct wlr_vk_device *dev, VkFormat vk_
 
 	res = vkGetPhysicalDeviceImageFormatProperties2(dev->phdev, &fmti, &ifmtp);
 	if (res != VK_SUCCESS) {
-		if (res != VK_ERROR_FORMAT_NOT_SUPPORTED) {
+		if (res == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+			*errmsg = "unsupported format";
+		} else {
 			wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2", res);
+			*errmsg = "failed to get format properties";
 		}
-		*errmsg = "unsupported format";
 		return false;
 	} else if (!(emp->externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT)) {
 		*errmsg = "import not supported";
@@ -370,12 +372,12 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 
 		res = vkGetPhysicalDeviceImageFormatProperties2(dev->phdev, &fmti, &ifmtp);
 		if (res != VK_SUCCESS) {
-			if (res != VK_ERROR_FORMAT_NOT_SUPPORTED) {
-				wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2",
-					res);
+			if (res == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+				shm_texture_status = "✗ texture (unsupported format)";
+			} else {
+				wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2", res);
+				shm_texture_status = "✗ texture (failed to get format properties)";
 			}
-
-			shm_texture_status = "✗ texture (unsupported format)";
 		} else {
 			VkExtent3D me = ifmtp.imageFormatProperties.maxExtent;
 			props.max_extent.width = me.width;
@@ -430,4 +432,3 @@ struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 
 	return NULL;
 }
-
