@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <math.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -772,6 +773,76 @@ static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
+static bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
+	struct wlr_vk_renderer *renderer = texture->renderer;
+	VkResult res;
+
+	struct wlr_dmabuf_attributes dmabuf = {0};
+	if (!wlr_buffer_get_dmabuf(texture->buffer, &dmabuf)) {
+		wlr_log(WLR_ERROR, "Failed to get texture DMA-BUF");
+		return false;
+	}
+
+	if (!renderer->dev->implicit_sync_interop) {
+		// We have no choice but to block here sadly
+
+		for (int i = 0; i < dmabuf.n_planes; i++) {
+			struct pollfd pollfd = {
+				.fd = dmabuf.fd[i],
+				.events = POLLIN,
+			};
+			int timeout_ms = 1000;
+			int ret = poll(&pollfd, 1, timeout_ms);
+			if (ret < 0) {
+				wlr_log_errno(WLR_ERROR, "Failed to wait for DMA-BUF fence");
+				return false;
+			} else if (ret == 0) {
+				wlr_log(WLR_ERROR, "Timed out while waiting for DMA-BUF fence");
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	for (int i = 0; i < dmabuf.n_planes; i++) {
+		int sync_file_fd = dmabuf_export_sync_file(dmabuf.fd[i], DMA_BUF_SYNC_READ);
+		if (sync_file_fd < 0) {
+			wlr_log(WLR_ERROR, "Failed to extract DMA-BUF fence");
+			return false;
+		}
+
+		if (texture->foreign_semaphores[i] == VK_NULL_HANDLE) {
+			VkSemaphoreCreateInfo semaphore_info = {
+				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			};
+			res = vkCreateSemaphore(renderer->dev->dev, &semaphore_info, NULL,
+				&texture->foreign_semaphores[i]);
+			if (res != VK_SUCCESS) {
+				close(sync_file_fd);
+				wlr_vk_error("vkCreateSemaphore", res);
+				return false;
+			}
+		}
+
+		VkImportSemaphoreFdInfoKHR import_info = {
+			.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
+			.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+			.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,
+			.semaphore = texture->foreign_semaphores[i],
+			.fd = sync_file_fd,
+		};
+		res = renderer->dev->api.importSemaphoreFdKHR(renderer->dev->dev, &import_info);
+		close(sync_file_fd);
+		if (res != VK_SUCCESS) {
+			wlr_vk_error("vkImportSemaphoreFdKHR", res);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
 		struct wlr_vk_command_buffer *cb) {
 	VkResult res;
@@ -841,16 +912,18 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	unsigned barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
 	VkImageMemoryBarrier *acquire_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
 	VkImageMemoryBarrier *release_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
-	if (acquire_barriers == NULL || release_barriers == NULL) {
+	VkSemaphore *render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(VkSemaphore));
+	if (acquire_barriers == NULL || release_barriers == NULL || render_wait == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(acquire_barriers);
 		free(release_barriers);
+		free(render_wait);
 		return;
 	}
 
 	struct wlr_vk_texture *texture, *tmp_tex;
 	unsigned idx = 0;
-
+	uint32_t render_wait_len = 0;
 	wl_list_for_each_safe(texture, tmp_tex, &renderer->foreign_textures, foreign_link) {
 		VkImageLayout src_layout = VK_IMAGE_LAYOUT_GENERAL;
 		if (!texture->transitioned) {
@@ -889,6 +962,17 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		};
 
 		++idx;
+
+		if (!vulkan_sync_foreign_texture(texture)) {
+			wlr_log(WLR_ERROR, "Failed to wait for foreign texture DMA-BUF fence");
+		} else {
+			for (size_t i = 0; i < WLR_DMABUF_MAX_PLANES; i++) {
+				if (texture->foreign_semaphores[i] != VK_NULL_HANDLE) {
+					assert(render_wait_len < barrier_count * WLR_DMABUF_MAX_PLANES);
+					render_wait[render_wait_len++] = texture->foreign_semaphores[i];
+				}
+			}
+		}
 
 		wl_list_remove(&texture->foreign_link);
 		texture->owned = false;
@@ -949,6 +1033,18 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	VkSubmitInfo submit_infos[2] = {0};
 	VkSubmitInfo *stage_sub = &submit_infos[0];
 	VkSubmitInfo *render_sub = &submit_infos[1];
+
+	VkPipelineStageFlags *render_wait_stages = NULL;
+	if (render_wait_len > 0) {
+		render_wait_stages = calloc(render_wait_len, sizeof(VkPipelineStageFlags));
+		if (render_wait_stages == NULL) {
+			wlr_log(WLR_ERROR, "Allocation failed");
+			return;
+		}
+		for (size_t i = 0; i < render_wait_len; i++) {
+			render_wait_stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		}
+	}
 
 	// No semaphores needed here.
 	// We don't need a semaphore from the stage/transfer submission
@@ -1027,6 +1123,9 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		.pNext = &render_timeline_submit_info,
 		.pCommandBuffers = &render_cb->vk,
 		.commandBufferCount = 1,
+		.waitSemaphoreCount = render_wait_len,
+		.pWaitSemaphores = render_wait,
+		.pWaitDstStageMask = render_wait_stages,
 		.signalSemaphoreCount = render_signal_len,
 		.pSignalSemaphores = render_signal,
 	};
@@ -1041,6 +1140,8 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		wlr_vk_error("vkQueueSubmit", res);
 		return;
 	}
+
+	free(render_wait);
 
 	struct wlr_vk_shared_buffer *stage_buf, *stage_buf_tmp;
 	wl_list_for_each_safe(stage_buf, stage_buf_tmp, &renderer->stage.buffers, link) {

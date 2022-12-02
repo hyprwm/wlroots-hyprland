@@ -217,6 +217,12 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 		vulkan_free_ds(texture->renderer, texture->ds_pool, texture->ds);
 	}
 
+	for (size_t i = 0; i < WLR_DMABUF_MAX_PLANES; i++) {
+		if (texture->foreign_semaphores[i] != VK_NULL_HANDLE) {
+			vkDestroySemaphore(dev, texture->foreign_semaphores[i], NULL);
+		}
+	}
+
 	vkDestroyImageView(dev, texture->image_view, NULL);
 	vkDestroyImage(dev, texture->image, NULL);
 

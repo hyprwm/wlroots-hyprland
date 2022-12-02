@@ -466,8 +466,13 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		&ext_semaphore_info, &ext_semaphore_props);
 	bool exportable_semaphore = ext_semaphore_props.externalSemaphoreFeatures &
 		VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT;
+	bool importable_semaphore = ext_semaphore_props.externalSemaphoreFeatures &
+		VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
 	if (!exportable_semaphore) {
 		wlr_log(WLR_DEBUG, "VkSemaphore is not exportable to a sync_file");
+	}
+	if (!importable_semaphore) {
+		wlr_log(WLR_DEBUG, "VkSemaphore is not importable from a sync_file");
 	}
 
 	bool dmabuf_sync_file_import_export = dmabuf_check_sync_file_import_export();
@@ -476,7 +481,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	}
 
 	dev->implicit_sync_interop =
-		exportable_semaphore && dmabuf_sync_file_import_export;
+		exportable_semaphore && importable_semaphore && dmabuf_sync_file_import_export;
 	if (dev->implicit_sync_interop) {
 		wlr_log(WLR_DEBUG, "Implicit sync interop supported");
 	} else {
@@ -519,6 +524,7 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	load_device_proc(dev, "vkGetSemaphoreCounterValueKHR",
 		&dev->api.getSemaphoreCounterValueKHR);
 	load_device_proc(dev, "vkGetSemaphoreFdKHR", &dev->api.getSemaphoreFdKHR);
+	load_device_proc(dev, "vkImportSemaphoreFdKHR", &dev->api.importSemaphoreFdKHR);
 
 	// - check device format support -
 	size_t max_fmts;

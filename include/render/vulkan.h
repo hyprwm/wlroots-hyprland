@@ -49,6 +49,7 @@ struct wlr_vk_device {
 		PFN_vkWaitSemaphoresKHR waitSemaphoresKHR;
 		PFN_vkGetSemaphoreCounterValueKHR getSemaphoreCounterValueKHR;
 		PFN_vkGetSemaphoreFdKHR getSemaphoreFdKHR;
+		PFN_vkImportSemaphoreFdKHR importSemaphoreFdKHR;
 	} api;
 
 	uint32_t format_prop_count;
@@ -280,6 +281,8 @@ struct wlr_vk_texture {
 	// If imported from a wlr_buffer
 	struct wlr_buffer *buffer;
 	struct wlr_addon buffer_addon;
+	// For DMA-BUF implicit sync interop
+	VkSemaphore foreign_semaphores[WLR_DMABUF_MAX_PLANES];
 };
 
 struct wlr_vk_texture *vulkan_get_texture(struct wlr_texture *wlr_texture);
