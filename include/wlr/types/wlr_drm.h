@@ -10,6 +10,7 @@
 #define WLR_TYPES_WLR_DRM_H
 
 #include <wayland-server-protocol.h>
+#include <wlr/render/drm_format_set.h>
 
 struct wlr_renderer;
 
@@ -30,15 +31,17 @@ struct wlr_drm_buffer {
  */
 struct wlr_drm {
 	struct wl_global *global;
-	struct wlr_renderer *renderer;
-	char *node_name;
 
 	struct {
 		struct wl_signal destroy;
 	} events;
 
+	// private state
+
+	char *node_name;
+	struct wlr_drm_format_set formats;
+
 	struct wl_listener display_destroy;
-	struct wl_listener renderer_destroy;
 };
 
 bool wlr_drm_buffer_is_resource(struct wl_resource *resource);

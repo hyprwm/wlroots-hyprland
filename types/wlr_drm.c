@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_drm.h>
 #include <wlr/util/log.h>
 #include "drm-protocol.h"
+#include "render/drm_format_set.h"
 
 #define WLR_DRM_VERSION 2
 
@@ -159,14 +160,8 @@ static void drm_bind(struct wl_client *client, void *data,
 	wl_drm_send_device(resource, drm->node_name);
 	wl_drm_send_capabilities(resource, WL_DRM_CAPABILITY_PRIME);
 
-	const struct wlr_drm_format_set *formats =
-		wlr_renderer_get_dmabuf_texture_formats(drm->renderer);
-	if (formats == NULL) {
-		return;
-	}
-
-	for (size_t i = 0; i < formats->len; i++) {
-		wl_drm_send_format(resource, formats->formats[i]->format);
+	for (size_t i = 0; i < drm->formats.len; i++) {
+		wl_drm_send_format(resource, drm->formats.formats[i]->format);
 	}
 }
 
@@ -185,8 +180,8 @@ static void drm_destroy(struct wlr_drm *drm) {
 	wl_signal_emit_mutable(&drm->events.destroy, NULL);
 
 	wl_list_remove(&drm->display_destroy.link);
-	wl_list_remove(&drm->renderer_destroy.link);
 
+	wlr_drm_format_set_finish(&drm->formats);
 	free(drm->node_name);
 	wl_global_destroy(drm->global);
 	free(drm);
@@ -194,11 +189,6 @@ static void drm_destroy(struct wlr_drm *drm) {
 
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_drm *drm = wl_container_of(listener, drm, display_destroy);
-	drm_destroy(drm);
-}
-
-static void handle_renderer_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_drm *drm = wl_container_of(listener, drm, renderer_destroy);
 	drm_destroy(drm);
 }
 
@@ -237,24 +227,33 @@ struct wlr_drm *wlr_drm_create(struct wl_display *display,
 	}
 
 	drm->node_name = node_name;
-	drm->renderer = renderer;
 	wl_signal_init(&drm->events.destroy);
+
+	const struct wlr_drm_format_set *formats = wlr_renderer_get_dmabuf_texture_formats(renderer);
+	if (formats == NULL) {
+		goto error;
+	}
+
+	if (!wlr_drm_format_set_copy(&drm->formats, formats)) {
+		goto error;
+	}
 
 	drm->global = wl_global_create(display, &wl_drm_interface, WLR_DRM_VERSION,
 		drm, drm_bind);
 	if (drm->global == NULL) {
-		free(drm->node_name);
-		free(drm);
-		return NULL;
+		goto error;
 	}
 
 	drm->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &drm->display_destroy);
 
-	drm->renderer_destroy.notify = handle_renderer_destroy;
-	wl_signal_add(&renderer->events.destroy, &drm->renderer_destroy);
-
 	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 
 	return drm;
+
+error:
+	wlr_drm_format_set_finish(&drm->formats);
+	free(drm->node_name);
+	free(drm);
+	return NULL;
 }
