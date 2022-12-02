@@ -17,4 +17,6 @@ struct wlr_drm_format *wlr_drm_format_dup(const struct wlr_drm_format *format);
 struct wlr_drm_format *wlr_drm_format_intersect(
 	const struct wlr_drm_format *a, const struct wlr_drm_format *b);
 
+bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_drm_format_set *src);
+
 #endif

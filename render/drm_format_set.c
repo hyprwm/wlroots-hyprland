@@ -140,6 +140,31 @@ struct wlr_drm_format *wlr_drm_format_dup(const struct wlr_drm_format *format) {
 	return duped_format;
 }
 
+bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_drm_format_set *src) {
+	struct wlr_drm_format **formats = malloc(src->len * sizeof(formats[0]));
+	if (formats == NULL) {
+		return false;
+	}
+
+	struct wlr_drm_format_set out = {
+		.len = 0,
+		.capacity = src->len,
+		.formats = formats,
+	};
+
+	size_t i;
+	for (i = 0; i < src->len; i++) {
+		out.formats[out.len] = wlr_drm_format_dup(src->formats[i]);
+		if (out.formats[out.len] == NULL) {
+			wlr_drm_format_set_finish(&out);
+			return false;
+		}
+		out.len++;
+	}
+
+	return true;
+}
+
 struct wlr_drm_format *wlr_drm_format_intersect(
 		const struct wlr_drm_format *a, const struct wlr_drm_format *b) {
 	assert(a->format == b->format);
