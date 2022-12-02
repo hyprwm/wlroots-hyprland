@@ -162,6 +162,8 @@ bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_dr
 		out.len++;
 	}
 
+	*dst = out;
+
 	return true;
 }
 
