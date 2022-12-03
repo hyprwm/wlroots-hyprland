@@ -823,7 +823,13 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	assert(render_cb != NULL);
 	renderer->current_command_buffer = NULL;
 
-	VkCommandBuffer pre_cb = vulkan_record_stage_cb(renderer);
+	if (vulkan_record_stage_cb(renderer) == VK_NULL_HANDLE) {
+		return;
+	}
+
+	struct wlr_vk_command_buffer *stage_cb = renderer->stage.cb;
+	assert(stage_cb != NULL);
+	renderer->stage.cb = NULL;
 
 	renderer->render_width = 0u;
 	renderer->render_height = 0u;
@@ -929,7 +935,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	++idx;
 
-	vkCmdPipelineBarrier(pre_cb, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	vkCmdPipelineBarrier(stage_cb->vk, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 0, NULL, 0, NULL, barrier_count, acquire_barriers);
 
@@ -942,9 +948,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	unsigned submit_count = 0u;
 	VkSubmitInfo submit_infos[2] = {0};
-
-	struct wlr_vk_command_buffer *stage_cb = renderer->stage.cb;
-	renderer->stage.cb = NULL;
 
 	// No semaphores needed here.
 	// We don't need a semaphore from the stage/transfer submission
@@ -970,7 +973,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		stage_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		stage_sub->pNext = &stage_timeline_submit_info;
 		stage_sub->commandBufferCount = 1u;
-		stage_sub->pCommandBuffers = &pre_cb;
+		stage_sub->pCommandBuffers = &stage_cb->vk;
 		stage_sub->signalSemaphoreCount = 1;
 		stage_sub->pSignalSemaphores = &renderer->timeline_semaphore;
 		++submit_count;
