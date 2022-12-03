@@ -946,8 +946,9 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	free(acquire_barriers);
 	free(release_barriers);
 
-	unsigned submit_count = 0u;
 	VkSubmitInfo submit_infos[2] = {0};
+	VkSubmitInfo *stage_sub = &submit_infos[0];
+	VkSubmitInfo *render_sub = &submit_infos[1];
 
 	// No semaphores needed here.
 	// We don't need a semaphore from the stage/transfer submission
@@ -963,15 +964,14 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		.signalSemaphoreValueCount = 1,
 		.pSignalSemaphoreValues = &stage_timeline_point,
 	};
-
-	VkSubmitInfo *stage_sub = &submit_infos[submit_count];
-	stage_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	stage_sub->pNext = &stage_timeline_submit_info;
-	stage_sub->commandBufferCount = 1u;
-	stage_sub->pCommandBuffers = &stage_cb->vk;
-	stage_sub->signalSemaphoreCount = 1;
-	stage_sub->pSignalSemaphores = &renderer->timeline_semaphore;
-	++submit_count;
+	*stage_sub = (VkSubmitInfo){
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = &stage_timeline_submit_info,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &stage_cb->vk,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &renderer->timeline_semaphore,
+	};
 
 	uint64_t stage_wait_timeline_point;
 	VkPipelineStageFlags stage_wait_stage;
@@ -1022,18 +1022,17 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		.signalSemaphoreValueCount = render_signal_len,
 		.pSignalSemaphoreValues = render_signal_timeline_points,
 	};
+	*render_sub = (VkSubmitInfo){
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = &render_timeline_submit_info,
+		.pCommandBuffers = &render_cb->vk,
+		.commandBufferCount = 1,
+		.signalSemaphoreCount = render_signal_len,
+		.pSignalSemaphores = render_signal,
+	};
 
-	VkSubmitInfo *render_sub = &submit_infos[submit_count];
-	render_sub->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	render_sub->pNext = &render_timeline_submit_info;
-	render_sub->pCommandBuffers = &render_cb->vk;
-	render_sub->commandBufferCount = 1u;
-	render_sub->signalSemaphoreCount = render_signal_len;
-	render_sub->pSignalSemaphores = render_signal;
-	++submit_count;
-
-	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count,
-		submit_infos, NULL);
+	uint32_t submit_count = sizeof(submit_infos) / sizeof(submit_infos[0]);
+	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count, submit_infos, NULL);
 	if (res == VK_ERROR_DEVICE_LOST) {
 		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
 		wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
