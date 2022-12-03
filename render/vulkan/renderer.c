@@ -1121,6 +1121,10 @@ static void vulkan_clear(struct wlr_renderer *wlr_renderer,
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
+	if (renderer->scissor.extent.width == 0 || renderer->scissor.extent.height == 0) {
+		return;
+	}
+
 	VkClearAttachment att = {
 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 		.colorAttachment = 0u,
