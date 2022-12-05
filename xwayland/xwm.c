@@ -101,14 +101,12 @@ struct pending_startup_id {
 
 static const struct wlr_addon_interface surface_addon_impl;
 
-bool wlr_surface_is_xwayland_surface(struct wlr_surface *surface) {
-	return wlr_addon_find(&surface->addons, NULL, &surface_addon_impl) != NULL;
-}
-
-struct wlr_xwayland_surface *wlr_xwayland_surface_from_wlr_surface(
+struct wlr_xwayland_surface *wlr_xwayland_surface_try_from_wlr_surface(
 		struct wlr_surface *surface) {
 	struct wlr_addon *addon = wlr_addon_find(&surface->addons, NULL, &surface_addon_impl);
-	assert(addon != NULL);
+	if (addon == NULL) {
+		return NULL;
+	}
 	struct wlr_xwayland_surface *xsurface = wl_container_of(addon, xsurface, surface_addon);
 	return xsurface;
 }

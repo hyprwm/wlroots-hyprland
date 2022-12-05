@@ -232,19 +232,12 @@ void wlr_xwayland_set_seat(struct wlr_xwayland *xwayland,
 	struct wlr_seat *seat);
 
 /**
- * Check whether a surface is an Xwayland surface.
- *
- * As an edge case, if the surface has been created by Xwayland but has no X11
- * window associated, false is returned.
- */
-bool wlr_surface_is_xwayland_surface(struct wlr_surface *surface);
-
-/**
  * Get a struct wlr_xwayland_surface from a struct wlr_surface.
  *
- * This function asserts that the surface is an Xwayland surface.
+ * If the surface hasn't been created by Xwayland or has no X11 window
+ * associated, NULL is returned.
  */
-struct wlr_xwayland_surface *wlr_xwayland_surface_from_wlr_surface(
+struct wlr_xwayland_surface *wlr_xwayland_surface_try_from_wlr_surface(
 	struct wlr_surface *surface);
 
 void wlr_xwayland_surface_ping(struct wlr_xwayland_surface *surface);
