@@ -18,6 +18,6 @@ bool env_parse_bool(const char *option);
  *
  * switches is a NULL-terminated array.
  */
-ssize_t env_parse_switch(const char *option, const char **switches);
+size_t env_parse_switch(const char *option, const char **switches);
 
 #endif
