@@ -120,6 +120,8 @@ struct wlr_drm_connector {
 	int cursor_x, cursor_y;
 	int cursor_width, cursor_height;
 	int cursor_hotspot_x, cursor_hotspot_y;
+	/* Buffer to be submitted to the kernel on the next page-flip */
+	struct wlr_drm_fb *cursor_pending_fb;
 
 	struct wl_list link;
 
@@ -152,6 +154,7 @@ size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
 void drm_lease_destroy(struct wlr_drm_lease *lease);
 
 struct wlr_drm_fb *plane_get_next_fb(struct wlr_drm_plane *plane);
+struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn);
 
 #define wlr_drm_conn_log(conn, verb, fmt, ...) \
 	wlr_log(verb, "connector %s: " fmt, conn->name, ##__VA_ARGS__)

@@ -334,7 +334,7 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	if (ok && !test_only) {
 		drm_fb_move(&crtc->primary->queued_fb, &crtc->primary->pending_fb);
 		if (crtc->cursor != NULL) {
-			drm_fb_move(&crtc->cursor->queued_fb, &crtc->cursor->pending_fb);
+			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
 		}
 	} else {
 		drm_fb_clear(&crtc->primary->pending_fb);
@@ -659,6 +659,19 @@ static size_t drm_connector_get_gamma_size(struct wlr_output *output) {
 	return drm_crtc_get_gamma_lut_size(drm, crtc);
 }
 
+struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn) {
+	if (!conn->cursor_enabled || conn->crtc == NULL) {
+		return NULL;
+	}
+	if (conn->cursor_pending_fb != NULL) {
+		return conn->cursor_pending_fb;
+	}
+	if (conn->crtc->cursor->queued_fb != NULL) {
+		return conn->crtc->cursor->queued_fb;
+	}
+	return conn->crtc->cursor->current_fb;
+}
+
 struct wlr_drm_fb *plane_get_next_fb(struct wlr_drm_plane *plane) {
 	if (plane->pending_fb) {
 		return plane->pending_fb;
@@ -786,7 +799,7 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
 			local_buf = wlr_buffer_lock(buffer);
 		}
 
-		bool ok = drm_fb_import(&plane->pending_fb, drm, local_buf,
+		bool ok = drm_fb_import(&conn->cursor_pending_fb, drm, local_buf,
 			&plane->formats);
 		wlr_buffer_unlock(local_buf);
 		if (!ok) {
@@ -855,6 +868,7 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 
 	conn->status = DRM_MODE_DISCONNECTED;
 	conn->pending_page_flip_crtc = 0;
+	drm_fb_clear(&conn->cursor_pending_fb);
 
 	struct wlr_drm_mode *mode, *mode_tmp;
 	wl_list_for_each_safe(mode, mode_tmp, &conn->output.modes, wlr_mode.link) {

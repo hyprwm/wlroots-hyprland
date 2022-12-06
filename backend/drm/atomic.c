@@ -302,7 +302,7 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		}
 		if (crtc->cursor) {
 			if (drm_connector_is_cursor_visible(conn)) {
-				set_plane_props(&atom, drm, crtc->cursor, plane_get_next_fb(crtc->cursor),
+				set_plane_props(&atom, drm, crtc->cursor, get_next_cursor_fb(conn),
 					crtc->id, conn->cursor_x, conn->cursor_y);
 			} else {
 				plane_disable(&atom, crtc->cursor);
