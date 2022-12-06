@@ -119,6 +119,18 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 	}
 }
 
+const char *drm_connector_status_str(drmModeConnection status) {
+	switch (status) {
+	case DRM_MODE_CONNECTED:
+		return "connected";
+	case DRM_MODE_DISCONNECTED:
+		return "disconnected";
+	case DRM_MODE_UNKNOWNCONNECTION:
+		return "unknown";
+	}
+	return "<unsupported>";
+}
+
 static bool is_taken(size_t n, const uint32_t arr[static n], uint32_t key) {
 	for (size_t i = 0; i < n; ++i) {
 		if (arr[i] == key) {

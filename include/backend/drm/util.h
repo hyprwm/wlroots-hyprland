@@ -14,6 +14,7 @@ enum wlr_output_mode_aspect_ratio get_picture_aspect_ratio(const drmModeModeInfo
 const char *get_pnp_manufacturer(uint16_t code);
 // Populates the make/model/phys_{width,height} of output from the edid data
 void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data);
+const char *drm_connector_status_str(drmModeConnection status);
 
 // Part of match_obj
 enum {
