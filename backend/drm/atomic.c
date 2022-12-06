@@ -171,10 +171,11 @@ static void plane_disable(struct atomic *atom, struct wlr_drm_plane *plane) {
 }
 
 static void set_plane_props(struct atomic *atom, struct wlr_drm_backend *drm,
-		struct wlr_drm_plane *plane, uint32_t crtc_id, int32_t x, int32_t y) {
+		struct wlr_drm_plane *plane, struct wlr_drm_fb *fb, uint32_t crtc_id,
+		int32_t x, int32_t y) {
 	uint32_t id = plane->id;
 	const union wlr_drm_plane_props *props = &plane->props;
-	struct wlr_drm_fb *fb = plane_get_next_fb(plane);
+
 	if (fb == NULL) {
 		wlr_log(WLR_ERROR, "Failed to acquire FB for plane %"PRIu32, plane->id);
 		atom->failed = true;
@@ -293,15 +294,16 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		if (crtc->props.vrr_enabled != 0) {
 			atomic_add(&atom, crtc->id, crtc->props.vrr_enabled, vrr_enabled);
 		}
-		set_plane_props(&atom, drm, crtc->primary, crtc->id, 0, 0);
+		set_plane_props(&atom, drm, crtc->primary, plane_get_next_fb(crtc->primary),
+			crtc->id, 0, 0);
 		if (crtc->primary->props.fb_damage_clips != 0) {
 			atomic_add(&atom, crtc->primary->id,
 				crtc->primary->props.fb_damage_clips, fb_damage_clips);
 		}
 		if (crtc->cursor) {
 			if (drm_connector_is_cursor_visible(conn)) {
-				set_plane_props(&atom, drm, crtc->cursor, crtc->id,
-					conn->cursor_x, conn->cursor_y);
+				set_plane_props(&atom, drm, crtc->cursor, plane_get_next_fb(crtc->cursor),
+					crtc->id, conn->cursor_x, conn->cursor_y);
 			} else {
 				plane_disable(&atom, crtc->cursor);
 			}
