@@ -332,12 +332,14 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	struct wlr_drm_crtc *crtc = conn->crtc;
 	bool ok = drm->iface->crtc_commit(conn, state, flags, test_only);
 	if (ok && !test_only) {
-		drm_fb_move(&crtc->primary->queued_fb, &crtc->primary->pending_fb);
+		drm_fb_clear(&crtc->primary->queued_fb);
+		if (state->primary_fb != NULL) {
+			crtc->primary->queued_fb = drm_fb_lock(state->primary_fb);
+		}
 		if (crtc->cursor != NULL) {
 			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
 		}
 	} else {
-		drm_fb_clear(&crtc->primary->pending_fb);
 		// The set_cursor() hook is a bit special: it's not really synchronized
 		// to commit() or test(). Once set_cursor() returns true, the new
 		// cursor is effectively committed. So don't roll it back here, or we
@@ -377,19 +379,32 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		assert(mode != NULL);
 		state->mode = mode->drm_mode;
 	}
+
+	if (conn->crtc != NULL) {
+		struct wlr_drm_plane *primary = conn->crtc->primary;
+		if (primary->queued_fb != NULL) {
+			state->primary_fb = drm_fb_lock(primary->queued_fb);
+		} else if (primary->current_fb != NULL) {
+			state->primary_fb = drm_fb_lock(primary->current_fb);
+		}
+	}
 }
 
-static bool drm_connector_set_pending_fb(struct wlr_drm_connector *conn,
-		const struct wlr_output_state *state) {
+static void drm_connector_state_finish(struct wlr_drm_connector_state *state) {
+	drm_fb_clear(&state->primary_fb);
+}
+
+static bool drm_connector_state_update_primary_fb(struct wlr_drm_connector *conn,
+		struct wlr_drm_connector_state *state) {
 	struct wlr_drm_backend *drm = conn->backend;
 
-	struct wlr_drm_crtc *crtc = conn->crtc;
-	if (!crtc) {
-		return false;
-	}
-	struct wlr_drm_plane *plane = crtc->primary;
+	assert(state->base->committed & WLR_OUTPUT_STATE_BUFFER);
 
-	assert(state->committed & WLR_OUTPUT_STATE_BUFFER);
+	struct wlr_drm_crtc *crtc = conn->crtc;
+	assert(crtc != NULL);
+
+	struct wlr_drm_plane *plane = crtc->primary;
+	struct wlr_buffer *source_buf = state->base->buffer;
 
 	struct wlr_buffer *local_buf;
 	if (drm->parent) {
@@ -402,22 +417,22 @@ static bool drm_connector_set_pending_fb(struct wlr_drm_connector *conn,
 
 		// TODO: fallback to modifier-less buffer allocation
 		bool ok = init_drm_surface(&plane->mgpu_surf, &drm->mgpu_renderer,
-			state->buffer->width, state->buffer->height, format);
+			source_buf->width, source_buf->height, format);
 		free(format);
 		if (!ok) {
 			return false;
 		}
 
-		local_buf = drm_surface_blit(&plane->mgpu_surf, state->buffer);
+		local_buf = drm_surface_blit(&plane->mgpu_surf, source_buf);
 		if (local_buf == NULL) {
 			return false;
 		}
 	} else {
-		local_buf = wlr_buffer_lock(state->buffer);
+		local_buf = wlr_buffer_lock(source_buf);
 	}
 
-	bool ok = drm_fb_import(&plane->pending_fb, drm, local_buf,
-		&crtc->primary->formats);
+	bool ok = drm_fb_import(&state->primary_fb, drm, local_buf,
+		&plane->formats);
 	wlr_buffer_unlock(local_buf);
 	if (!ok) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,
@@ -459,6 +474,7 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
+	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
 
@@ -468,41 +484,47 @@ static bool drm_connector_test(struct wlr_output *output,
 				!(state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"Can't enable an output without a buffer");
-			return false;
+			goto out;
 		}
 
 		if (!drm_connector_alloc_crtc(conn)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"No CRTC available for this connector");
-			return false;
+			goto out;
 		}
 	}
 
 	if ((state->committed & WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED) &&
 			state->adaptive_sync_enabled &&
 			!drm_connector_supports_vrr(conn)) {
-		return false;
+		goto out;
 	}
 
 	if (conn->backend->parent) {
 		// If we're running as a secondary GPU, we can't perform an atomic
 		// commit without blitting a buffer.
-		return true;
+		ok = true;
+		goto out;
 	}
 
 	if (!conn->crtc) {
 		// If the output is disabled, we don't have a crtc even after
 		// reallocation
-		return true;
+		ok = true;
+		goto out;
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!drm_connector_set_pending_fb(conn, pending.base)) {
-			return false;
+		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
+			goto out;
 		}
 	}
 
-	return drm_crtc_commit(conn, &pending, 0, true);
+	ok = drm_crtc_commit(conn, &pending, 0, true);
+
+out:
+	drm_connector_state_finish(&pending);
+	return ok;
 }
 
 bool drm_connector_supports_vrr(struct wlr_drm_connector *conn) {
@@ -544,26 +566,28 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		return true;
 	}
 
+	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, base);
 
 	if (!pending.active && conn->crtc == NULL) {
 		// Disabling an already-disabled connector
-		return true;
+		ok = true;
+		goto out;
 	}
 
 	if (pending.active) {
 		if (!drm_connector_alloc_crtc(conn)) {
 			wlr_drm_conn_log(conn, WLR_ERROR,
 				"No CRTC available for this connector");
-			return false;
+			goto out;
 		}
 	}
 
 	uint32_t flags = 0;
 	if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!drm_connector_set_pending_fb(conn, pending.base)) {
-			return false;
+		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
+			goto out;
 		}
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
 
@@ -574,7 +598,7 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		if (conn->pending_page_flip_crtc && !pending.modeset) {
 			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
 				"a page-flip is already pending");
-			return false;
+			goto out;
 		}
 	}
 	if (pending.modeset && pending.active) {
@@ -591,8 +615,9 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
-	if (!drm_crtc_commit(conn, &pending, flags, false)) {
-		return false;
+	ok = drm_crtc_commit(conn, &pending, flags, false);
+	if (!ok) {
+		goto out;
 	}
 
 	if (pending.base->committed & WLR_OUTPUT_STATE_MODE) {
@@ -617,7 +642,9 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		conn->output.frame_pending = true;
 	}
 
-	return true;
+out:
+	drm_connector_state_finish(&pending);
+	return ok;
 }
 
 static bool drm_connector_commit(struct wlr_output *output,
@@ -670,16 +697,6 @@ struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn) {
 		return conn->crtc->cursor->queued_fb;
 	}
 	return conn->crtc->cursor->current_fb;
-}
-
-struct wlr_drm_fb *plane_get_next_fb(struct wlr_drm_plane *plane) {
-	if (plane->pending_fb) {
-		return plane->pending_fb;
-	}
-	if (plane->queued_fb) {
-		return plane->queued_fb;
-	}
-	return plane->current_fb;
 }
 
 static void realloc_crtcs(struct wlr_drm_backend *drm,

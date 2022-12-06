@@ -294,8 +294,8 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		if (crtc->props.vrr_enabled != 0) {
 			atomic_add(&atom, crtc->id, crtc->props.vrr_enabled, vrr_enabled);
 		}
-		set_plane_props(&atom, drm, crtc->primary, plane_get_next_fb(crtc->primary),
-			crtc->id, 0, 0);
+		set_plane_props(&atom, drm, crtc->primary, state->primary_fb, crtc->id,
+			0, 0);
 		if (crtc->primary->props.fb_damage_clips != 0) {
 			atomic_add(&atom, crtc->primary->id,
 				crtc->primary->props.fb_damage_clips, fb_damage_clips);

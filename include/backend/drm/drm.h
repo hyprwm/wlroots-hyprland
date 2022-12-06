@@ -22,8 +22,6 @@ struct wlr_drm_plane {
 	/* Only initialized on multi-GPU setups */
 	struct wlr_drm_surface mgpu_surf;
 
-	/* Buffer to be submitted to the kernel on the next page-flip */
-	struct wlr_drm_fb *pending_fb;
 	/* Buffer submitted to the kernel, will be presented on next vblank */
 	struct wlr_drm_fb *queued_fb;
 	/* Buffer currently displayed on screen */
@@ -99,6 +97,7 @@ struct wlr_drm_connector_state {
 	bool modeset;
 	bool active;
 	drmModeModeInfo mode;
+	struct wlr_drm_fb *primary_fb;
 };
 
 struct wlr_drm_connector {
@@ -153,7 +152,6 @@ size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
 	struct wlr_drm_crtc *crtc);
 void drm_lease_destroy(struct wlr_drm_lease *lease);
 
-struct wlr_drm_fb *plane_get_next_fb(struct wlr_drm_plane *plane);
 struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn);
 
 #define wlr_drm_conn_log(conn, verb, fmt, ...) \

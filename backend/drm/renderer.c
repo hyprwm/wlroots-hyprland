@@ -130,7 +130,6 @@ void drm_plane_finish_surface(struct wlr_drm_plane *plane) {
 		return;
 	}
 
-	drm_fb_clear(&plane->pending_fb);
 	drm_fb_clear(&plane->queued_fb);
 	drm_fb_clear(&plane->current_fb);
 
@@ -192,6 +191,11 @@ void drm_fb_clear(struct wlr_drm_fb **fb_ptr) {
 	wlr_buffer_unlock(fb->wlr_buf); // may destroy the buffer
 
 	*fb_ptr = NULL;
+}
+
+struct wlr_drm_fb *drm_fb_lock(struct wlr_drm_fb *fb) {
+	wlr_buffer_lock(fb->wlr_buf);
+	return fb;
 }
 
 static void drm_fb_handle_destroy(struct wlr_addon *addon) {

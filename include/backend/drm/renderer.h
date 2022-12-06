@@ -45,6 +45,7 @@ void drm_fb_destroy(struct wlr_drm_fb *fb);
 
 void drm_fb_clear(struct wlr_drm_fb **fb);
 void drm_fb_move(struct wlr_drm_fb **new, struct wlr_drm_fb **old);
+struct wlr_drm_fb *drm_fb_lock(struct wlr_drm_fb *fb);
 
 struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 	struct wlr_buffer *buffer);
