@@ -1059,9 +1059,9 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		// connector the user wants to enable
 		bool want_crtc = conn == want_conn || conn->output.enabled;
 
-		wlr_log(WLR_DEBUG, "  '%s' crtc=%d status=%d want_crtc=%d",
+		wlr_log(WLR_DEBUG, "  '%s': crtc=%d status=%s want_crtc=%d",
 			conn->name, conn->crtc ? (int)(conn->crtc - drm->crtcs) : -1,
-			conn->status, want_crtc);
+			drm_connector_status_str(conn->status), want_crtc);
 
 		if (conn->status == DRM_MODE_CONNECTED && want_crtc) {
 			connector_constraints[i] = conn->possible_crtcs;
@@ -1108,8 +1108,8 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *conn = connectors[i];
 		bool prev_enabled = conn->crtc;
 
-		wlr_log(WLR_DEBUG, "  '%s' crtc=%zd status=%d",
-			conn->name, connector_match[i], conn->status);
+		wlr_log(WLR_DEBUG, "  '%s': crtc=%zd",
+			conn->name, connector_match[i]);
 
 		// We don't need to change anything.
 		if (prev_enabled && connector_match[i] == conn->crtc - drm->crtcs) {
