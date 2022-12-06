@@ -263,12 +263,14 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 	struct wlr_renderer *renderer = NULL;
 
 #if WLR_HAS_GLES2_RENDERER
-	if (!renderer && (is_auto || strcmp(renderer_name, "gles2") == 0)) {
+	if (is_auto || strcmp(renderer_name, "gles2") == 0) {
 		if (drm_fd < 0) {
 			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
 		} else {
 			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
-			if (!renderer) {
+			if (renderer) {
+				return renderer;
+			} else {
 				log_creation_failure(is_auto, "Failed to create a GLES2 renderer");
 			}
 		}
@@ -276,12 +278,14 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 #endif
 
 #if WLR_HAS_VULKAN_RENDERER
-	if (!renderer && strcmp(renderer_name, "vulkan") == 0) {
+	if (strcmp(renderer_name, "vulkan") == 0) {
 		if (drm_fd < 0) {
 			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
 		} else {
 			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
-			if (!renderer) {
+			if (renderer) {
+				return renderer;
+			} else {
 				log_creation_failure(is_auto, "Failed to create a Vulkan renderer");
 			}
 		}
@@ -289,25 +293,23 @@ struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
 #endif
 
 	bool has_render_node = false;
-	if (!renderer && is_auto && drm_fd >= 0) {
+	if (is_auto && drm_fd >= 0) {
 		char *render_node = drmGetRenderDeviceNameFromFd(drm_fd);
 		has_render_node = render_node != NULL;
 		free(render_node);
 	}
 
-	if (!renderer && ((is_auto && !has_render_node) ||
-			strcmp(renderer_name, "pixman") == 0)) {
+	if ((is_auto && !has_render_node) || strcmp(renderer_name, "pixman") == 0) {
 		renderer = wlr_pixman_renderer_create();
-		if (!renderer) {
+		if (renderer) {
+			return renderer;
+		} else {
 			log_creation_failure(is_auto, "Failed to create a pixman renderer");
 		}
 	}
 
-	if (!renderer) {
-		wlr_log(WLR_ERROR, "Could not initialize renderer");
-	}
-
-	return renderer;
+	wlr_log(WLR_ERROR, "Could not initialize renderer");
+	return NULL;
 }
 
 static int open_drm_render_node(void) {
