@@ -1087,47 +1087,43 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		}
 	}
 
-	/*
-	 * In the case that we add a new connector (hotplug) and we fail to
-	 * match everything, we prefer to fail the new connector and keep all
-	 * of the old mappings instead.
-	 */
+	// Refuse to remove a CRTC from an enabled connector, and refuse to
+	// change the CRTC of an enabled connector.
 	for (size_t i = 0; i < num_connectors; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
-		if (conn->status == DRM_MODE_CONNECTED && conn->output.enabled &&
-				connector_match[i] == -1) {
+		if (conn->status != DRM_MODE_CONNECTED || !conn->output.enabled) {
+			continue;
+		}
+		if (connector_match[i] == -1) {
 			wlr_log(WLR_DEBUG, "Could not match a CRTC for previously connected output; "
-					"keeping old configuration");
+				"keeping old configuration");
+			return;
+		}
+		assert(conn->crtc != NULL);
+		if (connector_match[i] != conn->crtc - drm->crtcs) {
+			wlr_log(WLR_DEBUG, "Cannot switch CRTC for enabled output; "
+				"keeping old configuration");
 			return;
 		}
 	}
-	wlr_log(WLR_DEBUG, "State after reallocation:");
 
 	// Apply new configuration
+	wlr_log(WLR_DEBUG, "State after reallocation:");
 	for (size_t i = 0; i < num_connectors; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
-		bool prev_enabled = conn->crtc;
 
 		wlr_log(WLR_DEBUG, "  '%s': crtc=%zd",
 			conn->name, connector_match[i]);
 
-		// We don't need to change anything.
-		if (prev_enabled && connector_match[i] == conn->crtc - drm->crtcs) {
+		if (conn->crtc != NULL && connector_match[i] == conn->crtc - drm->crtcs) {
+			// We don't need to change anything
 			continue;
 		}
 
 		dealloc_crtc(conn);
-
-		if (connector_match[i] == -1) {
-			if (prev_enabled) {
-				wlr_drm_conn_log(conn, WLR_DEBUG, "Output has lost its CRTC");
-				wlr_output_update_enabled(&conn->output, false);
-				wlr_output_update_mode(&conn->output, NULL);
-			}
-			continue;
+		if (connector_match[i] >= 0) {
+			conn->crtc = &drm->crtcs[connector_match[i]];
 		}
-
-		conn->crtc = &drm->crtcs[connector_match[i]];
 	}
 }
 
