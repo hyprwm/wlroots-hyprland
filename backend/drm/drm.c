@@ -1029,15 +1029,15 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *want_conn) {
 	assert(drm->num_crtcs > 0);
 
-	size_t num_outputs = wl_list_length(&drm->outputs);
-	if (num_outputs == 0) {
+	size_t num_connectors = wl_list_length(&drm->connectors);
+	if (num_connectors == 0) {
 		return;
 	}
 
 	wlr_log(WLR_DEBUG, "Reallocating CRTCs");
 
-	struct wlr_drm_connector *connectors[num_outputs];
-	uint32_t connector_constraints[num_outputs];
+	struct wlr_drm_connector *connectors[num_connectors];
+	uint32_t connector_constraints[num_connectors];
 	uint32_t previous_match[drm->num_crtcs];
 	uint32_t new_match[drm->num_crtcs];
 
@@ -1048,7 +1048,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 	wlr_log(WLR_DEBUG, "State before reallocation:");
 	size_t i = 0;
 	struct wlr_drm_connector *conn;
-	wl_list_for_each(conn, &drm->outputs, link) {
+	wl_list_for_each(conn, &drm->connectors, link) {
 		connectors[i] = conn;
 
 		if (conn->crtc) {
@@ -1073,12 +1073,12 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		++i;
 	}
 
-	match_obj(num_outputs, connector_constraints,
+	match_obj(num_connectors, connector_constraints,
 		drm->num_crtcs, previous_match, new_match);
 
 	// Converts our crtc=>connector result into a connector=>crtc one.
-	ssize_t connector_match[num_outputs];
-	for (size_t i = 0 ; i < num_outputs; ++i) {
+	ssize_t connector_match[num_connectors];
+	for (size_t i = 0 ; i < num_connectors; ++i) {
 		connector_match[i] = -1;
 	}
 	for (size_t i = 0; i < drm->num_crtcs; ++i) {
@@ -1092,7 +1092,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 	 * match everything, we prefer to fail the new connector and keep all
 	 * of the old mappings instead.
 	 */
-	for (size_t i = 0; i < num_outputs; ++i) {
+	for (size_t i = 0; i < num_connectors; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
 		if (conn->status == DRM_MODE_CONNECTED && conn->output.enabled &&
 				connector_match[i] == -1) {
@@ -1104,7 +1104,7 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 	wlr_log(WLR_DEBUG, "State after reallocation:");
 
 	// Apply new configuration
-	for (size_t i = 0; i < num_outputs; ++i) {
+	for (size_t i = 0; i < num_connectors; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
 		bool prev_enabled = conn->crtc;
 
@@ -1200,7 +1200,7 @@ static struct wlr_drm_connector *create_drm_connector(struct wlr_drm_backend *dr
 
 	wlr_conn->crtc = connector_get_current_crtc(wlr_conn, drm_conn);
 
-	wl_list_insert(drm->outputs.prev, &wlr_conn->link);
+	wl_list_insert(drm->connectors.prev, &wlr_conn->link);
 	return wlr_conn;
 }
 
@@ -1364,7 +1364,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 		return;
 	}
 
-	size_t seen_len = wl_list_length(&drm->outputs);
+	size_t seen_len = wl_list_length(&drm->connectors);
 	// +1 so length can never be 0, which is undefined behaviour.
 	// Last element isn't used.
 	bool seen[seen_len + 1];
@@ -1377,7 +1377,7 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 
 		ssize_t index = -1;
 		struct wlr_drm_connector *c, *wlr_conn = NULL;
-		wl_list_for_each(c, &drm->outputs, link) {
+		wl_list_for_each(c, &drm->connectors, link) {
 			index++;
 			if (c->id == conn_id) {
 				wlr_conn = c;
@@ -1448,8 +1448,8 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 	// Iterate in reverse order because we'll remove items from the list and
 	// still want indices to remain correct.
 	struct wlr_drm_connector *conn, *tmp_conn;
-	size_t index = wl_list_length(&drm->outputs);
-	wl_list_for_each_reverse_safe(conn, tmp_conn, &drm->outputs, link) {
+	size_t index = wl_list_length(&drm->connectors);
+	wl_list_for_each_reverse_safe(conn, tmp_conn, &drm->connectors, link) {
 		index--;
 		if (index >= seen_len || seen[index]) {
 			continue;
@@ -1478,7 +1478,7 @@ void scan_drm_leases(struct wlr_drm_backend *drm) {
 	}
 
 	struct wlr_drm_connector *conn;
-	wl_list_for_each(conn, &drm->outputs, link) {
+	wl_list_for_each(conn, &drm->connectors, link) {
 		if (conn->lease == NULL) {
 			continue;
 		}
@@ -1510,7 +1510,7 @@ static void handle_page_flip(int fd, unsigned seq,
 
 	bool found = false;
 	struct wlr_drm_connector *conn;
-	wl_list_for_each(conn, &drm->outputs, link) {
+	wl_list_for_each(conn, &drm->connectors, link) {
 		if (conn->pending_page_flip_crtc == crtc_id) {
 			found = true;
 			break;
@@ -1721,7 +1721,7 @@ void drm_lease_destroy(struct wlr_drm_lease *lease) {
 	wl_signal_emit_mutable(&lease->events.destroy, NULL);
 
 	struct wlr_drm_connector *conn;
-	wl_list_for_each(conn, &drm->outputs, link) {
+	wl_list_for_each(conn, &drm->connectors, link) {
 		if (conn->lease == lease) {
 			conn->lease = NULL;
 		}
