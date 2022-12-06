@@ -176,8 +176,9 @@ static void set_plane_props(struct atomic *atom, struct wlr_drm_backend *drm,
 	const union wlr_drm_plane_props *props = &plane->props;
 	struct wlr_drm_fb *fb = plane_get_next_fb(plane);
 	if (fb == NULL) {
-		wlr_log(WLR_ERROR, "Failed to acquire FB");
-		goto error;
+		wlr_log(WLR_ERROR, "Failed to acquire FB for plane %"PRIu32, plane->id);
+		atom->failed = true;
+		return;
 	}
 
 	uint32_t width = fb->wlr_buf->width;
@@ -194,12 +195,6 @@ static void set_plane_props(struct atomic *atom, struct wlr_drm_backend *drm,
 	atomic_add(atom, id, props->crtc_id, crtc_id);
 	atomic_add(atom, id, props->crtc_x, (uint64_t)x);
 	atomic_add(atom, id, props->crtc_y, (uint64_t)y);
-
-	return;
-
-error:
-	wlr_log(WLR_ERROR, "Failed to set plane %"PRIu32" properties", plane->id);
-	atom->failed = true;
 }
 
 static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
