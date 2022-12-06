@@ -116,6 +116,9 @@ void destroy_wl_buffer(struct wlr_wl_buffer *buffer) {
 	wl_list_remove(&buffer->buffer_destroy.link);
 	wl_list_remove(&buffer->link);
 	wl_buffer_destroy(buffer->wl_buffer);
+	if (!buffer->released) {
+		wlr_buffer_unlock(buffer->buffer);
+	}
 	free(buffer);
 }
 
