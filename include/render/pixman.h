@@ -52,4 +52,7 @@ pixman_format_code_t get_pixman_format_from_drm(uint32_t fmt);
 uint32_t get_drm_format_from_pixman(pixman_format_code_t fmt);
 const uint32_t *get_pixman_drm_formats(size_t *len);
 
+bool begin_pixman_data_ptr_access(struct wlr_buffer *buffer, pixman_image_t **image_ptr,
+	uint32_t flags);
+
 #endif
