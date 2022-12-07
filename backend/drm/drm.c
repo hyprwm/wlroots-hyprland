@@ -459,12 +459,6 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
-	if ((state->committed & WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED) &&
-			state->adaptive_sync_enabled &&
-			!drm_connector_supports_vrr(conn)) {
-		return false;
-	}
-
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
 
@@ -482,6 +476,12 @@ static bool drm_connector_test(struct wlr_output *output,
 				"No CRTC available for this connector");
 			return false;
 		}
+	}
+
+	if ((state->committed & WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED) &&
+			state->adaptive_sync_enabled &&
+			!drm_connector_supports_vrr(conn)) {
+		return false;
 	}
 
 	if (conn->backend->parent) {
