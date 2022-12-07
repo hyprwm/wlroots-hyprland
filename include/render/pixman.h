@@ -1,9 +1,10 @@
 #ifndef RENDER_PIXMAN_H
 #define RENDER_PIXMAN_H
 
+#include <wlr/render/drm_format_set.h>
+#include <wlr/render/interface.h>
 #include <wlr/render/pixman.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/render/drm_format_set.h>
 #include "render/pixel_format.h"
 
 struct wlr_pixman_pixel_format {
@@ -48,11 +49,19 @@ struct wlr_pixman_texture {
 	struct wlr_buffer *buffer; // if created via texture_from_buffer
 };
 
+struct wlr_pixman_render_pass {
+	struct wlr_render_pass base;
+	struct wlr_pixman_buffer *buffer;
+};
+
 pixman_format_code_t get_pixman_format_from_drm(uint32_t fmt);
 uint32_t get_drm_format_from_pixman(pixman_format_code_t fmt);
 const uint32_t *get_pixman_drm_formats(size_t *len);
 
 bool begin_pixman_data_ptr_access(struct wlr_buffer *buffer, pixman_image_t **image_ptr,
 	uint32_t flags);
+
+struct wlr_pixman_render_pass *begin_pixman_render_pass(
+	struct wlr_pixman_buffer *buffer);
 
 #endif

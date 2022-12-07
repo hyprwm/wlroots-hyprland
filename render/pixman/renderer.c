@@ -493,6 +493,25 @@ static uint32_t pixman_get_render_buffer_caps(struct wlr_renderer *renderer) {
 	return WLR_BUFFER_CAP_DATA_PTR;
 }
 
+static struct wlr_render_pass *pixman_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
+		struct wlr_buffer *wlr_buffer) {
+	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
+
+	struct wlr_pixman_buffer *buffer = get_buffer(renderer, wlr_buffer);
+	if (buffer == NULL) {
+		buffer = create_buffer(renderer, wlr_buffer);
+	}
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	struct wlr_pixman_render_pass *pass = begin_pixman_render_pass(buffer);
+	if (pass == NULL) {
+		return NULL;
+	}
+	return &pass->base;
+}
+
 static const struct wlr_renderer_impl renderer_impl = {
 	.begin = pixman_begin,
 	.end = pixman_end,
@@ -508,6 +527,7 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.preferred_read_format = pixman_preferred_read_format,
 	.read_pixels = pixman_read_pixels,
 	.get_render_buffer_caps = pixman_get_render_buffer_caps,
+	.begin_buffer_pass = pixman_begin_buffer_pass,
 };
 
 struct wlr_renderer *wlr_pixman_renderer_create(void) {
