@@ -27,6 +27,7 @@
 #endif // WLR_HAS_VULKAN_RENDERER
 
 #include "backend/backend.h"
+#include "render/pass.h"
 #include "render/pixel_format.h"
 #include "render/wlr_renderer.h"
 #include "util/env.h"
@@ -415,7 +416,7 @@ int wlr_renderer_get_drm_fd(struct wlr_renderer *r) {
 struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
 		struct wlr_renderer *renderer, struct wlr_buffer *buffer) {
 	if (!renderer->impl->begin_buffer_pass) {
-		return NULL;
+		return begin_legacy_buffer_render_pass(renderer, buffer);
 	}
 	return renderer->impl->begin_buffer_pass(renderer, buffer);
 }
