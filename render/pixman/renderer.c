@@ -255,10 +255,12 @@ static bool pixman_render_subtexture_with_matrix(
 		}
 	}
 
-	// TODO: don't create a mask if alpha == 1.0
-	struct pixman_color mask_colour = {0};
-	mask_colour.alpha = 0xFFFF * alpha;
-	pixman_image_t *mask = pixman_image_create_solid_fill(&mask_colour);
+	pixman_image_t *mask = NULL;
+	if (alpha != 1.0) {
+		struct pixman_color mask_colour = {0};
+		mask_colour.alpha = 0xFFFF * alpha;
+		mask = pixman_image_create_solid_fill(&mask_colour);
+	}
 
 	float m[9];
 	memcpy(m, matrix, sizeof(m));
@@ -279,7 +281,9 @@ static bool pixman_render_subtexture_with_matrix(
 		wlr_buffer_end_data_ptr_access(texture->buffer);
 	}
 
-	pixman_image_unref(mask);
+	if (mask != NULL) {
+		pixman_image_unref(mask);
+	}
 
 	return true;
 }
