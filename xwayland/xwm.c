@@ -2130,7 +2130,7 @@ struct wlr_xwm *xwm_create(struct wlr_xwayland *xwayland, int wm_fd) {
 		sizeof(supported)/sizeof(*supported),
 		supported);
 
-#if HAS_XCB_XFIXES_SET_CLIENT_DISCONNECT_MODE
+#if HAVE_XCB_XFIXES_SET_CLIENT_DISCONNECT_MODE
 	if (xwm->xwayland->server->options.terminate_delay > 0 &&
 			xwm->xfixes_major_version >= 6) {
 		xcb_xfixes_set_client_disconnect_mode(xwm->xcb_conn,

@@ -82,4 +82,4 @@ wlr_deps += xwayland_libs
 features += { 'xwayland': true }
 
 have = cc.has_function('xcb_xfixes_set_client_disconnect_mode', dependencies: xwayland_libs)
-internal_config.set10('HAS_XCB_XFIXES_SET_CLIENT_DISCONNECT_MODE', have)
+internal_config.set10('HAVE_XCB_XFIXES_SET_CLIENT_DISCONNECT_MODE', have)
