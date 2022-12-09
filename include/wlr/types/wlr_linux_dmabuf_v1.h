@@ -111,4 +111,19 @@ struct wlr_linux_dmabuf_feedback_v1_tranche *wlr_linux_dmabuf_feedback_add_tranc
  */
 void wlr_linux_dmabuf_feedback_v1_finish(struct wlr_linux_dmabuf_feedback_v1 *feedback);
 
+struct wlr_linux_dmabuf_feedback_v1_init_options {
+	// Main renderer used by the compositor
+	struct wlr_renderer *main_renderer;
+	// Output on which direct scan-out is possible on the primary plane, or NULL
+	struct wlr_output *scanout_primary_output;
+};
+
+/**
+ * Initialize a DMA-BUF feedback object with the provided options.
+ *
+ * The caller is responsible for calling wlr_linux_dmabuf_feedback_v1_finish() after use.
+ */
+bool wlr_linux_dmabuf_feedback_v1_init_with_options(struct wlr_linux_dmabuf_feedback_v1 *feedback,
+	const struct wlr_linux_dmabuf_feedback_v1_init_options *options);
+
 #endif

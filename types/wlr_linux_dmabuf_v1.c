@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <wlr/backend.h>
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
@@ -1075,4 +1076,88 @@ void wlr_linux_dmabuf_feedback_v1_finish(struct wlr_linux_dmabuf_feedback_v1 *fe
 		wlr_drm_format_set_finish(&tranche->formats);
 	}
 	wl_array_release(&feedback->tranches);
+}
+
+static bool devid_from_fd(int fd, dev_t *devid) {
+	struct stat stat;
+	if (fstat(fd, &stat) != 0) {
+		wlr_log_errno(WLR_ERROR, "fstat failed");
+		return false;
+	}
+	*devid = stat.st_rdev;
+	return true;
+}
+
+bool wlr_linux_dmabuf_feedback_v1_init_with_options(struct wlr_linux_dmabuf_feedback_v1 *feedback,
+		const struct wlr_linux_dmabuf_feedback_v1_init_options *options) {
+	assert(options->main_renderer != NULL);
+
+	memset(feedback, 0, sizeof(*feedback));
+
+	int renderer_drm_fd = wlr_renderer_get_drm_fd(options->main_renderer);
+	if (renderer_drm_fd < 0) {
+		wlr_log(WLR_ERROR, "Failed to get renderer DRM FD");
+		goto error;
+	}
+	dev_t renderer_dev;
+	if (!devid_from_fd(renderer_drm_fd, &renderer_dev)) {
+		goto error;
+	}
+
+	feedback->main_device = renderer_dev;
+
+	const struct wlr_drm_format_set *renderer_formats =
+		wlr_renderer_get_dmabuf_texture_formats(options->main_renderer);
+	if (renderer_formats == NULL) {
+		wlr_log(WLR_ERROR, "Failed to get renderer DMA-BUF texture formats");
+		goto error;
+	}
+
+	if (options->scanout_primary_output != NULL) {
+		int backend_drm_fd = wlr_backend_get_drm_fd(options->scanout_primary_output->backend);
+		if (backend_drm_fd < 0) {
+			wlr_log(WLR_ERROR, "Failed to get backend DRM FD");
+			goto error;
+		}
+		dev_t backend_dev;
+		if (!devid_from_fd(backend_drm_fd, &backend_dev)) {
+			goto error;
+		}
+
+		const struct wlr_drm_format_set *scanout_formats =
+			wlr_output_get_primary_formats(options->scanout_primary_output, WLR_BUFFER_CAP_DMABUF);
+		if (scanout_formats == NULL) {
+			wlr_log(WLR_ERROR, "Failed to get output primary DMA-BUF formats");
+			goto error;
+		}
+
+		struct wlr_linux_dmabuf_feedback_v1_tranche *tranche =
+			wlr_linux_dmabuf_feedback_add_tranche(feedback);
+		if (tranche == NULL) {
+			goto error;
+		}
+
+		tranche->target_device = backend_dev;
+		if (!wlr_drm_format_set_intersect(&tranche->formats, scanout_formats, renderer_formats)) {
+			wlr_log(WLR_ERROR, "Failed to intersect renderer and scanout formats");
+			goto error;
+		}
+	}
+
+	struct wlr_linux_dmabuf_feedback_v1_tranche *tranche =
+		wlr_linux_dmabuf_feedback_add_tranche(feedback);
+	if (tranche == NULL) {
+		goto error;
+	}
+
+	tranche->target_device = renderer_dev;
+	if (!wlr_drm_format_set_copy(&tranche->formats, renderer_formats)) {
+		goto error;
+	}
+
+	return true;
+
+error:
+	wlr_linux_dmabuf_feedback_v1_finish(feedback);
+	return false;
 }
