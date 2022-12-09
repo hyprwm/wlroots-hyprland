@@ -98,4 +98,17 @@ bool wlr_linux_dmabuf_v1_set_surface_feedback(
 	struct wlr_linux_dmabuf_v1 *linux_dmabuf, struct wlr_surface *surface,
 	const struct wlr_linux_dmabuf_feedback_v1 *feedback);
 
+/**
+ * Append a tranche at the end of the DMA-BUF feedback list.
+ *
+ * Tranches must be added with decreasing priority.
+ */
+struct wlr_linux_dmabuf_feedback_v1_tranche *wlr_linux_dmabuf_feedback_add_tranche(
+	struct wlr_linux_dmabuf_feedback_v1 *feedback);
+
+/**
+ * Release resources allocated by a DMA-BUF feedback object.
+ */
+void wlr_linux_dmabuf_feedback_v1_finish(struct wlr_linux_dmabuf_feedback_v1 *feedback);
+
 #endif

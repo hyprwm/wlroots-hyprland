@@ -1056,3 +1056,23 @@ bool wlr_linux_dmabuf_v1_set_surface_feedback(
 
 	return true;
 }
+
+struct wlr_linux_dmabuf_feedback_v1_tranche *wlr_linux_dmabuf_feedback_add_tranche(
+		struct wlr_linux_dmabuf_feedback_v1 *feedback) {
+	struct wlr_linux_dmabuf_feedback_v1_tranche *tranche =
+		wl_array_add(&feedback->tranches, sizeof(*tranche));
+	if (tranche == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		return NULL;
+	}
+	memset(tranche, 0, sizeof(*tranche));
+	return tranche;
+}
+
+void wlr_linux_dmabuf_feedback_v1_finish(struct wlr_linux_dmabuf_feedback_v1 *feedback) {
+	struct wlr_linux_dmabuf_feedback_v1_tranche *tranche;
+	wl_array_for_each(tranche, &feedback->tranches) {
+		wlr_drm_format_set_finish(&tranche->formats);
+	}
+	wl_array_release(&feedback->tranches);
+}
