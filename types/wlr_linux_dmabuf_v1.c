@@ -636,34 +636,6 @@ static void compiled_feedback_destroy(
 	free(feedback);
 }
 
-static bool feedback_tranche_init_with_renderer(
-		struct wlr_linux_dmabuf_feedback_v1_tranche *tranche,
-		struct wlr_renderer *renderer) {
-	memset(tranche, 0, sizeof(*tranche));
-
-	int drm_fd = wlr_renderer_get_drm_fd(renderer);
-	if (drm_fd < 0) {
-		wlr_log(WLR_ERROR, "Failed to get DRM FD from renderer");
-		return false;
-	}
-
-	struct stat stat;
-	if (fstat(drm_fd, &stat) != 0) {
-		wlr_log_errno(WLR_ERROR, "fstat failed");
-		return false;
-	}
-	tranche->target_device = stat.st_rdev;
-
-	const struct wlr_drm_format_set *formats = wlr_renderer_get_dmabuf_texture_formats(renderer);
-	if (formats == NULL) {
-		wlr_log(WLR_ERROR, "Failed to get renderer DMA-BUF texture formats");
-		return false;
-	}
-	tranche->formats = *formats;
-
-	return true;
-}
-
 static void feedback_tranche_send(
 		const struct wlr_linux_dmabuf_feedback_v1_compiled_tranche *tranche,
 		struct wl_resource *resource) {
@@ -1015,18 +987,17 @@ error_linux_dmabuf:
 
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
 		uint32_t version, struct wlr_renderer *renderer) {
-	struct wlr_linux_dmabuf_feedback_v1_tranche tranche = {0};
-	if (!feedback_tranche_init_with_renderer(&tranche, renderer)) {
+	const struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+		.main_renderer = renderer,
+	};
+	struct wlr_linux_dmabuf_feedback_v1 feedback = {0};
+	if (!wlr_linux_dmabuf_feedback_v1_init_with_options(&feedback, &options)) {
 		return NULL;
 	}
-	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
-		.main_device = tranche.target_device,
-		.tranches = {
-			.data = &tranche,
-			.size = sizeof(tranche),
-		},
-	};
-	return wlr_linux_dmabuf_v1_create(display, version, &feedback);
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
+		wlr_linux_dmabuf_v1_create(display, version, &feedback);
+	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
+	return linux_dmabuf;
 }
 
 bool wlr_linux_dmabuf_v1_set_surface_feedback(
