@@ -44,14 +44,13 @@ struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_from_buffer_resource(
 
 struct wlr_linux_dmabuf_feedback_v1 {
 	dev_t main_device;
-	size_t tranches_len;
-	const struct wlr_linux_dmabuf_feedback_v1_tranche *tranches;
+	struct wl_array tranches; // struct wlr_linux_dmabuf_feedback_v1_tranche
 };
 
 struct wlr_linux_dmabuf_feedback_v1_tranche {
 	dev_t target_device;
 	uint32_t flags; // bitfield of enum zwp_linux_dmabuf_feedback_v1_tranche_flags
-	const struct wlr_drm_format_set *formats;
+	struct wlr_drm_format_set formats;
 };
 
 /* the protocol interface */

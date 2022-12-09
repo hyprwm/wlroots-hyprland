@@ -496,16 +496,17 @@ static ssize_t get_drm_format_set_index(const struct wlr_drm_format_set *set,
 
 static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		const struct wlr_linux_dmabuf_feedback_v1 *feedback) {
-	assert(feedback->tranches_len > 0);
+	const struct wlr_linux_dmabuf_feedback_v1_tranche *tranches = feedback->tranches.data;
+	size_t tranches_len = feedback->tranches.size / sizeof(struct wlr_linux_dmabuf_feedback_v1_tranche);
+	assert(tranches_len > 0);
 
 	// Require the last tranche to be the fallback tranche and contain all
 	// formats/modifiers
-	const struct wlr_linux_dmabuf_feedback_v1_tranche *fallback_tranche =
-		&feedback->tranches[feedback->tranches_len - 1];
+	const struct wlr_linux_dmabuf_feedback_v1_tranche *fallback_tranche = &tranches[tranches_len - 1];
 
 	size_t table_len = 0;
-	for (size_t i = 0; i < fallback_tranche->formats->len; i++) {
-		const struct wlr_drm_format *fmt = fallback_tranche->formats->formats[i];
+	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
+		const struct wlr_drm_format *fmt = fallback_tranche->formats.formats[i];
 		table_len += fmt->len;
 	}
 	assert(table_len > 0);
@@ -530,8 +531,8 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 	close(rw_fd);
 
 	size_t n = 0;
-	for (size_t i = 0; i < fallback_tranche->formats->len; i++) {
-		const struct wlr_drm_format *fmt = fallback_tranche->formats->formats[i];
+	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
+		const struct wlr_drm_format *fmt = fallback_tranche->formats.formats[i];
 
 		for (size_t k = 0; k < fmt->len; k++) {
 			table[n] = (struct wlr_linux_dmabuf_feedback_v1_table_entry){
@@ -547,21 +548,20 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 
 	struct wlr_linux_dmabuf_feedback_v1_compiled *compiled = calloc(1,
 		sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled) +
-		feedback->tranches_len * sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled_tranche));
+		tranches_len * sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled_tranche));
 	if (compiled == NULL) {
 		close(ro_fd);
 		return NULL;
 	}
 
 	compiled->main_device = feedback->main_device;
-	compiled->tranches_len = feedback->tranches_len;
+	compiled->tranches_len = tranches_len;
 	compiled->table_fd = ro_fd;
 	compiled->table_size = table_size;
 
 	// Build the indices lists for all but the last (fallback) tranches
-	for (size_t i = 0; i < feedback->tranches_len - 1; i++) {
-		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche =
-			&feedback->tranches[i];
+	for (size_t i = 0; i < tranches_len - 1; i++) {
+		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
 		struct wlr_linux_dmabuf_feedback_v1_compiled_tranche *compiled_tranche =
 			&compiled->tranches[i];
 
@@ -576,11 +576,11 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 
 		n = 0;
 		uint16_t *indices = compiled_tranche->indices.data;
-		for (size_t j = 0; j < tranche->formats->len; j++) {
-			const struct wlr_drm_format *fmt = tranche->formats->formats[j];
+		for (size_t j = 0; j < tranche->formats.len; j++) {
+			const struct wlr_drm_format *fmt = tranche->formats.formats[j];
 			for (size_t k = 0; k < fmt->len; k++) {
 				ssize_t index = get_drm_format_set_index(
-					fallback_tranche->formats, fmt->format, fmt->modifiers[k]);
+					&fallback_tranche->formats, fmt->format, fmt->modifiers[k]);
 				if (index < 0) {
 					wlr_log(WLR_ERROR, "Format 0x%" PRIX32 " and modifier "
 						"0x%" PRIX64 " are in tranche #%zu but are missing "
@@ -653,11 +653,12 @@ static bool feedback_tranche_init_with_renderer(
 	}
 	tranche->target_device = stat.st_rdev;
 
-	tranche->formats = wlr_renderer_get_dmabuf_texture_formats(renderer);
-	if (tranche->formats == NULL) {
+	const struct wlr_drm_format_set *formats = wlr_renderer_get_dmabuf_texture_formats(renderer);
+	if (formats == NULL) {
 		wlr_log(WLR_ERROR, "Failed to get renderer DMA-BUF texture formats");
 		return false;
 	}
+	tranche->formats = *formats;
 
 	return true;
 }
@@ -935,11 +936,14 @@ static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		goto error_compiled;
 	}
 
+	size_t tranches_len =
+		feedback->tranches.size / sizeof(struct wlr_linux_dmabuf_feedback_v1_tranche);
+	const struct wlr_linux_dmabuf_feedback_v1_tranche *tranches = feedback->tranches.data;
 	struct wlr_drm_format_set formats = {0};
-	for (size_t i = 0; i < feedback->tranches_len; i++) {
-		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &feedback->tranches[i];
-		for (size_t j = 0; j < tranche->formats->len; j++) {
-			const struct wlr_drm_format *fmt = tranche->formats->formats[j];
+	for (size_t i = 0; i < tranches_len; i++) {
+		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
+		for (size_t j = 0; j < tranche->formats.len; j++) {
+			const struct wlr_drm_format *fmt = tranche->formats.formats[j];
 			for (size_t k = 0; k < fmt->len; k++) {
 				if (!wlr_drm_format_set_add(&formats, fmt->format, fmt->modifiers[k])) {
 					goto error_formats;
@@ -1016,8 +1020,10 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 	}
 	const struct wlr_linux_dmabuf_feedback_v1 feedback = {
 		.main_device = tranche.target_device,
-		.tranches = &tranche,
-		.tranches_len = 1,
+		.tranches = {
+			.data = &tranche,
+			.size = sizeof(tranche),
+		},
 	};
 	return wlr_linux_dmabuf_v1_create(display, version, &feedback);
 }
