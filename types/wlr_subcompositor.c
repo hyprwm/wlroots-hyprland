@@ -192,13 +192,12 @@ static const struct wl_subsurface_interface subsurface_implementation = {
  * - The subsurface has a buffer
  * - Its parent is mapped
  */
-static void subsurface_consider_map(struct wlr_subsurface *subsurface,
-		bool check_parent) {
+static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 	if (subsurface->mapped || !wlr_surface_has_buffer(subsurface->surface)) {
 		return;
 	}
 
-	if (check_parent && wlr_surface_is_subsurface(subsurface->parent)) {
+	if (wlr_surface_is_subsurface(subsurface->parent)) {
 		struct wlr_subsurface *parent =
 			wlr_subsurface_from_wlr_surface(subsurface->parent);
 		if (parent == NULL || !parent->mapped) {
@@ -214,11 +213,11 @@ static void subsurface_consider_map(struct wlr_subsurface *subsurface,
 	struct wlr_subsurface *child;
 	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_below,
 			current.link) {
-		subsurface_consider_map(child, false);
+		subsurface_consider_map(child);
 	}
 	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_above,
 			current.link) {
-		subsurface_consider_map(child, false);
+		subsurface_consider_map(child);
 	}
 }
 
@@ -246,7 +245,7 @@ static void subsurface_role_commit(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface =
 		wlr_subsurface_from_wlr_surface(surface);
 
-	subsurface_consider_map(subsurface, true);
+	subsurface_consider_map(subsurface);
 }
 
 static void subsurface_role_precommit(struct wlr_surface *surface,
@@ -355,7 +354,7 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 		subsurface->added = true;
 		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
 			subsurface);
-		subsurface_consider_map(subsurface, true);
+		subsurface_consider_map(subsurface);
 	}
 }
 
