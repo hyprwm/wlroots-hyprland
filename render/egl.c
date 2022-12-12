@@ -95,8 +95,8 @@ static void load_egl_proc(void *proc_ptr, const char *name) {
 	*(void **)proc_ptr = proc;
 }
 
-static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats);
-static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, int format,
+static int get_egl_dmabuf_formats(struct wlr_egl *egl, EGLint **formats);
+static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, EGLint format,
 	uint64_t **modifiers, EGLBoolean **external_only);
 
 static void log_modifier(uint64_t modifier, bool external_only) {
@@ -112,7 +112,7 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 		wlr_log(WLR_INFO, "WLR_EGL_NO_MODIFIERS set, disabling modifiers for EGL");
 	}
 
-	int *formats;
+	EGLint *formats;
 	int formats_len = get_egl_dmabuf_formats(egl, &formats);
 	if (formats_len < 0) {
 		return;
@@ -122,7 +122,7 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 
 	bool has_modifiers = false;
 	for (int i = 0; i < formats_len; i++) {
-		uint32_t fmt = formats[i];
+		EGLint fmt = formats[i];
 
 		uint64_t *modifiers = NULL;
 		EGLBoolean *external_only = NULL;
@@ -781,7 +781,7 @@ EGLImageKHR wlr_egl_create_image_from_dmabuf(struct wlr_egl *egl,
 	return image;
 }
 
-static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats) {
+static int get_egl_dmabuf_formats(struct wlr_egl *egl, EGLint **formats) {
 	if (!egl->exts.EXT_image_dma_buf_import) {
 		wlr_log(WLR_DEBUG, "DMA-BUF import extension not present");
 		return -1;
@@ -793,14 +793,13 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats) {
 	// Just a guess but better than not supporting dmabufs at all,
 	// given that the modifiers extension isn't supported everywhere.
 	if (!egl->exts.EXT_image_dma_buf_import_modifiers) {
-		static const int fallback_formats[] = {
+		static const EGLint fallback_formats[] = {
 			DRM_FORMAT_ARGB8888,
 			DRM_FORMAT_XRGB8888,
 		};
-		static unsigned num = sizeof(fallback_formats) /
-			sizeof(fallback_formats[0]);
+		int num = sizeof(fallback_formats) / sizeof(fallback_formats[0]);
 
-		*formats = calloc(num, sizeof(int));
+		*formats = calloc(num, sizeof(EGLint));
 		if (!*formats) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			return -1;
@@ -816,7 +815,7 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats) {
 		return -1;
 	}
 
-	*formats = calloc(num, sizeof(int));
+	*formats = calloc(num, sizeof(EGLint));
 	if (*formats == NULL) {
 		wlr_log(WLR_ERROR, "Allocation failed: %s", strerror(errno));
 		return -1;
@@ -830,7 +829,7 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, int **formats) {
 	return num;
 }
 
-static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, int format,
+static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, EGLint format,
 		uint64_t **modifiers, EGLBoolean **external_only) {
 	*modifiers = NULL;
 	*external_only = NULL;
