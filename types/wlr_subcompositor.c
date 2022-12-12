@@ -187,7 +187,8 @@ static const struct wl_subsurface_interface subsurface_implementation = {
 };
 
 /**
- * Checks if this subsurface needs to be marked as mapped. This can happen if:
+ * Checks if this subsurface needs to be marked as mapped. The subsurface
+ * is considered mapped if both:
  * - The subsurface has a buffer
  * - Its parent is mapped
  */
