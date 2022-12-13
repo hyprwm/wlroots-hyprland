@@ -623,6 +623,7 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	if (!pending.active) {
 		drm_plane_finish_surface(conn->crtc->primary);
 		drm_plane_finish_surface(conn->crtc->cursor);
+		drm_fb_clear(&conn->cursor_pending_fb);
 
 		conn->cursor_enabled = false;
 		conn->crtc = NULL;
@@ -892,7 +893,6 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 
 	conn->status = DRM_MODE_DISCONNECTED;
 	conn->pending_page_flip_crtc = 0;
-	drm_fb_clear(&conn->cursor_pending_fb);
 
 	struct wlr_drm_mode *mode, *mode_tmp;
 	wl_list_for_each_safe(mode, mode_tmp, &conn->output.modes, wlr_mode.link) {
