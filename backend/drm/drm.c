@@ -620,6 +620,13 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		goto out;
 	}
 
+	if (!pending.active) {
+		drm_plane_finish_surface(conn->crtc->primary);
+		drm_plane_finish_surface(conn->crtc->cursor);
+
+		conn->cursor_enabled = false;
+		conn->crtc = NULL;
+	}
 	if (pending.base->committed & WLR_OUTPUT_STATE_MODE) {
 		struct wlr_output_mode *mode = NULL;
 		switch (pending.base->mode_type) {
@@ -999,13 +1006,12 @@ static const int32_t subpixel_map[] = {
 };
 
 static void dealloc_crtc(struct wlr_drm_connector *conn) {
-	struct wlr_drm_backend *drm = conn->backend;
 	if (conn->crtc == NULL) {
 		return;
 	}
 
-	wlr_drm_conn_log(conn, WLR_DEBUG, "De-allocating CRTC %zu",
-		conn->crtc - drm->crtcs);
+	wlr_drm_conn_log(conn, WLR_DEBUG, "De-allocating CRTC %" PRIu32,
+		conn->crtc->id);
 
 	struct wlr_output_state state = {
 		.committed = WLR_OUTPUT_STATE_ENABLED,
@@ -1017,12 +1023,6 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to disable CRTC %"PRIu32,
 			conn->crtc->id);
 	}
-
-	drm_plane_finish_surface(conn->crtc->primary);
-	drm_plane_finish_surface(conn->crtc->cursor);
-
-	conn->cursor_enabled = false;
-	conn->crtc = NULL;
 }
 
 static void realloc_crtcs(struct wlr_drm_backend *drm,
