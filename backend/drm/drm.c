@@ -1200,8 +1200,7 @@ static struct wlr_drm_connector *create_drm_connector(struct wlr_drm_backend *dr
 	return wlr_conn;
 }
 
-static drmModeModeInfo *connector_get_current_mode(
-		struct wlr_drm_connector *wlr_conn, const drmModeConnector *drm_conn) {
+static drmModeModeInfo *connector_get_current_mode(struct wlr_drm_connector *wlr_conn) {
 	struct wlr_drm_backend *drm = wlr_conn->backend;
 
 	if (wlr_conn->crtc == NULL) {
@@ -1301,8 +1300,7 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 
 	// Before iterating on the conn's modes, get the current KMS mode
 	// in use from the connector's CRTC.
-	drmModeModeInfo *current_modeinfo =
-		connector_get_current_mode(wlr_conn, drm_conn);
+	drmModeModeInfo *current_modeinfo = connector_get_current_mode(wlr_conn);
 
 	wlr_log(WLR_INFO, "Detected modes:");
 
