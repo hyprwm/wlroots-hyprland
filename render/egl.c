@@ -136,11 +136,25 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 
 		has_modifiers = has_modifiers || modifiers_len > 0;
 
-		// EGL always supports implicit modifiers
+		bool all_external_only = true;
+		for (int j = 0; j < modifiers_len; j++) {
+			wlr_drm_format_set_add(&egl->dmabuf_texture_formats, fmt,
+				modifiers[j]);
+			if (!external_only[j]) {
+				wlr_drm_format_set_add(&egl->dmabuf_render_formats, fmt,
+					modifiers[j]);
+				all_external_only = false;
+			}
+		}
+
+		// EGL always supports implicit modifiers. If at least one modifier supports rendering,
+		// assume the implicit modifier supports rendering too.
 		wlr_drm_format_set_add(&egl->dmabuf_texture_formats, fmt,
 			DRM_FORMAT_MOD_INVALID);
-		wlr_drm_format_set_add(&egl->dmabuf_render_formats, fmt,
-			DRM_FORMAT_MOD_INVALID);
+		if (modifiers_len == 0 || !all_external_only) {
+			wlr_drm_format_set_add(&egl->dmabuf_render_formats, fmt,
+				DRM_FORMAT_MOD_INVALID);
+		}
 
 		if (modifiers_len == 0) {
 			// Asume the linear layout is supported if the driver doesn't
@@ -149,15 +163,6 @@ static void init_dmabuf_formats(struct wlr_egl *egl) {
 				DRM_FORMAT_MOD_LINEAR);
 			wlr_drm_format_set_add(&egl->dmabuf_render_formats, fmt,
 				DRM_FORMAT_MOD_LINEAR);
-		}
-
-		for (int j = 0; j < modifiers_len; j++) {
-			wlr_drm_format_set_add(&egl->dmabuf_texture_formats, fmt,
-				modifiers[j]);
-			if (!external_only[j]) {
-				wlr_drm_format_set_add(&egl->dmabuf_render_formats, fmt,
-					modifiers[j]);
-			}
 		}
 
 		if (wlr_log_get_verbosity() >= WLR_DEBUG) {
