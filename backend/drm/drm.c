@@ -1245,7 +1245,11 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 	wlr_conn->output.phys_height = drm_conn->mmHeight;
 	wlr_log(WLR_INFO, "Physical size: %"PRId32"x%"PRId32,
 		wlr_conn->output.phys_width, wlr_conn->output.phys_height);
-	wlr_conn->output.subpixel = subpixel_map[drm_conn->subpixel];
+	if (drm_conn->subpixel < sizeof(subpixel_map) / sizeof(subpixel_map[0])) {
+		wlr_conn->output.subpixel = subpixel_map[drm_conn->subpixel];
+	} else {
+		wlr_log(WLR_ERROR, "Unknown subpixel value: %d", (int)drm_conn->subpixel);
+	}
 
 	get_drm_connector_props(drm->fd, wlr_conn->id, &wlr_conn->props);
 
