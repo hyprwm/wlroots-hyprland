@@ -267,7 +267,15 @@ bool init_drm_resources(struct wlr_drm_backend *drm) {
 	for (size_t i = 0; i < drm->num_crtcs; ++i) {
 		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
 		crtc->id = res->crtcs[i];
-		crtc->legacy_crtc = drmModeGetCrtc(drm->fd, crtc->id);
+
+		drmModeCrtc *drm_crtc = drmModeGetCrtc(drm->fd, crtc->id);
+		if (drm_crtc == NULL) {
+			wlr_log_errno(WLR_ERROR, "drmModeGetCrtc failed");
+			goto error_res;
+		}
+		crtc->legacy_gamma_size = drm_crtc->gamma_size;
+		drmModeFreeCrtc(drm_crtc);
+
 		get_drm_crtc_props(drm->fd, crtc->id, &crtc->props);
 	}
 
@@ -293,8 +301,6 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 
 	for (size_t i = 0; i < drm->num_crtcs; ++i) {
 		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
-
-		drmModeFreeCrtc(crtc->legacy_crtc);
 
 		if (crtc->mode_id) {
 			drmModeDestroyPropertyBlob(drm->fd, crtc->mode_id);
@@ -669,7 +675,7 @@ static bool drm_connector_commit(struct wlr_output *output,
 size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
 		struct wlr_drm_crtc *crtc) {
 	if (crtc->props.gamma_lut_size == 0 || drm->iface == &legacy_iface) {
-		return (size_t)crtc->legacy_crtc->gamma_size;
+		return (size_t)crtc->legacy_gamma_size;
 	}
 
 	uint64_t gamma_lut_size;

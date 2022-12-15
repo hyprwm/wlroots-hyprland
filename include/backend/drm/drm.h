@@ -41,7 +41,7 @@ struct wlr_drm_crtc {
 	uint32_t gamma_lut;
 
 	// Legacy only
-	drmModeCrtc *legacy_crtc;
+	int legacy_gamma_size;
 
 	struct wlr_drm_plane *primary;
 	struct wlr_drm_plane *cursor;
