@@ -1215,15 +1215,23 @@ static drmModeModeInfo *connector_get_current_mode(struct wlr_drm_connector *wlr
 		return mode;
 	} else {
 		// Fallback to the legacy API
-		if (!wlr_conn->crtc->legacy_crtc->mode_valid) {
+		drmModeCrtc *drm_crtc = drmModeGetCrtc(drm->fd, wlr_conn->crtc->id);
+		if (drm_crtc == NULL) {
+			wlr_log_errno(WLR_ERROR, "drmModeGetCrtc failed");
+			return NULL;
+		}
+		if (!drm_crtc->mode_valid) {
+			drmModeFreeCrtc(drm_crtc);
 			return NULL;
 		}
 		drmModeModeInfo *mode = malloc(sizeof(*mode));
 		if (mode == NULL) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			drmModeFreeCrtc(drm_crtc);
 			return NULL;
 		}
-		*mode = wlr_conn->crtc->legacy_crtc->mode;
+		*mode = drm_crtc->mode;
+		drmModeFreeCrtc(drm_crtc);
 		return mode;
 	}
 }
