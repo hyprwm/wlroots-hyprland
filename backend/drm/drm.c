@@ -276,7 +276,9 @@ bool init_drm_resources(struct wlr_drm_backend *drm) {
 		crtc->legacy_gamma_size = drm_crtc->gamma_size;
 		drmModeFreeCrtc(drm_crtc);
 
-		get_drm_crtc_props(drm->fd, crtc->id, &crtc->props);
+		if (!get_drm_crtc_props(drm->fd, crtc->id, &crtc->props)) {
+			goto error_crtcs;
+		}
 	}
 
 	if (!init_planes(drm)) {
@@ -1242,7 +1244,7 @@ static drmModeModeInfo *connector_get_current_mode(struct wlr_drm_connector *wlr
 	}
 }
 
-static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
+static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		const drmModeConnector *drm_conn) {
 	struct wlr_drm_backend *drm = wlr_conn->backend;
 
@@ -1264,7 +1266,9 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		wlr_log(WLR_ERROR, "Unknown subpixel value: %d", (int)drm_conn->subpixel);
 	}
 
-	get_drm_connector_props(drm->fd, wlr_conn->id, &wlr_conn->props);
+	if (!get_drm_connector_props(drm->fd, wlr_conn->id, &wlr_conn->props)) {
+		return false;
+	}
 
 	uint64_t non_desktop;
 	if (get_drm_prop(drm->fd, wlr_conn->id,
@@ -1326,7 +1330,7 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		struct wlr_drm_mode *mode = drm_mode_create(&drm_conn->modes[i]);
 		if (!mode) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
-			continue;
+			return false;
 		}
 
 		// If this is the current mode set on the conn's crtc,
@@ -1357,6 +1361,7 @@ static void connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 	wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
 
 	wlr_conn->status = DRM_MODE_CONNECTED;
+	return true;
 }
 
 static void disconnect_drm_connector(struct wlr_drm_connector *conn);
@@ -1444,7 +1449,10 @@ void scan_drm_connectors(struct wlr_drm_backend *drm,
 		if (wlr_conn->status == DRM_MODE_DISCONNECTED &&
 				drm_conn->connection == DRM_MODE_CONNECTED) {
 			wlr_log(WLR_INFO, "'%s' connected", wlr_conn->name);
-			connect_drm_connector(wlr_conn, drm_conn);
+			if (!connect_drm_connector(wlr_conn, drm_conn)) {
+				wlr_drm_conn_log(wlr_conn, WLR_ERROR, "Failed to connect DRM connector");
+				continue;
+			}
 			new_outputs[new_outputs_len++] = wlr_conn;
 		} else if (wlr_conn->status == DRM_MODE_CONNECTED &&
 				drm_conn->connection != DRM_MODE_CONNECTED) {
