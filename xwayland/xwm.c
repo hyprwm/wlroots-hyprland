@@ -2221,7 +2221,7 @@ void wlr_xwayland_surface_ping(struct wlr_xwayland_surface *surface) {
 
 bool wlr_xwayland_or_surface_wants_focus(
 		const struct wlr_xwayland_surface *xsurface) {
-	static enum atom_name needles[] = {
+	static const enum atom_name needles[] = {
 		NET_WM_WINDOW_TYPE_COMBO,
 		NET_WM_WINDOW_TYPE_DND,
 		NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
