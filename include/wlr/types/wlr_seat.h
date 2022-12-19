@@ -116,7 +116,7 @@ struct wlr_keyboard_grab_interface {
 	void (*key)(struct wlr_seat_keyboard_grab *grab, uint32_t time_msec,
 			uint32_t key, uint32_t state);
 	void (*modifiers)(struct wlr_seat_keyboard_grab *grab,
-			struct wlr_keyboard_modifiers *modifiers);
+			const struct wlr_keyboard_modifiers *modifiers);
 	void (*cancel)(struct wlr_seat_keyboard_grab *grab);
 };
 
@@ -541,7 +541,7 @@ void wlr_seat_keyboard_notify_key(struct wlr_seat *seat, uint32_t time_msec,
  * any keyboard grabs.
  */
 void wlr_seat_keyboard_notify_modifiers(struct wlr_seat *seat,
-		struct wlr_keyboard_modifiers *modifiers);
+		const struct wlr_keyboard_modifiers *modifiers);
 
 /**
  * Notify the seat that the keyboard focus has changed and request it to be the

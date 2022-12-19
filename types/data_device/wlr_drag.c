@@ -326,7 +326,7 @@ static void drag_handle_keyboard_key(struct wlr_seat_keyboard_grab *grab,
 }
 
 static void drag_handle_keyboard_modifiers(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_keyboard_modifiers *modifiers) {
+		const struct wlr_keyboard_modifiers *modifiers) {
 	//struct wlr_keyboard *keyboard = grab->seat->keyboard_state.keyboard;
 	// TODO change the dnd action based on what modifier is pressed on the
 	// keyboard

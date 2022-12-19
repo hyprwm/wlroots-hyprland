@@ -25,7 +25,7 @@ static void default_keyboard_key(struct wlr_seat_keyboard_grab *grab,
 }
 
 static void default_keyboard_modifiers(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_keyboard_modifiers *modifiers) {
+		const struct wlr_keyboard_modifiers *modifiers) {
 	wlr_seat_keyboard_send_modifiers(grab->seat, modifiers);
 }
 
@@ -321,7 +321,7 @@ bool wlr_seat_keyboard_has_grab(struct wlr_seat *seat) {
 }
 
 void wlr_seat_keyboard_notify_modifiers(struct wlr_seat *seat,
-		struct wlr_keyboard_modifiers *modifiers) {
+		const struct wlr_keyboard_modifiers *modifiers) {
 	clock_gettime(CLOCK_MONOTONIC, &seat->last_event);
 	struct wlr_seat_keyboard_grab *grab = seat->keyboard_state.grab;
 	grab->interface->modifiers(grab, modifiers);

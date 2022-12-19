@@ -121,7 +121,7 @@ static void xdg_keyboard_grab_key(struct wlr_seat_keyboard_grab *grab, uint32_t 
 }
 
 static void xdg_keyboard_grab_modifiers(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_keyboard_modifiers *modifiers) {
+		const struct wlr_keyboard_modifiers *modifiers) {
 	wlr_seat_keyboard_send_modifiers(grab->seat, modifiers);
 }
 
