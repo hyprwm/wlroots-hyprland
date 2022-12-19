@@ -254,17 +254,10 @@ void wlr_seat_keyboard_enter(struct wlr_seat *seat,
 
 	// enter the current surface
 	if (client != NULL) {
-		struct wl_array keys;
-		wl_array_init(&keys);
-		for (size_t i = 0; i < num_keycodes; ++i) {
-			uint32_t *p = wl_array_add(&keys, sizeof(uint32_t));
-			if (!p) {
-				wlr_log(WLR_ERROR, "Cannot allocate memory, skipping keycode: %" PRIu32 "\n",
-					keycodes[i]);
-				continue;
-			}
-			*p = keycodes[i];
-		}
+		struct wl_array keys = {
+			.data = keycodes,
+			.size = num_keycodes * sizeof(keycodes[0]),
+		};
 		uint32_t serial = wlr_seat_client_next_serial(client);
 		struct wl_resource *resource;
 		wl_resource_for_each(resource, &client->keyboards) {
@@ -273,7 +266,6 @@ void wlr_seat_keyboard_enter(struct wlr_seat *seat,
 			}
 			wl_keyboard_send_enter(resource, serial, surface->resource, &keys);
 		}
-		wl_array_release(&keys);
 	}
 
 	// reinitialize the focus destroy events
