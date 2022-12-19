@@ -192,7 +192,7 @@ static void seat_keyboard_handle_surface_destroy(struct wl_listener *listener,
 }
 
 void wlr_seat_keyboard_send_modifiers(struct wlr_seat *seat,
-		struct wlr_keyboard_modifiers *modifiers) {
+		const struct wlr_keyboard_modifiers *modifiers) {
 	struct wlr_seat_client *client = seat->keyboard_state.focused_client;
 	if (client == NULL) {
 		return;

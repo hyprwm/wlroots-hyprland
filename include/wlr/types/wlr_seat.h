@@ -510,7 +510,7 @@ void wlr_seat_keyboard_send_key(struct wlr_seat *seat, uint32_t time_msec,
  * wlr_seat_keyboard_notify_modifiers() instead.
  */
 void wlr_seat_keyboard_send_modifiers(struct wlr_seat *seat,
-		struct wlr_keyboard_modifiers *modifiers);
+		const struct wlr_keyboard_modifiers *modifiers);
 
 /**
  * Send a keyboard enter event to the given surface and consider it to be the
