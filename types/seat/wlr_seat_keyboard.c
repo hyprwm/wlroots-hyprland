@@ -10,8 +10,8 @@
 #include "types/wlr_seat.h"
 
 static void default_keyboard_enter(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers) {
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers) {
 	wlr_seat_keyboard_enter(grab->seat, surface, keycodes, num_keycodes, modifiers);
 }
 
@@ -298,8 +298,8 @@ void wlr_seat_keyboard_enter(struct wlr_seat *seat,
 }
 
 void wlr_seat_keyboard_notify_enter(struct wlr_seat *seat,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers) {
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers) {
 	// NULL surfaces are prohibited in the grab-compatible API. Use
 	// wlr_seat_keyboard_notify_clear_focus() instead.
 	assert(surface);

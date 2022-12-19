@@ -311,8 +311,8 @@ static const struct wlr_touch_grab_interface
 };
 
 static void drag_handle_keyboard_enter(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers) {
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers) {
 	// nothing has keyboard focus during drags
 }
 

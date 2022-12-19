@@ -106,8 +106,8 @@ static const struct wlr_pointer_grab_interface xdg_pointer_grab_impl = {
 };
 
 static void xdg_keyboard_grab_enter(struct wlr_seat_keyboard_grab *grab,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers) {
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers) {
 	// keyboard focus should remain on the popup
 }
 
