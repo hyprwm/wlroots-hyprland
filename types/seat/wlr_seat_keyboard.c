@@ -228,8 +228,8 @@ void seat_client_send_keyboard_leave_raw(struct wlr_seat_client *seat_client,
 }
 
 void wlr_seat_keyboard_enter(struct wlr_seat *seat,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers) {
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers) {
 	if (seat->keyboard_state.focused_surface == surface) {
 		// this surface already got an enter notify
 		return;
@@ -255,7 +255,7 @@ void wlr_seat_keyboard_enter(struct wlr_seat *seat,
 	// enter the current surface
 	if (client != NULL) {
 		struct wl_array keys = {
-			.data = keycodes,
+			.data = (void *)keycodes,
 			.size = num_keycodes * sizeof(keycodes[0]),
 		};
 		uint32_t serial = wlr_seat_client_next_serial(client);

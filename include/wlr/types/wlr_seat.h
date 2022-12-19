@@ -519,8 +519,8 @@ void wlr_seat_keyboard_send_modifiers(struct wlr_seat *seat,
  * probably want wlr_seat_keyboard_notify_enter() instead.
  */
 void wlr_seat_keyboard_enter(struct wlr_seat *seat,
-		struct wlr_surface *surface, uint32_t keycodes[], size_t num_keycodes,
-		struct wlr_keyboard_modifiers *modifiers);
+		struct wlr_surface *surface, const uint32_t keycodes[], size_t num_keycodes,
+		const struct wlr_keyboard_modifiers *modifiers);
 
 /**
  * Clear the focused surface for the keyboard and leave all entered surfaces.
