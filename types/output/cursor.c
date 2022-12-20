@@ -533,6 +533,10 @@ void wlr_output_cursor_set_surface(struct wlr_output_cursor *cursor,
 
 bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 		double x, double y) {
+	// Scale coordinates for the output
+	x *= cursor->output->scale;
+	y *= cursor->output->scale;
+
 	if (cursor->x == x && cursor->y == y) {
 		return true;
 	}
@@ -541,11 +545,9 @@ bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 		output_cursor_damage_whole(cursor);
 	}
 
-	bool was_visible = cursor->visible;
-	x *= cursor->output->scale;
-	y *= cursor->output->scale;
 	cursor->x = x;
 	cursor->y = y;
+	bool was_visible = cursor->visible;
 	output_cursor_update_visible(cursor);
 
 	if (!was_visible && !cursor->visible) {
