@@ -126,7 +126,6 @@ static void lock_surface_handle_ack_configure(struct wl_client *client,
 	free(configure);
 }
 
-
 static const struct ext_session_lock_surface_v1_interface lock_surface_implementation = {
 	.destroy = resource_handle_destroy,
 	.ack_configure = lock_surface_handle_ack_configure,
@@ -306,6 +305,17 @@ static void lock_handle_unlock_and_destroy(struct wl_client *client,
 		struct wl_resource *lock_resource) {
 	struct wlr_session_lock_v1 *lock = lock_from_resource(lock_resource);
 	if (lock == NULL) {
+		// This can happen if the compositor sent the locked event and
+		// later the finished event as the lock is destroyed when the
+		// finished event is sent.
+		wl_resource_destroy(lock_resource);
+		return;
+	}
+
+	if (!lock->locked_sent) {
+		wl_resource_post_error(lock_resource,
+			EXT_SESSION_LOCK_V1_ERROR_INVALID_UNLOCK,
+			"the locked event was never sent");
 		return;
 	}
 
@@ -314,13 +324,35 @@ static void lock_handle_unlock_and_destroy(struct wl_client *client,
 	wl_resource_destroy(lock_resource);
 }
 
+static void lock_handle_destroy(struct wl_client *client,
+		struct wl_resource *lock_resource) {
+	struct wlr_session_lock_v1 *lock = lock_from_resource(lock_resource);
+	if (lock == NULL) {
+		// The compositor sent the finished event and destroyed the lock.
+		wl_resource_destroy(lock_resource);
+		return;
+	}
+
+	if (lock->locked_sent) {
+		wl_resource_post_error(lock_resource,
+			EXT_SESSION_LOCK_V1_ERROR_INVALID_DESTROY,
+			"the session lock may not be destroyed while locked");
+	} else {
+		wl_resource_post_error(lock_resource,
+			EXT_SESSION_LOCK_V1_ERROR_INVALID_DESTROY,
+			"the finished event was never sent");
+	}
+}
+
 static const struct ext_session_lock_v1_interface lock_implementation = {
-	.destroy = resource_handle_destroy,
+	.destroy = lock_handle_destroy,
 	.get_lock_surface = lock_handle_get_lock_surface,
 	.unlock_and_destroy = lock_handle_unlock_and_destroy,
 };
 
 void wlr_session_lock_v1_send_locked(struct wlr_session_lock_v1 *lock) {
+	assert(!lock->locked_sent);
+	lock->locked_sent = true;
 	ext_session_lock_v1_send_locked(lock->resource);
 }
 
