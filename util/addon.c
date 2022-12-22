@@ -3,6 +3,7 @@
 #include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/util/addon.h>
+#include <wlr/util/log.h>
 
 void wlr_addon_set_init(struct wlr_addon_set *set) {
 	memset(set, 0, sizeof(*set));
@@ -14,6 +15,11 @@ void wlr_addon_set_finish(struct wlr_addon_set *set) {
 	wl_list_for_each_safe(addon, tmp, &set->addons, link) {
 		addon->impl->destroy(addon);
 	}
+
+	wl_list_for_each(addon, &set->addons, link) {
+		wlr_log(WLR_ERROR, "Dangling addon: %s\n", addon->impl->name);
+	}
+
 	assert(wl_list_empty(&set->addons));
 }
 
