@@ -17,7 +17,7 @@ void wlr_addon_set_finish(struct wlr_addon_set *set) {
 	}
 
 	wl_list_for_each(addon, &set->addons, link) {
-		wlr_log(WLR_ERROR, "Dangling addon: %s\n", addon->impl->name);
+		wlr_log(WLR_ERROR, "Dangling addon: %s", addon->impl->name);
 	}
 
 	assert(wl_list_empty(&set->addons));
