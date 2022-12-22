@@ -393,22 +393,23 @@ static void xwayland_surface_set_mapped(struct wlr_xwayland_surface *xsurface, b
 static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
 	xwayland_surface_set_mapped(xsurface, false);
 
+	if (xsurface->surface != NULL) {
+		wl_list_remove(&xsurface->surface_commit.link);
+		wl_list_remove(&xsurface->surface_precommit.link);
+		wlr_addon_finish(&xsurface->surface_addon);
+		xsurface->surface = NULL;
+	}
+
 	// Make sure we're not on the unpaired surface list or we
 	// could be assigned a surface during surface creation that
 	// was mapped before this unmap request.
 	wl_list_remove(&xsurface->unpaired_link);
 	wl_list_init(&xsurface->unpaired_link);
-	wl_list_remove(&xsurface->surface_commit.link);
-	wl_list_remove(&xsurface->surface_precommit.link);
-	wlr_addon_finish(&xsurface->surface_addon);
 	xsurface->surface_id = 0;
-	xsurface->surface = NULL;
 }
 
 static void xwayland_surface_destroy(struct wlr_xwayland_surface *xsurface) {
-	if (xsurface->surface != NULL) {
-		xwayland_surface_dissociate(xsurface);
-	}
+	xwayland_surface_dissociate(xsurface);
 
 	wl_signal_emit_mutable(&xsurface->events.destroy, xsurface);
 
@@ -1087,9 +1088,7 @@ static void xwm_handle_unmap_notify(struct wlr_xwm *xwm,
 		return;
 	}
 
-	if (xsurface->surface != NULL) {
-		xwayland_surface_dissociate(xsurface);
-	}
+	xwayland_surface_dissociate(xsurface);
 
 	xsurface_set_wm_state(xsurface, XCB_ICCCM_WM_STATE_WITHDRAWN);
 }
