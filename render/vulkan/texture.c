@@ -190,11 +190,6 @@ out:
 }
 
 void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
-	if (!texture->renderer) {
-		free(texture);
-		return;
-	}
-
 	// when we recorded a command to fill this image _this_ frame,
 	// it has to be executed before the texture can be destroyed.
 	// Add it to the renderer->destroy_textures list, destroying
