@@ -190,6 +190,11 @@ out:
 }
 
 void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
+	if (texture->buffer != NULL) {
+		wlr_addon_finish(&texture->buffer_addon);
+		texture->buffer = NULL;
+	}
+
 	// when we recorded a command to fill this image _this_ frame,
 	// it has to be executed before the texture can be destroyed.
 	// Add it to the renderer->destroy_textures list, destroying
@@ -202,10 +207,6 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 	}
 
 	wl_list_remove(&texture->link);
-
-	if (texture->buffer != NULL) {
-		wlr_addon_finish(&texture->buffer_addon);
-	}
 
 	VkDevice dev = texture->renderer->dev->dev;
 	if (texture->ds && texture->ds_pool) {
@@ -736,9 +737,7 @@ static void texture_handle_buffer_destroy(struct wlr_addon *addon) {
 	struct wlr_vk_texture *texture =
 		wl_container_of(addon, texture, buffer_addon);
 	// We might keep the texture around, waiting for pending command buffers to
-	// complete before free'ing descriptor sets. Make sure we don't
-	// use-after-free the destroyed wlr_buffer.
-	texture->buffer = NULL;
+	// complete before free'ing descriptor sets.
 	vulkan_texture_destroy(texture);
 }
 
