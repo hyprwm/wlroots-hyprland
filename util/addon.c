@@ -14,6 +14,7 @@ void wlr_addon_set_finish(struct wlr_addon_set *set) {
 	wl_list_for_each_safe(addon, tmp, &set->addons, link) {
 		addon->impl->destroy(addon);
 	}
+	assert(wl_list_empty(&set->addons));
 }
 
 void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
