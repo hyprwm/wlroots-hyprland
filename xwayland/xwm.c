@@ -885,6 +885,8 @@ static const struct wlr_addon_interface surface_addon_impl = {
 
 static void xwayland_surface_associate(struct wlr_xwm *xwm,
 		struct wlr_xwayland_surface *xsurface, struct wlr_surface *surface) {
+	assert(xsurface->surface == NULL);
+
 	wl_list_remove(&xsurface->unpaired_link);
 	wl_list_init(&xsurface->unpaired_link);
 	xsurface->surface_id = 0;
