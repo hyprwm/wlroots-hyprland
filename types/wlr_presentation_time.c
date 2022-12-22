@@ -61,6 +61,8 @@ static void presentation_surface_addon_destroy(struct wlr_addon *addon) {
 	struct wlr_presentation_surface *p_surface =
 		wl_container_of(addon, p_surface, addon);
 
+	wlr_addon_finish(addon);
+
 	wlr_presentation_feedback_destroy(p_surface->current.feedback);
 	wlr_presentation_feedback_destroy(p_surface->pending.feedback);
 
