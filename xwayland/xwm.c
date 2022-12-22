@@ -1120,7 +1120,6 @@ static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
 		wl_client_get_object(xwm->xwayland->server->client, id);
 	if (resource) {
 		struct wlr_surface *surface = wlr_surface_from_resource(resource);
-		xsurface->surface_id = 0;
 		xwayland_surface_associate(xwm, xsurface, surface);
 	} else {
 		xsurface->surface_id = id;
