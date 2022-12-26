@@ -123,8 +123,8 @@ struct wlr_tablet_tool_proximity_event {
 };
 
 enum wlr_tablet_tool_tip_state {
-	WLR_TABLET_TOOL_TIP_UP = 1 << 0,
-	WLR_TABLET_TOOL_TIP_DOWN = 1 << 1,
+	WLR_TABLET_TOOL_TIP_UP,
+	WLR_TABLET_TOOL_TIP_DOWN,
 };
 
 struct wlr_tablet_tool_tip_event {
