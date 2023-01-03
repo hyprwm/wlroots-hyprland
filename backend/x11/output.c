@@ -255,6 +255,7 @@ static struct wlr_x11_buffer *create_x11_buffer(struct wlr_x11_output *output,
 		return NULL;
 	}
 	buffer->buffer = wlr_buffer_lock(wlr_buffer);
+	buffer->n_busy = 1;
 	buffer->pixmap = pixmap;
 	buffer->x11 = x11;
 	wl_list_insert(&output->buffers, &buffer->link);
