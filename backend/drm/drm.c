@@ -104,21 +104,23 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 	return true;
 }
 
-static bool add_plane(struct wlr_drm_backend *drm,
-		struct wlr_drm_crtc *crtc, const drmModePlane *drm_plane,
-		uint32_t type, union wlr_drm_plane_props *props) {
-	assert(!(type == DRM_PLANE_TYPE_PRIMARY && crtc->primary));
-	assert(!(type == DRM_PLANE_TYPE_CURSOR && crtc->cursor));
+static bool init_plane(struct wlr_drm_backend *drm,
+		struct wlr_drm_plane *p, const drmModePlane *drm_plane) {
+	uint32_t id = drm_plane->plane_id;
 
-	struct wlr_drm_plane *p = calloc(1, sizeof(*p));
-	if (!p) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
+	union wlr_drm_plane_props props = {0};
+	if (!get_drm_plane_props(drm->fd, id, &props)) {
+		return false;
+	}
+
+	uint64_t type;
+	if (!get_drm_prop(drm->fd, id, props.type, &type)) {
 		return false;
 	}
 
 	p->type = type;
 	p->id = drm_plane->plane_id;
-	p->props = *props;
+	p->props = props;
 
 	for (size_t i = 0; i < drm_plane->count_formats; ++i) {
 		// Force a LINEAR layout for the cursor if the driver doesn't support
@@ -152,15 +154,22 @@ static bool add_plane(struct wlr_drm_backend *drm,
 		drmModeFreePropertyBlob(blob);
 	}
 
-	switch (type) {
-	case DRM_PLANE_TYPE_PRIMARY:
-		crtc->primary = p;
-		break;
-	case DRM_PLANE_TYPE_CURSOR:
-		crtc->cursor = p;
-		break;
-	default:
-		abort();
+	assert(drm->num_crtcs <= 32);
+	for (size_t j = 0; j < drm->num_crtcs; j++) {
+		uint32_t crtc_bit = 1 << j;
+		if ((drm_plane->possible_crtcs & crtc_bit) == 0) {
+			continue;
+		}
+
+		struct wlr_drm_crtc *crtc = &drm->crtcs[j];
+		if (type == DRM_PLANE_TYPE_PRIMARY && !crtc->primary) {
+			crtc->primary = p;
+			break;
+		}
+		if (type == DRM_PLANE_TYPE_CURSOR && !crtc->cursor) {
+			crtc->cursor = p;
+			break;
+		}
 	}
 
 	return true;
@@ -179,66 +188,35 @@ static bool init_planes(struct wlr_drm_backend *drm) {
 
 	wlr_log(WLR_INFO, "Found %"PRIu32" DRM planes", plane_res->count_planes);
 
+	drm->num_planes = plane_res->count_planes;
+	drm->planes = calloc(drm->num_planes, sizeof(*drm->planes));
+	if (drm->planes == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		goto error;
+	}
+
 	for (uint32_t i = 0; i < plane_res->count_planes; ++i) {
 		uint32_t id = plane_res->planes[i];
 
-		drmModePlane *plane = drmModeGetPlane(drm->fd, id);
-		if (!plane) {
+		drmModePlane *drm_plane = drmModeGetPlane(drm->fd, id);
+		if (!drm_plane) {
 			wlr_log_errno(WLR_ERROR, "Failed to get DRM plane");
 			goto error;
 		}
 
-		union wlr_drm_plane_props props = {0};
-		if (!get_drm_plane_props(drm->fd, id, &props)) {
-			drmModeFreePlane(plane);
+		struct wlr_drm_plane *plane = &drm->planes[i];
+		if (!init_plane(drm, plane, drm_plane)) {
 			goto error;
 		}
 
-		uint64_t type;
-		if (!get_drm_prop(drm->fd, id, props.type, &type)) {
-			drmModeFreePlane(plane);
-			goto error;
-		}
-
-		// We don't really care about overlay planes, as we don't support them
-		// yet.
-		if (type == DRM_PLANE_TYPE_OVERLAY) {
-			drmModeFreePlane(plane);
-			continue;
-		}
-
-		assert(drm->num_crtcs <= 32);
-		struct wlr_drm_crtc *crtc = NULL;
-		for (size_t j = 0; j < drm->num_crtcs ; j++) {
-			uint32_t crtc_bit = 1 << j;
-			if ((plane->possible_crtcs & crtc_bit) == 0) {
-				continue;
-			}
-
-			struct wlr_drm_crtc *candidate = &drm->crtcs[j];
-			if ((type == DRM_PLANE_TYPE_PRIMARY && !candidate->primary) ||
-					(type == DRM_PLANE_TYPE_CURSOR && !candidate->cursor)) {
-				crtc = candidate;
-				break;
-			}
-		}
-		if (!crtc) {
-			drmModeFreePlane(plane);
-			continue;
-		}
-
-		if (!add_plane(drm, crtc, plane, type, &props)) {
-			drmModeFreePlane(plane);
-			goto error;
-		}
-
-		drmModeFreePlane(plane);
+		drmModeFreePlane(drm_plane);
 	}
 
 	drmModeFreePlaneResources(plane_res);
 	return true;
 
 error:
+	free(drm->planes);
 	drmModeFreePlaneResources(plane_res);
 	return false;
 }
@@ -310,18 +288,16 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 		if (crtc->gamma_lut) {
 			drmModeDestroyPropertyBlob(drm->fd, crtc->gamma_lut);
 		}
-
-		if (crtc->primary) {
-			wlr_drm_format_set_finish(&crtc->primary->formats);
-			free(crtc->primary);
-		}
-		if (crtc->cursor) {
-			wlr_drm_format_set_finish(&crtc->cursor->formats);
-			free(crtc->cursor);
-		}
 	}
 
 	free(drm->crtcs);
+
+	for (size_t i = 0; i < drm->num_planes; ++i) {
+		struct wlr_drm_plane *plane = &drm->planes[i];
+		wlr_drm_format_set_finish(&plane->formats);
+	}
+
+	free(drm->planes);
 }
 
 static struct wlr_drm_connector *get_drm_connector_from_output(

@@ -64,6 +64,9 @@ struct wlr_drm_backend {
 	size_t num_crtcs;
 	struct wlr_drm_crtc *crtcs;
 
+	size_t num_planes;
+	struct wlr_drm_plane *planes;
+
 	struct wl_display *display;
 	struct wl_event_source *drm_event;
 
