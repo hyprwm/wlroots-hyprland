@@ -89,7 +89,6 @@ struct tinywl_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
-	int x, y;
 };
 
 struct tinywl_keyboard {
@@ -373,9 +372,9 @@ static void reset_cursor_mode(struct tinywl_server *server) {
 static void process_cursor_move(struct tinywl_server *server, uint32_t time) {
 	/* Move the grabbed view to the new position. */
 	struct tinywl_view *view = server->grabbed_view;
-	view->x = server->cursor->x - server->grab_x;
-	view->y = server->cursor->y - server->grab_y;
-	wlr_scene_node_set_position(&view->scene_tree->node, view->x, view->y);
+	wlr_scene_node_set_position(&view->scene_tree->node,
+		server->cursor->x - server->grab_x,
+		server->cursor->y - server->grab_y);
 }
 
 static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
@@ -422,9 +421,8 @@ static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
 
 	struct wlr_box geo_box;
 	wlr_xdg_surface_get_geometry(view->xdg_toplevel->base, &geo_box);
-	view->x = new_left - geo_box.x;
-	view->y = new_top - geo_box.y;
-	wlr_scene_node_set_position(&view->scene_tree->node, view->x, view->y);
+	wlr_scene_node_set_position(&view->scene_tree->node,
+		new_left - geo_box.x, new_top - geo_box.y);
 
 	int new_width = new_right - new_left;
 	int new_height = new_bottom - new_top;
@@ -698,22 +696,22 @@ static void begin_interactive(struct tinywl_view *view,
 	server->cursor_mode = mode;
 
 	if (mode == TINYWL_CURSOR_MOVE) {
-		server->grab_x = server->cursor->x - view->x;
-		server->grab_y = server->cursor->y - view->y;
+		server->grab_x = server->cursor->x - view->scene_tree->node.x;
+		server->grab_y = server->cursor->y - view->scene_tree->node.y;
 	} else {
 		struct wlr_box geo_box;
 		wlr_xdg_surface_get_geometry(view->xdg_toplevel->base, &geo_box);
 
-		double border_x = (view->x + geo_box.x) +
+		double border_x = (view->scene_tree->node.x + geo_box.x) +
 			((edges & WLR_EDGE_RIGHT) ? geo_box.width : 0);
-		double border_y = (view->y + geo_box.y) +
+		double border_y = (view->scene_tree->node.y + geo_box.y) +
 			((edges & WLR_EDGE_BOTTOM) ? geo_box.height : 0);
 		server->grab_x = server->cursor->x - border_x;
 		server->grab_y = server->cursor->y - border_y;
 
 		server->grab_geobox = geo_box;
-		server->grab_geobox.x += view->x;
-		server->grab_geobox.y += view->y;
+		server->grab_geobox.x += view->scene_tree->node.x;
+		server->grab_geobox.y += view->scene_tree->node.y;
 
 		server->resize_edges = edges;
 	}
