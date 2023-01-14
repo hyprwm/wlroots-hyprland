@@ -473,6 +473,7 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 	glGetError(); // Clear the error flag
 
 	unsigned char *p = (unsigned char *)data + dst_y * stride;
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	uint32_t pack_stride = width * drm_fmt->bpp / 8;
 	if (pack_stride == stride && dst_x == 0) {
 		// Under these particular conditions, we can read the pixels with only
@@ -480,7 +481,7 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 
 		glReadPixels(src_x, src_y, width, height, fmt->gl_format, fmt->gl_type, p);
 	} else {
-		// Unfortunately GLES2 doesn't support GL_PACK_*, so we have to read
+		// Unfortunately GLES2 doesn't support GL_PACK_ROW_LENGTH, so we have to read
 		// the lines out row by row
 		for (size_t i = 0; i < height; ++i) {
 			uint32_t y = src_y + i;
