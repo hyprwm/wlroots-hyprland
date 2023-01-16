@@ -47,9 +47,9 @@ static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 		.time_msec = time,
 		.source = WLR_AXIS_SOURCE_WHEEL,
 		.orientation = WLR_AXIS_ORIENTATION_VERTICAL,
-		// 15 is a typical value libinput sends for one scroll
+		// Most mice use a 15 degree angle per scroll click
 		.delta = delta * 15,
-		.delta_discrete = delta,
+		.delta_discrete = delta * WLR_POINTER_AXIS_DISCRETE_STEP,
 	};
 	wl_signal_emit_mutable(&output->pointer.events.axis, &ev);
 	wl_signal_emit_mutable(&output->pointer.events.frame, &output->pointer);
