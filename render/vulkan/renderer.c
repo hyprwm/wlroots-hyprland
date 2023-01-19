@@ -38,7 +38,7 @@
 //   might still be a good idea.
 
 static const VkDeviceSize min_stage_size = 1024 * 1024; // 1MB
-static const VkDeviceSize max_stage_size = 64 * min_stage_size; // 64MB
+static const VkDeviceSize max_stage_size = 256 * min_stage_size; // 256MB
 static const size_t start_descriptor_pool_size = 256u;
 static bool default_debug = true;
 
