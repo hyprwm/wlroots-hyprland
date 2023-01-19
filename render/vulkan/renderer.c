@@ -234,6 +234,13 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(struct wlr_vk_renderer *r,
 		};
 	}
 
+	if (size > max_stage_size) {
+		wlr_log(WLR_ERROR, "cannot vulkan stage buffer: "
+			"requested size (%zu bytes) exceeds maximum (%zu bytes)",
+			(size_t)size, (size_t)max_stage_size);
+		goto error_alloc;
+	}
+
 	// we didn't find a free buffer - create one
 	// size = clamp(max(size * 2, prev_size * 2), min_size, max_size)
 	VkDeviceSize bsize = size * 2;
