@@ -309,6 +309,7 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	uint32_t largest_overlap = 0;
 	scene_buffer->primary_output = NULL;
 
+	size_t count = 0;
 	uint64_t active_outputs = 0;
 
 	// let's update the outputs in two steps:
@@ -347,6 +348,7 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 			}
 
 			active_outputs |= 1ull << scene_output->index;
+			count++;
 		}
 
 		pixman_region32_fini(&intersection);
@@ -371,7 +373,28 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	// output
 	assert(!scene_buffer->active_outputs || scene_buffer->primary_output);
 
-	wl_signal_emit_mutable(&scene_buffer->events.outputs_update, NULL);
+	// if no outputs changes intersection status, skip calling outputs_update
+	if (old_active == active_outputs) {
+		return;
+	}
+
+	struct wlr_scene_output *outputs_array[64];
+	struct wlr_scene_outputs_update_event event = {
+		.active = outputs_array,
+		.size = count,
+	};
+
+	size_t i = 0;
+	wl_list_for_each(scene_output, outputs, link) {
+		if (~active_outputs & (1ull << scene_output->index)) {
+			continue;
+		}
+
+		assert(i < count);
+		outputs_array[i++] = scene_output;
+	}
+
+	wl_signal_emit_mutable(&scene_buffer->events.outputs_update, &event);
 }
 
 static bool scene_node_update_iterator(struct wlr_scene_node *node,
