@@ -864,7 +864,7 @@ int main(int argc, char *argv[]) {
 	 * The allocator is the bridge between the renderer and the backend. It
 	 * handles the buffer creation, allowing wlroots to render onto the
 	 * screen */
-	 server.allocator = wlr_allocator_autocreate(server.backend,
+	server.allocator = wlr_allocator_autocreate(server.backend,
 		server.renderer);
 	if (server.allocator == NULL) {
 		wlr_log(WLR_ERROR, "failed to create wlr_allocator");
