@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <drm_fourcc.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <wlr/util/log.h>
@@ -142,6 +143,40 @@ static bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 	return true;
 }
 
+static uint64_t max_bpc_for_format(uint32_t format) {
+	switch (format) {
+	case DRM_FORMAT_XRGB2101010:
+	case DRM_FORMAT_ARGB2101010:
+	case DRM_FORMAT_XBGR2101010:
+	case DRM_FORMAT_ABGR2101010:
+		return 10;
+	case DRM_FORMAT_XBGR16161616F:
+	case DRM_FORMAT_ABGR16161616F:
+	case DRM_FORMAT_XBGR16161616:
+	case DRM_FORMAT_ABGR16161616:
+		return 16;
+	default:
+		return 8;
+	}
+}
+
+static uint64_t pick_max_bpc(struct wlr_drm_connector *conn, struct wlr_drm_fb *fb) {
+	uint32_t format = DRM_FORMAT_INVALID;
+	struct wlr_dmabuf_attributes attribs = {0};
+	if (wlr_buffer_get_dmabuf(fb->wlr_buf, &attribs)) {
+		format = attribs.format;
+	}
+
+	uint64_t target_bpc = max_bpc_for_format(format);
+	if (target_bpc < conn->max_bpc_bounds[0]) {
+		target_bpc = conn->max_bpc_bounds[0];
+	}
+	if (target_bpc > conn->max_bpc_bounds[1]) {
+		target_bpc = conn->max_bpc_bounds[1];
+	}
+	return target_bpc;
+}
+
 static void commit_blob(struct wlr_drm_backend *drm,
 		uint32_t *current, uint32_t next) {
 	if (*current == next) {
@@ -282,8 +317,8 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		atomic_add(&atom, conn->id, conn->props.content_type,
 			DRM_MODE_CONTENT_TYPE_GRAPHICS);
 	}
-	if (modeset && active && conn->props.max_bpc != 0 && conn->max_bpc > 0) {
-		atomic_add(&atom, conn->id, conn->props.max_bpc, conn->max_bpc);
+	if (modeset && active && conn->props.max_bpc != 0 && conn->max_bpc_bounds[1] != 0) {
+		atomic_add(&atom, conn->id, conn->props.max_bpc, pick_max_bpc(conn, state->primary_fb));
 	}
 	atomic_add(&atom, crtc->id, crtc->props.mode_id, mode_id);
 	atomic_add(&atom, crtc->id, crtc->props.active, active);

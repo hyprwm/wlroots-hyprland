@@ -107,7 +107,7 @@ struct wlr_drm_connector {
 	char name[24];
 	drmModeConnection status;
 	uint32_t id;
-	uint64_t max_bpc;
+	uint64_t max_bpc_bounds[2];
 	struct wlr_drm_lease *lease;
 
 	struct wlr_drm_crtc *crtc;

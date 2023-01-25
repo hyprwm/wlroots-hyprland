@@ -1279,10 +1279,10 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		wlr_conn->output.non_desktop = non_desktop;
 	}
 
-	wlr_conn->max_bpc = 0;
+	memset(wlr_conn->max_bpc_bounds, 0, sizeof(wlr_conn->max_bpc_bounds));
 	if (wlr_conn->props.max_bpc != 0) {
 		if (!introspect_drm_prop_range(drm->fd, wlr_conn->props.max_bpc,
-				NULL, &wlr_conn->max_bpc)) {
+				&wlr_conn->max_bpc_bounds[0], &wlr_conn->max_bpc_bounds[1])) {
 			wlr_log(WLR_ERROR, "Failed to introspect 'max bpc' property");
 		}
 	}
