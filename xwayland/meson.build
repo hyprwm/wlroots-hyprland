@@ -20,7 +20,19 @@ if not get_option('xwayland').disabled()
 	msg += 'Required for Xwayland support.'
 endif
 
-xwayland = dependency('xwayland', required: get_option('xwayland'))
+xwayland = dependency(
+	'xwayland',
+	required: get_option('xwayland'),
+	fallback: 'xserver',
+	default_options: [
+		'werror=false',
+		'xorg=false',
+		'xephyr=false',
+		'xwayland=true',
+		'xnest=false',
+		'xvfb=false',
+	],
+)
 if not xwayland.found()
 	subdir_done()
 endif
