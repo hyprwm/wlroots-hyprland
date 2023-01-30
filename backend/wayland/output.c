@@ -43,7 +43,12 @@ static struct wlr_wl_output *get_wl_output_from_output(
 static void surface_frame_callback(void *data, struct wl_callback *cb,
 		uint32_t time) {
 	struct wlr_wl_output *output = data;
-	assert(output);
+
+	if (cb == NULL) {
+		return;
+	}
+
+	assert(output->frame_callback == cb);
 	wl_callback_destroy(cb);
 	output->frame_callback = NULL;
 
@@ -300,10 +305,8 @@ static bool output_commit(struct wlr_output *wlr_output,
 		}
 
 		if (output->frame_callback != NULL) {
-			wlr_log(WLR_ERROR, "Skipping buffer swap");
-			return false;
+			wl_callback_destroy(output->frame_callback);
 		}
-
 		output->frame_callback = wl_surface_frame(output->surface);
 		wl_callback_add_listener(output->frame_callback, &frame_listener, output);
 
