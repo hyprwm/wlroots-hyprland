@@ -112,6 +112,7 @@ struct wlr_output_state {
 };
 
 struct wlr_output_impl;
+struct wlr_render_pass;
 
 /**
  * A compositor output region. This typically corresponds to a monitor that
@@ -515,6 +516,13 @@ void wlr_output_lock_software_cursors(struct wlr_output *output, bool lock);
  */
 void wlr_output_render_software_cursors(struct wlr_output *output,
 	const pixman_region32_t *damage);
+/**
+ * Render software cursors.
+ *
+ * This is a utility function that can be called when compositors render.
+ */
+void wlr_output_add_software_cursors_to_render_pass(struct wlr_output *output,
+	struct wlr_render_pass *render_pass, const pixman_region32_t *damage);
 /**
  * Get the set of DRM formats suitable for the primary buffer, assuming a
  * buffer with the specified capabilities.
