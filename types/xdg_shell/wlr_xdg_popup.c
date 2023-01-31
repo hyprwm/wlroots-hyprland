@@ -245,9 +245,9 @@ void handle_xdg_popup_committed(struct wlr_xdg_popup *popup) {
 		return;
 	}
 
-	if (!popup->committed) {
+	if (!popup->sent_initial_configure) {
 		wlr_xdg_surface_schedule_configure(popup->base);
-		popup->committed = true;
+		popup->sent_initial_configure = true;
 		return;
 	}
 
@@ -274,7 +274,7 @@ static void xdg_popup_handle_grab(struct wl_client *client,
 
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
-	if (popup->committed) {
+	if (popup->sent_initial_configure) {
 		wl_resource_post_error(popup->resource,
 			XDG_POPUP_ERROR_INVALID_GRAB,
 			"xdg_popup is already mapped");
@@ -450,7 +450,7 @@ void unmap_xdg_popup(struct wlr_xdg_popup *popup) {
 		popup->seat = NULL;
 	}
 
-	popup->committed = false;
+	popup->sent_initial_configure = false;
 }
 
 void destroy_xdg_popup(struct wlr_xdg_popup *popup) {
