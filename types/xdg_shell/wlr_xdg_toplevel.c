@@ -535,6 +535,8 @@ void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 	toplevel->requested.fullscreen = false;
 	toplevel->requested.maximized = false;
 	toplevel->requested.minimized = false;
+
+	toplevel->added = false;
 }
 
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {

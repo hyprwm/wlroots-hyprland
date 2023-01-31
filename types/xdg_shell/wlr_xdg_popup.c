@@ -449,6 +449,8 @@ void unmap_xdg_popup(struct wlr_xdg_popup *popup) {
 
 		popup->seat = NULL;
 	}
+
+	popup->committed = false;
 }
 
 void destroy_xdg_popup(struct wlr_xdg_popup *popup) {
