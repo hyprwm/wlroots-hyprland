@@ -172,7 +172,7 @@ struct wlr_xdg_toplevel_requested {
 struct wlr_xdg_toplevel {
 	struct wl_resource *resource;
 	struct wlr_xdg_surface *base;
-	bool added;
+	bool sent_initial_configure;
 
 	struct wlr_xdg_toplevel *parent;
 	struct wl_listener parent_unmap;

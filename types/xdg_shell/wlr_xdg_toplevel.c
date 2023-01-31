@@ -132,11 +132,11 @@ void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 
 	toplevel->current = toplevel->pending;
 
-	if (!toplevel->added) {
+	if (!toplevel->sent_initial_configure) {
 		// on the first commit, send a configure request to tell the client it
 		// is added
 		wlr_xdg_surface_schedule_configure(toplevel->base);
-		toplevel->added = true;
+		toplevel->sent_initial_configure = true;
 
 		if (toplevel->base->client->shell->version >=
 				XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION) {
@@ -535,7 +535,7 @@ void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 	toplevel->requested.maximized = false;
 	toplevel->requested.minimized = false;
 
-	toplevel->added = false;
+	toplevel->sent_initial_configure = false;
 }
 
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
