@@ -147,7 +147,6 @@ void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
 				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE);
 		}
-		return;
 	}
 }
 
