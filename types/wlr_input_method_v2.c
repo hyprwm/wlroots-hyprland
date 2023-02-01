@@ -123,12 +123,6 @@ static void im_delete_surrounding_text(struct wl_client *client,
 	input_method->pending.delete.after_length = after_length;
 }
 
-struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_from_wlr_surface(
-		struct wlr_surface *surface) {
-	assert(wlr_surface_is_input_popup_surface_v2(surface));
-	return (struct wlr_input_popup_surface_v2 *)surface->role_data;
-}
-
 void wlr_input_popup_surface_v2_send_text_input_rectangle(
 		struct wlr_input_popup_surface_v2 *popup_surface,
 		struct wlr_box *sbox) {
@@ -181,8 +175,12 @@ static const struct wlr_surface_role input_popup_surface_v2_role = {
 	.destroy = popup_surface_surface_role_destroy,
 };
 
-bool wlr_surface_is_input_popup_surface_v2(struct wlr_surface *surface) {
-	return surface->role == &input_popup_surface_v2_role;
+struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surface(
+		struct wlr_surface *surface) {
+	if (surface->role != &input_popup_surface_v2_role) {
+		return NULL;
+	}
+	return (struct wlr_input_popup_surface_v2 *)surface->role_data;
 }
 
 static void popup_resource_destroy(struct wl_resource *resource) {

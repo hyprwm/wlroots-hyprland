@@ -121,17 +121,12 @@ void wlr_input_method_v2_send_unavailable(
 	struct wlr_input_method_v2 *input_method);
 
 /**
- * Returns true if the surface has the input popup surface role.
- */
-bool wlr_surface_is_input_popup_surface_v2(struct wlr_surface *surface);
-
-/**
  * Get a struct wlr_input_popup_surface_v2 from a struct wlr_surface.
- * Asserts that the surface has the input popup surface role.
- * May return NULL even if the surface has the input popup surface role if the
- * corresponding input popup surface has been destroyed.
+ *
+ * Returns NULL if the surface has a different role or if the input popup
+ * surface has been destroyed.
  */
-struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_from_wlr_surface(
+struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surface(
 	struct wlr_surface *surface);
 
 void wlr_input_popup_surface_v2_send_text_input_rectangle(
