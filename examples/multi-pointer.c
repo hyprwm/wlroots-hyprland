@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
 
 	clock_gettime(CLOCK_MONOTONIC, &state.last_frame);
 
-	struct wlr_xcursor_theme *theme = wlr_xcursor_theme_load("default", 16);
+	struct wlr_xcursor_theme *theme = wlr_xcursor_theme_load(NULL, 16);
 	if (!theme) {
 		wlr_log(WLR_ERROR, "Failed to load cursor theme");
 		return 1;

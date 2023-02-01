@@ -386,7 +386,7 @@ int main(int argc, char *argv[]) {
 		&state.tablet_tool_axis);
 	state.tablet_tool_axis.notify = handle_tablet_tool_axis;
 
-	state.xcursor_manager = wlr_xcursor_manager_create("default", 24);
+	state.xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
 	if (!state.xcursor_manager) {
 		wlr_log(WLR_ERROR, "Failed to load default cursor");
 		return 1;
