@@ -32,15 +32,7 @@ static struct wlr_xdg_toplevel *verify_is_toplevel(struct wl_resource *resource,
 	// Note: the error codes are the same for zxdg_exporter_v2 and
 	// zxdg_importer_v2
 
-	if (!wlr_surface_is_xdg_surface(surface)) {
-		wl_resource_post_error(resource,
-			ZXDG_EXPORTER_V2_ERROR_INVALID_SURFACE,
-			"surface must be an xdg_surface");
-		return NULL;
-	}
-
-	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_from_wlr_surface(surface);
+	struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface);
 	if (xdg_surface == NULL || xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
 		wl_resource_post_error(resource,
 			ZXDG_EXPORTER_V2_ERROR_INVALID_SURFACE,
@@ -84,8 +76,7 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 	struct wlr_surface *wlr_surface_child =
 		wlr_surface_from_resource(child_resource);
 
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
 	struct wlr_xdg_toplevel *child_toplevel =
 		verify_is_toplevel(resource, wlr_surface_child);
 	if (!child_toplevel) {
@@ -168,7 +159,8 @@ static void destroy_imported(struct wlr_xdg_imported_v2 *imported) {
 	struct wlr_xdg_imported_child_v2 *child, *child_tmp;
 	wl_list_for_each_safe(child, child_tmp, &imported->children, link) {
 		struct wlr_xdg_surface *xdg_child =
-			wlr_xdg_surface_from_wlr_surface(child->surface);
+			wlr_xdg_surface_try_from_wlr_surface(child->surface);
+		assert(xdg_child != NULL);
 		wlr_xdg_toplevel_set_parent(xdg_child->toplevel, NULL);
 	}
 

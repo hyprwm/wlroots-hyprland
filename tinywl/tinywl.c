@@ -119,9 +119,9 @@ static void focus_view(struct tinywl_view *view, struct wlr_surface *surface) {
 		 * it no longer has focus and the client will repaint accordingly, e.g.
 		 * stop displaying a caret.
 		 */
-		struct wlr_xdg_surface *previous = wlr_xdg_surface_from_wlr_surface(
-					seat->keyboard_state.focused_surface);
-		assert(previous->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
+		struct wlr_xdg_surface *previous =
+			wlr_xdg_surface_try_from_wlr_surface(seat->keyboard_state.focused_surface);
+		assert(previous != NULL && previous->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 		wlr_xdg_toplevel_set_activated(previous->toplevel, false);
 	}
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
@@ -773,8 +773,9 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 	 * we always set the user data field of xdg_surfaces to the corresponding
 	 * scene node. */
 	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-		struct wlr_xdg_surface *parent = wlr_xdg_surface_from_wlr_surface(
-			xdg_surface->popup->parent);
+		struct wlr_xdg_surface *parent =
+			wlr_xdg_surface_try_from_wlr_surface(xdg_surface->popup->parent);
+		assert(parent != NULL);
 		struct wlr_scene_tree *parent_tree = parent->data;
 		xdg_surface->data = wlr_scene_xdg_surface_create(
 			parent_tree, xdg_surface);

@@ -29,13 +29,7 @@ static void xdg_imported_handle_destroy(struct wl_client *client,
 
 static struct wlr_xdg_toplevel *verify_is_toplevel(struct wl_resource *resource,
 		struct wlr_surface *surface) {
-	if (!wlr_surface_is_xdg_surface(surface)) {
-		wl_resource_post_error(resource, -1, "surface must be an xdg_surface");
-		return NULL;
-	}
-
-	struct wlr_xdg_surface *xdg_surface =
-		wlr_xdg_surface_from_wlr_surface(surface);
+	struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface);
 	if (xdg_surface == NULL || xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
 		wl_resource_post_error(resource, -1, "surface must be an xdg_toplevel");
 		return NULL;
@@ -84,7 +78,7 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 	}
 
 	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+		wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
 
 	if (!surface->mapped) {
 		wlr_xdg_toplevel_set_parent(child_toplevel, NULL);
@@ -162,7 +156,8 @@ static void destroy_imported(struct wlr_xdg_imported_v1 *imported) {
 	struct wlr_xdg_imported_child_v1 *child, *child_tmp;
 	wl_list_for_each_safe(child, child_tmp, &imported->children, link) {
 		struct wlr_xdg_surface *xdg_child =
-			wlr_xdg_surface_from_wlr_surface(child->surface);
+			wlr_xdg_surface_try_from_wlr_surface(child->surface);
+		assert(xdg_child != NULL);
 		wlr_xdg_toplevel_set_parent(xdg_child->toplevel, NULL);
 	}
 

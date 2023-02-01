@@ -477,10 +477,8 @@ void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
 void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,
 		int popup_sx, int popup_sy, int *toplevel_sx, int *toplevel_sy) {
 	struct wlr_surface *parent = popup->parent;
-	while (wlr_surface_is_xdg_surface(parent)) {
-		struct wlr_xdg_surface *xdg_surface =
-			wlr_xdg_surface_from_wlr_surface(parent);
-
+	struct wlr_xdg_surface *xdg_surface;
+	while ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(parent))) {
 		if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
 			popup_sx += xdg_surface->popup->current.geometry.x;
 			popup_sy += xdg_surface->popup->current.geometry.y;

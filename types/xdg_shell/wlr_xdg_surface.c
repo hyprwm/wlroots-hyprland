@@ -5,14 +5,12 @@
 #include <wlr/util/log.h>
 #include "types/wlr_xdg_shell.h"
 
-bool wlr_surface_is_xdg_surface(struct wlr_surface *surface) {
-	return surface->role == &xdg_toplevel_surface_role ||
-		surface->role == &xdg_popup_surface_role;
-}
-
-struct wlr_xdg_surface *wlr_xdg_surface_from_wlr_surface(
+struct wlr_xdg_surface *wlr_xdg_surface_try_from_wlr_surface(
 		struct wlr_surface *surface) {
-	assert(wlr_surface_is_xdg_surface(surface));
+	if (surface->role != &xdg_toplevel_surface_role &&
+			surface->role != &xdg_popup_surface_role) {
+		return NULL;
+	}
 	return (struct wlr_xdg_surface *)surface->role_data;
 }
 
@@ -284,8 +282,8 @@ static void xdg_surface_handle_surface_commit(struct wl_listener *listener,
 }
 
 void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	surface->current = surface->pending;
 
@@ -315,8 +313,8 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 
 void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 		const struct wlr_surface_state *state) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -327,8 +325,8 @@ void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 }
 
 void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_wlr_surface(wlr_surface);
+	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	reset_xdg_surface(surface);
 
@@ -445,8 +443,8 @@ void wlr_xdg_surface_ping(struct wlr_xdg_surface *surface) {
 
 void wlr_xdg_popup_get_position(struct wlr_xdg_popup *popup,
 		double *popup_sx, double *popup_sy) {
-	struct wlr_xdg_surface *parent =
-		wlr_xdg_surface_from_wlr_surface(popup->parent);
+	struct wlr_xdg_surface *parent = wlr_xdg_surface_try_from_wlr_surface(popup->parent);
+	assert(parent != NULL);
 	struct wlr_box parent_geo;
 	wlr_xdg_surface_get_geometry(parent, &parent_geo);
 	*popup_sx = parent_geo.x + popup->current.geometry.x -
