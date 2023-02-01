@@ -48,13 +48,11 @@ static struct wlr_session_lock_surface_v1 *lock_surface_from_resource(
 
 static const struct wlr_surface_role lock_surface_role;
 
-bool wlr_surface_is_session_lock_surface_v1(struct wlr_surface *surface) {
-	return surface->role == &lock_surface_role;
-}
-
-struct wlr_session_lock_surface_v1 *wlr_session_lock_surface_v1_from_wlr_surface(
+struct wlr_session_lock_surface_v1 *wlr_session_lock_surface_v1_try_from_wlr_surface(
 		struct wlr_surface *surface) {
-	assert(wlr_surface_is_session_lock_surface_v1(surface));
+	if (surface->role != &lock_surface_role) {
+		return NULL;
+	}
 	return (struct wlr_session_lock_surface_v1 *)surface->role_data;
 }
 
@@ -133,7 +131,8 @@ static const struct ext_session_lock_surface_v1_interface lock_surface_implement
 
 static void lock_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
-		wlr_session_lock_surface_v1_from_wlr_surface(surface);
+		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
+	assert(lock_surface != NULL);
 
 	if (!lock_surface->configured) {
 		wl_resource_post_error(lock_surface->resource,
@@ -162,7 +161,8 @@ static void lock_surface_role_commit(struct wlr_surface *surface) {
 static void lock_surface_role_precommit(struct wlr_surface *surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
-		wlr_session_lock_surface_v1_from_wlr_surface(surface);
+		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
+	assert(lock_surface != NULL);
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		wl_resource_post_error(lock_surface->resource,
@@ -174,7 +174,8 @@ static void lock_surface_role_precommit(struct wlr_surface *surface,
 
 static void lock_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_session_lock_surface_v1 *lock_surface =
-		wlr_session_lock_surface_v1_from_wlr_surface(surface);
+		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
+	assert(lock_surface != NULL);
 
 	wl_signal_emit_mutable(&lock_surface->events.destroy, NULL);
 
