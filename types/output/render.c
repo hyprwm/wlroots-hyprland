@@ -207,6 +207,11 @@ bool output_ensure_buffer(struct wlr_output *output,
 		return true;
 	}
 
+	bool enabled = output->enabled;
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		enabled = state->enabled;
+	}
+
 	// If we're lighting up an output or changing its mode, make sure to
 	// provide a new buffer
 	bool needs_new_buffer = false;
@@ -219,7 +224,7 @@ bool output_ensure_buffer(struct wlr_output *output,
 	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
 		needs_new_buffer = true;
 	}
-	if (state->allow_artifacts && output->commit_seq == 0) {
+	if (state->allow_artifacts && output->commit_seq == 0 && enabled) {
 		// On first commit, require a new buffer if the compositor called a
 		// mode-setting function, even if the mode won't change. This makes it
 		// so the swapchain is created now.
