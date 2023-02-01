@@ -266,7 +266,7 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wlr_output_layout_add_auto(sample->layout, sample_output->output);
 
 	wlr_xcursor_manager_load(sample->xcursor_manager, output->scale);
-	wlr_xcursor_manager_set_cursor_image(sample->xcursor_manager, "left_ptr",
+	wlr_xcursor_manager_set_cursor_image(sample->xcursor_manager, "default",
 		sample->cursor);
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
@@ -388,11 +388,11 @@ int main(int argc, char *argv[]) {
 
 	state.xcursor_manager = wlr_xcursor_manager_create("default", 24);
 	if (!state.xcursor_manager) {
-		wlr_log(WLR_ERROR, "Failed to load left_ptr cursor");
+		wlr_log(WLR_ERROR, "Failed to load default cursor");
 		return 1;
 	}
 
-	wlr_xcursor_manager_set_cursor_image(state.xcursor_manager, "left_ptr",
+	wlr_xcursor_manager_set_cursor_image(state.xcursor_manager, "default",
 		state.cursor);
 
 	clock_gettime(CLOCK_MONOTONIC, &state.last_frame);

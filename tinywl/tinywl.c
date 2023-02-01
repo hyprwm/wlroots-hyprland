@@ -450,7 +450,7 @@ static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
 		 * default. This is what makes the cursor image appear when you move it
 		 * around the screen, not over any views. */
 		wlr_xcursor_manager_set_cursor_image(
-				server->cursor_mgr, "left_ptr", server->cursor);
+				server->cursor_mgr, "default", server->cursor);
 	}
 	if (surface) {
 		/*

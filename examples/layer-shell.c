@@ -615,14 +615,14 @@ int main(int argc, char **argv) {
 	struct wl_cursor *cursor =
 		wl_cursor_theme_get_cursor(cursor_theme, "crosshair");
 	if (cursor == NULL) {
-		cursor = wl_cursor_theme_get_cursor(cursor_theme, "left_ptr");
+		cursor = wl_cursor_theme_get_cursor(cursor_theme, "default");
 	}
 	assert(cursor);
 	cursor_image = cursor->images[0];
 
 	cursor = wl_cursor_theme_get_cursor(cursor_theme, "tcross");
 	if (cursor == NULL) {
-		cursor = wl_cursor_theme_get_cursor(cursor_theme, "left_ptr");
+		cursor = wl_cursor_theme_get_cursor(cursor_theme, "default");
 	}
 	assert(cursor);
 	popup_cursor_image = cursor->images[0];

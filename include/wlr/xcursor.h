@@ -105,7 +105,7 @@ struct wlr_xcursor_theme *wlr_xcursor_theme_load(const char *name, int size);
 void wlr_xcursor_theme_destroy(struct wlr_xcursor_theme *theme);
 
 /**
- * Obtain a cursor for the specified name (e.g. "left_ptr").
+ * Obtain a cursor for the specified name (e.g. "default").
  *
  * If the cursor could not be found, NULL is returned.
  */

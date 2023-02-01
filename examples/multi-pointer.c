@@ -298,9 +298,9 @@ int main(int argc, char *argv[]) {
 		wlr_log(WLR_ERROR, "Failed to load cursor theme");
 		return 1;
 	}
-	state.xcursor = wlr_xcursor_theme_get_cursor(theme, "left_ptr");
+	state.xcursor = wlr_xcursor_theme_get_cursor(theme, "default");
 	if (!state.xcursor) {
-		wlr_log(WLR_ERROR, "Failed to load left_ptr cursor");
+		wlr_log(WLR_ERROR, "Failed to load default cursor");
 		return 1;
 	}
 
