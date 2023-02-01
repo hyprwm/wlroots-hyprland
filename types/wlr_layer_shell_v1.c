@@ -38,13 +38,11 @@ struct wlr_layer_surface_v1 *wlr_layer_surface_v1_from_resource(
 
 static const struct wlr_surface_role layer_surface_role;
 
-bool wlr_surface_is_layer_surface(struct wlr_surface *surface) {
-	return surface->role == &layer_surface_role;
-}
-
-struct wlr_layer_surface_v1 *wlr_layer_surface_v1_from_wlr_surface(
+struct wlr_layer_surface_v1 *wlr_layer_surface_v1_try_from_wlr_surface(
 		struct wlr_surface *surface) {
-	assert(wlr_surface_is_layer_surface(surface));
+	if (surface->role != &layer_surface_role) {
+		return NULL;
+	}
 	return (struct wlr_layer_surface_v1 *)surface->role_data;
 }
 
@@ -314,7 +312,8 @@ void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
 
 static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
-		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
+		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	const uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
@@ -366,7 +365,8 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
 		const struct wlr_surface_state *state) {
 	struct wlr_layer_surface_v1 *surface =
-		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
+		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -378,7 +378,8 @@ static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
 
 static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
-		wlr_layer_surface_v1_from_wlr_surface(wlr_surface);
+		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
 	if (surface->configured && surface->mapped) {
 		layer_surface_unmap(surface);
