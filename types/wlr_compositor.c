@@ -812,12 +812,8 @@ void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq) {
 }
 
 struct wlr_surface *wlr_surface_get_root_surface(struct wlr_surface *surface) {
-	while (wlr_surface_is_subsurface(surface)) {
-		struct wlr_subsurface *subsurface =
-			wlr_subsurface_from_wlr_surface(surface);
-		if (subsurface == NULL) {
-			break;
-		}
+	struct wlr_subsurface *subsurface;
+	while ((subsurface = wlr_subsurface_try_from_wlr_surface(surface))) {
 		surface = subsurface->parent;
 	}
 	return surface;

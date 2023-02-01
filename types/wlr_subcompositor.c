@@ -16,10 +16,7 @@ static bool subsurface_is_synchronized(struct wlr_subsurface *subsurface) {
 			return true;
 		}
 
-		if (!wlr_surface_is_subsurface(subsurface->parent)) {
-			break;
-		}
-		subsurface = wlr_subsurface_from_wlr_surface(subsurface->parent);
+		subsurface = wlr_subsurface_try_from_wlr_surface(subsurface->parent);
 	}
 
 	return false;
@@ -197,12 +194,10 @@ static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 		return;
 	}
 
-	if (wlr_surface_is_subsurface(subsurface->parent)) {
-		struct wlr_subsurface *parent =
-			wlr_subsurface_from_wlr_surface(subsurface->parent);
-		if (parent == NULL || !parent->mapped) {
-			return;
-		}
+	struct wlr_subsurface *parent =
+		wlr_subsurface_try_from_wlr_surface(subsurface->parent);
+	if (parent == NULL || !parent->mapped) {
+		return;
 	}
 
 	// Now we can map the subsurface
@@ -242,16 +237,16 @@ static void subsurface_unmap(struct wlr_subsurface *subsurface) {
 }
 
 static void subsurface_role_commit(struct wlr_surface *surface) {
-	struct wlr_subsurface *subsurface =
-		wlr_subsurface_from_wlr_surface(surface);
+	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
+	assert(subsurface != NULL);
 
 	subsurface_consider_map(subsurface);
 }
 
 static void subsurface_role_precommit(struct wlr_surface *surface,
 		const struct wlr_surface_state *state) {
-	struct wlr_subsurface *subsurface =
-		wlr_subsurface_from_wlr_surface(surface);
+	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
+	assert(subsurface != NULL);
 
 	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
 		// This is a NULL commit
@@ -260,8 +255,8 @@ static void subsurface_role_precommit(struct wlr_surface *surface,
 }
 
 static void subsurface_role_destroy(struct wlr_surface *surface) {
-	struct wlr_subsurface *subsurface =
-		wlr_subsurface_from_wlr_surface(surface);
+	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
+	assert(subsurface != NULL);
 
 	if (subsurface->has_cache) {
 		wlr_surface_unlock_cached(subsurface->surface,
@@ -403,13 +398,10 @@ static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
 	return subsurface;
 }
 
-bool wlr_surface_is_subsurface(struct wlr_surface *surface) {
-	return surface->role == &subsurface_role;
-}
-
-struct wlr_subsurface *wlr_subsurface_from_wlr_surface(
-		struct wlr_surface *surface) {
-	assert(wlr_surface_is_subsurface(surface));
+struct wlr_subsurface *wlr_subsurface_try_from_wlr_surface(struct wlr_surface *surface) {
+	if (surface->role != &subsurface_role) {
+		return NULL;
+	}
 	return (struct wlr_subsurface *)surface->role_data;
 }
 
@@ -435,8 +427,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 		return;
 	}
 
-	if (wlr_surface_is_subsurface(surface) &&
-			wlr_subsurface_from_wlr_surface(surface) != NULL) {
+	if (wlr_subsurface_try_from_wlr_surface(surface) != NULL) {
 		wl_resource_post_error(resource,
 			WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
 			"%s%" PRIu32 ": wl_surface@%" PRIu32 " is already a sub-surface",
