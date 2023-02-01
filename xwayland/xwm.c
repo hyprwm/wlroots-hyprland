@@ -404,6 +404,7 @@ static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
 	wl_list_remove(&xsurface->unpaired_link);
 	wl_list_init(&xsurface->unpaired_link);
 	xsurface->surface_id = 0;
+	xsurface->serial = 0;
 }
 
 static void xwayland_surface_destroy(struct wlr_xwayland_surface *xsurface) {
