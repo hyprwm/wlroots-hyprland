@@ -3,6 +3,7 @@ packages:
   - clang
   - ffmpeg
   - libinput
+  - libdisplay-info
   - libliftoff
   - libxkbcommon
   - mesa

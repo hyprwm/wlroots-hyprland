@@ -3,6 +3,7 @@ packages:
   - eudev-dev
   - ffmpeg-dev
   - glslang
+  - libdisplay-info-dev
   - libinput-dev
   - libliftoff-dev
   - libxkbcommon-dev

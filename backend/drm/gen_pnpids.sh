@@ -13,12 +13,11 @@ gen_pnps()
 }
 
 cat << EOF
-#include <stdint.h>
-#include <stddef.h>
 #include "backend/drm/util.h"
+
 #define PNP_ID(a, b, c) ((a & 0x1f) << 10) | ((b & 0x1f) << 5) | (c & 0x1f)
-const char *get_pnp_manufacturer(uint16_t code) {
-	switch (code) {
+const char *get_pnp_manufacturer(const char code[static 3]) {
+	switch (PNP_ID(code[0], code[1], code[2])) {
 $(gen_pnps)
 	}
 	return NULL;

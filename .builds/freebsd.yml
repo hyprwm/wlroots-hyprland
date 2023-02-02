@@ -24,6 +24,7 @@ packages:
   - x11/xcb-util-renderutil
   - x11/xcb-util-wm
   - x11-servers/xwayland-devel
+  - sysutils/libdisplay-info
   - sysutils/seatd
   - gmake
   - hwdata

@@ -5,6 +5,13 @@ hwdata = dependency(
 	not_found_message: 'Required for the DRM backend.',
 )
 
+libdisplay_info = dependency(
+	'libdisplay-info',
+	required: 'drm' in backends,
+	fallback: 'libdisplay-info',
+	not_found_message: 'Required for the DRM backend.',
+)
+
 libliftoff = dependency(
 	'libliftoff',
 	version: '>=0.4.0',
@@ -12,7 +19,7 @@ libliftoff = dependency(
 	required: false,
 )
 
-if not (hwdata.found() and features['session'])
+if not (hwdata.found() and libdisplay_info.found() and features['session'])
 	subdir_done()
 endif
 
@@ -45,4 +52,5 @@ endif
 
 features += { 'drm-backend': true }
 internal_features += { 'libliftoff': libliftoff.found() }
+wlr_deps += libdisplay_info
 wlr_deps += libliftoff
