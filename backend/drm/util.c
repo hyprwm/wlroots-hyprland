@@ -3,6 +3,7 @@
 #include <drm_fourcc.h>
 #include <drm_mode.h>
 #include <drm.h>
+#include <libdisplay-info/cvt.h>
 #include <libdisplay-info/edid.h>
 #include <libdisplay-info/info.h>
 #include <stdio.h>
@@ -240,4 +241,38 @@ size_t match_obj(size_t num_objs, const uint32_t objs[static restrict num_objs],
 
 	match_obj_(&st, 0, 0, 0, 0);
 	return st.score;
+}
+
+void generate_cvt_mode(drmModeModeInfo *mode, int hdisplay, int vdisplay,
+		float vrefresh) {
+	// TODO: depending on capabilities advertised in the EDID, use reduced
+	// blanking if possible (and update sync polarity)
+	struct di_cvt_options options = {
+		.red_blank_ver = DI_CVT_REDUCED_BLANKING_NONE,
+		.h_pixels = hdisplay,
+		.v_lines = vdisplay,
+		.ip_freq_rqd = vrefresh ? vrefresh : 60,
+	};
+	struct di_cvt_timing timing;
+	di_cvt_compute(&timing, &options);
+
+	uint16_t hsync_start = hdisplay + timing.h_front_porch;
+	uint16_t vsync_start = timing.v_lines_rnd + timing.v_front_porch;
+	uint16_t hsync_end = hsync_start + timing.h_sync;
+	uint16_t vsync_end = vsync_start + timing.v_sync;
+
+	*mode = (drmModeModeInfo){
+		.clock = roundf(timing.act_pixel_freq * 1000),
+		.hdisplay = hdisplay,
+		.vdisplay = timing.v_lines_rnd,
+		.hsync_start = hsync_start,
+		.vsync_start = vsync_start,
+		.hsync_end = hsync_end,
+		.vsync_end = vsync_end,
+		.htotal = hsync_end + timing.h_back_porch,
+		.vtotal = vsync_end + timing.v_back_porch,
+		.vrefresh = roundf(timing.act_frame_rate),
+		.flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC,
+	};
+	snprintf(mode->name, sizeof(mode->name), "%dx%d", hdisplay, vdisplay);
 }

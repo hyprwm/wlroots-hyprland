@@ -21,7 +21,6 @@
 #include <wlr/util/log.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
-#include "backend/drm/cvt.h"
 #include "backend/drm/drm.h"
 #include "backend/drm/iface.h"
 #include "backend/drm/util.h"
@@ -465,7 +464,7 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
 			generate_cvt_mode(&state->mode, base->custom_mode.width,
 				base->custom_mode.height,
-				(float)base->custom_mode.refresh / 1000, false, false);
+				(float)base->custom_mode.refresh / 1000);
 			state->mode.type = DRM_MODE_TYPE_USERDEF;
 			break;
 		}
