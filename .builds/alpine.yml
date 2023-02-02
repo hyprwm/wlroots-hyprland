@@ -17,7 +17,7 @@ packages:
   - xcb-util-wm-dev
   - xwayland-dev
   - libseat-dev
-  - hwdata
+  - hwdata-dev
 sources:
   - https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
