@@ -183,6 +183,8 @@ static const struct wl_subsurface_interface subsurface_implementation = {
 	.set_desync = subsurface_handle_set_desync,
 };
 
+const struct wlr_surface_role subsurface_role;
+
 /**
  * Checks if this subsurface needs to be marked as mapped. The subsurface
  * is considered mapped if both:
@@ -194,10 +196,13 @@ static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 		return;
 	}
 
-	struct wlr_subsurface *parent =
-		wlr_subsurface_try_from_wlr_surface(subsurface->parent);
-	if (parent == NULL || !parent->mapped) {
-		return;
+	// TODO: unify "mapped" flag
+	if (subsurface->parent->role == &subsurface_role) {
+		struct wlr_subsurface *parent =
+			wlr_subsurface_try_from_wlr_surface(subsurface->parent);
+		if (parent == NULL || !parent->mapped) {
+			return;
+		}
 	}
 
 	// Now we can map the subsurface
