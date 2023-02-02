@@ -246,34 +246,31 @@ bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
 	return true;
 }
 
-void destroy_wl_seats(struct wlr_wl_backend *wl) {
-	struct wlr_wl_seat *seat, *tmp_seat;
-	wl_list_for_each_safe(seat, tmp_seat, &wl->seats, link) {
-		if (seat->wl_touch) {
-			wl_touch_release(seat->wl_touch);
-			wlr_touch_finish(&seat->wlr_touch);
-		}
-		if (seat->wl_pointer) {
-			finish_seat_pointer(seat);
-		}
-		if (seat->wl_keyboard) {
-			wl_keyboard_release(seat->wl_keyboard);
-
-			if (seat->backend->started) {
-				wlr_keyboard_finish(&seat->wlr_keyboard);
-			}
-		}
-		if (seat->zwp_tablet_seat_v2) {
-			finish_seat_tablet(seat);
-		}
-
-		free(seat->name);
-		assert(seat->wl_seat);
-		wl_seat_destroy(seat->wl_seat);
-
-		wl_list_remove(&seat->link);
-		free(seat);
+void destroy_wl_seat(struct wlr_wl_seat *seat) {
+	if (seat->wl_touch) {
+		wl_touch_release(seat->wl_touch);
+		wlr_touch_finish(&seat->wlr_touch);
 	}
+	if (seat->wl_pointer) {
+		finish_seat_pointer(seat);
+	}
+	if (seat->wl_keyboard) {
+		wl_keyboard_release(seat->wl_keyboard);
+
+		if (seat->backend->started) {
+			wlr_keyboard_finish(&seat->wlr_keyboard);
+		}
+	}
+	if (seat->zwp_tablet_seat_v2) {
+		finish_seat_tablet(seat);
+	}
+
+	free(seat->name);
+	assert(seat->wl_seat);
+	wl_seat_destroy(seat->wl_seat);
+
+	wl_list_remove(&seat->link);
+	free(seat);
 }
 
 bool wlr_input_device_is_wl(struct wlr_input_device *dev) {

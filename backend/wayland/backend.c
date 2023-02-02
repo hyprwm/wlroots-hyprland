@@ -469,7 +469,11 @@ static void backend_destroy(struct wlr_backend *backend) {
 	wlr_drm_format_set_finish(&wl->shm_formats);
 	wlr_drm_format_set_finish(&wl->linux_dmabuf_v1_formats);
 
-	destroy_wl_seats(wl);
+	struct wlr_wl_seat *seat, *tmp_seat;
+	wl_list_for_each_safe(seat, tmp_seat, &wl->seats, link) {
+		destroy_wl_seat(seat);
+	}
+
 	if (wl->zxdg_decoration_manager_v1) {
 		zxdg_decoration_manager_v1_destroy(wl->zxdg_decoration_manager_v1);
 	}
