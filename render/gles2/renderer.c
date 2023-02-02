@@ -610,7 +610,7 @@ static void gles2_log(GLenum src, GLenum type, GLuint id, GLenum severity,
 }
 
 static GLuint compile_shader(struct wlr_gles2_renderer *renderer,
-		GLuint type, const GLchar *src) {
+		GLenum type, const GLchar *src) {
 	push_gles2_debug(renderer);
 
 	GLuint shader = glCreateShader(type);
