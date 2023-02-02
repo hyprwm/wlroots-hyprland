@@ -233,7 +233,8 @@ void init_seat_touch(struct wlr_wl_seat *seat) {
 
 static const struct wl_seat_listener seat_listener;
 
-bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
+bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl,
+		uint32_t global_name) {
 	struct wlr_wl_seat *seat = calloc(1, sizeof(struct wlr_wl_seat));
 	if (!seat) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
@@ -241,6 +242,7 @@ bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl) {
 	}
 	seat->wl_seat = wl_seat;
 	seat->backend = wl;
+	seat->global_name = global_name;
 	wl_list_insert(&wl->seats, &seat->link);
 	wl_seat_add_listener(wl_seat, &seat_listener, seat);
 	return true;

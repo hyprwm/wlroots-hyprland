@@ -354,7 +354,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 		}
 		struct wl_seat *wl_seat = wl_registry_bind(registry, name,
 			&wl_seat_interface, target_version);
-		if (!create_wl_seat(wl_seat, wl)) {
+		if (!create_wl_seat(wl_seat, wl, name)) {
 			wl_seat_destroy(wl_seat);
 		}
 	} else if (strcmp(iface, xdg_wm_base_interface.name) == 0) {
@@ -398,7 +398,15 @@ static void registry_global(void *data, struct wl_registry *registry,
 
 static void registry_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
-	// TODO
+	struct wlr_wl_backend *wl = data;
+
+	struct wlr_wl_seat *seat;
+	wl_list_for_each(seat, &wl->seats, link) {
+		if (seat->global_name == name) {
+			destroy_wl_seat(seat);
+			break;
+		}
+	}
 }
 
 static const struct wl_registry_listener registry_listener = {

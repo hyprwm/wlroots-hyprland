@@ -105,6 +105,7 @@ struct wlr_wl_pointer {
 struct wlr_wl_seat {
 	char *name;
 	struct wl_seat *wl_seat;
+	uint32_t global_name;
 
 	struct wlr_wl_backend *backend;
 
@@ -148,7 +149,8 @@ void init_seat_touch(struct wlr_wl_seat *seat);
 void init_seat_tablet(struct wlr_wl_seat *seat);
 void finish_seat_tablet(struct wlr_wl_seat *seat);
 
-bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl);
+bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl,
+	uint32_t global_name);
 void destroy_wl_seat(struct wlr_wl_seat *seat);
 void destroy_wl_buffer(struct wlr_wl_buffer *buffer);
 
