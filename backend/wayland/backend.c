@@ -451,8 +451,10 @@ static void backend_destroy(struct wlr_backend *backend) {
 		wlr_output_destroy(&output->wlr_output);
 	}
 
-	struct wlr_wl_buffer *buffer, *tmp_buffer;
-	wl_list_for_each_safe(buffer, tmp_buffer, &wl->buffers, link) {
+	// Avoid using wl_list_for_each_safe() here: destroying a buffer may
+	// have the side-effect of destroying the next one in the list
+	while (!wl_list_empty(&wl->buffers)) {
+		struct wlr_wl_buffer *buffer = wl_container_of(wl->buffers.next, buffer, link);
 		destroy_wl_buffer(buffer);
 	}
 
