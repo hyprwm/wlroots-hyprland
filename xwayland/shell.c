@@ -50,6 +50,7 @@ static void xwl_surface_role_commit(struct wlr_surface *surface) {
 static void xwl_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_xwayland_surface_v1 *xwl_surface = surface->role_data;
 	wl_list_remove(&xwl_surface->surface_destroy.link);
+	wl_list_remove(&xwl_surface->link);
 	wl_resource_set_user_data(xwl_surface->resource, NULL); // make inert
 	free(xwl_surface);
 }
@@ -129,6 +130,8 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 	}
 	wl_resource_set_implementation(xwl_surface->resource, &xwl_surface_impl,
 		xwl_surface, xwl_surface_handle_resource_destroy);
+
+	wl_list_insert(&shell->surfaces, &xwl_surface->link);
 
 	xwl_surface->surface_destroy.notify = xwl_surface_handle_surface_destroy;
 	wl_signal_add(&surface->events.destroy, &xwl_surface->surface_destroy);
