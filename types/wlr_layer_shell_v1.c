@@ -220,6 +220,10 @@ static void layer_surface_handle_get_popup(struct wl_client *client,
 	if (!parent) {
 		return;
 	}
+	if (popup->parent != NULL) {
+		wl_resource_post_error(layer_resource, -1, "xdg_popup already has a parent");
+		return;
+	}
 	popup->parent = parent->surface;
 	wl_list_insert(&parent->popups, &popup->link);
 	wl_signal_emit_mutable(&parent->events.new_popup, popup);
