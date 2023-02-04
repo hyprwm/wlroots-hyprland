@@ -302,7 +302,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node)
  * If this buffer is backed by a surface, then the struct wlr_scene_surface is
  * returned. If not, NULL will be returned.
  */
-struct wlr_scene_surface *wlr_scene_surface_from_buffer(
+struct wlr_scene_surface *wlr_scene_surface_try_from_buffer(
 	struct wlr_scene_buffer *scene_buffer);
 
 /**

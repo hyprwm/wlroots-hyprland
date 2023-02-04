@@ -128,7 +128,7 @@ static void handle_scene_surface_surface_commit(
 static bool scene_buffer_point_accepts_input(struct wlr_scene_buffer *scene_buffer,
 		int sx, int sy) {
 	struct wlr_scene_surface *scene_surface =
-		wlr_scene_surface_from_buffer(scene_buffer);
+		wlr_scene_surface_try_from_buffer(scene_buffer);
 
 	return wlr_surface_point_accepts_input(scene_surface->surface, sx, sy);
 }
@@ -155,7 +155,7 @@ static const struct wlr_addon_interface surface_addon_impl = {
 	.destroy = surface_addon_destroy,
 };
 
-struct wlr_scene_surface *wlr_scene_surface_from_buffer(
+struct wlr_scene_surface *wlr_scene_surface_try_from_buffer(
 		struct wlr_scene_buffer *scene_buffer) {
 	struct wlr_addon *addon = wlr_addon_find(&scene_buffer->node.addons,
 		scene_buffer, &surface_addon_impl);

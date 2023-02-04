@@ -348,7 +348,7 @@ static struct tinywl_view *desktop_view_at(
 	}
 	struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
 	struct wlr_scene_surface *scene_surface =
-		wlr_scene_surface_from_buffer(scene_buffer);
+		wlr_scene_surface_try_from_buffer(scene_buffer);
 	if (!scene_surface) {
 		return NULL;
 	}
