@@ -115,9 +115,10 @@ static void token_handle_commit(struct wl_client *client,
 		}
 
 		if (token->surface != NULL &&
-				token->surface != token->seat->keyboard_state.focused_surface) {
+				token->surface != token->seat->keyboard_state.focused_surface &&
+				token->surface != token->seat->pointer_state.focused_surface) {
 			wlr_log(WLR_DEBUG, "Rejecting token commit request: "
-				"surface doesn't have keyboard focus");
+				"surface doesn't have focus");
 			goto error;
 		}
 	}
