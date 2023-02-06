@@ -9,6 +9,7 @@
 #ifndef WLR_TYPES_WLR_OUTPUT_LAYER_H
 #define WLR_TYPES_WLR_OUTPUT_LAYER_H
 
+#include <wlr/render/drm_format_set.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/addon.h>
 
@@ -36,6 +37,10 @@ struct wlr_output_layer {
 	struct wl_list link; // wlr_output.layers
 	struct wlr_addon_set addons;
 
+	struct {
+		struct wl_signal feedback; // struct wlr_output_layer_feedback_event
+	} events;
+
 	void *data;
 };
 
@@ -54,6 +59,18 @@ struct wlr_output_layer_state {
 	// indicates whether the backend has acknowledged and will take care of
 	// displaying the layer
 	bool accepted;
+};
+
+/**
+ * Feedback for an output layer.
+ *
+ * After an output commit, if the backend is not able to display a layer, it
+ * can send feedback events. These events can be used to re-allocate the
+ * layer's buffers so that they have a higher chance to get displayed.
+ */
+struct wlr_output_layer_feedback_event {
+	dev_t target_device;
+	const struct wlr_drm_format_set *formats;
 };
 
 /**

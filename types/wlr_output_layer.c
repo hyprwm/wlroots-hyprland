@@ -9,6 +9,7 @@ struct wlr_output_layer *wlr_output_layer_create(struct wlr_output *output) {
 
 	wl_list_insert(&output->layers, &layer->link);
 	wlr_addon_set_init(&layer->addons);
+	wl_signal_init(&layer->events.feedback);
 
 	return layer;
 }
