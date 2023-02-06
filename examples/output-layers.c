@@ -10,6 +10,8 @@
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_drm.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layer.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -27,6 +29,7 @@ struct server {
 	struct wlr_backend *backend;
 	struct wlr_renderer *renderer;
 	struct wlr_allocator *allocator;
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
 	struct wl_list outputs;
 
@@ -37,6 +40,7 @@ struct server {
 struct output_surface {
 	struct wlr_surface *wlr_surface;
 	struct wlr_output_layer *layer;
+	struct server *server;
 	struct wl_list link;
 
 	int x, y;
@@ -46,6 +50,7 @@ struct output_surface {
 
 	struct wl_listener destroy;
 	struct wl_listener commit;
+	struct wl_listener layer_feedback;
 };
 
 struct output {
@@ -174,10 +179,11 @@ static void output_surface_handle_destroy(struct wl_listener *listener,
 	struct output_surface *output_surface =
 		wl_container_of(listener, output_surface, destroy);
 	wlr_buffer_unlock(output_surface->buffer);
-	wlr_output_layer_destroy(output_surface->layer);
 	wl_list_remove(&output_surface->destroy.link);
 	wl_list_remove(&output_surface->commit.link);
+	wl_list_remove(&output_surface->layer_feedback.link);
 	wl_list_remove(&output_surface->link);
+	wlr_output_layer_destroy(output_surface->layer);
 	free(output_surface);
 }
 
@@ -195,6 +201,26 @@ static void output_surface_handle_commit(struct wl_listener *listener,
 	output_surface->buffer = buffer;
 }
 
+static void output_surface_handle_layer_feedback(struct wl_listener *listener,
+		void *data) {
+	struct output_surface *output_surface =
+		wl_container_of(listener, output_surface, layer_feedback);
+	const struct wlr_output_layer_feedback_event *event = data;
+
+	wlr_log(WLR_DEBUG, "Sending linux-dmabuf feedback to surface %p",
+		output_surface->wlr_surface);
+
+	struct wlr_linux_dmabuf_feedback_v1 feedback = {0};
+	const struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+		.main_renderer = output_surface->server->renderer,
+		.output_layer_feedback_event = event,
+	};
+	wlr_linux_dmabuf_feedback_v1_init_with_options(&feedback, &options);
+	wlr_linux_dmabuf_v1_set_surface_feedback(output_surface->server->linux_dmabuf_v1,
+		output_surface->wlr_surface, &feedback);
+	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
+}
+
 static void server_handle_new_surface(struct wl_listener *listener,
 		void *data) {
 	struct server *server = wl_container_of(listener, server, new_surface);
@@ -204,12 +230,16 @@ static void server_handle_new_surface(struct wl_listener *listener,
 	wl_list_for_each(output, &server->outputs, link) {
 		struct output_surface *output_surface = calloc(1, sizeof(*output_surface));
 		output_surface->wlr_surface = wlr_surface;
+		output_surface->server = server;
 		output_surface->destroy.notify = output_surface_handle_destroy;
 		wl_signal_add(&wlr_surface->events.destroy, &output_surface->destroy);
 		output_surface->commit.notify = output_surface_handle_commit;
 		wl_signal_add(&wlr_surface->events.commit, &output_surface->commit);
 
 		output_surface->layer = wlr_output_layer_create(output->wlr_output);
+		output_surface->layer_feedback.notify = output_surface_handle_layer_feedback;
+		wl_signal_add(&output_surface->layer->events.feedback,
+			&output_surface->layer_feedback);
 
 		int pos = 50 * wl_list_length(&output->surfaces);
 
@@ -246,7 +276,13 @@ int main(int argc, char *argv[]) {
 	server.backend = wlr_backend_autocreate(server.wl_display, NULL);
 
 	server.renderer = wlr_renderer_autocreate(server.backend);
-	wlr_renderer_init_wl_display(server.renderer, server.wl_display);
+	wlr_renderer_init_wl_shm(server.renderer, server.wl_display);
+
+	if (wlr_renderer_get_dmabuf_texture_formats(server.renderer) != NULL) {
+		wlr_drm_create(server.wl_display, server.renderer);
+		server.linux_dmabuf_v1 = wlr_linux_dmabuf_v1_create_with_renderer(
+			server.wl_display, 4, server.renderer);
+	}
 
 	server.allocator = wlr_allocator_autocreate(server.backend,
 		server.renderer);
