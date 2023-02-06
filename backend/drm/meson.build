@@ -7,7 +7,7 @@ hwdata = dependency(
 
 libliftoff = dependency(
 	'libliftoff',
-	version: '>=0.2.0',
+	version: '>=0.4.0',
 	fallback: 'libliftoff',
 	required: false,
 )

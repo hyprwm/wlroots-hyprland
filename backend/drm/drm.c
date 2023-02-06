@@ -349,6 +349,7 @@ static void layer_handle_addon_destroy(struct wlr_addon *addon) {
 	drm_fb_clear(&layer->pending_fb);
 	drm_fb_clear(&layer->queued_fb);
 	drm_fb_clear(&layer->current_fb);
+	free(layer->candidate_planes);
 	free(layer);
 }
 
@@ -381,6 +382,8 @@ static struct wlr_drm_layer *get_or_create_layer(struct wlr_drm_backend *drm,
 		return NULL;
 	}
 
+	layer->wlr = wlr_layer;
+
 #if HAVE_LIBLIFTOFF
 	layer->liftoff = liftoff_layer_create(crtc->liftoff);
 	if (layer->liftoff == NULL) {
@@ -390,6 +393,15 @@ static struct wlr_drm_layer *get_or_create_layer(struct wlr_drm_backend *drm,
 #else
 	abort(); // unreachable
 #endif
+
+	layer->candidate_planes = calloc(sizeof(bool), drm->num_planes);
+	if (layer->candidate_planes == NULL) {
+#if HAVE_LIBLIFTOFF
+		liftoff_layer_destroy(layer->liftoff);
+#endif
+		free(layer);
+		return NULL;
+	}
 
 	wlr_addon_init(&layer->addon, &wlr_layer->addons, drm, &layer_impl);
 	wl_list_insert(&crtc->layers, &layer->link);

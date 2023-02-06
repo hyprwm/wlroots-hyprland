@@ -38,6 +38,7 @@ struct wlr_drm_plane {
 };
 
 struct wlr_drm_layer {
+	struct wlr_output_layer *wlr;
 	struct liftoff_layer *liftoff;
 	struct wlr_addon addon; // wlr_output_layer.addons
 	struct wl_list link; // wlr_drm_crtc.layers
@@ -50,6 +51,9 @@ struct wlr_drm_layer {
 	struct wlr_drm_fb *current_fb;
 
 	int pending_width, pending_height;
+
+	// One entry per wlr_drm_backend.planes
+	bool *candidate_planes;
 };
 
 struct wlr_drm_crtc {

@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <fcntl.h>
 #include <libliftoff.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
 
@@ -214,6 +215,62 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 		liftoff_layer_set_property(layer->liftoff, "SRC_H", src_h) == 0;
 }
 
+static bool devid_from_fd(int fd, dev_t *devid) {
+	struct stat stat;
+	if (fstat(fd, &stat) != 0) {
+		wlr_log_errno(WLR_ERROR, "fstat failed");
+		return false;
+	}
+	*devid = stat.st_rdev;
+	return true;
+}
+
+static void update_layer_feedback(struct wlr_drm_backend *drm,
+		struct wlr_drm_layer *layer) {
+	bool changed = false;
+	for (size_t i = 0; i < drm->num_planes; i++) {
+		struct wlr_drm_plane *plane = &drm->planes[i];
+		bool is_candidate = liftoff_layer_is_candidate_plane(layer->liftoff,
+			plane->liftoff);
+		if (layer->candidate_planes[i] != is_candidate) {
+			layer->candidate_planes[i] = is_candidate;
+			changed = true;
+		}
+	}
+	if (!changed) {
+		return;
+	}
+
+	dev_t target_device;
+	if (!devid_from_fd(drm->fd, &target_device)) {
+		return;
+	}
+
+	struct wlr_drm_format_set formats = {0};
+	for (size_t i = 0; i < drm->num_planes; i++) {
+		struct wlr_drm_plane *plane = &drm->planes[i];
+		if (!layer->candidate_planes[i]) {
+			continue;
+		}
+
+		for (size_t j = 0; j < plane->formats.len; j++) {
+			const struct wlr_drm_format *format = plane->formats.formats[j];
+			for (size_t k = 0; k < format->len; k++) {
+				wlr_drm_format_set_add(&formats, format->format,
+					format->modifiers[k]);
+			}
+		}
+	}
+
+	struct wlr_output_layer_feedback_event event = {
+		.target_device = target_device,
+		.formats = &formats,
+	};
+	wl_signal_emit_mutable(&layer->wlr->events.feedback, &event);
+
+	wlr_drm_format_set_finish(&formats);
+}
+
 static bool crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state, uint32_t flags,
 		bool test_only) {
@@ -380,6 +437,9 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 			struct wlr_drm_layer *layer = get_drm_layer(drm, layer_state->layer);
 			layer_state->accepted =
 				!liftoff_layer_needs_composition(layer->liftoff);
+			if (!test_only && !layer_state->accepted) {
+				update_layer_feedback(drm, layer);
+			}
 		}
 	}
 
