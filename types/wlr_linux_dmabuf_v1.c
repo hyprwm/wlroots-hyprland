@@ -10,6 +10,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
+#include <wlr/types/wlr_output_layer.h>
 #include <wlr/util/log.h>
 #include <xf86drm.h>
 #include "linux-dmabuf-unstable-v1-protocol.h"
@@ -1062,6 +1063,8 @@ static bool devid_from_fd(int fd, dev_t *devid) {
 bool wlr_linux_dmabuf_feedback_v1_init_with_options(struct wlr_linux_dmabuf_feedback_v1 *feedback,
 		const struct wlr_linux_dmabuf_feedback_v1_init_options *options) {
 	assert(options->main_renderer != NULL);
+	assert(options->scanout_primary_output == NULL ||
+		options->output_layer_feedback_event == NULL);
 
 	memset(feedback, 0, sizeof(*feedback));
 
@@ -1084,7 +1087,22 @@ bool wlr_linux_dmabuf_feedback_v1_init_with_options(struct wlr_linux_dmabuf_feed
 		goto error;
 	}
 
-	if (options->scanout_primary_output != NULL) {
+	if (options->output_layer_feedback_event != NULL) {
+		const struct wlr_output_layer_feedback_event *event = options->output_layer_feedback_event;
+
+		struct wlr_linux_dmabuf_feedback_v1_tranche *tranche =
+			wlr_linux_dmabuf_feedback_add_tranche(feedback);
+		if (tranche == NULL) {
+			goto error;
+		}
+
+		tranche->target_device = event->target_device;
+		tranche->flags = ZWP_LINUX_DMABUF_FEEDBACK_V1_TRANCHE_FLAGS_SCANOUT;
+		if (!wlr_drm_format_set_intersect(&tranche->formats, event->formats, renderer_formats)) {
+			wlr_log(WLR_ERROR, "Failed to intersect renderer and scanout formats");
+			goto error;
+		}
+	} else if (options->scanout_primary_output != NULL) {
 		int backend_drm_fd = wlr_backend_get_drm_fd(options->scanout_primary_output->backend);
 		if (backend_drm_fd < 0) {
 			wlr_log(WLR_ERROR, "Failed to get backend DRM FD");

@@ -116,6 +116,8 @@ struct wlr_linux_dmabuf_feedback_v1_init_options {
 	struct wlr_renderer *main_renderer;
 	// Output on which direct scan-out is possible on the primary plane, or NULL
 	struct wlr_output *scanout_primary_output;
+	// Output layer feedback event, or NULL
+	const struct wlr_output_layer_feedback_event *output_layer_feedback_event;
 };
 
 /**
