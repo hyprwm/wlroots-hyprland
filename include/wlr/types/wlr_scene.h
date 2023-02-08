@@ -20,18 +20,24 @@
  */
 
 #include <pixman.h>
+#include <time.h>
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_damage_ring.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
+#include <wlr/util/addon.h>
+#include <wlr/util/box.h>
 
 struct wlr_output;
 struct wlr_output_layout;
 struct wlr_xdg_surface;
 struct wlr_layer_surface_v1;
 struct wlr_drag_icon;
+struct wlr_surface;
 
 struct wlr_scene_node;
 struct wlr_scene_buffer;
+
+struct wlr_presentation;
 
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy);
@@ -271,6 +277,7 @@ struct wlr_scene_node *wlr_scene_node_at(struct wlr_scene_node *node,
  * Create a new scene-graph.
  */
 struct wlr_scene *wlr_scene_create(void);
+
 /**
  * Handle presentation feedback for all surfaces in the scene, assuming that
  * scene outputs and the scene rendering functions are used.

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "wlr/types/wlr_compositor.h"
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_data_device.h>
 
