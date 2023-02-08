@@ -1106,6 +1106,23 @@ void wlr_surface_set_preferred_buffer_scale(struct wlr_surface *surface,
 	surface->preferred_buffer_scale = scale;
 }
 
+void wlr_surface_set_preferred_buffer_transform(struct wlr_surface *surface,
+		enum wl_output_transform transform) {
+	if (wl_resource_get_version(surface->resource) <
+			WL_SURFACE_PREFERRED_BUFFER_TRANSFORM_SINCE_VERSION) {
+		return;
+	}
+
+	if (surface->preferred_buffer_transform == transform &&
+			surface->preferred_buffer_transform_sent) {
+		return;
+	}
+
+	wl_surface_send_preferred_buffer_transform(surface->resource, transform);
+	surface->preferred_buffer_transform_sent = true;
+	surface->preferred_buffer_transform = transform;
+}
+
 static const struct wl_compositor_interface compositor_impl;
 
 static struct wlr_compositor *compositor_from_resource(

@@ -165,6 +165,8 @@ struct wlr_surface {
 	bool opaque;
 
 	int32_t preferred_buffer_scale;
+	bool preferred_buffer_transform_sent;
+	enum wl_output_transform preferred_buffer_transform;
 };
 
 struct wlr_renderer;
@@ -329,6 +331,15 @@ void wlr_surface_unlock_cached(struct wlr_surface *surface, uint32_t seq);
  */
 void wlr_surface_set_preferred_buffer_scale(struct wlr_surface *surface,
 	int32_t scale);
+
+/**
+ * Set the preferred buffer transform for the surface.
+ *
+ * This sends an event to the client indicating the preferred transform to use
+ * for buffers attached to this surface.
+ */
+void wlr_surface_set_preferred_buffer_transform(struct wlr_surface *surface,
+	enum wl_output_transform transform);
 
 /**
  * Create the wl_compositor global, which can be used by clients to create
