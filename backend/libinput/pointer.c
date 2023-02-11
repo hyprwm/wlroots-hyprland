@@ -129,6 +129,10 @@ void handle_pointer_axis(struct libinput_event *event,
 		wlr_event.delta_discrete =
 			libinput_event_pointer_get_axis_value_discrete(pevent, axes[i]);
 		wlr_event.delta_discrete *= WLR_POINTER_AXIS_DISCRETE_STEP;
+		wlr_event.relative_direction = WLR_AXIS_RELATIVE_DIRECTION_IDENTICAL;
+		if (libinput_device_config_scroll_get_natural_scroll_enabled(libinput_event_get_device(event))) {
+			wlr_event.relative_direction = WLR_AXIS_RELATIVE_DIRECTION_INVERTED;
+		}
 		wl_signal_emit_mutable(&pointer->events.axis, &wlr_event);
 	}
 	wl_signal_emit_mutable(&pointer->events.frame, pointer);
