@@ -355,8 +355,8 @@ static void registry_global(void *data, struct wl_registry *registry,
 		if (version < 5) {
 			target_version = 5;
 		}
-		if (version > 8) {
-			target_version = 8;
+		if (version > 9) {
+			target_version = 9;
 		}
 		struct wl_seat *wl_seat = wl_registry_bind(registry, name,
 			&wl_seat_interface, target_version);

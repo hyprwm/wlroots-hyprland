@@ -109,6 +109,7 @@ struct wlr_wl_pointer {
 	enum wlr_axis_source axis_source;
 	int32_t axis_discrete;
 	uint32_t fingers; // trackpad gesture
+	enum wlr_axis_relative_direction axis_relative_direction;
 
 	struct wl_listener output_destroy;
 
