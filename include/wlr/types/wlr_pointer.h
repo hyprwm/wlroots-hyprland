@@ -78,6 +78,11 @@ enum wlr_axis_orientation {
 	WLR_AXIS_ORIENTATION_HORIZONTAL,
 };
 
+enum wlr_axis_relative_direction {
+	WLR_AXIS_RELATIVE_DIRECTION_IDENTICAL,
+	WLR_AXIS_RELATIVE_DIRECTION_INVERTED,
+};
+
 #define WLR_POINTER_AXIS_DISCRETE_STEP 120
 
 struct wlr_pointer_axis_event {
@@ -85,6 +90,7 @@ struct wlr_pointer_axis_event {
 	uint32_t time_msec;
 	enum wlr_axis_source source;
 	enum wlr_axis_orientation orientation;
+	enum wlr_axis_relative_direction relative_direction;
 	double delta;
 	int32_t delta_discrete;
 };
