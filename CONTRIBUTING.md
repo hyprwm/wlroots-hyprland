@@ -1,7 +1,7 @@
 # Contributing to wlroots
 
 Contributing just involves sending a merge request. You will probably be more
-successful with your contribution if you visit [#sway-devel on Libera Chat]
+successful with your contribution if you visit [#wlroots on Libera Chat]
 upfront and discuss your plans.
 
 Note: rules are made to be broken. Adjust or ignore any/all of these as you see
@@ -421,7 +421,7 @@ static void subsurface_handle_surface_destroy(struct wl_listener *listener,
 }
 ```
 
-[#sway-devel on Libera Chat]: https://web.libera.chat/gamja/?channels=#sway-devel
+[#wlroots on Libera Chat]: https://web.libera.chat/gamja/?channels=#wlroots
 [linear, "recipe" style]: https://www.bitsnbites.eu/git-history-work-log-vs-recipe/
 [git-rebase.io]: https://git-rebase.io/
 [reference issues]: https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically
