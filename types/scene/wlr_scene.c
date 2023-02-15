@@ -1414,8 +1414,10 @@ static void get_frame_damage(struct wlr_scene_output *scene_output, pixman_regio
 		transform, tr_width, tr_height);
 }
 
-static bool scene_node_try_direct_scanout(struct wlr_scene_node *node,
-		struct wlr_scene_output *scene_output, struct wlr_box *box) {
+static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *buffer,
+		const struct wlr_scene_output *scene_output) {
+	struct wlr_scene_node *node = &buffer->node;
+
 	if (!scene_output->scene->direct_scanout) {
 		return false;
 	}
@@ -1431,9 +1433,6 @@ static bool scene_node_try_direct_scanout(struct wlr_scene_node *node,
 		return false;
 	}
 
-	struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
-	struct wlr_output *output = scene_output->output;
-
 	struct wlr_fbox default_box = {0};
 	if (buffer->transform & WL_OUTPUT_TRANSFORM_90) {
 		default_box.width = buffer->buffer->height;
@@ -1448,7 +1447,7 @@ static bool scene_node_try_direct_scanout(struct wlr_scene_node *node,
 		return false;
 	}
 
-	if (buffer->transform != output->transform) {
+	if (buffer->transform != scene_output->output->transform) {
 		return false;
 	}
 
@@ -1456,22 +1455,34 @@ static bool scene_node_try_direct_scanout(struct wlr_scene_node *node,
 	wlr_scene_node_coords(node, &node_box.x, &node_box.y);
 	scene_node_get_size(node, &node_box.width, &node_box.height);
 
-	if (!wlr_box_equal(box, &node_box)) {
+	struct wlr_box box = {
+		.x = scene_output->x,
+		.y = scene_output->y,
+	};
+
+	wlr_output_effective_resolution(scene_output->output, &box.width, &box.height);
+
+	if (!wlr_box_equal(&box, &node_box)) {
 		return false;
 	}
 
+	return true;
+}
+
+static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
+		struct wlr_scene_output *scene_output) {
 	struct wlr_output_state state = {
 		.committed = WLR_OUTPUT_STATE_BUFFER,
 		.buffer = buffer->buffer,
 	};
 
-	if (!wlr_output_test_state(output, &state)) {
+	if (!wlr_output_test_state(scene_output->output, &state)) {
 		return false;
 	}
 
 	state.committed |= WLR_OUTPUT_STATE_DAMAGE;
 	get_frame_damage(scene_output, &state.damage);
-	bool ok = wlr_output_commit_state(output, &state);
+	bool ok = wlr_output_commit_state(scene_output->output, &state);
 	pixman_region32_fini(&state.damage);
 	if (!ok) {
 		return false;
@@ -1511,7 +1522,14 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	bool scanout = false;
 	if (list_len == 1) {
 		struct wlr_scene_node *node = list_data[0];
-		scanout = scene_node_try_direct_scanout(node, scene_output, &list_con.box);
+
+		if (node->type == WLR_SCENE_NODE_BUFFER) {
+			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
+
+			if (scene_buffer_can_consider_direct_scanout(buffer, scene_output)) {
+				scanout = scene_buffer_try_direct_scanout(buffer, scene_output);
+			}
+		}
 	}
 
 	if (scene_output->prev_scanout != scanout) {
