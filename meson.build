@@ -196,10 +196,8 @@ if get_option('examples')
 endif
 
 pkgconfig = import('pkgconfig')
-pkgconfig.generate(lib_wlr,
-	version: meson.project_version(),
-	filebase: meson.project_name(),
-	name: meson.project_name(),
+pkgconfig.generate(
+	lib_wlr,
 	description: 'Wayland compositor library',
 	variables: wlr_vars,
 )
