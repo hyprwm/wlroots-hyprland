@@ -199,5 +199,6 @@ pkgconfig = import('pkgconfig')
 pkgconfig.generate(
 	lib_wlr,
 	description: 'Wayland compositor library',
+	url: 'https://gitlab.freedesktop.org/wlroots/wlroots',
 	variables: wlr_vars,
 )
