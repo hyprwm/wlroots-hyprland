@@ -446,6 +446,11 @@ static EGLDeviceEXT get_egl_device_from_drm_fd(struct wlr_egl *egl,
 		return EGL_NO_DEVICE_EXT;
 	}
 
+	if (!egl->exts.EXT_device_drm) {
+		wlr_log(WLR_DEBUG, "EGL_EXT_device_drm not supported");
+		return EGL_NO_DEVICE_EXT;
+	}
+
 	EGLint nb_devices = 0;
 	if (!egl->procs.eglQueryDevicesEXT(0, NULL, &nb_devices)) {
 		wlr_log(WLR_ERROR, "Failed to query EGL devices");
