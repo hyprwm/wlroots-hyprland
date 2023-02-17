@@ -9,6 +9,11 @@
 
 static const struct zwp_fullscreen_shell_v1_interface shell_impl;
 
+static void shell_handle_release(struct wl_client *client,
+		struct wl_resource *resource) {
+	wl_resource_destroy(resource);
+}
+
 static struct wlr_fullscreen_shell_v1 *shell_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
@@ -58,6 +63,7 @@ static void shell_handle_present_surface_for_mode(struct wl_client *client,
 }
 
 static const struct zwp_fullscreen_shell_v1_interface shell_impl = {
+	.release = shell_handle_release,
 	.present_surface = shell_handle_present_surface,
 	.present_surface_for_mode = shell_handle_present_surface_for_mode,
 };
