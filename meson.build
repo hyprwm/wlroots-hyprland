@@ -129,7 +129,16 @@ drm = dependency('libdrm',
 		'tests=false',
 	],
 )
-xkbcommon = dependency('xkbcommon')
+xkbcommon = dependency(
+	'xkbcommon',
+	fallback: 'libxkbcommon',
+	default_options: [
+		'enable-tools=false',
+		'enable-x11=false',
+		'enable-docs=false',
+		'enable-xkbregistry=false',
+	],
+)
 pixman = dependency('pixman-1',
 	version: '>=0.42.0',
 	fallback: 'pixman',
