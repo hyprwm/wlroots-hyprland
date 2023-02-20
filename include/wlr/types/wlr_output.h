@@ -543,6 +543,7 @@ bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 void wlr_output_cursor_destroy(struct wlr_output_cursor *cursor);
 
 
+void wlr_output_state_finish(struct wlr_output_state *state);
 void wlr_output_state_set_enabled(struct wlr_output_state *state,
 	bool enabled);
 void wlr_output_state_set_mode(struct wlr_output_state *state,

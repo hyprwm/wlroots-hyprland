@@ -324,16 +324,6 @@ static void output_state_init(struct wlr_output_state *state) {
 	pixman_region32_init(&state->damage);
 }
 
-static void output_state_finish(struct wlr_output_state *state) {
-	wlr_buffer_unlock(state->buffer);
-	// struct wlr_buffer is ref'counted, so the pointer may remain valid after
-	// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
-	// reads it after output_state_finish().
-	state->buffer = NULL;
-	pixman_region32_fini(&state->damage);
-	free(state->gamma_lut);
-}
-
 static void output_state_move(struct wlr_output_state *dst,
 		struct wlr_output_state *src) {
 	*dst = *src;
@@ -425,7 +415,7 @@ void wlr_output_destroy(struct wlr_output *output) {
 	free(output->model);
 	free(output->serial);
 
-	output_state_finish(&output->pending);
+	wlr_output_state_finish(&output->pending);
 
 	if (output->impl && output->impl->destroy) {
 		output->impl->destroy(output);
@@ -887,7 +877,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 	}
 
 	bool ok = wlr_output_commit_state(output, &state);
-	output_state_finish(&state);
+	wlr_output_state_finish(&state);
 	return ok;
 }
 
