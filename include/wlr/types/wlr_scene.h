@@ -38,6 +38,7 @@ struct wlr_scene_node;
 struct wlr_scene_buffer;
 
 struct wlr_presentation;
+struct wlr_linux_dmabuf_v1;
 
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy);
@@ -95,10 +96,12 @@ struct wlr_scene {
 
 	// May be NULL
 	struct wlr_presentation *presentation;
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1;
 
 	// private state
 
 	struct wl_listener presentation_destroy;
+	struct wl_listener linux_dmabuf_v1_destroy;
 
 	enum wlr_scene_debug_damage_option debug_damage_option;
 	bool direct_scanout;
@@ -169,6 +172,7 @@ struct wlr_scene_buffer {
 	int dst_width, dst_height;
 	enum wl_output_transform transform;
 	pixman_region32_t opaque_region;
+	struct wlr_linux_dmabuf_feedback_v1_init_options prev_feedback_options;
 };
 
 /** A viewport for an output in the scene-graph */
@@ -286,6 +290,15 @@ struct wlr_scene *wlr_scene_create(void);
  */
 void wlr_scene_set_presentation(struct wlr_scene *scene,
 	struct wlr_presentation *presentation);
+
+/**
+ * Handles linux_dmabuf_v1 feedback for all surfaces in the scene.
+ *
+ * Asserts that a struct wlr_linux_dmabuf_v1 hasn't already been set for the scene.
+ */
+void wlr_scene_set_linux_dmabuf_v1(struct wlr_scene *scene,
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1);
+
 
 /**
  * Add a node displaying nothing but its children.

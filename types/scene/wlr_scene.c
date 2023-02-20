@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_matrix.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/log.h>
@@ -120,6 +121,7 @@ void wlr_scene_node_destroy(struct wlr_scene_node *node) {
 			}
 
 			wl_list_remove(&scene->presentation_destroy.link);
+			wl_list_remove(&scene->linux_dmabuf_v1_destroy.link);
 		} else {
 			assert(node->parent);
 		}
@@ -153,6 +155,7 @@ struct wlr_scene *wlr_scene_create(void) {
 
 	wl_list_init(&scene->outputs);
 	wl_list_init(&scene->presentation_destroy.link);
+	wl_list_init(&scene->linux_dmabuf_v1_destroy.link);
 
 	const char *debug_damage_options[] = {
 		"none",
@@ -307,6 +310,7 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
 
 	uint32_t largest_overlap = 0;
+	struct wlr_scene_output *old_primary_output = scene_buffer->primary_output;
 	scene_buffer->primary_output = NULL;
 
 	size_t count = 0;
@@ -352,6 +356,11 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 		}
 
 		pixman_region32_fini(&intersection);
+	}
+
+	if (old_primary_output != scene_buffer->primary_output) {
+		memset(&scene_buffer->prev_feedback_options, 0,
+			sizeof(scene_buffer->prev_feedback_options));
 	}
 
 	uint64_t old_active = scene_buffer->active_outputs;
@@ -1171,6 +1180,23 @@ void wlr_scene_set_presentation(struct wlr_scene *scene,
 	wl_signal_add(&presentation->events.destroy, &scene->presentation_destroy);
 }
 
+static void scene_handle_linux_dmabuf_v1_destroy(struct wl_listener *listener,
+		void *data) {
+	struct wlr_scene *scene =
+		wl_container_of(listener, scene, linux_dmabuf_v1_destroy);
+	wl_list_remove(&scene->linux_dmabuf_v1_destroy.link);
+	wl_list_init(&scene->linux_dmabuf_v1_destroy.link);
+	scene->linux_dmabuf_v1 = NULL;
+}
+
+void wlr_scene_set_linux_dmabuf_v1(struct wlr_scene *scene,
+		struct wlr_linux_dmabuf_v1 *linux_dmabuf_v1) {
+	assert(scene->linux_dmabuf_v1 == NULL);
+	scene->linux_dmabuf_v1 = linux_dmabuf_v1;
+	scene->linux_dmabuf_v1_destroy.notify = scene_handle_linux_dmabuf_v1_destroy;
+	wl_signal_add(&linux_dmabuf_v1->events.destroy, &scene->linux_dmabuf_v1_destroy);
+}
+
 static void scene_output_handle_destroy(struct wlr_addon *addon) {
 	struct wlr_scene_output *scene_output =
 		wl_container_of(addon, scene_output, addon);
@@ -1414,6 +1440,37 @@ static void get_frame_damage(struct wlr_scene_output *scene_output, pixman_regio
 		transform, tr_width, tr_height);
 }
 
+static void scene_buffer_send_dmabuf_feedback(const struct wlr_scene *scene,
+		struct wlr_scene_buffer *scene_buffer,
+		const struct wlr_linux_dmabuf_feedback_v1_init_options *options) {
+	if (!scene->linux_dmabuf_v1) {
+		return;
+	}
+
+	struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+	if (!surface) {
+		return;
+	}
+
+	// compare to the previous options so that we don't send
+	// duplicate feedback events.
+	if (memcmp(options, &scene_buffer->prev_feedback_options, sizeof(*options)) == 0) {
+		return;
+	}
+
+	scene_buffer->prev_feedback_options = *options;
+
+	struct wlr_linux_dmabuf_feedback_v1 feedback = {0};
+	if (!wlr_linux_dmabuf_feedback_v1_init_with_options(&feedback, options)) {
+		return;
+	}
+
+	wlr_linux_dmabuf_v1_set_surface_feedback(scene->linux_dmabuf_v1,
+		surface->surface, &feedback);
+
+	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
+}
+
 static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *buffer,
 		const struct wlr_scene_output *scene_output) {
 	struct wlr_scene_node *node = &buffer->node;
@@ -1517,6 +1574,8 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	int list_len = list_con.render_list->size / sizeof(struct wlr_scene_node *);
 	struct wlr_scene_node **list_data = list_con.render_list->data;
 
+	bool sent_direct_scanout_feedback = false;
+
 	// if there is only one thing to render let's see if that thing can be
 	// directly scanned out
 	bool scanout = false;
@@ -1527,6 +1586,16 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
 
 			if (scene_buffer_can_consider_direct_scanout(buffer, scene_output)) {
+				if (buffer->primary_output == scene_output) {
+					struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+						.main_renderer = output->renderer,
+						.scanout_primary_output = output,
+					};
+
+					scene_buffer_send_dmabuf_feedback(scene_output->scene, buffer, &options);
+					sent_direct_scanout_feedback = true;
+				}
+
 				scanout = scene_buffer_try_direct_scanout(buffer, scene_output);
 			}
 		}
@@ -1667,6 +1736,19 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	for (int i = list_len - 1; i >= 0; i--) {
 		struct wlr_scene_node *node = list_data[i];
 		scene_node_render(node, scene_output, &damage);
+
+		if (node->type == WLR_SCENE_NODE_BUFFER) {
+			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
+
+			if (buffer->primary_output == scene_output && !sent_direct_scanout_feedback) {
+				struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+					.main_renderer = output->renderer,
+					.scanout_primary_output = NULL,
+				};
+
+				scene_buffer_send_dmabuf_feedback(scene_output->scene, buffer, &options);
+			}
+		}
 	}
 
 	wlr_renderer_scissor(renderer, NULL);
