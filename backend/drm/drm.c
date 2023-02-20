@@ -27,7 +27,6 @@
 #include "backend/drm/util.h"
 #include "render/pixel_format.h"
 #include "render/drm_format_set.h"
-#include "render/swapchain.h"
 #include "render/wlr_renderer.h"
 #include "util/env.h"
 #include "config.h"

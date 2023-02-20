@@ -1,5 +1,5 @@
-#ifndef RENDER_SWAPCHAIN_H
-#define RENDER_SWAPCHAIN_H
+#ifndef WLR_RENDER_SWAPCHAIN_H
+#define WLR_RENDER_SWAPCHAIN_H
 
 #include <stdbool.h>
 #include <wayland-server-core.h>

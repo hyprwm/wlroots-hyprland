@@ -18,7 +18,6 @@
 
 #include "backend/wayland.h"
 #include "render/pixel_format.h"
-#include "render/swapchain.h"
 #include "render/wlr_renderer.h"
 
 #include "linux-dmabuf-unstable-v1-client-protocol.h"

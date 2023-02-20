@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <wayland-util.h>
+#include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/util/log.h>
@@ -15,7 +16,6 @@
 #include "render/drm_format_set.h"
 #include "render/allocator/allocator.h"
 #include "render/pixel_format.h"
-#include "render/swapchain.h"
 #include "render/wlr_renderer.h"
 
 bool init_drm_renderer(struct wlr_drm_backend *drm,
