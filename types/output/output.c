@@ -743,7 +743,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	}
 	if (new_back_buffer) {
 		assert((pending.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
-		output_state_attach_buffer(&pending, output->back_buffer);
+		wlr_output_state_set_buffer(&pending, output->back_buffer);
 		output_clear_back_buffer(output);
 	}
 
@@ -872,7 +872,7 @@ bool wlr_output_commit(struct wlr_output *output) {
 	// implicit rendering synchronization point. The backend needs it to avoid
 	// displaying a buffer when asynchronous GPU work isn't finished.
 	if (output->back_buffer != NULL) {
-		output_state_attach_buffer(&state, output->back_buffer);
+		wlr_output_state_set_buffer(&state, output->back_buffer);
 		output_clear_back_buffer(output);
 	}
 
@@ -886,16 +886,9 @@ void wlr_output_rollback(struct wlr_output *output) {
 	output_state_clear(&output->pending);
 }
 
-void output_state_attach_buffer(struct wlr_output_state *state,
-		struct wlr_buffer *buffer) {
-	output_state_clear_buffer(state);
-	state->committed |= WLR_OUTPUT_STATE_BUFFER;
-	state->buffer = wlr_buffer_lock(buffer);
-}
-
 void wlr_output_attach_buffer(struct wlr_output *output,
 		struct wlr_buffer *buffer) {
-	output_state_attach_buffer(&output->pending, buffer);
+	wlr_output_state_set_buffer(&output->pending, buffer);
 }
 
 void wlr_output_send_frame(struct wlr_output *output) {

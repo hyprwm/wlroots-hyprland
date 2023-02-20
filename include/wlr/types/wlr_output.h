@@ -559,6 +559,8 @@ void wlr_output_state_set_render_format(struct wlr_output_state *state,
 	uint32_t format);
 void wlr_output_state_set_subpixel(struct wlr_output_state *state,
 	enum wl_output_subpixel subpixel);
+void wlr_output_state_set_buffer(struct wlr_output_state *state,
+	struct wlr_buffer *buffer);
 
 
 /**

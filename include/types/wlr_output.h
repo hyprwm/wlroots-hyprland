@@ -6,8 +6,6 @@
 
 void output_pending_resolution(struct wlr_output *output,
 	const struct wlr_output_state *state, int *width, int *height);
-void output_state_attach_buffer(struct wlr_output_state *state,
-	struct wlr_buffer *buffer);
 bool output_is_direct_scanout(struct wlr_output *output,
 	struct wlr_buffer *buffer);
 
