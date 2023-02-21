@@ -50,8 +50,6 @@ struct wlr_drm_layer {
 	/* Buffer currently displayed on screen */
 	struct wlr_drm_fb *current_fb;
 
-	int pending_width, pending_height;
-
 	// One entry per wlr_drm_backend.planes
 	bool *candidate_planes;
 };

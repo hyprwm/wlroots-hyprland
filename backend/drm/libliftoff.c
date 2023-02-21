@@ -177,6 +177,12 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 		const struct wlr_output_layer_state *state, uint64_t zpos) {
 	struct wlr_drm_layer *layer = get_drm_layer(drm, state->layer);
 
+	uint32_t width = 0, height = 0;
+	if (state->buffer != NULL) {
+		width = state->buffer->width;
+		height = state->buffer->height;
+	}
+
 	struct wlr_drm_fb *fb = layer->pending_fb;
 	int ret = 0;
 	if (state->buffer == NULL) {
@@ -189,9 +195,6 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 	if (ret != 0) {
 		return false;
 	}
-
-	uint32_t width = layer->pending_width;
-	uint32_t height = layer->pending_height;
 
 	uint64_t crtc_x = (uint64_t)state->x;
 	uint64_t crtc_y = (uint64_t)state->y;

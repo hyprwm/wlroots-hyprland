@@ -564,11 +564,8 @@ static bool drm_connector_set_pending_layer_fbs(struct wlr_drm_connector *conn,
 		}
 
 		if (layer_state->buffer != NULL) {
-			layer->pending_width = layer_state->buffer->width;
-			layer->pending_height = layer_state->buffer->height;
 			drm_fb_import(&layer->pending_fb, drm, layer_state->buffer, NULL);
 		} else {
-			layer->pending_width = layer->pending_height = 0;
 			drm_fb_clear(&layer->pending_fb);
 		}
 	}
