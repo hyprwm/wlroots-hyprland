@@ -842,11 +842,17 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	}
 
 	if (pending.committed & WLR_OUTPUT_STATE_LAYERS) {
-		// Commit layer ordering
 		for (size_t i = 0; i < pending.layers_len; i++) {
-			struct wlr_output_layer *layer = pending.layers[i].layer;
+			struct wlr_output_layer_state *layer_state = &pending.layers[i];
+			struct wlr_output_layer *layer = layer_state->layer;
+
+			// Commit layer ordering
 			wl_list_remove(&layer->link);
 			wl_list_insert(output->layers.prev, &layer->link);
+
+			// Commit layer state
+			layer->x = layer_state->x;
+			layer->y = layer_state->y;
 		}
 	}
 

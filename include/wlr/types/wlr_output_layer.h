@@ -48,6 +48,10 @@ struct wlr_output_layer {
 	} events;
 
 	void *data;
+
+	// private state
+
+	int x, y;
 };
 
 /**
