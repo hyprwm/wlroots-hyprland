@@ -400,6 +400,23 @@ static void output_layer_unmap(struct wlr_wl_output_layer *layer) {
 	layer->mapped = false;
 }
 
+static void damage_surface(struct wl_surface *surface,
+		const pixman_region32_t *damage) {
+	if (damage == NULL) {
+		wl_surface_damage_buffer(surface,
+			0, 0, INT32_MAX, INT32_MAX);
+		return;
+	}
+
+	int rects_len;
+	const pixman_box32_t *rects = pixman_region32_rectangles(damage, &rects_len);
+	for (int i = 0; i < rects_len; i++) {
+		const pixman_box32_t *r = &rects[i];
+		wl_surface_damage_buffer(surface, r->x1, r->y1,
+			r->x2 - r->x1, r->y2 - r->y1);
+	}
+}
+
 static bool output_layer_commit(struct wlr_wl_output *output,
 		struct wlr_wl_output_layer *layer,
 		const struct wlr_output_layer_state *state) {
@@ -443,7 +460,7 @@ static bool output_layer_commit(struct wlr_wl_output *output,
 	}
 
 	wl_surface_attach(layer->surface, buffer->wl_buffer, 0, 0);
-	wl_surface_damage_buffer(layer->surface, 0, 0, INT32_MAX, INT32_MAX);
+	damage_surface(layer->surface, state->damage);
 	wl_surface_commit(layer->surface);
 	layer->mapped = true;
 	return true;
@@ -511,20 +528,7 @@ static bool output_commit(struct wlr_output *wlr_output,
 		}
 
 		wl_surface_attach(output->surface, buffer->wl_buffer, 0, 0);
-
-		if (damage == NULL) {
-			wl_surface_damage_buffer(output->surface,
-				0, 0, INT32_MAX, INT32_MAX);
-		} else {
-			int rects_len;
-			const pixman_box32_t *rects =
-				pixman_region32_rectangles(damage, &rects_len);
-			for (int i = 0; i < rects_len; i++) {
-				const pixman_box32_t *r = &rects[i];
-				wl_surface_damage_buffer(output->surface, r->x1, r->y1,
-					r->x2 - r->x1, r->y2 - r->y1);
-			}
-		}
+		damage_surface(output->surface, damage);
 	}
 
 	if ((state->committed & WLR_OUTPUT_STATE_LAYERS) &&
