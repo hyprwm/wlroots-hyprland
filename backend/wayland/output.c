@@ -347,21 +347,30 @@ static struct wlr_wl_output_layer *get_or_create_output_layer(
 
 static bool has_layers_order_changed(struct wlr_wl_output *output,
 		struct wlr_output_layer_state *layers, size_t layers_len) {
+	// output_basic_check() ensures that layers_len equals the number of
+	// registered output layers
 	size_t i = 0;
 	struct wlr_output_layer *layer;
 	wl_list_for_each(layer, &output->wlr_output.layers, link) {
-		if (i >= layers_len) {
-			return true;
-		}
-
+		assert(i < layers_len);
 		const struct wlr_output_layer_state *layer_state = &layers[i];
 		if (layer_state->layer != layer) {
 			return true;
 		}
-
 		i++;
 	}
-	return i != layers_len;
+	assert(i == layers_len);
+	return false;
+}
+
+static void output_layer_unmap(struct wlr_wl_output_layer *layer) {
+	if (!layer->mapped) {
+		return;
+	}
+
+	wl_surface_attach(layer->surface, NULL, 0, 0);
+	wl_surface_commit(layer->surface);
+	layer->mapped = false;
 }
 
 static bool output_layer_commit(struct wlr_wl_output *output,
@@ -371,18 +380,21 @@ static bool output_layer_commit(struct wlr_wl_output *output,
 		wl_subsurface_set_position(layer->subsurface, state->x, state->y);
 	}
 
-	struct wlr_wl_buffer *buffer = NULL;
-	if (state->buffer != NULL) {
-		buffer = get_or_create_wl_buffer(output->backend, state->buffer);
-		if (buffer == NULL) {
-			return false;
-		}
+	if (state->buffer == NULL) {
+		output_layer_unmap(layer);
+		return true;
 	}
 
-	wl_surface_attach(layer->surface, buffer ? buffer->wl_buffer : NULL, 0, 0);
-	wl_surface_damage_buffer(layer->surface, 0, 0, INT32_MAX, INT32_MAX);
+	struct wlr_wl_buffer *buffer =
+		get_or_create_wl_buffer(output->backend, state->buffer);
+	if (buffer == NULL) {
+		return false;
+	}
 
+	wl_surface_attach(layer->surface, buffer->wl_buffer, 0, 0);
+	wl_surface_damage_buffer(layer->surface, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(layer->surface);
+	layer->mapped = true;
 	return true;
 }
 
@@ -403,10 +415,7 @@ static bool commit_layers(struct wlr_wl_output *output,
 		}
 
 		if (!layers[i].accepted) {
-			// Unmap the sub-surface
-			// TODO: only do this once
-			wl_surface_attach(layer->surface, NULL, 0, 0);
-			wl_surface_commit(layer->surface);
+			output_layer_unmap(layer);
 			continue;
 		}
 

@@ -71,6 +71,7 @@ struct wlr_wl_output_layer {
 
 	struct wl_surface *surface;
 	struct wl_subsurface *subsurface;
+	bool mapped;
 };
 
 struct wlr_wl_output {
