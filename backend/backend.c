@@ -277,6 +277,9 @@ static bool attempt_backend_by_name(struct wl_display *display,
 		wlr_log(WLR_ERROR, "unrecognized backend '%s'", name);
 		return false;
 	}
+	if (backend == NULL) {
+		return false;
+	}
 
 	return wlr_multi_backend_add(multi, backend);
 }
