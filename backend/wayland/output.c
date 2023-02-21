@@ -345,6 +345,25 @@ static struct wlr_wl_output_layer *get_or_create_output_layer(
 	return layer;
 }
 
+static bool has_layers_order_changed(struct wlr_wl_output *output,
+		struct wlr_output_layer_state *layers, size_t layers_len) {
+	size_t i = 0;
+	struct wlr_output_layer *layer;
+	wl_list_for_each(layer, &output->wlr_output.layers, link) {
+		if (i >= layers_len) {
+			return true;
+		}
+
+		const struct wlr_output_layer_state *layer_state = &layers[i];
+		if (layer_state->layer != layer) {
+			return true;
+		}
+
+		i++;
+	}
+	return i != layers_len;
+}
+
 static bool output_layer_commit(struct wlr_wl_output *output,
 		struct wlr_wl_output_layer *layer,
 		const struct wlr_output_layer_state *state) {
@@ -372,6 +391,8 @@ static bool commit_layers(struct wlr_wl_output *output,
 		return true;
 	}
 
+	bool reordered = has_layers_order_changed(output, layers, layers_len);
+
 	struct wlr_wl_output_layer *prev_layer = NULL;
 	for (size_t i = 0; i < layers_len; i++) {
 		struct wlr_wl_output_layer *layer =
@@ -388,8 +409,7 @@ static bool commit_layers(struct wlr_wl_output *output,
 			continue;
 		}
 
-		// TODO: only do this if layers were re-ordered
-		if (prev_layer != NULL) {
+		if (prev_layer != NULL && reordered) {
 			wl_subsurface_place_above(layer->subsurface,
 				prev_layer->surface);
 		}
