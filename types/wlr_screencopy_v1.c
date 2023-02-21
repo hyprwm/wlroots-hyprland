@@ -45,8 +45,7 @@ static void screencopy_damage_accumulate(struct screencopy_damage *damage,
 
 	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
 		// If the compositor submitted damage, copy it over
-		pixman_region32_union(region, region,
-			(pixman_region32_t *) &state->damage);
+		pixman_region32_union(region, region, &state->damage);
 		pixman_region32_intersect_rect(region, region, 0, 0,
 			output->width, output->height);
 	} else if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
