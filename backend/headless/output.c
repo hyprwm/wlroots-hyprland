@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <wlr/interfaces/wlr_output.h>
+#include <wlr/types/wlr_output_layer.h>
 #include <wlr/util/log.h>
 #include "backend/headless.h"
 
@@ -41,6 +42,12 @@ static bool output_test(struct wlr_output *wlr_output,
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		for (size_t i = 0; i < state->layers_len; i++) {
+			state->layers[i].accepted = true;
+		}
 	}
 
 	return true;
