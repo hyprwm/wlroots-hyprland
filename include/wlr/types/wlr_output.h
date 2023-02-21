@@ -564,6 +564,20 @@ void wlr_output_state_set_buffer(struct wlr_output_state *state,
 
 
 /**
+ * Re-configure the swapchain as required for the output's primary buffer.
+ *
+ * If a NULL swapchain is passed in, a new swapchain is allocated. If the
+ * swapchain is already suitable for the output's primary buffer, this function
+ * is a no-op.
+ *
+ * The state describes the output changes the swapchain's buffers will be
+ * committed with. A NULL state indicates no change.
+ */
+bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
+	const struct wlr_output_state *state, struct wlr_swapchain **swapchain);
+
+
+/**
  * Returns the transform that, when composed with `tr`, gives
  * `WL_OUTPUT_TRANSFORM_NORMAL`.
  */
