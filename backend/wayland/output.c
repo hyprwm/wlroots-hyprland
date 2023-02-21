@@ -367,8 +367,9 @@ static bool has_layers_order_changed(struct wlr_wl_output *output,
 static bool output_layer_commit(struct wlr_wl_output *output,
 		struct wlr_wl_output_layer *layer,
 		const struct wlr_output_layer_state *state) {
-	// TODO: only do this if the layer moved
-	wl_subsurface_set_position(layer->subsurface, state->x, state->y);
+	if (state->layer->x != state->x || state->layer->y != state->y) {
+		wl_subsurface_set_position(layer->subsurface, state->x, state->y);
+	}
 
 	struct wlr_wl_buffer *buffer = NULL;
 	if (state->buffer != NULL) {
