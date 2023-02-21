@@ -179,7 +179,8 @@ static uint64_t to_fp16(double v) {
 }
 
 static bool set_layer_props(struct wlr_drm_backend *drm,
-		const struct wlr_output_layer_state *state, uint64_t zpos) {
+		const struct wlr_output_layer_state *state, uint64_t zpos,
+		struct wl_array *fb_damage_clips_arr) {
 	struct wlr_drm_layer *layer = get_drm_layer(drm, state->layer);
 
 	uint32_t width = 0, height = 0;
@@ -219,6 +220,17 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 	uint64_t src_w = to_fp16(src_box.width);
 	uint64_t src_h = to_fp16(src_box.height);
 
+	uint32_t fb_damage_clips = 0;
+	if (state->damage != NULL) {
+		uint32_t *ptr = wl_array_add(fb_damage_clips_arr, sizeof(fb_damage_clips));
+		if (ptr == NULL) {
+			return false;
+		}
+		create_fb_damage_clips_blob(drm, width, height,
+			state->damage, &fb_damage_clips);
+		*ptr = fb_damage_clips;
+	}
+
 	return
 		liftoff_layer_set_property(layer->liftoff, "zpos", zpos) == 0 &&
 		liftoff_layer_set_property(layer->liftoff, "CRTC_X", crtc_x) == 0 &&
@@ -228,7 +240,8 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 		liftoff_layer_set_property(layer->liftoff, "SRC_X", src_x) == 0 &&
 		liftoff_layer_set_property(layer->liftoff, "SRC_Y", src_y) == 0 &&
 		liftoff_layer_set_property(layer->liftoff, "SRC_W", src_w) == 0 &&
-		liftoff_layer_set_property(layer->liftoff, "SRC_H", src_h) == 0;
+		liftoff_layer_set_property(layer->liftoff, "SRC_H", src_h) == 0 &&
+		liftoff_layer_set_property(layer->liftoff, "FB_DAMAGE_CLIPS", fb_damage_clips) == 0;
 }
 
 static bool devid_from_fd(int fd, dev_t *devid) {
@@ -327,11 +340,19 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		}
 	}
 
-	uint32_t fb_damage_clips = 0;
+	struct wl_array fb_damage_clips_arr = {0};
+
+	uint32_t primary_fb_damage_clips = 0;
 	if ((state->base->committed & WLR_OUTPUT_STATE_DAMAGE) &&
 			crtc->primary->props.fb_damage_clips != 0) {
-		create_fb_damage_clips_blob(drm, state->primary_fb,
-			&state->base->damage, &fb_damage_clips);
+		uint32_t *ptr = wl_array_add(&fb_damage_clips_arr, sizeof(primary_fb_damage_clips));
+		if (ptr == NULL) {
+			return false;
+		}
+		create_fb_damage_clips_blob(drm, state->primary_fb->wlr_buf->width,
+			state->primary_fb->wlr_buf->height, &state->base->damage,
+			&primary_fb_damage_clips);
+		*ptr = primary_fb_damage_clips;
 	}
 
 	bool prev_vrr_enabled =
@@ -387,14 +408,15 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 			set_plane_props(crtc->primary, crtc->primary->liftoff_layer, state->primary_fb, 0, 0, 0) &&
 			set_plane_props(crtc->primary, crtc->liftoff_composition_layer, state->primary_fb, 0, 0, 0);
 		liftoff_layer_set_property(crtc->primary->liftoff_layer,
-			"FB_DAMAGE_CLIPS", fb_damage_clips);
+			"FB_DAMAGE_CLIPS", primary_fb_damage_clips);
 		liftoff_layer_set_property(crtc->liftoff_composition_layer,
-			"FB_DAMAGE_CLIPS", fb_damage_clips);
+			"FB_DAMAGE_CLIPS", primary_fb_damage_clips);
 
 		if (state->base->committed & WLR_OUTPUT_STATE_LAYERS) {
 			for (size_t i = 0; i < state->base->layers_len; i++) {
 				const struct wlr_output_layer_state *layer_state = &state->base->layers[i];
-				ok = ok && set_layer_props(drm, layer_state, i + 1);
+				ok = ok && set_layer_props(drm, layer_state, i + 1,
+					&fb_damage_clips_arr);
 			}
 		}
 
@@ -472,9 +494,11 @@ out:
 		rollback_blob(drm, &crtc->gamma_lut, gamma_lut);
 	}
 
-	if (fb_damage_clips != 0 &&
-			drmModeDestroyPropertyBlob(drm->fd, fb_damage_clips) != 0) {
-		wlr_log_errno(WLR_ERROR, "Failed to destroy FB_DAMAGE_CLIPS property blob");
+	uint32_t *fb_damage_clips_ptr;
+	wl_array_for_each(fb_damage_clips_ptr, &fb_damage_clips_arr) {
+		if (drmModeDestroyPropertyBlob(drm->fd, *fb_damage_clips_ptr) != 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to destroy FB_DAMAGE_CLIPS property blob");
+		}
 	}
 
 	return ok;

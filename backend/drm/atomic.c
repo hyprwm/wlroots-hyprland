@@ -144,14 +144,11 @@ bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 }
 
 bool create_fb_damage_clips_blob(struct wlr_drm_backend *drm,
-		struct wlr_drm_fb *fb, const pixman_region32_t *damage, uint32_t *blob_id) {
+		int width, int height, const pixman_region32_t *damage, uint32_t *blob_id) {
 	if (!pixman_region32_not_empty(damage)) {
 		*blob_id = 0;
 		return true;
 	}
-
-	int width = fb->wlr_buf->width;
-	int height = fb->wlr_buf->height;
 
 	pixman_region32_t clipped;
 	pixman_region32_init(&clipped);
@@ -298,8 +295,8 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 	uint32_t fb_damage_clips = 0;
 	if ((state->base->committed & WLR_OUTPUT_STATE_DAMAGE) &&
 			crtc->primary->props.fb_damage_clips != 0) {
-		create_fb_damage_clips_blob(drm, state->primary_fb,
-			&state->base->damage, &fb_damage_clips);
+		create_fb_damage_clips_blob(drm, state->primary_fb->wlr_buf->width,
+			state->primary_fb->wlr_buf->height, &state->base->damage, &fb_damage_clips);
 	}
 
 	bool prev_vrr_enabled =
