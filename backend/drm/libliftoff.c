@@ -313,11 +313,10 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 
 	uint32_t fb_damage_clips = 0;
 	if ((state->base->committed & WLR_OUTPUT_STATE_DAMAGE) &&
-			pixman_region32_not_empty((pixman_region32_t *)&state->base->damage) &&
+			pixman_region32_not_empty(&state->base->damage) &&
 			crtc->primary->props.fb_damage_clips != 0) {
 		int rects_len;
-		const pixman_box32_t *rects = pixman_region32_rectangles(
-			(pixman_region32_t *)&state->base->damage, &rects_len);
+		const pixman_box32_t *rects = pixman_region32_rectangles(&state->base->damage, &rects_len);
 		if (drmModeCreatePropertyBlob(drm->fd, rects,
 				sizeof(*rects) * rects_len, &fb_damage_clips) != 0) {
 			wlr_log_errno(WLR_ERROR, "Failed to create FB_DAMAGE_CLIPS property blob");
