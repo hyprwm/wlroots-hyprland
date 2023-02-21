@@ -32,6 +32,10 @@
  * directly are expected to setup layers, call wlr_output_test(), paint the
  * layers that the backend rejected with the renderer, then call
  * wlr_output_commit().
+ *
+ * Callers are responsible for disabling output layers when they need the full
+ * output contents to be composited onto a single buffer, e.g. during screen
+ * capture.
  */
 struct wlr_output_layer {
 	struct wl_list link; // wlr_output.layers
