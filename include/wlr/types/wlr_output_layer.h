@@ -36,6 +36,8 @@
  * Callers are responsible for disabling output layers when they need the full
  * output contents to be composited onto a single buffer, e.g. during screen
  * capture.
+ *
+ * Callers must always include the state for all layers on output test/commit.
  */
 struct wlr_output_layer {
 	struct wl_list link; // wlr_output.layers

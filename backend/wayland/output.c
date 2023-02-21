@@ -399,31 +399,6 @@ static bool commit_layers(struct wlr_wl_output *output,
 		}
 	}
 
-	// Unmap any layer we haven't seen
-	struct wlr_output_layer *wlr_layer;
-	wl_list_for_each(wlr_layer, &output->wlr_output.layers, link) {
-		bool found = false;
-		for (size_t i = 0; i < layers_len; i++) {
-			if (layers[i].layer == wlr_layer) {
-				found = true;
-				break;
-			}
-		}
-		if (found) {
-			continue;
-		}
-
-		struct wlr_wl_output_layer *layer =
-			get_or_create_output_layer(output, wlr_layer);
-		if (layer == NULL) {
-			continue;
-		}
-
-		// TODO: only do this once
-		wl_surface_attach(layer->surface, NULL, 0, 0);
-		wl_surface_commit(layer->surface);
-	}
-
 	return true;
 }
 

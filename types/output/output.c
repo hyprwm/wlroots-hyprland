@@ -673,6 +673,11 @@ static bool output_basic_test(struct wlr_output *output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		if (state->layers_len != (size_t)wl_list_length(&output->layers)) {
+			wlr_log(WLR_DEBUG, "All output layers must be specified in wlr_output_state.layers");
+			return false;
+		}
+
 		for (size_t i = 0; i < state->layers_len; i++) {
 			state->layers[i].accepted = false;
 		}
