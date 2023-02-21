@@ -233,7 +233,9 @@ static bool attempt_drm_backend(struct wl_display *display,
 		return NULL;
 	}
 
-	drm_backend_monitor_create(backend, primary_drm, session);
+	if (getenv("WLR_DRM_DEVICES") == NULL) {
+		drm_backend_monitor_create(backend, primary_drm, session);
+	}
 
 	return true;
 }
