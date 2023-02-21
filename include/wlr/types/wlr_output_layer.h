@@ -68,6 +68,9 @@ struct wlr_output_layer_state {
 	struct wlr_fbox src_box;
 	// Destination box in output-buffer-local coordinates
 	struct wlr_box dst_box;
+	// Damaged region since last commit in buffer-local coordinates. Leave NULL
+	// to damage the whole buffer.
+	const pixman_region32_t *damage;
 
 	// Populated by the backend after wlr_output_test() and wlr_output_commit(),
 	// indicates whether the backend has acknowledged and will take care of
