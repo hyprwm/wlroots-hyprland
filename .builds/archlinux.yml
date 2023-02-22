@@ -25,8 +25,8 @@ sources:
 tasks:
   - setup: |
       cd wlroots
-      CC=gcc meson build-gcc --fatal-meson-warnings --default-library=both -Dauto_features=enabled --prefix /usr -Db_sanitize=address,undefined
-      CC=clang meson build-clang --fatal-meson-warnings -Dauto_features=enabled
+      CC=gcc meson setup build-gcc --fatal-meson-warnings --default-library=both -Dauto_features=enabled --prefix /usr -Db_sanitize=address,undefined
+      CC=clang meson setup build-clang --fatal-meson-warnings -Dauto_features=enabled
   - gcc: |
       cd wlroots/build-gcc
       ninja

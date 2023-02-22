@@ -24,7 +24,7 @@ sources:
 tasks:
   - setup: |
       cd wlroots
-      meson build --fatal-meson-warnings --default-library=both -Dauto_features=enabled -Dxcb-errors=disabled
+      meson setup build --fatal-meson-warnings --default-library=both -Dauto_features=enabled -Dxcb-errors=disabled
   - build: |
       cd wlroots
       ninja -C build

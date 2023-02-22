@@ -64,7 +64,7 @@ If you choose to enable X11 support:
 
 Run these commands:
 
-    meson build/
+    meson setup build/
     ninja -C build/
 
 Install like so:

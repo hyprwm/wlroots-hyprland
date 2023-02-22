@@ -32,7 +32,7 @@ sources:
 tasks:
   - wlroots: |
       cd wlroots
-      meson build --fatal-meson-warnings -Dauto_features=enabled
+      meson setup build --fatal-meson-warnings -Dauto_features=enabled
       ninja -C build
       sudo ninja -C build install
   - tinywl: |
