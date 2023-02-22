@@ -43,75 +43,16 @@ bool wlr_output_init_render(struct wlr_output *output,
 	return true;
 }
 
-/**
- * Ensure the output has a suitable swapchain. The swapchain is re-created if
- * necessary.
- *
- * If allow_modifiers is set to true, the swapchain's format may use modifiers.
- * If set to false, the swapchain's format is guaranteed to not use modifiers.
- */
-static bool output_create_swapchain(struct wlr_output *output,
-		const struct wlr_output_state *state, bool allow_modifiers) {
-	int width, height;
-	output_pending_resolution(output, state, &width, &height);
-
-	struct wlr_allocator *allocator = output->allocator;
-	assert(allocator != NULL);
-
-	const struct wlr_drm_format_set *display_formats =
-		wlr_output_get_primary_formats(output, allocator->buffer_caps);
-	struct wlr_drm_format *format = output_pick_format(output, display_formats,
-		output->render_format);
-	if (format == NULL) {
-		wlr_log(WLR_ERROR, "Failed to pick primary buffer format for output '%s'",
-			output->name);
-		return false;
-	}
-
-	if (output->swapchain != NULL && output->swapchain->width == width &&
-			output->swapchain->height == height &&
-			output->swapchain->format->format == format->format &&
-			(allow_modifiers || output->swapchain->format->len == 0)) {
-		// no change, keep existing swapchain
-		free(format);
-		return true;
-	}
-
-	char *format_name = drmGetFormatName(format->format);
-	wlr_log(WLR_DEBUG, "Choosing primary buffer format %s (0x%08"PRIX32") for output '%s'",
-		format_name ? format_name : "<unknown>", format->format, output->name);
-	free(format_name);
-
-	if (!allow_modifiers && (format->len != 1 || format->modifiers[0] != DRM_FORMAT_MOD_LINEAR)) {
-		if (!wlr_drm_format_has(format, DRM_FORMAT_MOD_INVALID)) {
-			wlr_log(WLR_DEBUG, "Implicit modifiers not supported");
-			free(format);
-			return false;
-		}
-
-		format->len = 0;
-		wlr_drm_format_add(&format, DRM_FORMAT_MOD_INVALID);
-	}
-
-	struct wlr_swapchain *swapchain =
-		wlr_swapchain_create(allocator, width, height, format);
-	free(format);
-	if (swapchain == NULL) {
-		wlr_log(WLR_ERROR, "Failed to create output swapchain");
-		return false;
-	}
-
-	wlr_swapchain_destroy(output->swapchain);
-	output->swapchain = swapchain;
-
-	return true;
-}
-
 static bool output_attach_back_buffer(struct wlr_output *output,
 		const struct wlr_output_state *state, int *buffer_age) {
 	assert(output->back_buffer == NULL);
 
-	if (!output_create_swapchain(output, state, true)) {
+	// wlr_output_configure_primary_swapchain() function will call
+	// wlr_output_test_state(), which can call us again. This is dangerous: we
+	// risk infinite recursion. However, a buffer will always be supplied in
+	// wlr_output_test_state(), which will prevent us from being called.
+	if (!wlr_output_configure_primary_swapchain(output, state,
+			&output->swapchain)) {
 		return false;
 	}
 
@@ -172,23 +113,6 @@ static bool output_attach_empty_back_buffer(struct wlr_output *output,
 	return true;
 }
 
-static bool output_test_with_back_buffer(struct wlr_output *output,
-		const struct wlr_output_state *state) {
-	if (output->impl->test == NULL) {
-		return true;
-	}
-
-	// Create a shallow copy of the state with the empty back buffer included
-	// to pass to the backend.
-	struct wlr_output_state copy = *state;
-	assert((copy.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
-	copy.committed |= WLR_OUTPUT_STATE_BUFFER;
-	assert(output->back_buffer != NULL);
-	copy.buffer = output->back_buffer;
-
-	return output->impl->test(output, &copy);
-}
-
 // This function may attach a new, empty back buffer if necessary.
 // If so, the new_back_buffer out parameter will be set to true.
 bool output_ensure_buffer(struct wlr_output *output,
@@ -235,49 +159,12 @@ bool output_ensure_buffer(struct wlr_output *output,
 	}
 
 	wlr_log(WLR_DEBUG, "Attaching empty buffer to output for modeset");
-
 	if (!output_attach_empty_back_buffer(output, state)) {
 		return false;
 	}
 
-	if (output_test_with_back_buffer(output, state)) {
-		*new_back_buffer = true;
-		return true;
-	}
-
-	output_clear_back_buffer(output);
-
-	if (output->swapchain->format->len == 0) {
-		return false;
-	}
-
-	// The test failed for a buffer which has modifiers, try disabling
-	// modifiers to see if that makes a difference.
-	wlr_log(WLR_DEBUG, "Output modeset test failed, retrying without modifiers");
-
-	if (!output_create_swapchain(output, state, false)) {
-		return false;
-	}
-
-	if (!output_attach_empty_back_buffer(output, state)) {
-		goto error_destroy_swapchain;
-	}
-
-	if (output_test_with_back_buffer(output, state)) {
-		*new_back_buffer = true;
-		return true;
-	}
-
-	output_clear_back_buffer(output);
-
-error_destroy_swapchain:
-	// Destroy the modifierless swapchain so that the output does not get stuck
-	// without modifiers. A new swapchain with modifiers will be created when
-	// needed by output_attach_back_buffer().
-	wlr_swapchain_destroy(output->swapchain);
-	output->swapchain = NULL;
-
-	return false;
+	*new_back_buffer = true;
+	return true;
 }
 
 void wlr_output_lock_attach_render(struct wlr_output *output, bool lock) {
