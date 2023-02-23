@@ -11,6 +11,8 @@ static void swapchain_handle_allocator_destroy(struct wl_listener *listener,
 	struct wlr_swapchain *swapchain =
 		wl_container_of(listener, swapchain, allocator_destroy);
 	swapchain->allocator = NULL;
+	wl_list_remove(&swapchain->allocator_destroy.link);
+	wl_list_init(&swapchain->allocator_destroy.link);
 }
 
 struct wlr_swapchain *wlr_swapchain_create(
