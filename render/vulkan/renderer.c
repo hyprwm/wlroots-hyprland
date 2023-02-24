@@ -385,7 +385,7 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 		.signalSemaphoreCount = 1,
 		.pSignalSemaphores = &renderer->timeline_semaphore,
 	};
-	VkResult res = vkQueueSubmit(renderer->dev->queue, 1, &submit_info, NULL);
+	VkResult res = vkQueueSubmit(renderer->dev->queue, 1, &submit_info, VK_NULL_HANDLE);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkQueueSubmit", res);
 		return false;
@@ -1138,7 +1138,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	};
 
 	uint32_t submit_count = sizeof(submit_infos) / sizeof(submit_infos[0]);
-	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count, submit_infos, NULL);
+	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count, submit_infos, VK_NULL_HANDLE);
 	if (res == VK_ERROR_DEVICE_LOST) {
 		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
 		wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
