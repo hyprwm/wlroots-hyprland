@@ -350,11 +350,6 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 	}
 #endif
 
-#if !(WLR_HAS_LIBINPUT_BACKEND || WLR_HAS_DRM_BACKEND)
-	wlr_log(WLR_ERROR, "Neither DRM nor libinput backend support is compiled in");
-	goto error;
-#endif
-
 	// Attempt DRM+libinput
 #if WLR_HAS_SESSION
 	session = session_create_and_wait(display);
@@ -389,6 +384,10 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		wlr_log(WLR_ERROR, "Failed to open any DRM device");
 		goto error;
 	}
+#else
+	wlr_log(WLR_ERROR, "DRM backend support is not compiled in, "
+		"refusing to start");
+	goto error;
 #endif
 
 success:
