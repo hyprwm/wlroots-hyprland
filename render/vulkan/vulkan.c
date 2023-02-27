@@ -1,4 +1,8 @@
+#if !defined(__FreeBSD__)
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include <assert.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -364,6 +368,52 @@ VkPhysicalDevice vulkan_find_drm_phdev(struct wlr_vk_instance *ini, int drm_fd) 
 	}
 
 	return VK_NULL_HANDLE;
+}
+
+int vulkan_open_phdev_drm_fd(VkPhysicalDevice phdev) {
+	// vulkan_find_drm_phdev() already checks that VK_EXT_physical_device_drm
+	// is supported
+	VkPhysicalDeviceDrmPropertiesEXT drm_props = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT,
+	};
+	VkPhysicalDeviceProperties2 props = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		.pNext = &drm_props,
+	};
+	vkGetPhysicalDeviceProperties2(phdev, &props);
+
+	dev_t devid;
+	if (drm_props.hasRender) {
+		devid = makedev(drm_props.renderMajor, drm_props.renderMinor);
+	} else if (drm_props.hasPrimary) {
+		devid = makedev(drm_props.primaryMajor, drm_props.primaryMinor);
+	} else {
+		wlr_log(WLR_ERROR, "Physical device is missing both render and primary nodes");
+		return -1;
+	}
+
+	drmDevice *device = NULL;
+	if (drmGetDeviceFromDevId(devid, 0, &device) != 0) {
+		wlr_log_errno(WLR_ERROR, "drmGetDeviceFromDevId failed");
+		return -1;
+	}
+
+	const char *name = NULL;
+	if (device->available_nodes & (1 << DRM_NODE_RENDER)) {
+		name = device->nodes[DRM_NODE_RENDER];
+	} else {
+		assert(device->available_nodes & (1 << DRM_NODE_PRIMARY));
+		name = device->nodes[DRM_NODE_PRIMARY];
+		wlr_log(WLR_DEBUG, "DRM device %s has no render node, "
+			"falling back to primary node", name);
+	}
+
+	int drm_fd = open(name, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+	if (drm_fd < 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to open DRM node %s", name);
+	}
+	drmFreeDevice(&device);
+	return drm_fd;
 }
 
 static void load_device_proc(struct wlr_vk_device *dev, const char *name,
