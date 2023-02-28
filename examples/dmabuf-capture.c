@@ -520,8 +520,14 @@ static void *vid_encode_thread(void *arg) {
 			}
 		};
 
-		av_log(ctx, AV_LOG_INFO, "Encoded frame %i (%i in queue)\n",
-				ctx->avctx->frame_number, get_fifo_size(&ctx->vid_frames));
+		int64_t frame_num;
+#if LIBAVUTIL_VERSION_MAJOR >= 58
+		frame_num = ctx->avctx->frame_num;
+#else
+		frame_num = ctx->avctx->frame_number;
+#endif
+		av_log(ctx, AV_LOG_INFO, "Encoded frame %"PRIi64" (%i in queue)\n",
+				frame_num, get_fifo_size(&ctx->vid_frames));
 
 	} while (!ctx->err);
 
