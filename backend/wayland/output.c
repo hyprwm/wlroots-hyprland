@@ -172,6 +172,7 @@ static struct wl_buffer *import_dmabuf(struct wlr_wl_backend *wl,
 
 	struct wl_buffer *wl_buffer = zwp_linux_buffer_params_v1_create_immed(
 		params, dmabuf->width, dmabuf->height, dmabuf->format, 0);
+	zwp_linux_buffer_params_v1_destroy(params);
 	// TODO: handle create() errors
 	return wl_buffer;
 }
