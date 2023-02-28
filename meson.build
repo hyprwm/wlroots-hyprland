@@ -80,7 +80,7 @@ if cc.has_argument('-fmacro-prefix-map=/prefix/to/hide=')
 	)
 else
 	add_project_arguments(
-		'-DWLR_REL_SRC_DIR="@0@"'.format(relative_dir),
+		'-D_WLR_REL_SRC_DIR="@0@"'.format(relative_dir),
 		language: 'c',
 	)
 endif

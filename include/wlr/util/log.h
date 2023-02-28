@@ -57,9 +57,9 @@ enum wlr_log_importance wlr_log_get_verbosity(void);
 void _wlr_log(enum wlr_log_importance verbosity, const char *format, ...) _WLR_ATTRIB_PRINTF(2, 3);
 void _wlr_vlog(enum wlr_log_importance verbosity, const char *format, va_list args) _WLR_ATTRIB_PRINTF(2, 0);
 
-#ifdef WLR_REL_SRC_DIR
+#ifdef _WLR_REL_SRC_DIR
 // strip prefix from __FILE__, leaving the path relative to the project root
-#define _WLR_FILENAME ((const char *)__FILE__ + sizeof(WLR_REL_SRC_DIR) - 1)
+#define _WLR_FILENAME ((const char *)__FILE__ + sizeof(_WLR_REL_SRC_DIR) - 1)
 #else
 #define _WLR_FILENAME __FILE__
 #endif
