@@ -485,17 +485,26 @@ static void backend_destroy(struct wlr_backend *backend) {
 		destroy_wl_seat(seat);
 	}
 
+	if (wl->activation_v1) {
+		xdg_activation_v1_destroy(wl->activation_v1);
+	}
 	if (wl->zxdg_decoration_manager_v1) {
 		zxdg_decoration_manager_v1_destroy(wl->zxdg_decoration_manager_v1);
 	}
 	if (wl->zwp_pointer_gestures_v1) {
 		zwp_pointer_gestures_v1_destroy(wl->zwp_pointer_gestures_v1);
 	}
+	if (wl->tablet_manager) {
+		zwp_tablet_manager_v2_destroy(wl->tablet_manager);
+	}
 	if (wl->presentation) {
 		wp_presentation_destroy(wl->presentation);
 	}
 	if (wl->zwp_linux_dmabuf_v1) {
 		zwp_linux_dmabuf_v1_destroy(wl->zwp_linux_dmabuf_v1);
+	}
+	if (wl->legacy_drm != NULL) {
+		wl_drm_destroy(wl->legacy_drm);
 	}
 	if (wl->shm) {
 		wl_shm_destroy(wl->shm);
