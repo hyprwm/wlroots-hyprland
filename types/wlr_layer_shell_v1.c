@@ -264,23 +264,6 @@ static const struct zwlr_layer_surface_v1_interface layer_surface_implementation
 	.set_layer = layer_surface_set_layer,
 };
 
-static void layer_surface_unmap(struct wlr_layer_surface_v1 *surface) {
-	surface->configured = surface->mapped = false;
-
-	// TODO: probably need to ungrab before this event
-	wl_signal_emit_mutable(&surface->events.unmap, surface);
-
-	struct wlr_xdg_popup *popup, *popup_tmp;
-	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup);
-	}
-
-	struct wlr_layer_surface_v1_configure *configure, *tmp;
-	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
-		layer_surface_configure_destroy(configure);
-	}
-}
-
 static void layer_surface_resource_destroy(struct wl_resource *resource) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_from_resource(resource);
@@ -351,32 +334,32 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 
 	if (!surface->added) {
 		surface->added = true;
-		assert(!surface->configured);
-		assert(!surface->mapped);
 		wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
 		// Return early here as the compositor may have closed this layer surface
 		// in response to the new_surface event.
 		return;
 	}
 
-	if (surface->configured && wlr_surface_has_buffer(surface->surface) &&
-			!surface->mapped) {
-		surface->mapped = true;
-		wl_signal_emit_mutable(&surface->events.map, surface);
+	if (surface->configured && wlr_surface_has_buffer(wlr_surface)) {
+		wlr_surface_map(wlr_surface);
 	}
 }
 
-static void layer_surface_role_precommit(struct wlr_surface *wlr_surface,
-		const struct wlr_surface_state *state) {
+static void layer_surface_role_unmap(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
 	assert(surface != NULL);
 
-	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
-		// This is a NULL commit
-		if (surface->configured && surface->mapped) {
-			layer_surface_unmap(surface);
-		}
+	surface->configured = false;
+
+	struct wlr_xdg_popup *popup, *popup_tmp;
+	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
+		wlr_xdg_popup_destroy(popup);
+	}
+
+	struct wlr_layer_surface_v1_configure *configure, *tmp;
+	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
+		layer_surface_configure_destroy(configure);
 	}
 }
 
@@ -385,9 +368,6 @@ static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
 	assert(surface != NULL);
 
-	if (surface->configured && surface->mapped) {
-		layer_surface_unmap(surface);
-	}
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
 	wl_resource_set_user_data(surface->resource, NULL);
 	free(surface->namespace);
@@ -397,7 +377,7 @@ static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 static const struct wlr_surface_role layer_surface_role = {
 	.name = "zwlr_layer_surface_v1",
 	.commit = layer_surface_role_commit,
-	.precommit = layer_surface_role_precommit,
+	.unmap = layer_surface_role_unmap,
 	.destroy = layer_surface_role_destroy,
 };
 
@@ -458,8 +438,6 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	wl_list_init(&surface->popups);
 
 	wl_signal_init(&surface->events.destroy);
-	wl_signal_init(&surface->events.map);
-	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.new_popup);
 
 	wlr_log(WLR_DEBUG, "new layer_surface %p (res %p)",

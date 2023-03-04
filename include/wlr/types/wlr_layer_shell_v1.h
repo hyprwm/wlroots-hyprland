@@ -84,7 +84,7 @@ struct wlr_layer_surface_v1 {
 
 	char *namespace;
 
-	bool added, configured, mapped;
+	bool added, configured;
 	struct wl_list configure_list;
 
 	struct wlr_layer_surface_v1_state current, pending;
@@ -97,20 +97,6 @@ struct wlr_layer_surface_v1 {
 		 * mapped.
 		 */
 		struct wl_signal destroy;
-		/**
-		 * The map signal indicates that the client has configured itself and is
-		 * ready to be rendered by the compositor.
-		 */
-		struct wl_signal map;
-		/**
-		 * The unmap signal indicates that the surface is no longer in a state where
-		 * it should be rendered by the compositor. This might happen if the surface
-		 * no longer has a displayable buffer because either the surface has been
-		 * hidden or is about to be destroyed. It is guaranteed that the unmap signal
-		 * is raised before the destroy signal if the layer surface is destroyed
-		 * while mapped.
-		 */
-		struct wl_signal unmap;
 		/**
 		 * The new_popup signal is raised when a new popup is created. The data
 		 * parameter passed to the listener is a pointer to the new
