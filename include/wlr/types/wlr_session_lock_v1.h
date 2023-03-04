@@ -65,7 +65,7 @@ struct wlr_session_lock_surface_v1 {
 	struct wlr_output *output;
 	struct wlr_surface *surface;
 
-	bool configured, mapped;
+	bool configured;
 
 	struct wl_list configure_list; // wlr_session_lock_surface_v1_configure.link
 
