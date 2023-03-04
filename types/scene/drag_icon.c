@@ -10,8 +10,8 @@ struct wlr_scene_drag_icon {
 
 	struct wl_listener tree_destroy;
 	struct wl_listener drag_icon_surface_commit;
-	struct wl_listener drag_icon_map;
-	struct wl_listener drag_icon_unmap;
+	struct wl_listener drag_icon_surface_map;
+	struct wl_listener drag_icon_surface_unmap;
 	struct wl_listener drag_icon_destroy;
 };
 
@@ -24,15 +24,15 @@ static void drag_icon_handle_surface_commit(struct wl_listener *listener, void *
 		node->x + surface->current.dx, node->y + surface->current.dy);
 }
 
-static void drag_icon_handle_map(struct wl_listener *listener, void *data) {
+static void drag_icon_handle_surface_map(struct wl_listener *listener, void *data) {
 	struct wlr_scene_drag_icon *icon =
-		wl_container_of(listener, icon, drag_icon_map);
+		wl_container_of(listener, icon, drag_icon_surface_map);
 	wlr_scene_node_set_enabled(&icon->tree->node, true);
 }
 
-static void drag_icon_handle_unmap(struct wl_listener *listener, void *data) {
+static void drag_icon_handle_surface_unmap(struct wl_listener *listener, void *data) {
 	struct wlr_scene_drag_icon *icon =
-		wl_container_of(listener, icon, drag_icon_unmap);
+		wl_container_of(listener, icon, drag_icon_surface_unmap);
 	wlr_scene_node_set_enabled(&icon->tree->node, false);
 }
 
@@ -41,8 +41,8 @@ static void drag_icon_handle_tree_destroy(struct wl_listener *listener, void *da
 		wl_container_of(listener, icon, tree_destroy);
 	wl_list_remove(&icon->tree_destroy.link);
 	wl_list_remove(&icon->drag_icon_surface_commit.link);
-	wl_list_remove(&icon->drag_icon_map.link);
-	wl_list_remove(&icon->drag_icon_unmap.link);
+	wl_list_remove(&icon->drag_icon_surface_map.link);
+	wl_list_remove(&icon->drag_icon_surface_unmap.link);
 	wl_list_remove(&icon->drag_icon_destroy.link);
 	free(icon);
 }
@@ -76,16 +76,16 @@ struct wlr_scene_tree *wlr_scene_drag_icon_create(
 		return NULL;
 	}
 
-	wlr_scene_node_set_enabled(&icon->tree->node, drag_icon->mapped);
+	wlr_scene_node_set_enabled(&icon->tree->node, drag_icon->surface->mapped);
 
 	icon->tree_destroy.notify = drag_icon_handle_tree_destroy;
 	wl_signal_add(&icon->tree->node.events.destroy, &icon->tree_destroy);
 	icon->drag_icon_surface_commit.notify = drag_icon_handle_surface_commit;
 	wl_signal_add(&drag_icon->surface->events.commit, &icon->drag_icon_surface_commit);
-	icon->drag_icon_map.notify = drag_icon_handle_map;
-	wl_signal_add(&drag_icon->events.map, &icon->drag_icon_map);
-	icon->drag_icon_unmap.notify = drag_icon_handle_unmap;
-	wl_signal_add(&drag_icon->events.unmap, &icon->drag_icon_unmap);
+	icon->drag_icon_surface_map.notify = drag_icon_handle_surface_map;
+	wl_signal_add(&drag_icon->surface->events.map, &icon->drag_icon_surface_map);
+	icon->drag_icon_surface_unmap.notify = drag_icon_handle_surface_unmap;
+	wl_signal_add(&drag_icon->surface->events.unmap, &icon->drag_icon_surface_unmap);
 	icon->drag_icon_destroy.notify = drag_icon_handle_destroy;
 	wl_signal_add(&drag_icon->events.destroy, &icon->drag_icon_destroy);
 

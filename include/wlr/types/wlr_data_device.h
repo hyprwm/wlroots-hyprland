@@ -93,11 +93,8 @@ struct wlr_drag;
 struct wlr_drag_icon {
 	struct wlr_drag *drag;
 	struct wlr_surface *surface;
-	bool mapped;
 
 	struct {
-		struct wl_signal map;
-		struct wl_signal unmap;
 		struct wl_signal destroy;
 	} events;
 

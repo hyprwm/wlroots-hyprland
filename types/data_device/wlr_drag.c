@@ -106,16 +106,6 @@ out:
 	wl_signal_emit_mutable(&drag->events.focus, drag);
 }
 
-static void drag_icon_set_mapped(struct wlr_drag_icon *icon, bool mapped) {
-	if (mapped && !icon->mapped) {
-		icon->mapped = true;
-		wl_signal_emit_mutable(&icon->events.map, icon);
-	} else if (!mapped && icon->mapped) {
-		icon->mapped = false;
-		wl_signal_emit_mutable(&icon->events.unmap, icon);
-	}
-}
-
 static void drag_destroy(struct wlr_drag *drag) {
 	if (drag->cancelling) {
 		return;
@@ -359,16 +349,16 @@ static void drag_handle_drag_source_destroy(struct wl_listener *listener,
 
 static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
-	struct wlr_drag_icon *icon = surface->role_data;
 
-	drag_icon_set_mapped(icon, wlr_surface_has_buffer(surface));
+	if (wlr_surface_has_buffer(surface)) {
+		wlr_surface_map(surface);
+	}
 }
 
 static void drag_icon_surface_role_destroy(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
 	struct wlr_drag_icon *icon = surface->role_data;
 
-	drag_icon_set_mapped(icon, false);
 	wl_signal_emit_mutable(&icon->events.destroy, icon);
 	free(icon);
 }
@@ -389,14 +379,12 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 	icon->drag = drag;
 	icon->surface = surface;
 
-	wl_signal_init(&icon->events.map);
-	wl_signal_init(&icon->events.unmap);
 	wl_signal_init(&icon->events.destroy);
 
 	icon->surface->role_data = icon;
 
 	if (wlr_surface_has_buffer(surface)) {
-		drag_icon_set_mapped(icon, true);
+		wlr_surface_map(surface);
 	}
 
 	return icon;
