@@ -859,7 +859,7 @@ struct wlr_surface *wlr_surface_surface_at(struct wlr_surface *surface,
 	struct wlr_subsurface *subsurface;
 	wl_list_for_each_reverse(subsurface, &surface->current.subsurfaces_above,
 			current.link) {
-		if (!subsurface->mapped) {
+		if (!subsurface->surface->mapped) {
 			continue;
 		}
 
@@ -884,7 +884,7 @@ struct wlr_surface *wlr_surface_surface_at(struct wlr_surface *surface,
 
 	wl_list_for_each_reverse(subsurface, &surface->current.subsurfaces_below,
 			current.link) {
-		if (!subsurface->mapped) {
+		if (!subsurface->surface->mapped) {
 			continue;
 		}
 
@@ -994,7 +994,7 @@ static void surface_for_each_surface(struct wlr_surface *surface, int x, int y,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	struct wlr_subsurface *subsurface;
 	wl_list_for_each(subsurface, &surface->current.subsurfaces_below, current.link) {
-		if (!subsurface->mapped) {
+		if (!subsurface->surface->mapped) {
 			continue;
 		}
 
@@ -1009,7 +1009,7 @@ static void surface_for_each_surface(struct wlr_surface *surface, int x, int y,
 	iterator(surface, x, y, user_data);
 
 	wl_list_for_each(subsurface, &surface->current.subsurfaces_above, current.link) {
-		if (!subsurface->mapped) {
+		if (!subsurface->surface->mapped) {
 			continue;
 		}
 

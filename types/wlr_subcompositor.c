@@ -22,8 +22,6 @@ static bool subsurface_is_synchronized(struct wlr_subsurface *subsurface) {
 	return false;
 }
 
-static void subsurface_unmap(struct wlr_subsurface *subsurface);
-
 static const struct wl_subsurface_interface subsurface_implementation;
 
 /**
@@ -192,22 +190,16 @@ const struct wlr_surface_role subsurface_role;
  * - Its parent is mapped
  */
 static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
-	if (subsurface->mapped || !wlr_surface_has_buffer(subsurface->surface)) {
+	if (subsurface->surface->mapped || !wlr_surface_has_buffer(subsurface->surface)) {
 		return;
 	}
 
-	// TODO: unify "mapped" flag
-	if (subsurface->parent->role == &subsurface_role) {
-		struct wlr_subsurface *parent =
-			wlr_subsurface_try_from_wlr_surface(subsurface->parent);
-		if (parent == NULL || !parent->mapped) {
-			return;
-		}
+	if (!subsurface->parent->mapped) {
+		return;
 	}
 
 	// Now we can map the subsurface
-	subsurface->mapped = true;
-	wl_signal_emit_mutable(&subsurface->events.map, subsurface);
+	wlr_surface_map(subsurface->surface);
 
 	// Try mapping all children too
 	struct wlr_subsurface *child;
@@ -221,26 +213,6 @@ static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 	}
 }
 
-static void subsurface_unmap(struct wlr_subsurface *subsurface) {
-	if (!subsurface->mapped) {
-		return;
-	}
-
-	subsurface->mapped = false;
-	wl_signal_emit_mutable(&subsurface->events.unmap, subsurface);
-
-	// Unmap all children
-	struct wlr_subsurface *child;
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_below,
-			current.link) {
-		subsurface_unmap(child);
-	}
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_above,
-			current.link) {
-		subsurface_unmap(child);
-	}
-}
-
 static void subsurface_role_commit(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
 	assert(subsurface != NULL);
@@ -248,14 +220,19 @@ static void subsurface_role_commit(struct wlr_surface *surface) {
 	subsurface_consider_map(subsurface);
 }
 
-static void subsurface_role_precommit(struct wlr_surface *surface,
-		const struct wlr_surface_state *state) {
+static void subsurface_role_unmap(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
 	assert(subsurface != NULL);
 
-	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
-		// This is a NULL commit
-		subsurface_unmap(subsurface);
+	// Unmap all children
+	struct wlr_subsurface *child;
+	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_below,
+			current.link) {
+		wlr_surface_unmap(child->surface);
+	}
+	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_above,
+			current.link) {
+		wlr_surface_unmap(child->surface);
 	}
 }
 
@@ -267,8 +244,6 @@ static void subsurface_role_destroy(struct wlr_surface *surface) {
 		wlr_surface_unlock_cached(subsurface->surface,
 			subsurface->cached_seq);
 	}
-
-	subsurface_unmap(subsurface);
 
 	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
 
@@ -284,7 +259,7 @@ static void subsurface_role_destroy(struct wlr_surface *surface) {
 const struct wlr_surface_role subsurface_role = {
 	.name = "wl_subsurface",
 	.commit = subsurface_role_commit,
-	.precommit = subsurface_role_precommit,
+	.unmap = subsurface_role_unmap,
 	.destroy = subsurface_role_destroy,
 };
 
@@ -332,7 +307,7 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 
 	bool moved = subsurface->current.x != subsurface->pending.x ||
 		subsurface->current.y != subsurface->pending.y;
-	if (subsurface->mapped && moved) {
+	if (subsurface->surface->mapped && moved) {
 		wlr_surface_for_each_surface(surface,
 			collect_damage_iter, subsurface);
 	}
@@ -344,7 +319,7 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 
 	subsurface->current.x = subsurface->pending.x;
 	subsurface->current.y = subsurface->pending.y;
-	if (subsurface->mapped && (moved || subsurface->reordered)) {
+	if (subsurface->surface->mapped && (moved || subsurface->reordered)) {
 		subsurface->reordered = false;
 		wlr_surface_for_each_surface(surface,
 			collect_damage_iter, subsurface);
@@ -381,8 +356,6 @@ static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
 		&subsurface_implementation, subsurface, subsurface_resource_destroy);
 
 	wl_signal_init(&subsurface->events.destroy);
-	wl_signal_init(&subsurface->events.map);
-	wl_signal_init(&subsurface->events.unmap);
 
 	wl_signal_add(&surface->events.client_commit,
 		&subsurface->surface_client_commit);
