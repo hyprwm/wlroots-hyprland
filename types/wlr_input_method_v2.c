@@ -130,38 +130,21 @@ void wlr_input_popup_surface_v2_send_text_input_rectangle(
 		popup_surface->resource, sbox->x, sbox->y, sbox->width, sbox->height);
 }
 
-static void popup_surface_set_mapped(
-		struct wlr_input_popup_surface_v2 *popup_surface, bool mapped) {
-	if (mapped && !popup_surface->mapped) {
-		popup_surface->mapped = true;
-		wl_signal_emit_mutable(&popup_surface->events.map, popup_surface);
-	} else if (!mapped && popup_surface->mapped) {
-		popup_surface->mapped = false;
-		wl_signal_emit_mutable(&popup_surface->events.unmap, popup_surface);
+static void popup_surface_consider_map(struct wlr_input_popup_surface_v2 *popup_surface) {
+	if (wlr_surface_has_buffer(popup_surface->surface) &&
+			popup_surface->input_method->client_active) {
+		wlr_surface_map(popup_surface->surface);
 	}
 }
 
 static void popup_surface_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
-
-	popup_surface_set_mapped(popup_surface, wlr_surface_has_buffer(surface)
-		&& popup_surface->input_method->client_active);
-}
-
-static void popup_surface_surface_role_precommit(struct wlr_surface *surface,
-		const struct wlr_surface_state *state) {
-	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
-
-	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
-		// This is a NULL commit
-		popup_surface_set_mapped(popup_surface, false);
-	}
+	popup_surface_consider_map(popup_surface);
 }
 
 static void popup_surface_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
 
-	popup_surface_set_mapped(popup_surface, false);
 	wl_signal_emit_mutable(&popup_surface->events.destroy, NULL);
 	wl_list_remove(&popup_surface->link);
 	wl_resource_set_user_data(popup_surface->resource, NULL);
@@ -171,7 +154,6 @@ static void popup_surface_surface_role_destroy(struct wlr_surface *surface) {
 static const struct wlr_surface_role input_popup_surface_v2_role = {
 	.name = "zwp_input_popup_surface_v2",
 	.commit = popup_surface_surface_role_commit,
-	.precommit = popup_surface_surface_role_precommit,
 	.destroy = popup_surface_surface_role_destroy,
 };
 
@@ -237,13 +219,9 @@ static void im_get_input_popup_surface(struct wl_client *client,
 	popup_surface->input_method = input_method;
 	popup_surface->surface = surface;
 
-	wl_signal_init(&popup_surface->events.map);
-	wl_signal_init(&popup_surface->events.unmap);
 	wl_signal_init(&popup_surface->events.destroy);
 
-	popup_surface_set_mapped(popup_surface,
-		wlr_surface_has_buffer(popup_surface->surface)
-			&& popup_surface->input_method->client_active);
+	popup_surface_consider_map(popup_surface);
 
 	wl_list_insert(&input_method->popup_surfaces, &popup_surface->link);
 	wl_signal_emit_mutable(&input_method->events.new_popup_surface, popup_surface);
@@ -488,9 +466,7 @@ void wlr_input_method_v2_send_done(struct wlr_input_method_v2 *input_method) {
 	input_method->current_serial++;
 	struct wlr_input_popup_surface_v2 *popup_surface;
 	wl_list_for_each(popup_surface, &input_method->popup_surfaces, link) {
-		popup_surface_set_mapped(popup_surface,
-			wlr_surface_has_buffer(popup_surface->surface) &&
-			input_method->client_active);
+		popup_surface_consider_map(popup_surface);
 	}
 }
 

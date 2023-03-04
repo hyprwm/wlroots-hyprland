@@ -62,13 +62,10 @@ struct wlr_input_popup_surface_v2 {
 	struct wl_resource *resource;
 	struct wlr_input_method_v2 *input_method;
 	struct wl_list link;
-	bool mapped;
 
 	struct wlr_surface *surface;
 
 	struct {
-		struct wl_signal map;
-		struct wl_signal unmap;
 		struct wl_signal destroy;
 	} events;
 
