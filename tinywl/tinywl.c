@@ -835,7 +835,7 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	struct tinywl_server server;
+	struct tinywl_server server = {0};
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
 	server.wl_display = wl_display_create();
