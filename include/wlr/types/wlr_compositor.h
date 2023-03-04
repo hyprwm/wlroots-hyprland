@@ -76,6 +76,7 @@ struct wlr_surface_role {
 	void (*commit)(struct wlr_surface *surface);
 	void (*precommit)(struct wlr_surface *surface,
 		const struct wlr_surface_state *state);
+	void (*unmap)(struct wlr_surface *surface);
 	void (*destroy)(struct wlr_surface *surface);
 };
 
@@ -135,6 +136,8 @@ struct wlr_surface {
 
 	struct wl_list cached; // wlr_surface_state.cached_link
 
+	bool mapped;
+
 	const struct wlr_surface_role *role; // the lifetime-bound role or NULL
 	void *role_data; // role-specific data
 
@@ -142,6 +145,20 @@ struct wlr_surface {
 		struct wl_signal client_commit;
 		struct wl_signal precommit; // const struct wlr_surface_state *
 		struct wl_signal commit;
+
+		/**
+		 * The `map` event signals that the surface has a non-null buffer
+		 * committed and is ready to be displayed.
+		 */
+		struct wl_signal map;
+		/**
+		 * The `unmap` event signals that the surface shouldn't be displayed
+		 * anymore. This can happen when a null buffer is committed,
+		 * the associated role object is destroyed, or when the role-specific
+		 * conditions for the surface to be mapped no longer apply.
+		 */
+		struct wl_signal unmap;
+
 		struct wl_signal new_subsurface;
 		struct wl_signal destroy;
 	} events;
@@ -199,6 +216,20 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
  * Destroy the role object for this surface. This doesn't reset the role.
  */
 void wlr_surface_destroy_role_object(struct wlr_surface *surface);
+
+/**
+ * Map the surface. If the surface is already mapped, this is no-op.
+ *
+ * This function must only be used by surface role implementations.
+ */
+void wlr_surface_map(struct wlr_surface *surface);
+
+/**
+ * Unmap the surface. If the surface is already unmapped, this is no-op.
+ *
+ * This function must only be used by surface role implementations.
+ */
+void wlr_surface_unmap(struct wlr_surface *surface);
 
 /**
  * Whether or not this surface currently has an attached buffer. A surface has

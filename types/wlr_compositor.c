@@ -442,6 +442,10 @@ static void surface_commit_state(struct wlr_surface *surface,
 
 	bool invalid_buffer = next->committed & WLR_SURFACE_STATE_BUFFER;
 
+	if (invalid_buffer && next->buffer == NULL) {
+		wlr_surface_unmap(surface);
+	}
+
 	surface_update_damage(&surface->buffer_damage, &surface->current, next);
 
 	pixman_region32_clear(&surface->external_damage);
@@ -696,6 +700,8 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	wl_signal_init(&surface->events.client_commit);
 	wl_signal_init(&surface->events.precommit);
 	wl_signal_init(&surface->events.commit);
+	wl_signal_init(&surface->events.map);
+	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.destroy);
 	wl_signal_init(&surface->events.new_subsurface);
 	wl_list_init(&surface->current_outputs);
@@ -725,6 +731,26 @@ struct wlr_texture *wlr_surface_get_texture(struct wlr_surface *surface) {
 
 bool wlr_surface_has_buffer(struct wlr_surface *surface) {
 	return surface->has_buffer;
+}
+
+void wlr_surface_map(struct wlr_surface *surface) {
+	if (surface->mapped) {
+		return;
+	}
+	assert(wlr_surface_has_buffer(surface));
+	surface->mapped = true;
+	wl_signal_emit_mutable(&surface->events.map, NULL);
+}
+
+void wlr_surface_unmap(struct wlr_surface *surface) {
+	if (!surface->mapped) {
+		return;
+	}
+	surface->mapped = false;
+	wl_signal_emit_mutable(&surface->events.unmap, NULL);
+	if (surface->role != NULL && surface->role->unmap != NULL) {
+		surface->role->unmap(surface);
+	}
 }
 
 bool wlr_surface_set_role(struct wlr_surface *surface,
@@ -758,6 +784,7 @@ void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
 	if (surface->role_data == NULL) {
 		return;
 	}
+	wlr_surface_unmap(surface);
 	if (surface->role->destroy != NULL) {
 		surface->role->destroy(surface);
 	}
