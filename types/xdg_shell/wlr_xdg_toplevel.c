@@ -182,10 +182,10 @@ bool wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 		wl_list_remove(&toplevel->parent_unmap.link);
 	}
 
-	if (parent != NULL && parent->base->mapped) {
+	if (parent != NULL && parent->base->surface->mapped) {
 		toplevel->parent = parent;
 		toplevel->parent_unmap.notify = handle_parent_unmap;
-		wl_signal_add(&toplevel->parent->base->events.unmap,
+		wl_signal_add(&toplevel->parent->base->surface->events.unmap,
 			&toplevel->parent_unmap);
 	} else {
 		toplevel->parent = NULL;
@@ -475,7 +475,7 @@ static void xdg_toplevel_handle_resource_destroy(struct wl_resource *resource) {
 const struct wlr_surface_role xdg_toplevel_surface_role = {
 	.name = "xdg_toplevel",
 	.commit = xdg_surface_role_commit,
-	.precommit = xdg_surface_role_precommit,
+	.unmap = xdg_surface_role_unmap,
 	.destroy = xdg_surface_role_destroy,
 };
 

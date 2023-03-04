@@ -544,10 +544,10 @@ void wlr_layer_surface_v1_for_each_surface(struct wlr_layer_surface_v1 *surface,
 }
 
 void wlr_layer_surface_v1_for_each_popup_surface(struct wlr_layer_surface_v1 *surface,
-		wlr_surface_iterator_func_t iterator, void *user_data){
+		wlr_surface_iterator_func_t iterator, void *user_data) {
 	struct wlr_xdg_popup *popup;
 	wl_list_for_each(popup, &surface->popups, link) {
-		if (!popup->base->configured || !popup->base->mapped) {
+		if (!popup->base->surface->mapped) {
 			continue;
 		}
 
@@ -582,7 +582,7 @@ struct wlr_surface *wlr_layer_surface_v1_popup_surface_at(
 		double *sub_x, double *sub_y) {
 	struct wlr_xdg_popup *popup;
 	wl_list_for_each(popup, &surface->popups, link) {
-		if (!popup->base->mapped) {
+		if (!popup->base->surface->mapped) {
 			continue;
 		}
 

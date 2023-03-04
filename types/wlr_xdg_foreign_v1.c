@@ -80,7 +80,7 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
 
-	if (!surface->mapped) {
+	if (!surface->surface->mapped) {
 		wlr_xdg_toplevel_set_parent(child_toplevel, NULL);
 		return;
 	}

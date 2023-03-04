@@ -54,15 +54,6 @@ static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	}
 }
 
-static void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
-	surface->mapped = false;
-
-	// TODO: probably need to ungrab before this event
-	wl_signal_emit_mutable(&surface->events.unmap, NULL);
-
-	reset_xdg_surface(surface);
-}
-
 static void xdg_surface_handle_ack_configure(struct wl_client *client,
 		struct wl_resource *resource, uint32_t serial) {
 	struct wlr_xdg_surface *surface = wlr_xdg_surface_from_resource(resource);
@@ -306,24 +297,17 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		wl_signal_emit_mutable(&surface->client->shell->events.new_surface,
 			surface);
 	}
-	if (surface->configured && wlr_surface_has_buffer(surface->surface) &&
-			!surface->mapped) {
-		surface->mapped = true;
-		wl_signal_emit_mutable(&surface->events.map, NULL);
+
+	if (surface->configured && wlr_surface_has_buffer(wlr_surface)) {
+		wlr_surface_map(wlr_surface);
 	}
 }
 
-void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
-		const struct wlr_surface_state *state) {
+void xdg_surface_role_unmap(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
 	assert(surface != NULL);
 
-	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
-		// This is a NULL commit
-		if (surface->configured && surface->mapped) {
-			unmap_xdg_surface(surface);
-		}
-	}
+	reset_xdg_surface(surface);
 }
 
 void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
@@ -376,8 +360,6 @@ struct wlr_xdg_surface *create_xdg_surface(
 	wl_signal_init(&surface->events.destroy);
 	wl_signal_init(&surface->events.ping_timeout);
 	wl_signal_init(&surface->events.new_popup);
-	wl_signal_init(&surface->events.map);
-	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.configure);
 	wl_signal_init(&surface->events.ack_configure);
 
@@ -396,8 +378,8 @@ struct wlr_xdg_surface *create_xdg_surface(
 }
 
 void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
-	if (surface->configured && surface->mapped) {
-		unmap_xdg_surface(surface);
+	if (surface->surface->mapped) {
+		wlr_surface_unmap(surface->surface);
 	} else {
 		reset_xdg_surface(surface);
 	}
@@ -473,7 +455,7 @@ struct wlr_surface *wlr_xdg_surface_popup_surface_at(
 		double *sub_x, double *sub_y) {
 	struct wlr_xdg_popup *popup;
 	wl_list_for_each(popup, &surface->popups, link) {
-		if (!popup->base->mapped) {
+		if (!popup->base->surface->mapped) {
 			continue;
 		}
 
@@ -508,7 +490,7 @@ static void xdg_surface_for_each_popup_surface(struct wlr_xdg_surface *surface,
 		int x, int y, wlr_surface_iterator_func_t iterator, void *user_data) {
 	struct wlr_xdg_popup *popup;
 	wl_list_for_each(popup, &surface->popups, link) {
-		if (!popup->base->configured || !popup->base->mapped) {
+		if (!popup->base->surface->mapped) {
 			continue;
 		}
 

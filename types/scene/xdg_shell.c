@@ -106,18 +106,21 @@ struct wlr_scene_tree *wlr_scene_xdg_surface_create(
 
 	scene_xdg_surface->xdg_surface_map.notify =
 		scene_xdg_surface_handle_xdg_surface_map;
-	wl_signal_add(&xdg_surface->events.map, &scene_xdg_surface->xdg_surface_map);
+	wl_signal_add(&xdg_surface->surface->events.map,
+		&scene_xdg_surface->xdg_surface_map);
 
 	scene_xdg_surface->xdg_surface_unmap.notify =
 		scene_xdg_surface_handle_xdg_surface_unmap;
-	wl_signal_add(&xdg_surface->events.unmap, &scene_xdg_surface->xdg_surface_unmap);
+	wl_signal_add(&xdg_surface->surface->events.unmap,
+		&scene_xdg_surface->xdg_surface_unmap);
 
 	scene_xdg_surface->xdg_surface_commit.notify =
 		scene_xdg_surface_handle_xdg_surface_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
 		&scene_xdg_surface->xdg_surface_commit);
 
-	wlr_scene_node_set_enabled(&scene_xdg_surface->tree->node, xdg_surface->mapped);
+	wlr_scene_node_set_enabled(&scene_xdg_surface->tree->node,
+		xdg_surface->surface->mapped);
 	scene_xdg_surface_update_position(scene_xdg_surface);
 
 	return scene_xdg_surface->tree;

@@ -360,7 +360,7 @@ static void xdg_popup_handle_resource_destroy(struct wl_resource *resource) {
 const struct wlr_surface_role xdg_popup_surface_role = {
 	.name = "xdg_popup",
 	.commit = xdg_surface_role_commit,
-	.precommit = xdg_surface_role_precommit,
+	.unmap = xdg_surface_role_unmap,
 	.destroy = xdg_surface_role_destroy,
 };
 

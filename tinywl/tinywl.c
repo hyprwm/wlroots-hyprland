@@ -795,9 +795,9 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 
 	/* Listen to the various events it can emit */
 	view->map.notify = xdg_toplevel_map;
-	wl_signal_add(&xdg_surface->events.map, &view->map);
+	wl_signal_add(&xdg_surface->surface->events.map, &view->map);
 	view->unmap.notify = xdg_toplevel_unmap;
-	wl_signal_add(&xdg_surface->events.unmap, &view->unmap);
+	wl_signal_add(&xdg_surface->surface->events.unmap, &view->unmap);
 	view->destroy.notify = xdg_toplevel_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &view->destroy);
 
