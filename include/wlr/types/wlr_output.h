@@ -571,6 +571,8 @@ void wlr_output_state_set_subpixel(struct wlr_output_state *state,
 	enum wl_output_subpixel subpixel);
 void wlr_output_state_set_buffer(struct wlr_output_state *state,
 	struct wlr_buffer *buffer);
+bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
+	size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b);
 
 
 /**

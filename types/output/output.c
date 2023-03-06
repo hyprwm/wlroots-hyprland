@@ -945,23 +945,7 @@ void wlr_output_send_request_state(struct wlr_output *output,
 
 void wlr_output_set_gamma(struct wlr_output *output, size_t size,
 		const uint16_t *r, const uint16_t *g, const uint16_t *b) {
-	uint16_t *gamma_lut = NULL;
-	if (size > 0) {
-		gamma_lut = malloc(3 * size * sizeof(uint16_t));
-		if (gamma_lut == NULL) {
-			wlr_log_errno(WLR_ERROR, "Allocation failed");
-			return;
-		}
-		memcpy(gamma_lut, r, size * sizeof(uint16_t));
-		memcpy(gamma_lut + size, g, size * sizeof(uint16_t));
-		memcpy(gamma_lut + 2 * size, b, size * sizeof(uint16_t));
-	}
-
-	output_state_clear_gamma_lut(&output->pending);
-
-	output->pending.gamma_lut_size = size;
-	output->pending.gamma_lut = gamma_lut;
-	output->pending.committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
+	wlr_output_state_set_gamma_lut(&output->pending, size, r, g, b);
 }
 
 size_t wlr_output_get_gamma_size(struct wlr_output *output) {

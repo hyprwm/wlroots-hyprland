@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+#include <wlr/util/log.h>
 #include "types/wlr_output.h"
 
 void wlr_output_state_finish(struct wlr_output_state *state) {
@@ -72,4 +74,26 @@ void wlr_output_state_set_buffer(struct wlr_output_state *state,
 	state->committed |= WLR_OUTPUT_STATE_BUFFER;
 	wlr_buffer_unlock(state->buffer);
 	state->buffer = wlr_buffer_lock(buffer);
+}
+
+bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
+		size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b) {
+	uint16_t *gamma_lut = NULL;
+	if (ramp_size > 0) {
+		gamma_lut = realloc(state->gamma_lut, 3 * ramp_size * sizeof(uint16_t));
+		if (gamma_lut == NULL) {
+			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			return false;
+		}
+		memcpy(gamma_lut, r, ramp_size * sizeof(uint16_t));
+		memcpy(gamma_lut + ramp_size, g, ramp_size * sizeof(uint16_t));
+		memcpy(gamma_lut + 2 * ramp_size, b, ramp_size * sizeof(uint16_t));
+	} else {
+		free(state->gamma_lut);
+	}
+
+	state->committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
+	state->gamma_lut_size = ramp_size;
+	state->gamma_lut = gamma_lut;
+	return true;
 }
