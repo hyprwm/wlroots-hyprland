@@ -42,12 +42,6 @@ static void gamma_control_destroy(struct wlr_gamma_control_v1 *gamma_control) {
 	wl_signal_emit_mutable(&manager->events.set_gamma, &event);
 }
 
-static void gamma_control_send_failed(
-		struct wlr_gamma_control_v1 *gamma_control) {
-	zwlr_gamma_control_v1_send_failed(gamma_control->resource);
-	gamma_control_destroy(gamma_control);
-}
-
 static void gamma_control_apply(struct wlr_gamma_control_v1 *gamma_control) {
 	uint16_t *r = gamma_control->table;
 	uint16_t *g = gamma_control->table + gamma_control->ramp_size;
@@ -56,7 +50,7 @@ static void gamma_control_apply(struct wlr_gamma_control_v1 *gamma_control) {
 	wlr_output_set_gamma(gamma_control->output, gamma_control->ramp_size, r, g, b);
 	if (!wlr_output_test(gamma_control->output)) {
 		wlr_output_rollback(gamma_control->output);
-		gamma_control_send_failed(gamma_control);
+		wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 		return;
 	}
 
@@ -112,12 +106,12 @@ static void gamma_control_handle_set_gamma(struct wl_client *client,
 	int fd_flags = fcntl(fd, F_GETFL, 0);
 	if (fd_flags == -1) {
 		wlr_log_errno(WLR_ERROR, "failed to get FD flags");
-		gamma_control_send_failed(gamma_control);
+		wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 		goto error_fd;
 	}
 	if (fcntl(fd, F_SETFL, fd_flags | O_NONBLOCK) == -1) {
 		wlr_log_errno(WLR_ERROR, "failed to set FD flags");
-		gamma_control_send_failed(gamma_control);
+		wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 		goto error_fd;
 	}
 
@@ -131,7 +125,7 @@ static void gamma_control_handle_set_gamma(struct wl_client *client,
 	ssize_t n_read = pread(fd, table, table_size, 0);
 	if (n_read < 0) {
 		wlr_log_errno(WLR_ERROR, "failed to read gamma table");
-		gamma_control_send_failed(gamma_control);
+		wlr_gamma_control_v1_send_failed_and_destroy(gamma_control);
 		goto error_table;
 	} else if ((size_t)n_read != table_size) {
 		wl_resource_post_error(gamma_control_resource,
@@ -319,4 +313,12 @@ bool wlr_gamma_control_v1_apply(struct wlr_gamma_control_v1 *gamma_control,
 	const uint16_t *b = gamma_control->table + 2 * gamma_control->ramp_size;
 	return wlr_output_state_set_gamma_lut(output_state,
 		gamma_control->ramp_size, r, g, b);
+}
+
+void wlr_gamma_control_v1_send_failed_and_destroy(struct wlr_gamma_control_v1 *gamma_control) {
+	if (gamma_control == NULL) {
+		return;
+	}
+	zwlr_gamma_control_v1_send_failed(gamma_control->resource);
+	gamma_control_destroy(gamma_control);
 }
