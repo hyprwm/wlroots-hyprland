@@ -307,3 +307,16 @@ struct wlr_gamma_control_v1 *wlr_gamma_control_manager_v1_get_control(
 	}
 	return NULL;
 }
+
+bool wlr_gamma_control_v1_apply(struct wlr_gamma_control_v1 *gamma_control,
+		struct wlr_output_state *output_state) {
+	if (gamma_control == NULL || gamma_control->table == NULL) {
+		return wlr_output_state_set_gamma_lut(output_state, 0, NULL, NULL, NULL);
+	}
+
+	const uint16_t *r = gamma_control->table;
+	const uint16_t *g = gamma_control->table + gamma_control->ramp_size;
+	const uint16_t *b = gamma_control->table + 2 * gamma_control->ramp_size;
+	return wlr_output_state_set_gamma_lut(output_state,
+		gamma_control->ramp_size, r, g, b);
+}

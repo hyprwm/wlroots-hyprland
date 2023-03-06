@@ -41,5 +41,7 @@ struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager_v1_create(
 	struct wl_display *display);
 struct wlr_gamma_control_v1 *wlr_gamma_control_manager_v1_get_control(
 	struct wlr_gamma_control_manager_v1 *manager, struct wlr_output *output);
+bool wlr_gamma_control_v1_apply(struct wlr_gamma_control_v1 *gamma_control,
+	struct wlr_output_state *output_state);
 
 #endif
