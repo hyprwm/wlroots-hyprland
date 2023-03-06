@@ -207,12 +207,9 @@ static void gamma_control_manager_get_gamma_control(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_gamma_control_v1 *gc;
-	wl_list_for_each(gc, &manager->controls, link) {
-		if (gc->output == output) {
-			zwlr_gamma_control_v1_send_failed(resource);
-			return;
-		}
+	if (wlr_gamma_control_manager_v1_get_control(manager, output) != NULL) {
+		zwlr_gamma_control_v1_send_failed(resource);
+		return;
 	}
 
 	struct wlr_gamma_control_v1 *gamma_control =
@@ -298,4 +295,15 @@ struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager_v1_create(
 	wl_display_add_destroy_listener(display, &manager->display_destroy);
 
 	return manager;
+}
+
+struct wlr_gamma_control_v1 *wlr_gamma_control_manager_v1_get_control(
+		struct wlr_gamma_control_manager_v1 *manager, struct wlr_output *output) {
+	struct wlr_gamma_control_v1 *gamma_control;
+	wl_list_for_each(gamma_control, &manager->controls, link) {
+		if (gamma_control->output == output) {
+			return gamma_control;
+		}
+	}
+	return NULL;
 }
