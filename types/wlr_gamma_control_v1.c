@@ -22,6 +22,9 @@ static void gamma_control_destroy(struct wlr_gamma_control_v1 *gamma_control) {
 		return;
 	}
 
+	struct wlr_gamma_control_manager_v1 *manager = gamma_control->manager;
+	struct wlr_output *output = gamma_control->output;
+
 	wlr_output_set_gamma(gamma_control->output, 0, NULL, NULL, NULL);
 	// Gamma LUT will be applied on next output commit
 	wlr_output_schedule_frame(gamma_control->output);
@@ -32,6 +35,11 @@ static void gamma_control_destroy(struct wlr_gamma_control_v1 *gamma_control) {
 	wl_list_remove(&gamma_control->link);
 	free(gamma_control->table);
 	free(gamma_control);
+
+	struct wlr_gamma_control_manager_v1_set_gamma_event event = {
+		.output = output,
+	};
+	wl_signal_emit_mutable(&manager->events.set_gamma, &event);
 }
 
 static void gamma_control_send_failed(
@@ -142,6 +150,12 @@ static void gamma_control_handle_set_gamma(struct wl_client *client,
 		gamma_control_apply(gamma_control);
 	}
 
+	struct wlr_gamma_control_manager_v1_set_gamma_event event = {
+		.output = gamma_control->output,
+		.control = gamma_control,
+	};
+	wl_signal_emit_mutable(&gamma_control->manager->events.set_gamma, &event);
+
 	return;
 
 error_table:
@@ -208,6 +222,7 @@ static void gamma_control_manager_get_gamma_control(struct wl_client *client,
 		return;
 	}
 	gamma_control->output = output;
+	gamma_control->manager = manager;
 	gamma_control->resource = resource;
 	wl_resource_set_user_data(resource, gamma_control);
 
@@ -276,6 +291,7 @@ struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager_v1_create(
 	}
 
 	wl_signal_init(&manager->events.destroy);
+	wl_signal_init(&manager->events.set_gamma);
 	wl_list_init(&manager->controls);
 
 	manager->display_destroy.notify = handle_display_destroy;

@@ -11,14 +11,21 @@ struct wlr_gamma_control_manager_v1 {
 
 	struct {
 		struct wl_signal destroy;
+		struct wl_signal set_gamma; // struct wlr_gamma_control_manager_v1_set_gamma_event
 	} events;
 
 	void *data;
 };
 
+struct wlr_gamma_control_manager_v1_set_gamma_event {
+	struct wlr_output *output;
+	struct wlr_gamma_control_v1 *control; // may be NULL
+};
+
 struct wlr_gamma_control_v1 {
 	struct wl_resource *resource;
 	struct wlr_output *output;
+	struct wlr_gamma_control_manager_v1 *manager;
 	struct wl_list link;
 
 	uint16_t *table;
