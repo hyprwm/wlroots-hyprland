@@ -219,8 +219,8 @@ static void gamma_control_manager_get_gamma_control(struct wl_client *client,
 	struct wlr_gamma_control_v1 *gc;
 	wl_list_for_each(gc, &manager->controls, link) {
 		if (gc->output == output) {
-			zwlr_gamma_control_v1_send_failed(gc->resource);
-			gamma_control_destroy(gc);
+			zwlr_gamma_control_v1_send_failed(gamma_control->resource);
+			gamma_control_destroy(gamma_control);
 			return;
 		}
 	}
