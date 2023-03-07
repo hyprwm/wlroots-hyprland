@@ -11,9 +11,8 @@ extern const struct wlr_surface_role xdg_popup_surface_role;
 struct wlr_xdg_surface *create_xdg_surface(
 	struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 	uint32_t id);
-void unmap_xdg_surface(struct wlr_xdg_surface *surface);
-void reset_xdg_surface(struct wlr_xdg_surface *surface);
 void destroy_xdg_surface(struct wlr_xdg_surface *surface);
+void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface);
 void xdg_surface_role_commit(struct wlr_surface *wlr_surface);
 void xdg_surface_role_precommit(struct wlr_surface *wlr_surface,
 	const struct wlr_surface_state *state);
@@ -24,7 +23,7 @@ void create_xdg_positioner(struct wlr_xdg_client *client, uint32_t id);
 void create_xdg_popup(struct wlr_xdg_surface *surface,
 	struct wlr_xdg_surface *parent,
 	struct wlr_xdg_positioner *positioner, uint32_t id);
-void unmap_xdg_popup(struct wlr_xdg_popup *popup);
+void reset_xdg_popup(struct wlr_xdg_popup *popup);
 void destroy_xdg_popup(struct wlr_xdg_popup *popup);
 void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);
 struct wlr_xdg_popup_configure *send_xdg_popup_configure(
@@ -34,7 +33,7 @@ void handle_xdg_popup_ack_configure(struct wlr_xdg_popup *popup,
 
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	uint32_t id);
-void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
+void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
 void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel);
 struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(

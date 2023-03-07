@@ -24,15 +24,8 @@ static void xdg_surface_configure_destroy(
 	free(configure);
 }
 
-void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
-	assert(surface->role != WLR_XDG_SURFACE_ROLE_NONE);
+static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	surface->configured = false;
-
-	// TODO: probably need to ungrab before this event
-	if (surface->mapped) {
-		surface->mapped = false;
-		wl_signal_emit_mutable(&surface->events.unmap, NULL);
-	}
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
@@ -41,13 +34,13 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		unmap_xdg_toplevel(surface->toplevel);
+		reset_xdg_toplevel(surface->toplevel);
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		unmap_xdg_popup(surface->popup);
+		reset_xdg_popup(surface->popup);
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
-		assert(false && "not reached");
+		break;
 	}
 
 	struct wlr_xdg_surface_configure *configure, *tmp;
@@ -59,6 +52,15 @@ void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
 		wl_event_source_remove(surface->configure_idle);
 		surface->configure_idle = NULL;
 	}
+}
+
+static void unmap_xdg_surface(struct wlr_xdg_surface *surface) {
+	surface->mapped = false;
+
+	// TODO: probably need to ungrab before this event
+	wl_signal_emit_mutable(&surface->events.unmap, NULL);
+
+	reset_xdg_surface(surface);
 }
 
 static void xdg_surface_handle_ack_configure(struct wl_client *client,
@@ -328,7 +330,7 @@ void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
 	assert(surface != NULL);
 
-	reset_xdg_surface(surface);
+	destroy_xdg_surface_role_object(surface);
 
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->surface_commit.link);
@@ -393,9 +395,11 @@ struct wlr_xdg_surface *create_xdg_surface(
 	return surface;
 }
 
-void reset_xdg_surface(struct wlr_xdg_surface *surface) {
-	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
+void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
+	if (surface->configured && surface->mapped) {
 		unmap_xdg_surface(surface);
+	} else {
+		reset_xdg_surface(surface);
 	}
 
 	if (surface->added) {

@@ -469,7 +469,7 @@ static void xdg_toplevel_handle_resource_destroy(struct wl_resource *resource) {
 	if (toplevel == NULL) {
 		return;
 	}
-	reset_xdg_surface(toplevel->base);
+	destroy_xdg_surface_role_object(toplevel->base);
 }
 
 const struct wlr_surface_role xdg_toplevel_surface_role = {
@@ -527,7 +527,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	surface->role = WLR_XDG_SURFACE_ROLE_TOPLEVEL;
 }
 
-void unmap_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
+void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 	if (toplevel->parent) {
 		wl_list_remove(&toplevel->parent_unmap.link);
 		toplevel->parent = NULL;
