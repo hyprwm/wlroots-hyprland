@@ -277,9 +277,6 @@ static void xwm_set_net_client_list_stacking(struct wlr_xwm *xwm) {
 		return;
 	}
 
-	// We store surfaces in top-to-bottom order because this is easier to reason
-	// about, but _NET_CLIENT_LIST_STACKING is supposed to be in bottom-to-top
-	// order, so iterate backwards through the list.
 	size_t i = 0;
 	struct wlr_xwayland_surface *xsurface;
 	wl_list_for_each(xsurface, &xwm->surfaces_in_stack_order, stack_link) {
