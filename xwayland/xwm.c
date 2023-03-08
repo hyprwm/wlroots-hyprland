@@ -173,8 +173,6 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 	wl_signal_init(&surface->events.request_activate);
 	wl_signal_init(&surface->events.associate);
 	wl_signal_init(&surface->events.dissociate);
-	wl_signal_init(&surface->events.map);
-	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.set_class);
 	wl_signal_init(&surface->events.set_role);
 	wl_signal_init(&surface->events.set_title);
@@ -249,7 +247,7 @@ static void xwm_set_net_client_list(struct wlr_xwm *xwm) {
 	size_t mapped_surfaces = 0;
 	struct wlr_xwayland_surface *surface;
 	wl_list_for_each(surface, &xwm->surfaces, link) {
-		if (surface->mapped) {
+		if (surface->surface != NULL && surface->surface->mapped) {
 			mapped_surfaces++;
 		}
 	}
@@ -261,7 +259,7 @@ static void xwm_set_net_client_list(struct wlr_xwm *xwm) {
 
 	size_t index = 0;
 	wl_list_for_each(surface, &xwm->surfaces, link) {
-		if (surface->mapped) {
+		if (surface->surface != NULL && surface->surface->mapped) {
 			windows[index++] = surface->window_id;
 		}
 	}
@@ -395,16 +393,14 @@ static void xsurface_set_net_wm_state(struct wlr_xwayland_surface *xsurface) {
 		i, property);
 }
 
-static void xwayland_surface_set_mapped(struct wlr_xwayland_surface *xsurface, bool mapped);
-
 static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
-	xwayland_surface_set_mapped(xsurface, false);
-
 	if (xsurface->surface != NULL) {
+		wlr_surface_unmap(xsurface->surface);
 		wl_signal_emit_mutable(&xsurface->events.dissociate, NULL);
 
 		wl_list_remove(&xsurface->surface_commit.link);
-		wl_list_remove(&xsurface->surface_precommit.link);
+		wl_list_remove(&xsurface->surface_map.link);
+		wl_list_remove(&xsurface->surface_unmap.link);
 		wlr_addon_finish(&xsurface->surface_addon);
 		xsurface->surface = NULL;
 	}
@@ -887,35 +883,19 @@ static void read_surface_property(struct wlr_xwm *xwm,
 	free(reply);
 }
 
-static void xwayland_surface_set_mapped(struct wlr_xwayland_surface *xsurface, bool mapped) {
-	if (xsurface->mapped == mapped) {
-		return;
-	}
+static void xwayland_surface_handle_commit(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_commit);
+	wlr_surface_map(xsurface->surface);
+}
 
-	xsurface->mapped = mapped;
-
-	if (mapped) {
-		wl_signal_emit_mutable(&xsurface->events.map, xsurface);
-	} else {
-		wl_signal_emit_mutable(&xsurface->events.unmap, xsurface);
-	}
-
+static void xwayland_surface_handle_map(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_map);
 	xwm_set_net_client_list(xsurface->xwm);
 }
 
-static void xwayland_surface_handle_commit(struct wl_listener *listener, void *data) {
-	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_commit);
-	bool mapped = wlr_surface_has_buffer(xsurface->surface);
-	xwayland_surface_set_mapped(xsurface, mapped);
-}
-
-static void xwayland_surface_handle_precommit(struct wl_listener *listener, void *data) {
-	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_precommit);
-	const struct wlr_surface_state *state = data;
-	if (state->committed & WLR_SURFACE_STATE_BUFFER && state->buffer == NULL) {
-		// This is a NULL commit
-		xwayland_surface_set_mapped(xsurface, false);
-	}
+static void xwayland_surface_handle_unmap(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_unmap);
+	xwm_set_net_client_list(xsurface->xwm);
 }
 
 static void xwayland_surface_handle_addon_destroy(struct wlr_addon *addon) {
@@ -942,8 +922,11 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 	xsurface->surface_commit.notify = xwayland_surface_handle_commit;
 	wl_signal_add(&surface->events.commit, &xsurface->surface_commit);
 
-	xsurface->surface_precommit.notify = xwayland_surface_handle_precommit;
-	wl_signal_add(&surface->events.commit, &xsurface->surface_precommit);
+	xsurface->surface_map.notify = xwayland_surface_handle_map;
+	wl_signal_add(&surface->events.map, &xsurface->surface_map);
+
+	xsurface->surface_unmap.notify = xwayland_surface_handle_unmap;
+	wl_signal_add(&surface->events.unmap, &xsurface->surface_unmap);
 
 	// read all surface properties
 	const xcb_atom_t props[] = {
