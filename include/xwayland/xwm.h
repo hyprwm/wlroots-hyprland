@@ -91,8 +91,6 @@ enum atom_name {
 	ATOM_LAST // keep last
 };
 
-extern const char *const atom_map[ATOM_LAST];
-
 struct wlr_xwm {
 	struct wlr_xwayland *xwayland;
 	struct wl_event_source *event_source;

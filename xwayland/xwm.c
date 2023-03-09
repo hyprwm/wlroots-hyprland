@@ -19,7 +19,7 @@
 #include <xcb/xfixes.h>
 #include "xwayland/xwm.h"
 
-const char *const atom_map[ATOM_LAST] = {
+static const char *const atom_map[ATOM_LAST] = {
 	[WL_SURFACE_ID] = "WL_SURFACE_ID",
 	[WL_SURFACE_SERIAL] = "WL_SURFACE_SERIAL",
 	[WM_DELETE_WINDOW] = "WM_DELETE_WINDOW",
