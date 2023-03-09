@@ -1558,6 +1558,11 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer != NULL);
 
+	if (!output->needs_frame && !pixman_region32_not_empty(
+			&scene_output->damage_ring.current)) {
+		return true;
+	}
+
 	struct render_list_constructor_data list_con = {
 		.box = { .x = scene_output->x, .y = scene_output->y },
 		.render_list = &scene_output->render_list,
@@ -1672,12 +1677,6 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	pixman_region32_init(&damage);
 	wlr_damage_ring_get_buffer_damage(&scene_output->damage_ring,
 		buffer_age, &damage);
-	if (!output->needs_frame && !pixman_region32_not_empty(
-			&scene_output->damage_ring.current)) {
-		pixman_region32_fini(&damage);
-		wlr_output_rollback(output);
-		return true;
-	}
 
 	if (!wlr_renderer_begin(renderer, output->width, output->height)) {
 		pixman_region32_fini(&damage);
