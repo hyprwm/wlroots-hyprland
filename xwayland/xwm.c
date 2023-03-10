@@ -1055,6 +1055,18 @@ void wlr_xwayland_surface_restack(struct wlr_xwayland_surface *xsurface,
 	size_t idx = 0;
 	uint32_t flags = XCB_CONFIG_WINDOW_STACK_MODE;
 
+	assert(!xsurface->override_redirect);
+
+	// X11 clients expect their override_redirect windows to stay on top.
+	// Avoid interfering by restacking above the topmost managed surface.
+	if (mode == XCB_STACK_MODE_ABOVE && !sibling) {
+		sibling = wl_container_of(xwm->surfaces_in_stack_order.prev, sibling, stack_link);
+	}
+
+	if (sibling == xsurface) {
+		return;
+	}
+
 	if (sibling != NULL) {
 		values[idx++] = sibling->window_id;
 		flags |= XCB_CONFIG_WINDOW_SIBLING;
@@ -1067,11 +1079,7 @@ void wlr_xwayland_surface_restack(struct wlr_xwayland_surface *xsurface,
 
 	struct wl_list *node;
 	if (mode == XCB_STACK_MODE_ABOVE) {
-		if (sibling) {
-			node = &sibling->stack_link;
-		} else {
-			node = xwm->surfaces_in_stack_order.prev;
-		}
+		node = &sibling->stack_link;
 	} else if (mode == XCB_STACK_MODE_BELOW) {
 		if (sibling) {
 			node = sibling->stack_link.prev;
