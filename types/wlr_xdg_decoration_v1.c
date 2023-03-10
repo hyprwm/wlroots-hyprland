@@ -78,6 +78,11 @@ static void toplevel_decoration_handle_surface_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_decoration_v1 *decoration =
 		wl_container_of(listener, decoration, surface_destroy);
+
+	wl_resource_post_error(decoration->resource,
+		ZXDG_TOPLEVEL_DECORATION_V1_ERROR_ORPHANED,
+		"xdg_toplevel destroyed before xdg_toplevel_decoration");
+
 	wl_resource_destroy(decoration->resource);
 }
 
@@ -180,6 +185,16 @@ static void decoration_manager_handle_get_toplevel_decoration(
 			ZXDG_TOPLEVEL_DECORATION_V1_ERROR_UNCONFIGURED_BUFFER,
 			"xdg_toplevel_decoration must not have a buffer at creation");
 		return;
+	}
+
+	struct wlr_xdg_toplevel_decoration_v1 *existing;
+	wl_list_for_each(existing, &manager->decorations, link) {
+		if (existing->surface == toplevel->base) {
+			wl_resource_post_error(manager_resource,
+				ZXDG_TOPLEVEL_DECORATION_V1_ERROR_ALREADY_CONSTRUCTED,
+				"xdg_toplevel already has a decoration object");
+			return;
+		}
 	}
 
 	struct wlr_xdg_toplevel_decoration_v1 *decoration =
