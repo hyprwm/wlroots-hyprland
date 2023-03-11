@@ -171,6 +171,8 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 	wl_signal_init(&surface->events.request_maximize);
 	wl_signal_init(&surface->events.request_fullscreen);
 	wl_signal_init(&surface->events.request_activate);
+	wl_signal_init(&surface->events.associate);
+	wl_signal_init(&surface->events.dissociate);
 	wl_signal_init(&surface->events.map);
 	wl_signal_init(&surface->events.unmap);
 	wl_signal_init(&surface->events.set_class);
@@ -399,6 +401,8 @@ static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
 	xwayland_surface_set_mapped(xsurface, false);
 
 	if (xsurface->surface != NULL) {
+		wl_signal_emit_mutable(&xsurface->events.dissociate, NULL);
+
 		wl_list_remove(&xsurface->surface_commit.link);
 		wl_list_remove(&xsurface->surface_precommit.link);
 		wlr_addon_finish(&xsurface->surface_addon);
@@ -962,6 +966,8 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 	if (xwm->xres) {
 		read_surface_client_id(xwm, xsurface);
 	}
+
+	wl_signal_emit_mutable(&xsurface->events.associate, NULL);
 }
 
 static void xwm_handle_create_notify(struct wlr_xwm *xwm,
