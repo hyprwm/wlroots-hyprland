@@ -352,6 +352,14 @@ static void xwm_surface_activate(struct wlr_xwm *xwm,
 static void xsurface_set_net_wm_state(struct wlr_xwayland_surface *xsurface) {
 	struct wlr_xwm *xwm = xsurface->xwm;
 
+	// EWMH says _NET_WM_STATE should be unset if the window is withdrawn
+	if (xsurface->withdrawn) {
+		xcb_delete_property(xwm->xcb_conn,
+			xsurface->window_id,
+			xwm->atoms[NET_WM_STATE]);
+		return;
+	}
+
 	uint32_t property[6];
 	size_t i = 0;
 	if (xsurface->modal) {
@@ -1035,10 +1043,17 @@ static void xwm_handle_configure_notify(struct wlr_xwm *xwm,
 	}
 }
 
-static void xsurface_set_wm_state(struct wlr_xwayland_surface *xsurface,
-		int32_t state) {
+static void xsurface_set_wm_state(struct wlr_xwayland_surface *xsurface) {
 	struct wlr_xwm *xwm = xsurface->xwm;
-	uint32_t property[] = { state, XCB_WINDOW_NONE };
+	uint32_t property[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_WINDOW_NONE };
+
+	if (xsurface->withdrawn) {
+		property[0] = XCB_ICCCM_WM_STATE_WITHDRAWN;
+	} else if (xsurface->minimized) {
+		property[0] = XCB_ICCCM_WM_STATE_ICONIC;
+	} else {
+		property[0] = XCB_ICCCM_WM_STATE_NORMAL;
+	}
 
 	xcb_change_property(xwm->xcb_conn,
 		XCB_PROP_MODE_REPLACE,
@@ -1097,9 +1112,7 @@ static void xwm_handle_map_request(struct wlr_xwm *xwm,
 		return;
 	}
 
-	xsurface_set_wm_state(xsurface, XCB_ICCCM_WM_STATE_NORMAL);
-	xsurface_set_net_wm_state(xsurface);
-
+	wlr_xwayland_surface_set_withdrawn(xsurface, false);
 	wlr_xwayland_surface_restack(xsurface, NULL, XCB_STACK_MODE_BELOW);
 	xcb_map_window(xwm->xcb_conn, ev->window);
 }
@@ -1126,7 +1139,9 @@ static void xwm_handle_unmap_notify(struct wlr_xwm *xwm,
 
 	xwayland_surface_dissociate(xsurface);
 
-	xsurface_set_wm_state(xsurface, XCB_ICCCM_WM_STATE_WITHDRAWN);
+	if (!xsurface->override_redirect) {
+		wlr_xwayland_surface_set_withdrawn(xsurface, true);
+	}
 }
 
 static void xwm_handle_property_notify(struct wlr_xwm *xwm,
@@ -2223,16 +2238,18 @@ struct wlr_xwm *xwm_create(struct wlr_xwayland *xwayland, int wm_fd) {
 	return xwm;
 }
 
+void wlr_xwayland_surface_set_withdrawn(struct wlr_xwayland_surface *surface,
+		bool withdrawn) {
+	surface->withdrawn = withdrawn;
+	xsurface_set_wm_state(surface);
+	xsurface_set_net_wm_state(surface);
+	xcb_flush(surface->xwm->xcb_conn);
+}
+
 void wlr_xwayland_surface_set_minimized(struct wlr_xwayland_surface *surface,
 		bool minimized) {
 	surface->minimized = minimized;
-
-	if (minimized) {
-		xsurface_set_wm_state(surface, XCB_ICCCM_WM_STATE_ICONIC);
-	} else {
-		xsurface_set_wm_state(surface, XCB_ICCCM_WM_STATE_NORMAL);
-	}
-
+	xsurface_set_wm_state(surface);
 	xsurface_set_net_wm_state(surface);
 	xcb_flush(surface->xwm->xcb_conn);
 }

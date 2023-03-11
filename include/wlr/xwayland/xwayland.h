@@ -136,6 +136,7 @@ struct wlr_xwayland_surface {
 	bool fullscreen;
 	bool maximized_vert, maximized_horz;
 	bool minimized;
+	bool withdrawn;
 
 	bool has_alpha;
 
@@ -225,6 +226,9 @@ void wlr_xwayland_surface_configure(struct wlr_xwayland_surface *surface,
 	int16_t x, int16_t y, uint16_t width, uint16_t height);
 
 void wlr_xwayland_surface_close(struct wlr_xwayland_surface *surface);
+
+void wlr_xwayland_surface_set_withdrawn(struct wlr_xwayland_surface *surface,
+	bool withdrawn);
 
 void wlr_xwayland_surface_set_minimized(struct wlr_xwayland_surface *surface,
 	bool minimized);
