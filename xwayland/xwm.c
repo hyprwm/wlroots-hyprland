@@ -206,6 +206,8 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 
 	wl_list_insert(&xwm->surfaces, &surface->link);
 
+	wl_signal_emit_mutable(&xwm->xwayland->events.new_surface, surface);
+
 	return surface;
 }
 
@@ -397,8 +399,6 @@ static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
 	xwayland_surface_set_mapped(xsurface, false);
 
 	if (xsurface->surface != NULL) {
-		wl_signal_emit_mutable(&xsurface->events.destroy, xsurface);
-
 		wl_list_remove(&xsurface->surface_commit.link);
 		wl_list_remove(&xsurface->surface_precommit.link);
 		wlr_addon_finish(&xsurface->surface_addon);
@@ -416,6 +416,8 @@ static void xwayland_surface_dissociate(struct wlr_xwayland_surface *xsurface) {
 
 static void xwayland_surface_destroy(struct wlr_xwayland_surface *xsurface) {
 	xwayland_surface_dissociate(xsurface);
+
+	wl_signal_emit_mutable(&xsurface->events.destroy, xsurface);
 
 	if (xsurface == xsurface->xwm->focus_surface) {
 		xwm_surface_activate(xsurface->xwm, NULL);
@@ -960,8 +962,6 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 	if (xwm->xres) {
 		read_surface_client_id(xwm, xsurface);
 	}
-
-	wl_signal_emit_mutable(&xwm->xwayland->events.new_surface, xsurface);
 }
 
 static void xwm_handle_create_notify(struct wlr_xwm *xwm,
