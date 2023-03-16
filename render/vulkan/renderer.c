@@ -840,8 +840,8 @@ static bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
 			.fd = sync_file_fd,
 		};
 		res = renderer->dev->api.importSemaphoreFdKHR(renderer->dev->dev, &import_info);
-		close(sync_file_fd);
 		if (res != VK_SUCCESS) {
+			close(sync_file_fd);
 			wlr_vk_error("vkImportSemaphoreFdKHR", res);
 			return false;
 		}
