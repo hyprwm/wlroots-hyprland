@@ -93,7 +93,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 }
 
 static void touch_down_notify(struct wl_listener *listener, void *data) {
-	struct wlr_touch_motion_event *event = data;
+	struct wlr_touch_down_event *event = data;
 	struct touch_state *tstate = wl_container_of(listener, tstate, down);
 	struct sample_state *sample = tstate->sample;
 	struct touch_point *point = calloc(1, sizeof(struct touch_point));
