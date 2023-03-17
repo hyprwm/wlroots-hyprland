@@ -110,6 +110,11 @@ struct wlr_wl_pointer {
 	struct wl_list link;
 };
 
+struct wlr_wl_touch_points {
+	int32_t ids[64];
+	size_t len;
+};
+
 struct wlr_wl_seat {
 	char *name;
 	struct wl_seat *wl_seat;
@@ -131,6 +136,7 @@ struct wlr_wl_seat {
 
 	struct wl_touch *wl_touch;
 	struct wlr_touch wlr_touch;
+	struct wlr_wl_touch_points touch_points;
 
 	struct zwp_tablet_seat_v2 *zwp_tablet_seat_v2;
 	struct zwp_tablet_v2 *zwp_tablet_v2;
