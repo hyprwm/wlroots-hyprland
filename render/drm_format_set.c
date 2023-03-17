@@ -67,7 +67,7 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 		size_t new = set->capacity ? set->capacity * 2 : 4;
 
 		struct wlr_drm_format **tmp = realloc(set->formats,
-			sizeof(*fmt) + sizeof(fmt->modifiers[0]) * new);
+			sizeof(set->formats[0]) * new);
 		if (!tmp) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			free(fmt);
