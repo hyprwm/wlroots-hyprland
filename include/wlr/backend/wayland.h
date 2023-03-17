@@ -57,9 +57,4 @@ void wlr_wl_output_set_title(struct wlr_output *output, const char *title);
  */
 struct wl_surface *wlr_wl_output_get_surface(struct wlr_output *output);
 
-/**
- * Returns the remote struct wl_seat for a Wayland input device.
- */
-struct wl_seat *wlr_wl_input_device_get_seat(struct wlr_input_device *dev);
-
 #endif
