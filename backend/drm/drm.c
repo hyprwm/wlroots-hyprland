@@ -852,7 +852,11 @@ static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn) {
 	if (conn->crtc == NULL) {
 		realloc_crtcs(conn->backend, conn);
 	}
-	return conn->crtc != NULL;
+	bool ok = conn->crtc != NULL;
+	if (!ok) {
+		wlr_drm_conn_log(conn, WLR_DEBUG, "Failed to find free CRTC");
+	}
+	return ok;
 }
 
 static struct wlr_drm_mode *drm_mode_create(const drmModeModeInfo *modeinfo) {
