@@ -59,7 +59,6 @@ static struct wlr_seat_client *seat_client_from_keyboard_resource(
 }
 
 static void keyboard_handle_resource_destroy(struct wl_resource *resource) {
-	wl_list_remove(wl_resource_get_link(resource));
 	seat_client_destroy_keyboard(resource);
 }
 
@@ -445,5 +444,7 @@ void seat_client_destroy_keyboard(struct wl_resource *resource) {
 	if (seat_client == NULL) {
 		return;
 	}
+	wl_list_remove(wl_resource_get_link(resource));
+	wl_list_init(wl_resource_get_link(resource));
 	wl_resource_set_user_data(resource, NULL);
 }

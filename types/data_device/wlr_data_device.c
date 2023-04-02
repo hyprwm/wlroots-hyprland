@@ -99,6 +99,7 @@ static const struct wl_data_device_interface data_device_impl = {
 
 static void data_device_handle_resource_destroy(struct wl_resource *resource) {
 	wl_list_remove(wl_resource_get_link(resource));
+	wl_list_init(wl_resource_get_link(resource));
 }
 
 

@@ -18,6 +18,9 @@ static void seat_handle_get_pointer(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
+	if (!seat_client) {
+		return;
+	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_POINTER)) {
 		wl_resource_post_error(seat_resource, WL_SEAT_ERROR_MISSING_CAPABILITY,
 				"wl_seat.get_pointer called when no pointer capability has existed");
@@ -32,6 +35,9 @@ static void seat_handle_get_keyboard(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
+	if (!seat_client) {
+		return;
+	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_KEYBOARD)) {
 		wl_resource_post_error(seat_resource, WL_SEAT_ERROR_MISSING_CAPABILITY,
 				"wl_seat.get_keyboard called when no keyboard capability has existed");
@@ -46,6 +52,9 @@ static void seat_handle_get_touch(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
+	if (!seat_client) {
+		return;
+	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_TOUCH)) {
 		wl_resource_post_error(seat_resource, WL_SEAT_ERROR_MISSING_CAPABILITY,
 				"wl_seat.get_touch called when no touch capability has existed");
@@ -56,16 +65,7 @@ static void seat_handle_get_touch(struct wl_client *client,
 	seat_client_create_touch(seat_client, version, id);
 }
 
-static void seat_client_handle_resource_destroy(
-		struct wl_resource *seat_resource) {
-	struct wlr_seat_client *client =
-		wlr_seat_client_from_resource(seat_resource);
-
-	wl_list_remove(wl_resource_get_link(seat_resource));
-	if (!wl_list_empty(&client->resources)) {
-		return;
-	}
-
+static void seat_client_destroy(struct wlr_seat_client *client) {
 	wl_signal_emit_mutable(&client->events.destroy, client);
 
 	if (client == client->seat->pointer_state.focused_client) {
@@ -81,25 +81,45 @@ static void seat_client_handle_resource_destroy(
 
 	struct wl_resource *resource, *tmp;
 	wl_resource_for_each_safe(resource, tmp, &client->pointers) {
-		wl_resource_destroy(resource);
+		seat_client_destroy_pointer(resource);
 	}
 	wl_resource_for_each_safe(resource, tmp, &client->keyboards) {
-		wl_resource_destroy(resource);
+		seat_client_destroy_keyboard(resource);
 	}
 	wl_resource_for_each_safe(resource, tmp, &client->touches) {
-		wl_resource_destroy(resource);
+		seat_client_destroy_touch(resource);
 	}
 	wl_resource_for_each_safe(resource, tmp, &client->data_devices) {
 		// Make the data device inert
+		wl_list_remove(wl_resource_get_link(resource));
+		wl_list_init(wl_resource_get_link(resource));
 		wl_resource_set_user_data(resource, NULL);
-
-		struct wl_list *link = wl_resource_get_link(resource);
-		wl_list_remove(link);
-		wl_list_init(link);
+	}
+	wl_resource_for_each_safe(resource, tmp, &client->resources) {
+		// Make the seat resource inert
+		wl_list_remove(wl_resource_get_link(resource));
+		wl_list_init(wl_resource_get_link(resource));
+		wl_resource_set_user_data(resource, NULL);
 	}
 
 	wl_list_remove(&client->link);
 	free(client);
+}
+
+static void seat_client_handle_resource_destroy(
+		struct wl_resource *seat_resource) {
+	struct wlr_seat_client *client =
+		wlr_seat_client_from_resource(seat_resource);
+	if (!client) {
+		return;
+	}
+
+	wl_list_remove(wl_resource_get_link(seat_resource));
+	if (!wl_list_empty(&client->resources)) {
+		return;
+	}
+
+	seat_client_destroy(client);
 }
 
 static void seat_handle_release(struct wl_client *client,
@@ -207,19 +227,7 @@ void wlr_seat_destroy(struct wlr_seat *seat) {
 
 	struct wlr_seat_client *client, *tmp;
 	wl_list_for_each_safe(client, tmp, &seat->clients, link) {
-		struct wl_resource *resource, *next;
-		/* wl_resource_for_each_safe isn't safe to use here, because the last
-		 * wl_resource_destroy will also destroy the head we cannot do the last
-		 * 'next' update that usually is harmless here.
-		 * Work around this by breaking one step ahead
-		 */
-		wl_resource_for_each_safe(resource, next, &client->resources) {
-			// will destroy other resources as well
-			wl_resource_destroy(resource);
-			if (wl_resource_get_link(next) == &client->resources) {
-				break;
-			}
-		}
+		seat_client_destroy(client);
 	}
 
 	wlr_global_destroy_safe(seat->global);

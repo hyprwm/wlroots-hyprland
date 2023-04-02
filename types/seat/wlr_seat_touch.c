@@ -66,7 +66,6 @@ static const struct wl_touch_interface touch_impl = {
 };
 
 static void touch_handle_resource_destroy(struct wl_resource *resource) {
-	wl_list_remove(wl_resource_get_link(resource));
 	seat_client_destroy_touch(resource);
 }
 
@@ -449,6 +448,8 @@ void seat_client_destroy_touch(struct wl_resource *resource) {
 	if (seat_client == NULL) {
 		return;
 	}
+	wl_list_remove(wl_resource_get_link(resource));
+	wl_list_init(wl_resource_get_link(resource));
 	wl_resource_set_user_data(resource, NULL);
 }
 
