@@ -196,10 +196,10 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 		return false;
 	}
 
-	uint64_t crtc_x = (uint64_t)state->x;
-	uint64_t crtc_y = (uint64_t)state->y;
-	uint64_t crtc_w = (uint64_t)width;
-	uint64_t crtc_h = (uint64_t)height;
+	uint64_t crtc_x = (uint64_t)state->dst_box.x;
+	uint64_t crtc_y = (uint64_t)state->dst_box.y;
+	uint64_t crtc_w = (uint64_t)state->dst_box.width;
+	uint64_t crtc_h = (uint64_t)state->dst_box.height;
 
 	uint64_t src_x = to_fp16(0);
 	uint64_t src_y = to_fp16(0);

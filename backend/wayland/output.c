@@ -283,9 +283,15 @@ static bool output_test(struct wlr_output *wlr_output,
 		for (ssize_t i = state->layers_len - 1; i >= 0; i--) {
 			struct wlr_output_layer_state *layer_state = &state->layers[i];
 			if (layer_state->buffer != NULL) {
-				if (layer_state->x < 0 || layer_state->y < 0 ||
-						layer_state->x + layer_state->buffer->width > wlr_output->width ||
-						layer_state->y + layer_state->buffer->height > wlr_output->height) {
+				int x = layer_state->dst_box.x;
+				int y = layer_state->dst_box.y;
+				int width = layer_state->dst_box.width;
+				int height = layer_state->dst_box.height;
+				if (x < 0 || y < 0 ||
+						x + width > wlr_output->width ||
+						y + height > wlr_output->height ||
+						width != layer_state->buffer->width ||
+						height != layer_state->dst_box.height) {
 					supported = false;
 				}
 				supported = supported &&
@@ -376,8 +382,9 @@ static void output_layer_unmap(struct wlr_wl_output_layer *layer) {
 static bool output_layer_commit(struct wlr_wl_output *output,
 		struct wlr_wl_output_layer *layer,
 		const struct wlr_output_layer_state *state) {
-	if (state->layer->x != state->x || state->layer->y != state->y) {
-		wl_subsurface_set_position(layer->subsurface, state->x, state->y);
+	if (state->layer->dst_box.x != state->dst_box.x ||
+			state->layer->dst_box.y != state->dst_box.y) {
+		wl_subsurface_set_position(layer->subsurface, state->dst_box.x, state->dst_box.y);
 	}
 
 	if (state->buffer == NULL) {

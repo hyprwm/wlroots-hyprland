@@ -851,8 +851,7 @@ bool wlr_output_commit_state(struct wlr_output *output,
 			wl_list_insert(output->layers.prev, &layer->link);
 
 			// Commit layer state
-			layer->x = layer_state->x;
-			layer->y = layer_state->y;
+			layer->dst_box = layer_state->dst_box;
 		}
 	}
 

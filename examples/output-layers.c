@@ -74,8 +74,12 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 		*layer_state = (struct wlr_output_layer_state){
 			.layer = output_surface->layer,
 			.buffer = output_surface->buffer,
-			.x = output_surface->x,
-			.y = output_surface->y,
+			.dst_box = {
+				.x = output_surface->x,
+				.y = output_surface->y,
+				.width = output_surface->wlr_surface->current.width,
+				.height = output_surface->wlr_surface->current.height,
+			},
 		};
 	}
 

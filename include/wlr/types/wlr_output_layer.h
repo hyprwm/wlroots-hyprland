@@ -11,6 +11,7 @@
 
 #include <wlr/render/drm_format_set.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/util/box.h>
 #include <wlr/util/addon.h>
 
 /**
@@ -51,7 +52,7 @@ struct wlr_output_layer {
 
 	// private state
 
-	int x, y;
+	struct wlr_box dst_box;
 };
 
 /**
@@ -62,8 +63,8 @@ struct wlr_output_layer_state {
 
 	// Buffer to display, or NULL to disable the layer
 	struct wlr_buffer *buffer;
-	// Position in output-buffer-local coordinates
-	int x, y;
+	// Destination box in output-buffer-local coordinates
+	struct wlr_box dst_box;
 
 	// Populated by the backend after wlr_output_test() and wlr_output_commit(),
 	// indicates whether the backend has acknowledged and will take care of
