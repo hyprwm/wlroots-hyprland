@@ -438,6 +438,17 @@ void seat_client_create_keyboard(struct wlr_seat_client *seat_client,
 	}
 }
 
+void seat_client_create_inert_keyboard(struct wl_client *client,
+		uint32_t version, uint32_t id) {
+	struct wl_resource *resource =
+		wl_resource_create(client, &wl_keyboard_interface, version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(resource, &keyboard_impl, NULL, NULL);
+}
+
 void seat_client_destroy_keyboard(struct wl_resource *resource) {
 	struct wlr_seat_client *seat_client =
 		seat_client_from_keyboard_resource(resource);

@@ -16,9 +16,12 @@
 
 static void seat_handle_get_pointer(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
+	uint32_t version = wl_resource_get_version(seat_resource);
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
 	if (!seat_client) {
+		// The client still needs a resource, so here's a dummy:
+		seat_client_create_inert_pointer(client, version, id);
 		return;
 	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_POINTER)) {
@@ -27,15 +30,16 @@ static void seat_handle_get_pointer(struct wl_client *client,
 		return;
 	}
 
-	uint32_t version = wl_resource_get_version(seat_resource);
 	seat_client_create_pointer(seat_client, version, id);
 }
 
 static void seat_handle_get_keyboard(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
+	uint32_t version = wl_resource_get_version(seat_resource);
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
 	if (!seat_client) {
+		seat_client_create_inert_keyboard(client, version, id);
 		return;
 	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_KEYBOARD)) {
@@ -44,15 +48,16 @@ static void seat_handle_get_keyboard(struct wl_client *client,
 		return;
 	}
 
-	uint32_t version = wl_resource_get_version(seat_resource);
 	seat_client_create_keyboard(seat_client, version, id);
 }
 
 static void seat_handle_get_touch(struct wl_client *client,
 		struct wl_resource *seat_resource, uint32_t id) {
+	uint32_t version = wl_resource_get_version(seat_resource);
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
 	if (!seat_client) {
+		seat_client_create_inert_touch(client, version, id);
 		return;
 	}
 	if (!(seat_client->seat->accumulated_capabilities & WL_SEAT_CAPABILITY_TOUCH)) {
@@ -61,7 +66,6 @@ static void seat_handle_get_touch(struct wl_client *client,
 		return;
 	}
 
-	uint32_t version = wl_resource_get_version(seat_resource);
 	seat_client_create_touch(seat_client, version, id);
 }
 

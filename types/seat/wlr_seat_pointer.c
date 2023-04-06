@@ -487,7 +487,6 @@ bool wlr_seat_pointer_has_grab(struct wlr_seat *seat) {
 	return seat->pointer_state.grab->interface != &default_pointer_grab_impl;
 }
 
-
 void seat_client_create_pointer(struct wlr_seat_client *seat_client,
 		uint32_t version, uint32_t id) {
 	struct wl_resource *resource = wl_resource_create(seat_client->client,
@@ -529,6 +528,17 @@ void seat_client_create_pointer(struct wlr_seat_client *seat_client,
 			}
 		}
 	}
+}
+
+void seat_client_create_inert_pointer(struct wl_client *client,
+		uint32_t version, uint32_t id) {
+	struct wl_resource *resource =
+		wl_resource_create(client, &wl_pointer_interface, version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(resource, &pointer_impl, NULL, NULL);
 }
 
 void seat_client_destroy_pointer(struct wl_resource *resource) {
