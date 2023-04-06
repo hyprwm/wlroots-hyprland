@@ -1490,6 +1490,10 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 		return false;
 	}
 
+	if (!wlr_output_is_direct_scanout_allowed(scene_output->output)) {
+		return false;
+	}
+
 	struct wlr_fbox default_box = {0};
 	if (buffer->transform & WL_OUTPUT_TRANSFORM_90) {
 		default_box.width = buffer->buffer->height;
