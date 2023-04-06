@@ -525,6 +525,13 @@ void wlr_output_render_software_cursors(struct wlr_output *output,
  */
 const struct wlr_drm_format_set *wlr_output_get_primary_formats(
 	struct wlr_output *output, uint32_t buffer_caps);
+/**
+ * Check whether direct scan-out is allowed on the output.
+ *
+ * Direct scan-out is typically disallowed when there are software cursors or
+ * during screen capture.
+ */
+bool wlr_output_is_direct_scanout_allowed(struct wlr_output *output);
 
 
 struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output);
