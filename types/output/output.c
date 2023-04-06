@@ -584,34 +584,15 @@ static bool output_basic_test(struct wlr_output *output,
 			return false;
 		}
 
-		if (output_is_direct_scanout(output, state->buffer)) {
-			if (output->attach_render_locks > 0) {
-				wlr_log(WLR_DEBUG, "Direct scan-out disabled by lock");
-				return false;
-			}
-
-			// If the output has at least one software cursor, refuse to attach the
-			// buffer
-			struct wlr_output_cursor *cursor;
-			wl_list_for_each(cursor, &output->cursors, link) {
-				if (cursor->enabled && cursor->visible &&
-						cursor != output->hardware_cursor) {
-					wlr_log(WLR_DEBUG,
-						"Direct scan-out disabled by software cursor");
-					return false;
-				}
-			}
-
-			// If the size doesn't match, reject buffer (scaling is not
-			// supported)
-			int pending_width, pending_height;
-			output_pending_resolution(output, state,
-				&pending_width, &pending_height);
-			if (state->buffer->width != pending_width ||
-					state->buffer->height != pending_height) {
-				wlr_log(WLR_DEBUG, "Direct scan-out buffer size mismatch");
-				return false;
-			}
+		// If the size doesn't match, reject buffer (scaling is not
+		// supported)
+		int pending_width, pending_height;
+		output_pending_resolution(output, state,
+			&pending_width, &pending_height);
+		if (state->buffer->width != pending_width ||
+				state->buffer->height != pending_height) {
+			wlr_log(WLR_DEBUG, "Primary buffer size mismatch");
+			return false;
 		}
 	}
 
