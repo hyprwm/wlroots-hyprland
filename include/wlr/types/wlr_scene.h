@@ -166,16 +166,17 @@ struct wlr_scene_buffer {
 	 */
 	struct wlr_scene_output *primary_output;
 
-	// private state
-
 	float opacity;
 	enum wlr_scale_filter_mode filter_mode;
-	uint64_t active_outputs;
-	struct wlr_texture *texture;
 	struct wlr_fbox src_box;
 	int dst_width, dst_height;
 	enum wl_output_transform transform;
 	pixman_region32_t opaque_region;
+
+	// private state
+
+	uint64_t active_outputs;
+	struct wlr_texture *texture;
 	struct wlr_linux_dmabuf_feedback_v1_init_options prev_feedback_options;
 };
 
