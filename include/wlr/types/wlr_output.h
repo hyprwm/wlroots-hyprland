@@ -44,6 +44,7 @@ struct wlr_output_cursor {
 
 	// only when using a software cursor without a surface
 	struct wlr_texture *texture;
+	bool own_texture;
 
 	// only when using a cursor surface
 	struct wlr_surface *surface;

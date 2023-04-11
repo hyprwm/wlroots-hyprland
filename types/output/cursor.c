@@ -454,32 +454,44 @@ bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 		return false;
 	}
 
+	struct wlr_texture *texture = NULL;
+	if (buffer != NULL) {
+		texture = wlr_texture_from_buffer(renderer, buffer);
+		if (texture == NULL) {
+			return false;
+		}
+	}
+
+	return output_cursor_set_texture(cursor, texture, true, 1,
+		WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
+}
+
+bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
+		struct wlr_texture *texture, bool own_texture, float scale,
+		enum wl_output_transform transform, int32_t hotspot_x, int32_t hotspot_y) {
 	output_cursor_reset(cursor);
 
-	if (buffer != NULL) {
-		cursor->width = buffer->width;
-		cursor->height = buffer->height;
+	cursor->enabled = texture != NULL;
+	if (texture != NULL) {
+		struct wlr_box box = { .width = texture->width, .height = texture->height };
+		wlr_box_transform(&box, &box, wlr_output_transform_invert(transform), 0, 0);
+		cursor->width = (int)roundf(box.width * scale);
+		cursor->height = (int)roundf(box.height * scale);
 	} else {
 		cursor->width = 0;
 		cursor->height = 0;
 	}
 
-	cursor->hotspot_x = hotspot_x;
-	cursor->hotspot_y = hotspot_y;
+	cursor->hotspot_x = (int)roundf(hotspot_x * scale);
+	cursor->hotspot_y = (int)roundf(hotspot_y * scale);
 
 	output_cursor_update_visible(cursor);
 
-	wlr_texture_destroy(cursor->texture);
-	cursor->texture = NULL;
-
-	cursor->enabled = false;
-	if (buffer != NULL) {
-		cursor->texture = wlr_texture_from_buffer(renderer, buffer);
-		if (cursor->texture == NULL) {
-			return false;
-		}
-		cursor->enabled = true;
+	if (cursor->own_texture) {
+		wlr_texture_destroy(cursor->texture);
 	}
+	cursor->texture = texture;
+	cursor->own_texture = own_texture;
 
 	if (output_cursor_attempt_hardware(cursor)) {
 		return true;
@@ -646,7 +658,9 @@ void wlr_output_cursor_destroy(struct wlr_output_cursor *cursor) {
 		output_set_hardware_cursor(cursor->output, NULL, 0, 0);
 		cursor->output->hardware_cursor = NULL;
 	}
-	wlr_texture_destroy(cursor->texture);
+	if (cursor->own_texture) {
+		wlr_texture_destroy(cursor->texture);
+	}
 	wl_list_remove(&cursor->link);
 	free(cursor);
 }

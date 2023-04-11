@@ -13,4 +13,8 @@ void output_clear_back_buffer(struct wlr_output *output);
 bool output_ensure_buffer(struct wlr_output *output,
 	const struct wlr_output_state *state, bool *new_back_buffer);
 
+bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
+	struct wlr_texture *texture, bool own_texture, float scale,
+	enum wl_output_transform transform, int32_t hotspot_x, int32_t hotspot_y);
+
 #endif
