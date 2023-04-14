@@ -295,6 +295,9 @@ static void feedback_handle_output_present(struct wl_listener *listener,
 	if (output_event->presented) {
 		struct wlr_presentation_event event = {0};
 		wlr_presentation_event_from_output(&event, output_event);
+		if (!feedback->zero_copy) {
+			event.flags &= ~WP_PRESENTATION_FEEDBACK_KIND_ZERO_COPY;
+		}
 		wlr_presentation_feedback_send_presented(feedback, &event);
 	}
 	wlr_presentation_feedback_destroy(feedback);
@@ -307,9 +310,9 @@ static void feedback_handle_output_destroy(struct wl_listener *listener,
 	wlr_presentation_feedback_destroy(feedback);
 }
 
-void wlr_presentation_surface_sampled_on_output(
+static void presentation_surface_queued_on_output(
 		struct wlr_presentation *presentation, struct wlr_surface *surface,
-		struct wlr_output *output) {
+		struct wlr_output *output, bool zero_copy) {
 	struct wlr_presentation_feedback *feedback =
 		wlr_presentation_surface_sampled(presentation, surface);
 	if (feedback == NULL) {
@@ -318,6 +321,7 @@ void wlr_presentation_surface_sampled_on_output(
 
 	assert(feedback->output == NULL);
 	feedback->output = output;
+	feedback->zero_copy = zero_copy;
 
 	feedback->output_commit.notify = feedback_handle_output_commit;
 	wl_signal_add(&output->events.commit, &feedback->output_commit);
@@ -325,4 +329,18 @@ void wlr_presentation_surface_sampled_on_output(
 	wl_signal_add(&output->events.present, &feedback->output_present);
 	feedback->output_destroy.notify = feedback_handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &feedback->output_destroy);
+}
+
+void wlr_presentation_surface_textured_on_output(
+		struct wlr_presentation *presentation, struct wlr_surface *surface,
+		struct wlr_output *output) {
+	return presentation_surface_queued_on_output(presentation, surface,
+		output, false);
+}
+
+void wlr_presentation_surface_scanned_out_on_output(
+		struct wlr_presentation *presentation, struct wlr_surface *surface,
+		struct wlr_output *output) {
+	return presentation_surface_queued_on_output(presentation, surface,
+		output, true);
 }

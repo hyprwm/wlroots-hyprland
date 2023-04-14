@@ -42,15 +42,21 @@ static void handle_scene_buffer_output_sample(
 		wl_container_of(listener, surface, output_sample);
 	const struct wlr_scene_output_sample_event *event = data;
 	struct wlr_scene_output *scene_output = event->output;
+	if (surface->buffer->primary_output != scene_output) {
+		return;
+	}
 
-	if (surface->buffer->primary_output == scene_output) {
-		struct wlr_scene *root = scene_node_get_root(&surface->buffer->node);
-		struct wlr_presentation *presentation = root->presentation;
+	struct wlr_scene *root = scene_node_get_root(&surface->buffer->node);
+	if (!root->presentation) {
+		return;
+	}
 
-		if (presentation) {
-			wlr_presentation_surface_sampled_on_output(
-				presentation, surface->surface, scene_output->output);
-		}
+	if (event->direct_scanout) {
+		wlr_presentation_surface_scanned_out_on_output(
+			root->presentation, surface->surface, scene_output->output);
+	} else {
+		wlr_presentation_surface_textured_on_output(
+			root->presentation, surface->surface, scene_output->output);
 	}
 }
 

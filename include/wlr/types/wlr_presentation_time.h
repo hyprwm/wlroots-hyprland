@@ -33,11 +33,12 @@ struct wlr_presentation {
 struct wlr_presentation_feedback {
 	struct wl_list resources; // wl_resource_get_link()
 
-	// Only when the wlr_presentation_surface_sampled_on_output() helper has
-	// been called.
+	// Only when the wlr_presentation_surface_textured_on_output() or
+	// wlr_presentation_surface_scanned_out_on_output() helper has been called.
 	struct wlr_output *output;
 	bool output_committed;
 	uint32_t output_commit_seq;
+	bool zero_copy;
 
 	struct wl_listener output_commit;
 	struct wl_listener output_present;
@@ -85,14 +86,23 @@ void wlr_presentation_event_from_output(struct wlr_presentation_event *event,
 		const struct wlr_output_event_present *output_event);
 
 /**
- * Mark the current surface's buffer as sampled on the given output.
+ * Mark the current surface's buffer as textured on the given output.
  *
  * Instead of calling wlr_presentation_surface_sampled() and managing the
  * struct wlr_presentation_feedback itself, the compositor can call this function
  * before a wlr_output_commit() call to indicate that the surface's current
- * contents will be displayed on the output.
+ * contents have been copied to a buffer which will be displayed on the output.
  */
-void wlr_presentation_surface_sampled_on_output(
+void wlr_presentation_surface_textured_on_output(
+	struct wlr_presentation *presentation, struct wlr_surface *surface,
+	struct wlr_output *output);
+/**
+ * Mark the current surface's buffer as scanned out on the given output.
+ *
+ * Same as wlr_presentation_surface_textured_on_output(), but indicates direct
+ * scan-out.
+ */
+void wlr_presentation_surface_scanned_out_on_output(
 	struct wlr_presentation *presentation, struct wlr_surface *surface,
 	struct wlr_output *output);
 
