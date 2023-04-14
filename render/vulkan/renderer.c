@@ -2185,6 +2185,111 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
+static bool init_quad_pipeline(struct wlr_vk_renderer *renderer,
+		VkRenderPass rp, VkPipelineLayout pipe_layout, VkPipeline *pipe) {
+	VkResult res;
+	VkDevice dev = renderer->dev->dev;
+
+	VkPipelineShaderStageCreateInfo quad_stages[2] = {
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_VERTEX_BIT,
+			.module = renderer->vert_module,
+			.pName = "main",
+		},
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.module = renderer->quad_frag_module,
+			.pName = "main",
+		},
+	};
+
+	VkPipelineInputAssemblyStateCreateInfo assembly = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
+	};
+
+	VkPipelineRasterizationStateCreateInfo rasterization = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.polygonMode = VK_POLYGON_MODE_FILL,
+		.cullMode = VK_CULL_MODE_NONE,
+		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+		.lineWidth = 1.f,
+	};
+
+	VkPipelineColorBlendAttachmentState blend_attachment = {
+		.blendEnable = true,
+		.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+		.colorBlendOp = VK_BLEND_OP_ADD,
+		.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+		.alphaBlendOp = VK_BLEND_OP_ADD,
+		.colorWriteMask =
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+	};
+
+	VkPipelineColorBlendStateCreateInfo blend = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		.attachmentCount = 1,
+		.pAttachments = &blend_attachment,
+	};
+
+	VkPipelineMultisampleStateCreateInfo multisample = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+	};
+
+	VkPipelineViewportStateCreateInfo viewport = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.viewportCount = 1,
+		.scissorCount = 1,
+	};
+
+	VkDynamicState dynStates[2] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR,
+	};
+	VkPipelineDynamicStateCreateInfo dynamic = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.pDynamicStates = dynStates,
+		.dynamicStateCount = 2,
+	};
+
+	VkPipelineVertexInputStateCreateInfo vertex = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+	};
+
+	VkGraphicsPipelineCreateInfo pinfo = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.layout = pipe_layout,
+		.renderPass = rp,
+		.subpass = 0,
+		.stageCount = 2,
+		.pStages = quad_stages,
+		.pInputAssemblyState = &assembly,
+		.pRasterizationState = &rasterization,
+		.pColorBlendState = &blend,
+		.pMultisampleState = &multisample,
+		.pViewportState = &viewport,
+		.pDynamicState = &dynamic,
+		.pVertexInputState = &vertex,
+	};
+
+	VkPipelineCache cache = VK_NULL_HANDLE;
+	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, pipe);
+	if (res != VK_SUCCESS) {
+		wlr_log(WLR_ERROR, "failed to create vulkan quad pipeline: %d", res);
+		return false;
+	}
+
+	return true;
+}
+
 static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 		VkRenderPass rp, VkPipelineLayout pipe_layout, VkPipeline *pipe) {
 	VkResult res;
@@ -2601,101 +2706,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		goto error;
 	}
 
-	VkPipelineShaderStageCreateInfo quad_stages[2] = {
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_VERTEX_BIT,
-			.module = renderer->vert_module,
-			.pName = "main",
-		},
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.module = renderer->quad_frag_module,
-			.pName = "main",
-		},
-	};
-
-	VkPipelineInputAssemblyStateCreateInfo assembly = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-	};
-
-	VkPipelineRasterizationStateCreateInfo rasterization = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.polygonMode = VK_POLYGON_MODE_FILL,
-		.cullMode = VK_CULL_MODE_NONE,
-		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-		.lineWidth = 1.f,
-	};
-
-	VkPipelineColorBlendAttachmentState blend_attachment = {
-		.blendEnable = true,
-		.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.colorBlendOp = VK_BLEND_OP_ADD,
-		.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-		.alphaBlendOp = VK_BLEND_OP_ADD,
-		.colorWriteMask =
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT,
-	};
-
-	VkPipelineColorBlendStateCreateInfo blend = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.attachmentCount = 1,
-		.pAttachments = &blend_attachment,
-	};
-
-	VkPipelineMultisampleStateCreateInfo multisample = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-	};
-
-	VkPipelineViewportStateCreateInfo viewport = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.viewportCount = 1,
-		.scissorCount = 1,
-	};
-
-	VkDynamicState dynStates[2] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR,
-	};
-	VkPipelineDynamicStateCreateInfo dynamic = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.pDynamicStates = dynStates,
-		.dynamicStateCount = 2,
-	};
-
-	VkPipelineVertexInputStateCreateInfo vertex = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-	};
-
-	VkGraphicsPipelineCreateInfo pinfo = {
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.layout = renderer->pipe_layout,
-		.renderPass = setup->render_pass,
-		.subpass = 0,
-		.stageCount = 2,
-		.pStages = quad_stages,
-
-		.pInputAssemblyState = &assembly,
-		.pRasterizationState = &rasterization,
-		.pColorBlendState = &blend,
-		.pMultisampleState = &multisample,
-		.pViewportState = &viewport,
-		.pDynamicState = &dynamic,
-		.pVertexInputState = &vertex,
-	};
-
-	VkPipelineCache cache = VK_NULL_HANDLE;
-	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, &setup->quad_pipe);
-	if (res != VK_SUCCESS) {
-		wlr_log(WLR_ERROR, "failed to create vulkan quad pipeline: %d", res);
+	if (!init_quad_pipeline(renderer, setup->render_pass, renderer->pipe_layout,
+			&setup->quad_pipe)) {
 		goto error;
 	}
 
