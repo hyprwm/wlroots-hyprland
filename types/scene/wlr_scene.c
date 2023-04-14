@@ -1541,6 +1541,8 @@ static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
 		return false;
 	}
 
+	wl_signal_emit_mutable(&buffer->events.output_present, scene_output);
+
 	state.committed |= WLR_OUTPUT_STATE_DAMAGE;
 	get_frame_damage(scene_output, &state.damage);
 	bool ok = wlr_output_commit_state(scene_output->output, &state);
@@ -1621,11 +1623,6 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	}
 
 	if (scanout) {
-		struct wlr_scene_node *node = list_data[0];
-
-		assert(node->type == WLR_SCENE_NODE_BUFFER);
-		struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
-		wl_signal_emit_mutable(&buffer->events.output_present, scene_output);
 		return true;
 	}
 
