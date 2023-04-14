@@ -45,11 +45,11 @@ struct wlr_vk_device {
 	VkQueue queue;
 
 	struct {
-		PFN_vkGetMemoryFdPropertiesKHR getMemoryFdPropertiesKHR;
-		PFN_vkWaitSemaphoresKHR waitSemaphoresKHR;
-		PFN_vkGetSemaphoreCounterValueKHR getSemaphoreCounterValueKHR;
-		PFN_vkGetSemaphoreFdKHR getSemaphoreFdKHR;
-		PFN_vkImportSemaphoreFdKHR importSemaphoreFdKHR;
+		PFN_vkGetMemoryFdPropertiesKHR vkGetMemoryFdPropertiesKHR;
+		PFN_vkWaitSemaphoresKHR vkWaitSemaphoresKHR;
+		PFN_vkGetSemaphoreCounterValueKHR vkGetSemaphoreCounterValueKHR;
+		PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
+		PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	} api;
 
 	uint32_t format_prop_count;

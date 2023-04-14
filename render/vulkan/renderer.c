@@ -444,7 +444,7 @@ static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
 		.pSemaphores = &renderer->timeline_semaphore,
 		.pValues = &cb->timeline_point,
 	};
-	res = renderer->dev->api.waitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
+	res = renderer->dev->api.vkWaitSemaphoresKHR(renderer->dev->dev, &wait_info, UINT64_MAX);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkWaitSemaphoresKHR", res);
 		return false;
@@ -476,7 +476,7 @@ static struct wlr_vk_command_buffer *get_command_buffer(
 	VkResult res;
 
 	uint64_t current_point;
-	res = renderer->dev->api.getSemaphoreCounterValueKHR(renderer->dev->dev,
+	res = renderer->dev->api.vkGetSemaphoreCounterValueKHR(renderer->dev->dev,
 		renderer->timeline_semaphore, &current_point);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkGetSemaphoreCounterValueKHR", res);
@@ -839,7 +839,7 @@ static bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
 			.semaphore = texture->foreign_semaphores[i],
 			.fd = sync_file_fd,
 		};
-		res = renderer->dev->api.importSemaphoreFdKHR(renderer->dev->dev, &import_info);
+		res = renderer->dev->api.vkImportSemaphoreFdKHR(renderer->dev->dev, &import_info);
 		if (res != VK_SUCCESS) {
 			close(sync_file_fd);
 			wlr_vk_error("vkImportSemaphoreFdKHR", res);
@@ -873,7 +873,7 @@ static bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
 		.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
 	};
 	int sync_file_fd = -1;
-	res = renderer->dev->api.getSemaphoreFdKHR(renderer->dev->dev,
+	res = renderer->dev->api.vkGetSemaphoreFdKHR(renderer->dev->dev,
 		&get_fence_fd_info, &sync_file_fd);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkGetSemaphoreFdKHR", res);

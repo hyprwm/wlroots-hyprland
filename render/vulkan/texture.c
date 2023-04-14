@@ -542,7 +542,7 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		VkMemoryFdPropertiesKHR fdp = {
 			.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR,
 		};
-		res = renderer->dev->api.getMemoryFdPropertiesKHR(dev, htype,
+		res = renderer->dev->api.vkGetMemoryFdPropertiesKHR(dev, htype,
 			attribs->fd[i], &fdp);
 		if (res != VK_SUCCESS) {
 			wlr_vk_error("getMemoryFdPropertiesKHR", res);
