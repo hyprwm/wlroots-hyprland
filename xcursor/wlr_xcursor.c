@@ -117,7 +117,7 @@ static void load_default_theme(struct wlr_xcursor_theme *theme) {
 }
 
 static struct wlr_xcursor *xcursor_create_from_xcursor_images(
-		XcursorImages *images, struct wlr_xcursor_theme *theme) {
+		struct xcursor_images *images, struct wlr_xcursor_theme *theme) {
 	struct wlr_xcursor *cursor = calloc(1, sizeof(*cursor));
 	if (!cursor) {
 		return NULL;
@@ -170,11 +170,11 @@ static struct wlr_xcursor *xcursor_create_from_xcursor_images(
 	return cursor;
 }
 
-static void load_callback(XcursorImages *images, void *data) {
+static void load_callback(struct xcursor_images *images, void *data) {
 	struct wlr_xcursor_theme *theme = data;
 
 	if (wlr_xcursor_theme_get_cursor(theme, images->name)) {
-		XcursorImagesDestroy(images);
+		xcursor_images_destroy(images);
 		return;
 	}
 
@@ -192,7 +192,7 @@ static void load_callback(XcursorImages *images, void *data) {
 		}
 	}
 
-	XcursorImagesDestroy(images);
+	xcursor_images_destroy(images);
 }
 
 struct wlr_xcursor_theme *wlr_xcursor_theme_load(const char *name, int size) {
