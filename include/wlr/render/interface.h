@@ -79,4 +79,10 @@ struct wlr_render_pass_impl {
 		const struct wlr_render_rect_options *options);
 };
 
+void wlr_render_texture_options_get_src_box(const struct wlr_render_texture_options *options,
+	struct wlr_fbox *box);
+void wlr_render_texture_options_get_dst_box(const struct wlr_render_texture_options *options,
+	struct wlr_box *box);
+float wlr_render_texture_options_get_alpha(const struct wlr_render_texture_options *options);
+
 #endif
