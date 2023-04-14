@@ -919,7 +919,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	unsigned barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
 	VkImageMemoryBarrier *acquire_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
 	VkImageMemoryBarrier *release_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
-	VkSemaphore *render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(VkSemaphore));
+	VkSemaphoreSubmitInfoKHR *render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(VkSemaphoreSubmitInfoKHR));
 	if (acquire_barriers == NULL || release_barriers == NULL || render_wait == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(acquire_barriers);
@@ -976,7 +976,11 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 			for (size_t i = 0; i < WLR_DMABUF_MAX_PLANES; i++) {
 				if (texture->foreign_semaphores[i] != VK_NULL_HANDLE) {
 					assert(render_wait_len < barrier_count * WLR_DMABUF_MAX_PLANES);
-					render_wait[render_wait_len++] = texture->foreign_semaphores[i];
+					render_wait[render_wait_len++] = (VkSemaphoreSubmitInfoKHR){
+						.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+						.semaphore = texture->foreign_semaphores[i],
+						.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR,
+					};
 				}
 			}
 		}
@@ -1037,22 +1041,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	free(acquire_barriers);
 	free(release_barriers);
 
-	VkSubmitInfo submit_infos[2] = {0};
-	VkSubmitInfo *stage_sub = &submit_infos[0];
-	VkSubmitInfo *render_sub = &submit_infos[1];
-
-	VkPipelineStageFlags *render_wait_stages = NULL;
-	if (render_wait_len > 0) {
-		render_wait_stages = calloc(render_wait_len, sizeof(VkPipelineStageFlags));
-		if (render_wait_stages == NULL) {
-			wlr_log(WLR_ERROR, "Allocation failed");
-			return;
-		}
-		for (size_t i = 0; i < render_wait_len; i++) {
-			render_wait_stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-		}
-	}
-
 	// No semaphores needed here.
 	// We don't need a semaphore from the stage/transfer submission
 	// to the render submissions since they are on the same queue
@@ -1062,30 +1050,34 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		return;
 	}
 
-	VkTimelineSemaphoreSubmitInfoKHR stage_timeline_submit_info = {
-		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &stage_timeline_point,
+	VkCommandBufferSubmitInfoKHR stage_cb_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+		.commandBuffer = stage_cb->vk,
 	};
-	*stage_sub = (VkSubmitInfo){
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext = &stage_timeline_submit_info,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &stage_cb->vk,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &renderer->timeline_semaphore,
+	VkSemaphoreSubmitInfoKHR stage_signal = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+		.semaphore = renderer->timeline_semaphore,
+		.value = stage_timeline_point,
+	};
+	VkSubmitInfo2KHR stage_submit = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
+		.commandBufferInfoCount = 1,
+		.pCommandBufferInfos = &stage_cb_info,
+		.signalSemaphoreInfoCount = 1,
+		.pSignalSemaphoreInfos = &stage_signal,
 	};
 
-	uint64_t stage_wait_timeline_point;
-	VkPipelineStageFlags stage_wait_stage;
+	VkSemaphoreSubmitInfoKHR stage_wait;
 	if (renderer->stage.last_timeline_point > 0) {
-		stage_wait_timeline_point = renderer->stage.last_timeline_point;
-		stage_wait_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-		stage_sub->waitSemaphoreCount = 1;
-		stage_sub->pWaitSemaphores = &renderer->timeline_semaphore;
-		stage_sub->pWaitDstStageMask = &stage_wait_stage;
-		stage_timeline_submit_info.waitSemaphoreValueCount = 1;
-		stage_timeline_submit_info.pWaitSemaphoreValues = &stage_wait_timeline_point;
+		stage_wait = (VkSemaphoreSubmitInfoKHR){
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+			.semaphore = renderer->timeline_semaphore,
+			.value = renderer->stage.last_timeline_point,
+			.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR,
+		};
+
+		stage_submit.waitSemaphoreInfoCount = 1;
+		stage_submit.pWaitSemaphoreInfos = &stage_wait;
 	}
 
 	renderer->stage.last_timeline_point = stage_timeline_point;
@@ -1096,9 +1088,12 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 
 	size_t render_signal_len = 1;
-	VkSemaphore render_signal[2] = { renderer->timeline_semaphore };
-	uint64_t render_signal_timeline_points[2] = { render_timeline_point };
-
+	VkSemaphoreSubmitInfoKHR render_signal[2] = {0};
+	render_signal[0] = (VkSemaphoreSubmitInfoKHR){
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+		.semaphore = renderer->timeline_semaphore,
+		.value = render_timeline_point,
+	};
 	if (renderer->dev->implicit_sync_interop) {
 		if (render_cb->binary_semaphore == VK_NULL_HANDLE) {
 			VkExportSemaphoreCreateInfo export_info = {
@@ -1117,28 +1112,28 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 			}
 		}
 
-		render_signal[render_signal_len++] = render_cb->binary_semaphore;
+		render_signal[render_signal_len++] = (VkSemaphoreSubmitInfoKHR){
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
+			.semaphore = render_cb->binary_semaphore,
+		};
 	}
 
-	VkTimelineSemaphoreSubmitInfoKHR render_timeline_submit_info = {
-		.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-		.signalSemaphoreValueCount = render_signal_len,
-		.pSignalSemaphoreValues = render_signal_timeline_points,
+	VkCommandBufferSubmitInfoKHR render_cb_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
+		.commandBuffer = render_cb->vk,
 	};
-	*render_sub = (VkSubmitInfo){
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext = &render_timeline_submit_info,
-		.pCommandBuffers = &render_cb->vk,
-		.commandBufferCount = 1,
-		.waitSemaphoreCount = render_wait_len,
-		.pWaitSemaphores = render_wait,
-		.pWaitDstStageMask = render_wait_stages,
-		.signalSemaphoreCount = render_signal_len,
-		.pSignalSemaphores = render_signal,
+	VkSubmitInfo2KHR render_submit = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
+		.waitSemaphoreInfoCount = render_wait_len,
+		.pWaitSemaphoreInfos = render_wait,
+		.commandBufferInfoCount = 1,
+		.pCommandBufferInfos = &render_cb_info,
+		.signalSemaphoreInfoCount = render_signal_len,
+		.pSignalSemaphoreInfos = render_signal,
 	};
 
-	uint32_t submit_count = sizeof(submit_infos) / sizeof(submit_infos[0]);
-	VkResult res = vkQueueSubmit(renderer->dev->queue, submit_count, submit_infos, VK_NULL_HANDLE);
+	VkSubmitInfo2KHR submit_infos[] = { stage_submit, render_submit };
+	VkResult res = renderer->dev->api.vkQueueSubmit2KHR(renderer->dev->queue, 2, submit_infos, VK_NULL_HANDLE);
 	if (res == VK_ERROR_DEVICE_LOST) {
 		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
 		wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
