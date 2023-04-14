@@ -12,6 +12,7 @@
 #include <wlr/util/addon.h>
 
 struct wlr_vk_descriptor_pool;
+struct wlr_vk_texture;
 
 struct wlr_vk_instance {
 	VkInstance instance;
@@ -260,6 +261,13 @@ struct wlr_vk_renderer {
 	} read_pixels_cache;
 };
 
+// vertex shader push constant range data
+struct wlr_vk_vert_pcr_data {
+	float mat4[4][4];
+	float uv_off[2];
+	float uv_size[2];
+};
+
 // Creates a vulkan renderer for the given device.
 struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev);
 
@@ -271,6 +279,18 @@ VkCommandBuffer vulkan_record_stage_cb(struct wlr_vk_renderer *renderer);
 // Submits the current stage command buffer and waits until it has
 // finished execution.
 bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer);
+
+struct wlr_vk_render_pass {
+	struct wlr_render_pass base;
+	struct wlr_vk_renderer *renderer;
+	struct wlr_vk_render_buffer *render_buffer;
+	struct wlr_vk_command_buffer *command_buffer;
+	VkPipeline bound_pipeline;
+	float projection[9];
+};
+
+struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *renderer,
+	struct wlr_vk_render_buffer *buffer);
 
 // Suballocates a buffer span with the given size that can be mapped
 // and used as staging buffer. The allocation is implicitly released when the
@@ -301,6 +321,19 @@ struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *r);
 
 struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
 	const struct wlr_vk_format *format);
+VkPipeline vulkan_get_texture_pipeline(struct wlr_vk_texture *texture,
+	struct wlr_vk_render_format_setup *render_setup);
+
+struct wlr_vk_command_buffer *vulkan_acquire_command_buffer(
+	struct wlr_vk_renderer *renderer);
+uint64_t vulkan_end_command_buffer(struct wlr_vk_command_buffer *cb,
+	struct wlr_vk_renderer *renderer);
+bool vulkan_wait_command_buffer(struct wlr_vk_command_buffer *cb,
+	struct wlr_vk_renderer *renderer);
+
+bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
+	struct wlr_vk_render_buffer *render_buffer, struct wlr_vk_command_buffer *cb);
+bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture);
 
 // State (e.g. image texture) associated with a surface.
 struct wlr_vk_texture {

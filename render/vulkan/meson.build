@@ -37,6 +37,7 @@ glslang_version_info = run_command(glslang, '--version', check: true).stdout()
 glslang_version = glslang_version_info.split('\n')[0].split(':')[-1]
 
 wlr_files += files(
+	'pass.c',
 	'renderer.c',
 	'texture.c',
 	'vulkan.c',

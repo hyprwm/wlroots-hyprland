@@ -58,13 +58,6 @@ struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *wlr_renderer) {
 static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		struct wlr_vk_renderer *renderer, VkFormat format, bool has_blending_buffer);
 
-// vertex shader push constant range data
-struct vert_pcr_data {
-	float mat4[4][4];
-	float uv_off[2];
-	float uv_size[2];
-};
-
 // https://www.w3.org/Graphics/Color/srgb
 static float color_to_linear(float non_linear) {
 	return (non_linear > 0.04045) ?
@@ -360,16 +353,9 @@ error_alloc:
 	};
 }
 
-static struct wlr_vk_command_buffer *acquire_command_buffer(
-	struct wlr_vk_renderer *renderer);
-static uint64_t end_command_buffer(struct wlr_vk_command_buffer *cb,
-	struct wlr_vk_renderer *renderer);
-static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
-	struct wlr_vk_renderer *renderer);
-
 VkCommandBuffer vulkan_record_stage_cb(struct wlr_vk_renderer *renderer) {
 	if (renderer->stage.cb == NULL) {
-		renderer->stage.cb = acquire_command_buffer(renderer);
+		renderer->stage.cb = vulkan_acquire_command_buffer(renderer);
 		if (renderer->stage.cb == NULL) {
 			return VK_NULL_HANDLE;
 		}
@@ -391,7 +377,7 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 	struct wlr_vk_command_buffer *cb = renderer->stage.cb;
 	renderer->stage.cb = NULL;
 
-	uint64_t timeline_point = end_command_buffer(cb, renderer);
+	uint64_t timeline_point = vulkan_end_command_buffer(cb, renderer);
 	if (timeline_point == 0) {
 		return false;
 	}
@@ -418,7 +404,7 @@ bool vulkan_submit_stage_wait(struct wlr_vk_renderer *renderer) {
 	// NOTE: don't release stage allocations here since they may still be
 	// used for reading. Will be done next frame.
 
-	return wait_command_buffer(cb, renderer);
+	return vulkan_wait_command_buffer(cb, renderer);
 }
 
 struct wlr_vk_format_props *vulkan_format_props_from_drm(
@@ -456,7 +442,7 @@ static bool init_command_buffer(struct wlr_vk_command_buffer *cb,
 	return true;
 }
 
-static bool wait_command_buffer(struct wlr_vk_command_buffer *cb,
+bool vulkan_wait_command_buffer(struct wlr_vk_command_buffer *cb,
 		struct wlr_vk_renderer *renderer) {
 	VkResult res;
 
@@ -546,13 +532,13 @@ static struct wlr_vk_command_buffer *get_command_buffer(
 	}
 
 	// Block until a busy command buffer becomes available
-	if (!wait_command_buffer(wait, renderer)) {
+	if (!vulkan_wait_command_buffer(wait, renderer)) {
 		return NULL;
 	}
 	return wait;
 }
 
-static struct wlr_vk_command_buffer *acquire_command_buffer(
+struct wlr_vk_command_buffer *vulkan_acquire_command_buffer(
 		struct wlr_vk_renderer *renderer) {
 	struct wlr_vk_command_buffer *cb = get_command_buffer(renderer);
 	if (cb == NULL) {
@@ -565,7 +551,7 @@ static struct wlr_vk_command_buffer *acquire_command_buffer(
 	return cb;
 }
 
-static uint64_t end_command_buffer(struct wlr_vk_command_buffer *cb,
+uint64_t vulkan_end_command_buffer(struct wlr_vk_command_buffer *cb,
 		struct wlr_vk_renderer *renderer) {
 	assert(cb->recording);
 	cb->recording = false;
@@ -900,7 +886,7 @@ static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	assert(renderer->current_render_buffer);
 
-	struct wlr_vk_command_buffer *cb = acquire_command_buffer(renderer);
+	struct wlr_vk_command_buffer *cb = vulkan_acquire_command_buffer(renderer);
 	if (cb == NULL) {
 		return false;
 	}
@@ -949,7 +935,7 @@ static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
 	return true;
 }
 
-static bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
+bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
 	struct wlr_vk_renderer *renderer = texture->renderer;
 	VkResult res;
 
@@ -1019,18 +1005,17 @@ static bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
 	return true;
 }
 
-static bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
-		struct wlr_vk_command_buffer *cb) {
+bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
+		struct wlr_vk_render_buffer *render_buffer, struct wlr_vk_command_buffer *cb) {
 	VkResult res;
 
 	if (!renderer->dev->implicit_sync_interop) {
 		// We have no choice but to block here sadly
-		return wait_command_buffer(cb, renderer);
+		return vulkan_wait_command_buffer(cb, renderer);
 	}
 
 	struct wlr_dmabuf_attributes dmabuf = {0};
-	if (!wlr_buffer_get_dmabuf(renderer->current_render_buffer->wlr_buffer,
-			&dmabuf)) {
+	if (!wlr_buffer_get_dmabuf(render_buffer->wlr_buffer, &dmabuf)) {
 		wlr_log(WLR_ERROR, "wlr_buffer_get_dmabuf failed");
 		return false;
 	}
@@ -1095,7 +1080,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 			0.f, renderer->render_height, -1.f,
 			0.f, 0.f, 0.f,
 		};
-		struct vert_pcr_data vert_pcr_data;
+		struct wlr_vk_vert_pcr_data vert_pcr_data;
 		mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
 		vert_pcr_data.uv_off[0] = 0.f;
 		vert_pcr_data.uv_off[1] = 0.f;
@@ -1275,7 +1260,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	// We don't need a semaphore from the stage/transfer submission
 	// to the render submissions since they are on the same queue
 	// and we have a renderpass dependency for that.
-	uint64_t stage_timeline_point = end_command_buffer(stage_cb, renderer);
+	uint64_t stage_timeline_point = vulkan_end_command_buffer(stage_cb, renderer);
 	if (stage_timeline_point == 0) {
 		return;
 	}
@@ -1312,7 +1297,7 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 
 	renderer->stage.last_timeline_point = stage_timeline_point;
 
-	uint64_t render_timeline_point = end_command_buffer(render_cb, renderer);
+	uint64_t render_timeline_point = vulkan_end_command_buffer(render_cb, renderer);
 	if (render_timeline_point == 0) {
 		return;
 	}
@@ -1384,12 +1369,12 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 		wl_list_insert(&stage_cb->stage_buffers, &stage_buf->link);
 	}
 
-	if (!vulkan_sync_render_buffer(renderer, render_cb)) {
+	if (!vulkan_sync_render_buffer(renderer, renderer->current_render_buffer, render_cb)) {
 		return;
 	}
 }
 
-static VkPipeline get_texture_pipeline(struct wlr_vk_texture *texture,
+VkPipeline vulkan_get_texture_pipeline(struct wlr_vk_texture *texture,
 		struct wlr_vk_render_format_setup *render_setup) {
 	if (texture->format->is_ycbcr) {
 		size_t pipeline_layout_index = texture->pipeline_layout - texture->renderer->ycbcr_pipeline_layouts;
@@ -1426,7 +1411,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	}
 
 	VkPipelineLayout pipe_layout = texture->pipeline_layout->vk;
-	VkPipeline pipe = get_texture_pipeline(texture, renderer->current_render_buffer->render_setup);
+	VkPipeline pipe = vulkan_get_texture_pipeline(texture, renderer->current_render_buffer->render_setup);
 
 	if (pipe != renderer->bound_pipe) {
 		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
@@ -1439,7 +1424,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
 
-	struct vert_pcr_data vert_pcr_data;
+	struct wlr_vk_vert_pcr_data vert_pcr_data;
 	mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
 
 	vert_pcr_data.uv_off[0] = box->x / wlr_texture->width;
@@ -1529,7 +1514,7 @@ static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
 
-	struct vert_pcr_data vert_pcr_data;
+	struct wlr_vk_vert_pcr_data vert_pcr_data;
 	mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
 	vert_pcr_data.uv_off[0] = 0.f;
 	vert_pcr_data.uv_off[1] = 0.f;
@@ -1915,6 +1900,24 @@ static uint32_t vulkan_get_render_buffer_caps(struct wlr_renderer *wlr_renderer)
 	return WLR_BUFFER_CAP_DMABUF;
 }
 
+static struct wlr_render_pass *vulkan_begin_buffer_pass(struct wlr_renderer *wlr_renderer, struct wlr_buffer *buffer) {
+	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
+
+	struct wlr_vk_render_buffer *render_buffer = get_render_buffer(renderer, buffer);
+	if (!render_buffer) {
+		render_buffer = create_render_buffer(renderer, buffer);
+		if (!render_buffer) {
+			return NULL;
+		}
+	}
+
+	struct wlr_vk_render_pass *render_pass = vulkan_begin_render_pass(renderer, render_buffer);
+	if (render_pass == NULL) {
+		return NULL;
+	}
+	return &render_pass->base;
+}
+
 static const struct wlr_renderer_impl renderer_impl = {
 	.bind_buffer = vulkan_bind_buffer,
 	.begin = vulkan_begin,
@@ -1932,6 +1935,7 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_drm_fd = vulkan_get_drm_fd,
 	.get_render_buffer_caps = vulkan_get_render_buffer_caps,
 	.texture_from_buffer = vulkan_texture_from_buffer,
+	.begin_buffer_pass = vulkan_begin_buffer_pass,
 };
 
 static bool init_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler,
@@ -1996,7 +2000,7 @@ static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
 
 	VkPushConstantRange pc_ranges[2] = {
 		{
-			.size = sizeof(struct vert_pcr_data),
+			.size = sizeof(struct wlr_vk_vert_pcr_data),
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 		},
 		{
@@ -2052,7 +2056,7 @@ static bool init_blend_to_output_layouts(struct wlr_vk_renderer *renderer,
 	// pipeline layout -- standard vertex uniforms, no shader uniforms
 	VkPushConstantRange pc_ranges[1] = {
 		{
-			.size = sizeof(struct vert_pcr_data),
+			.size = sizeof(struct wlr_vk_vert_pcr_data),
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 		},
 	};
