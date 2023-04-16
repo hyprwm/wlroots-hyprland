@@ -602,7 +602,6 @@ void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buff
 	assert(buffer || !damage);
 
 	bool update = false;
-	wlr_buffer_unlock(scene_buffer->buffer);
 
 	wlr_texture_destroy(scene_buffer->texture);
 	scene_buffer->texture = NULL;
@@ -616,8 +615,10 @@ void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buff
 				(scene_buffer->buffer->width != buffer->width ||
 				scene_buffer->buffer->height != buffer->height));
 
+		wlr_buffer_unlock(scene_buffer->buffer);
 		scene_buffer->buffer = wlr_buffer_lock(buffer);
 	} else {
+		wlr_buffer_unlock(scene_buffer->buffer);
 		update = true;
 		scene_buffer->buffer = NULL;
 	}
