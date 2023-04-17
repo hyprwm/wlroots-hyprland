@@ -582,6 +582,13 @@ void wlr_output_state_set_buffer(struct wlr_output_state *state,
  */
 bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 	const struct wlr_output_state *state, struct wlr_swapchain **swapchain);
+/**
+ * Begin a render pass on this output.
+ *
+ * Same as wlr_output_attach_render(), but returns a struct wlr_render_pass.
+ */
+struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
+	struct wlr_output_state *state, int *buffer_age);
 
 
 /**

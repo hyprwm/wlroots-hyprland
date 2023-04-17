@@ -247,3 +247,26 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
 
 	return fmt;
 }
+
+struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
+		struct wlr_output_state *state, int *buffer_age) {
+	if (!wlr_output_configure_primary_swapchain(output, state, &output->swapchain)) {
+		return NULL;
+	}
+
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, buffer_age);
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	struct wlr_renderer *renderer = output->renderer;
+	assert(renderer != NULL);
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, buffer);
+	if (pass == NULL) {
+		return NULL;
+	}
+
+	wlr_output_state_set_buffer(state, buffer);
+	wlr_buffer_unlock(buffer);
+	return pass;
+}
