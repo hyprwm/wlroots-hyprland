@@ -87,9 +87,13 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	int32_t width, height;
 	wlr_output_effective_resolution(wlr_output, &width, &height);
 
-	wlr_output_attach_render(wlr_output, NULL);
-	wlr_renderer_begin(sample->renderer, wlr_output->width, wlr_output->height);
-	wlr_renderer_clear(sample->renderer, (float[]){0.25f, 0.25f, 0.25f, 1});
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL);
+
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = wlr_output->width, .height = wlr_output->height },
+		.color = { 0.25, 0.25, 0.25, 1 },
+	});
 
 	float distance = 0.8f * (1 - sample->distance);
 	float tool_color[4] = { distance, distance, distance, 1 };
@@ -108,6 +112,20 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	};
 	wlr_render_rect(sample->renderer, &box, sample->pad_color,
 		wlr_output->transform_matrix);
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = {
+			.x = left,
+			.y = top,
+			.width = pad_width,
+			.height = pad_height,
+		},
+		.color = {
+			sample->pad_color[0],
+			sample->pad_color[1],
+			sample->pad_color[2],
+			sample->pad_color[3],
+		},
+	});
 
 	if (sample->proximity) {
 		struct wlr_box box = {
@@ -116,21 +134,36 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 			.width = 16 * (sample->pressure + 1),
 			.height = 16 * (sample->pressure + 1),
 		};
-		float matrix[9];
-		wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL,
-			sample->ring, wlr_output->transform_matrix);
-		wlr_render_quad_with_matrix(sample->renderer, tool_color, matrix);
+
+		// TODO: use sample->ring
+		wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+			.box = box,
+			.color = {
+				tool_color[0],
+				tool_color[1],
+				tool_color[2],
+				tool_color[3],
+			},
+		});
 
 		box.x += sample->x_tilt;
 		box.y += sample->y_tilt;
 		box.width /= 2;
 		box.height /= 2;
-		wlr_render_rect(sample->renderer, &box, tool_color,
-			wlr_output->transform_matrix);
+		wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+			.box = box,
+			.color = {
+				tool_color[0],
+				tool_color[1],
+				tool_color[2],
+				tool_color[3],
+			},
+		});
 	}
 
-	wlr_renderer_end(sample->renderer);
-	wlr_output_commit(wlr_output);
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 	sample->last_frame = now;
 }
 

@@ -64,7 +64,6 @@ struct output {
 
 static void output_handle_frame(struct wl_listener *listener, void *data) {
 	struct output *output = wl_container_of(listener, output, frame);
-	struct wlr_renderer *renderer = output->server->renderer;
 
 	struct wl_array layers_arr = {0};
 	struct output_surface *output_surface;
@@ -91,15 +90,16 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!wlr_output_attach_render(output->wlr_output, NULL)) {
-		wlr_log(WLR_ERROR, "wlr_output_attach_render() failed");
-		return;
-	}
-
 	int width, height;
 	wlr_output_effective_resolution(output->wlr_output, &width, &height);
-	wlr_renderer_begin(renderer, width, height);
-	wlr_renderer_clear(renderer, (float[4]){ 0.3, 0.3, 0.3, 1.0 });
+
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(output->wlr_output, &output_state, NULL);
+
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = width, .height = height },
+		.color = { 0.3, 0.3, 0.3, 1 },
+	});
 
 	size_t i = 0;
 	struct wlr_output_layer_state *layers = layers_arr.data;
@@ -118,13 +118,16 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 			continue;
 		}
 
-		wlr_render_texture(renderer, texture, output->wlr_output->transform_matrix,
-			output_surface->x, output_surface->y, 1.0);
+		wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+			.texture = texture,
+			.dst_box = { .x = output_surface->x, .y = output_surface->y },
+		});
 	}
 
-	wlr_renderer_end(renderer);
+	wlr_render_pass_submit(pass);
 
-	wlr_output_commit(output->wlr_output);
+	wlr_output_commit_state(output->wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);

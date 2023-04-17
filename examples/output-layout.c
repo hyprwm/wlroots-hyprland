@@ -112,14 +112,15 @@ static void animate_cat(struct sample_state *sample,
 static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sample_output *output = wl_container_of(listener, output, frame);
 	struct sample_state *sample = output->sample;
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-
 	struct wlr_output *wlr_output = output->output;
 
-	wlr_output_attach_render(wlr_output, NULL);
-	wlr_renderer_begin(sample->renderer, wlr_output->width, wlr_output->height);
-	wlr_renderer_clear(sample->renderer, (float[]){0.25f, 0.25f, 0.25f, 1});
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL);
+
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = wlr_output->width, .height = wlr_output->height },
+		.color = { 0.25, 0.25, 0.25, 1 },
+	});
 
 	animate_cat(sample, output->output);
 
@@ -134,12 +135,15 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 		wlr_output_layout_output_coords(sample->layout, output->output,
 			&local_x, &local_y);
 
-		wlr_render_texture(sample->renderer, sample->cat_texture,
-			wlr_output->transform_matrix, local_x, local_y, 1.0f);
+		wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+			.texture = sample->cat_texture,
+			.dst_box = box,
+		});
 	}
 
-	wlr_renderer_end(sample->renderer);
-	wlr_output_commit(wlr_output);
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 }
 
 static void update_velocities(struct sample_state *sample,

@@ -101,12 +101,21 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct wlr_renderer *renderer = state->renderer;
 	assert(renderer);
 
-	wlr_output_attach_render(wlr_output, NULL);
-	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
-	wlr_renderer_clear(renderer, state->clear_color);
-	wlr_output_render_software_cursors(wlr_output, NULL);
-	wlr_renderer_end(renderer);
-	wlr_output_commit(wlr_output);
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL);
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = wlr_output->width, .height = wlr_output->height },
+		.color = {
+			state->clear_color[0],
+			state->clear_color[1],
+			state->clear_color[2],
+			state->clear_color[3],
+		},
+	});
+	wlr_output_add_software_cursors_to_render_pass(wlr_output, pass, NULL);
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 }
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {

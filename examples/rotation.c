@@ -59,19 +59,27 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	int32_t width, height;
 	wlr_output_effective_resolution(wlr_output, &width, &height);
 
-	wlr_output_attach_render(wlr_output, NULL);
-	wlr_renderer_begin(sample->renderer, wlr_output->width, wlr_output->height);
-	wlr_renderer_clear(sample->renderer, (float[]){0.25f, 0.25f, 0.25f, 1});
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL);
+
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = wlr_output->width, .height = wlr_output->height },
+		.color = { 0.25, 0.25, 0.25, 1 },
+	});
 
 	for (int y = -128 + (int)sample_output->y_offs; y < height; y += 128) {
 		for (int x = -128 + (int)sample_output->x_offs; x < width; x += 128) {
-			wlr_render_texture(sample->renderer, sample->cat_texture,
-				wlr_output->transform_matrix, x, y, 1.0f);
+			wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+				.texture = sample->cat_texture,
+				.dst_box = { .x = x, .y = y },
+				.transform = wlr_output->transform,
+			});
 		}
 	}
 
-	wlr_renderer_end(sample->renderer);
-	wlr_output_commit(wlr_output);
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 
 	long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
 		(now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;

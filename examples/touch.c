@@ -76,20 +76,26 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	int32_t width, height;
 	wlr_output_effective_resolution(wlr_output, &width, &height);
 
-	wlr_output_attach_render(wlr_output, NULL);
-	wlr_renderer_begin(sample->renderer, wlr_output->width, wlr_output->height);
-	wlr_renderer_clear(sample->renderer, (float[]){0.25f, 0.25f, 0.25f, 1});
+	struct wlr_output_state output_state = {0};
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL);
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = width, .height = height },
+		.color = { 0.25, 0.25, 0.25, 1 },
+	});
 
 	struct touch_point *p;
 	wl_list_for_each(p, &sample->touch_points, link) {
 		int x = (int)(p->x * width) - sample->cat_texture->width / 2;
 		int y = (int)(p->y * height) - sample->cat_texture->height / 2;
-		wlr_render_texture(sample->renderer, sample->cat_texture,
-			wlr_output->transform_matrix, x, y, 1.0f);
+		wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+			.texture = sample->cat_texture,
+			.dst_box = { .x = x, .y = y },
+		});
 	}
 
-	wlr_renderer_end(sample->renderer);
-	wlr_output_commit(wlr_output);
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &output_state);
+	wlr_output_state_finish(&output_state);
 	sample->last_frame = now;
 }
 
