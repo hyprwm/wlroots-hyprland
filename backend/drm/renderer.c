@@ -99,29 +99,36 @@ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 	struct wlr_buffer *dst = wlr_swapchain_acquire(surf->swapchain, NULL);
 	if (!dst) {
 		wlr_log(WLR_ERROR, "Failed to acquire multi-GPU swapchain buffer");
-		wlr_texture_destroy(tex);
-		return NULL;
+		goto error_tex;
 	}
 
-	float mat[9];
-	wlr_matrix_identity(mat);
-	wlr_matrix_scale(mat, surf->swapchain->width, surf->swapchain->height);
-
-	if (!wlr_renderer_begin_with_buffer(renderer, dst)) {
-		wlr_log(WLR_ERROR, "Failed to bind multi-GPU destination buffer");
-		wlr_buffer_unlock(dst);
-		wlr_texture_destroy(tex);
-		return NULL;
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, dst);
+	if (pass == NULL) {
+		wlr_log(WLR_ERROR, "Failed to begin render pass with multi-GPU destination buffer");
+		goto error_dst;
 	}
 
-	wlr_renderer_clear(renderer, (float[]){ 0.0, 0.0, 0.0, 0.0 });
-	wlr_render_texture_with_matrix(renderer, tex, mat, 1.0f);
-
-	wlr_renderer_end(renderer);
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = dst->width, .height = dst->height },
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+	});
+	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+		.texture = tex,
+	});
+	if (!wlr_render_pass_submit(pass)) {
+		wlr_log(WLR_ERROR, "Failed to submit multi-GPU render pass");
+		goto error_dst;
+	}
 
 	wlr_texture_destroy(tex);
 
 	return dst;
+
+error_dst:
+	wlr_buffer_unlock(dst);
+error_tex:
+	wlr_texture_destroy(tex);
+	return NULL;
 }
 
 
