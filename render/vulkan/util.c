@@ -4,7 +4,6 @@
 
 int vulkan_find_mem_type(struct wlr_vk_device *dev,
 		VkMemoryPropertyFlags flags, uint32_t req_bits) {
-
 	VkPhysicalDeviceMemoryProperties props;
 	vkGetPhysicalDeviceMemoryProperties(dev->phdev, &props);
 
