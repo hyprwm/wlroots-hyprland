@@ -88,7 +88,7 @@ void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
 
 bool vulkan_has_extension(size_t count, const char **exts, const char *find) {
 	for (unsigned i = 0; i < count; ++i) {
-		if (strcmp(exts[i], find) == 0u) {
+		if (strcmp(exts[i], find) == 0) {
 			return true;
 		}
 	}
