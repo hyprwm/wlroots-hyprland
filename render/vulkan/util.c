@@ -62,18 +62,19 @@ void vulkan_change_layout_queue(VkCommandBuffer cb, VkImage img,
 		VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
 		VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta,
 		uint32_t src_family, uint32_t dst_family) {
-	VkImageMemoryBarrier barrier = {0};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = ol;
-	barrier.newLayout = nl;
-	barrier.image = img;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.srcAccessMask = srca;
-	barrier.dstAccessMask = dsta;
-	barrier.srcQueueFamilyIndex = src_family;
-	barrier.dstQueueFamilyIndex = dst_family;
+	VkImageMemoryBarrier barrier = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.oldLayout = ol,
+		.newLayout = nl,
+		.image = img,
+		.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.subresourceRange.layerCount = 1,
+		.subresourceRange.levelCount = 1,
+		.srcAccessMask = srca,
+		.dstAccessMask = dsta,
+		.srcQueueFamilyIndex = src_family,
+		.dstQueueFamilyIndex = dst_family,
+	};
 
 	vkCmdPipelineBarrier(cb, srcs, dsts, 0, 0, NULL, 0, NULL, 1, &barrier);
 }
