@@ -52,6 +52,7 @@ struct wlr_output_layer {
 
 	// private state
 
+	struct wlr_fbox src_box;
 	struct wlr_box dst_box;
 };
 
@@ -63,6 +64,8 @@ struct wlr_output_layer_state {
 
 	// Buffer to display, or NULL to disable the layer
 	struct wlr_buffer *buffer;
+	// Source box, leave empty to use the whole buffer
+	struct wlr_fbox src_box;
 	// Destination box in output-buffer-local coordinates
 	struct wlr_box dst_box;
 

@@ -201,10 +201,18 @@ static bool set_layer_props(struct wlr_drm_backend *drm,
 	uint64_t crtc_w = (uint64_t)state->dst_box.width;
 	uint64_t crtc_h = (uint64_t)state->dst_box.height;
 
-	uint64_t src_x = to_fp16(0);
-	uint64_t src_y = to_fp16(0);
-	uint64_t src_w = to_fp16(width);
-	uint64_t src_h = to_fp16(height);
+	struct wlr_fbox src_box = state->src_box;
+	if (wlr_fbox_empty(&src_box)) {
+		src_box = (struct wlr_fbox){
+			.width = width,
+			.height = height,
+		};
+	}
+
+	uint64_t src_x = to_fp16(src_box.x);
+	uint64_t src_y = to_fp16(src_box.y);
+	uint64_t src_w = to_fp16(src_box.width);
+	uint64_t src_h = to_fp16(src_box.height);
 
 	return
 		liftoff_layer_set_property(layer->liftoff, "zpos", zpos) == 0 &&

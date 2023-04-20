@@ -294,6 +294,13 @@ static bool output_test(struct wlr_output *wlr_output,
 						height != layer_state->dst_box.height) {
 					supported = false;
 				}
+				if (!wlr_fbox_empty(&layer_state->src_box)) {
+					supported = supported &&
+						layer_state->src_box.x == 0 &&
+						layer_state->src_box.y == 0 &&
+						layer_state->src_box.width == width &&
+						layer_state->src_box.height == height;
+				}
 				supported = supported &&
 					test_buffer(output->backend, layer_state->buffer);
 			}
