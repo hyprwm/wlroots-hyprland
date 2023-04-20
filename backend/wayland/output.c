@@ -290,18 +290,18 @@ static bool output_test(struct wlr_output *wlr_output,
 				int height = layer_state->dst_box.height;
 				bool needs_viewport = width != layer_state->buffer->width ||
 					height != layer_state->buffer->height;
+				if (!wlr_fbox_empty(&layer_state->src_box)) {
+					needs_viewport = needs_viewport ||
+						layer_state->src_box.x != 0 ||
+						layer_state->src_box.y != 0 ||
+						layer_state->src_box.width != width ||
+						layer_state->src_box.height != height;
+				}
 				if (x < 0 || y < 0 ||
 						x + width > wlr_output->width ||
 						y + height > wlr_output->height ||
 						(output->backend->viewporter == NULL && needs_viewport)) {
 					supported = false;
-				}
-				if (!wlr_fbox_empty(&layer_state->src_box)) {
-					supported = supported &&
-						layer_state->src_box.x == 0 &&
-						layer_state->src_box.y == 0 &&
-						layer_state->src_box.width == width &&
-						layer_state->src_box.height == height;
 				}
 				supported = supported &&
 					test_buffer(output->backend, layer_state->buffer);
@@ -418,6 +418,23 @@ static bool output_layer_commit(struct wlr_wl_output *output,
 			(state->layer->dst_box.width != state->dst_box.width ||
 			state->layer->dst_box.height != state->dst_box.height)) {
 		wp_viewport_set_destination(layer->viewport, state->dst_box.width, state->dst_box.height);
+	}
+	if (layer->viewport != NULL && !wlr_fbox_equal(&state->layer->src_box, &state->src_box)) {
+		struct wlr_fbox src_box = state->src_box;
+		if (wlr_fbox_empty(&src_box)) {
+			// -1 resets the box
+			src_box = (struct wlr_fbox){
+				.x = -1,
+				.y = -1,
+				.width = -1,
+				.height = -1,
+			};
+		}
+		wp_viewport_set_source(layer->viewport,
+			wl_fixed_from_double(src_box.x),
+			wl_fixed_from_double(src_box.y),
+			wl_fixed_from_double(src_box.width),
+			wl_fixed_from_double(src_box.height));
 	}
 
 	wl_surface_attach(layer->surface, buffer->wl_buffer, 0, 0);
