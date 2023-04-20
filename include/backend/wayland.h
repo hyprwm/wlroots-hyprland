@@ -48,6 +48,7 @@ struct wlr_wl_backend {
 	struct wl_drm *legacy_drm;
 	struct xdg_activation_v1 *activation_v1;
 	struct wl_subcompositor *subcompositor;
+	struct wp_viewporter *viewporter;
 	char *drm_render_name;
 };
 
@@ -71,6 +72,7 @@ struct wlr_wl_output_layer {
 
 	struct wl_surface *surface;
 	struct wl_subsurface *subsurface;
+	struct wp_viewport *viewport;
 	bool mapped;
 };
 

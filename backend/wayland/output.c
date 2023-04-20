@@ -22,6 +22,7 @@
 
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
+#include "viewporter-client-protocol.h"
 #include "xdg-activation-v1-client-protocol.h"
 #include "xdg-decoration-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
@@ -287,11 +288,12 @@ static bool output_test(struct wlr_output *wlr_output,
 				int y = layer_state->dst_box.y;
 				int width = layer_state->dst_box.width;
 				int height = layer_state->dst_box.height;
+				bool needs_viewport = width != layer_state->buffer->width ||
+					height != layer_state->buffer->height;
 				if (x < 0 || y < 0 ||
 						x + width > wlr_output->width ||
 						y + height > wlr_output->height ||
-						width != layer_state->buffer->width ||
-						height != layer_state->dst_box.height) {
+						(output->backend->viewporter == NULL && needs_viewport)) {
 					supported = false;
 				}
 				if (!wlr_fbox_empty(&layer_state->src_box)) {
@@ -315,6 +317,9 @@ static void output_layer_handle_addon_destroy(struct wlr_addon *addon) {
 	struct wlr_wl_output_layer *layer = wl_container_of(addon, layer, addon);
 
 	wlr_addon_finish(&layer->addon);
+	if (layer->viewport != NULL) {
+		wp_viewport_destroy(layer->viewport);
+	}
 	wl_subsurface_destroy(layer->subsurface);
 	wl_surface_destroy(layer->surface);
 	free(layer);
@@ -354,6 +359,10 @@ static struct wlr_wl_output_layer *get_or_create_output_layer(
 	struct wl_region *region = wl_compositor_create_region(output->backend->compositor);
 	wl_surface_set_input_region(layer->surface, region);
 	wl_region_destroy(region);
+
+	if (output->backend->viewporter != NULL) {
+		layer->viewport = wp_viewporter_get_viewport(output->backend->viewporter, layer->surface);
+	}
 
 	return layer;
 }
@@ -403,6 +412,12 @@ static bool output_layer_commit(struct wlr_wl_output *output,
 		get_or_create_wl_buffer(output->backend, state->buffer);
 	if (buffer == NULL) {
 		return false;
+	}
+
+	if (layer->viewport != NULL &&
+			(state->layer->dst_box.width != state->dst_box.width ||
+			state->layer->dst_box.height != state->dst_box.height)) {
+		wp_viewport_set_destination(layer->viewport, state->dst_box.width, state->dst_box.height);
 	}
 
 	wl_surface_attach(layer->surface, buffer->wl_buffer, 0, 0);

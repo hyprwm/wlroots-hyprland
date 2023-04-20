@@ -29,6 +29,7 @@
 #include "xdg-shell-client-protocol.h"
 #include "tablet-unstable-v2-client-protocol.h"
 #include "relative-pointer-unstable-v1-client-protocol.h"
+#include "viewporter-client-protocol.h"
 
 struct wlr_wl_linux_dmabuf_feedback_v1 {
 	struct wlr_wl_backend *backend;
@@ -396,6 +397,9 @@ static void registry_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(iface, wl_subcompositor_interface.name) == 0) {
 		wl->subcompositor = wl_registry_bind(registry, name,
 			&wl_subcompositor_interface, 1);
+	} else if (strcmp(iface, wp_viewporter_interface.name) == 0) {
+		wl->viewporter = wl_registry_bind(registry, name,
+			&wp_viewporter_interface, 1);
 	}
 }
 
@@ -514,6 +518,9 @@ static void backend_destroy(struct wlr_backend *backend) {
 	}
 	if (wl->subcompositor) {
 		wl_subcompositor_destroy(wl->subcompositor);
+	}
+	if (wl->viewporter) {
+		wp_viewporter_destroy(wl->viewporter);
 	}
 	free(wl->drm_render_name);
 	free(wl->activation_token);
