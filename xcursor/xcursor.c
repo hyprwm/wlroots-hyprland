@@ -535,9 +535,9 @@ xcursor_build_theme_dir(const char *dir, const char *theme)
 	const char *tcolon;
 	char *full;
 	const char *home, *homesep;
-	int dirlen;
-	int homelen;
-	int themelen;
+	size_t dirlen;
+	size_t homelen;
+	size_t themelen;
 	size_t full_size;
 
 	if (!dir || !theme)
@@ -577,7 +577,7 @@ xcursor_build_theme_dir(const char *dir, const char *theme)
 	if (!full)
 		return NULL;
 	snprintf(full, full_size, "%s%s%.*s/%.*s", home, homesep,
-		 dirlen, dir, themelen, theme);
+		 (int)dirlen, dir, (int)themelen, theme);
 	return full;
 }
 
