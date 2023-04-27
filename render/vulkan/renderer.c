@@ -87,7 +87,8 @@ static void mat3_to_mat4(const float mat3[9], float mat4[4][4]) {
 }
 
 struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
-		struct wlr_vk_renderer *renderer, VkDescriptorSet *ds) {
+		struct wlr_vk_renderer *renderer, VkDescriptorSetLayout ds_layout,
+		VkDescriptorSet *ds) {
 	VkResult res;
 
 	bool found = false;
@@ -139,7 +140,7 @@ struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
 	VkDescriptorSetAllocateInfo ds_info = {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		.descriptorSetCount = 1,
-		.pSetLayouts = &renderer->ds_layout,
+		.pSetLayouts = &ds_layout,
 		.descriptorPool = pool->pool,
 	};
 	res = vkAllocateDescriptorSets(renderer->dev->dev, &ds_info, ds);
@@ -168,6 +169,7 @@ static void destroy_render_format_setup(struct wlr_vk_renderer *renderer,
 	vkDestroyRenderPass(dev, setup->render_pass, NULL);
 	vkDestroyPipeline(dev, setup->tex_identity_pipe, NULL);
 	vkDestroyPipeline(dev, setup->tex_srgb_pipe, NULL);
+	vkDestroyPipeline(dev, setup->tex_nv12_pipe, NULL);
 	vkDestroyPipeline(dev, setup->quad_pipe, NULL);
 }
 
@@ -1182,11 +1184,14 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 
 	VkPipeline pipe;
 	// SRGB formats already have the transfer function applied
-	if (texture->format->is_srgb) {
+	if (texture->format->drm == DRM_FORMAT_NV12) {
+		pipe = renderer->current_render_buffer->render_setup->tex_nv12_pipe;
+	} else if (texture->format->is_srgb) {
 		pipe = renderer->current_render_buffer->render_setup->tex_identity_pipe;
 	} else {
 		pipe = renderer->current_render_buffer->render_setup->tex_srgb_pipe;
 	}
+	assert(pipe != VK_NULL_HANDLE);
 	if (pipe != renderer->bound_pipe) {
 		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
 		renderer->bound_pipe = pipe;
@@ -1403,6 +1408,7 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vkDestroyPipelineLayout(dev->dev, renderer->pipe_layout, NULL);
 	vkDestroyDescriptorSetLayout(dev->dev, renderer->ds_layout, NULL);
 	vkDestroySampler(dev->dev, renderer->sampler, NULL);
+	vkDestroySamplerYcbcrConversion(dev->dev, renderer->nv12_conversion, NULL);
 	vkDestroyCommandPool(dev->dev, renderer->command_pool, NULL);
 
 	if (renderer->read_pixels_cache.initialized) {
@@ -1671,6 +1677,47 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.texture_from_buffer = vulkan_texture_from_buffer,
 };
 
+static bool init_nv12_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler) {
+	VkResult res;
+
+	VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
+		.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+		.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601,
+		.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,
+		.xChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+		.yChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+		.chromaFilter = VK_FILTER_LINEAR,
+	};
+	res = vkCreateSamplerYcbcrConversion(renderer->dev->dev, &conversion_create_info, NULL, &renderer->nv12_conversion);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateSamplerYcbcrConversion", res);
+		return false;
+	}
+
+	VkSamplerYcbcrConversionInfo conversion_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+		.conversion = renderer->nv12_conversion,
+	};
+	VkSamplerCreateInfo sampler_create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.pNext = &conversion_info,
+		.magFilter = VK_FILTER_LINEAR,
+		.minFilter = VK_FILTER_LINEAR,
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+	};
+	res = vkCreateSampler(renderer->dev->dev, &sampler_create_info, NULL, sampler);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateSampler", res);
+		return false;
+	}
+
+	return true;
+}
+
 // Initializes the VkDescriptorSetLayout and VkPipelineLayout needed
 // for the texture rendering pipeline using the given VkSampler.
 static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
@@ -1889,8 +1936,16 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
+	if (renderer->dev->sampler_ycbcr_conversion && !init_nv12_sampler(renderer, &renderer->nv12_sampler)) {
+		return false;
+	}
+
 	if (!init_tex_layouts(renderer, renderer->sampler,
 			&renderer->ds_layout, &renderer->pipe_layout)) {
+		return false;
+	}
+	if (renderer->dev->sampler_ycbcr_conversion && !init_tex_layouts(renderer, renderer->nv12_sampler,
+			&renderer->nv12_ds_layout, &renderer->nv12_pipe_layout)) {
 		return false;
 	}
 
@@ -2030,6 +2085,12 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 
 	if (!init_tex_pipeline(renderer, setup->render_pass, renderer->pipe_layout,
 			WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_srgb_pipe)) {
+		goto error;
+	}
+
+	if (renderer->dev->sampler_ycbcr_conversion && !init_tex_pipeline(renderer,
+			setup->render_pass, renderer->nv12_pipe_layout,
+			WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_nv12_pipe)) {
 		goto error;
 	}
 

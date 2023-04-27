@@ -143,6 +143,15 @@ static const struct wlr_vk_format formats[] = {
 		.vk = VK_FORMAT_R16G16B16A16_SFLOAT,
 	},
 #endif
+
+	// YCbCr formats
+#if WLR_LITTLE_ENDIAN
+	{
+		.drm = DRM_FORMAT_NV12,
+		.vk = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+		.is_ycbcr = true,
+	},
+#endif
 };
 
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
@@ -183,6 +192,10 @@ static const VkFormatFeatureFlags dma_tex_features =
 	// NOTE: we don't strictly require this, we could create a NEAREST
 	// sampler for formats that need it, in case this ever makes problems.
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+static const VkFormatFeatureFlags dma_tex_ycbcr_features =
+	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+	VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT |
+	VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
 
 static bool query_modifier_usage_support(struct wlr_vk_device *dev, VkFormat vk_format,
 		VkImageUsageFlags usage, const VkDrmFormatModifierPropertiesEXT *m,
@@ -285,7 +298,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		// also, only allow rendering to formats with SRGB encoding
 		const char *errmsg = "unknown error";
 		if ((m.drmFormatModifierTilingFeatures & render_features) == render_features &&
-				props->format.is_srgb) {
+				props->format.is_srgb && !props->format.is_ycbcr) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, render_usage, &m, &p, &errmsg)) {
 				props->dmabuf.render_mods[props->dmabuf.render_mod_count++] = p;
@@ -304,7 +317,8 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 		// check that specific modifier for texture usage
 		errmsg = "unknown error";
-		if ((m.drmFormatModifierTilingFeatures & dma_tex_features) == dma_tex_features) {
+		VkFormatFeatureFlags features = props->format.is_ycbcr ? dma_tex_ycbcr_features : dma_tex_features;
+		if ((m.drmFormatModifierTilingFeatures & features) == features) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, dma_tex_usage, &m, &p, &errmsg)) {
 				props->dmabuf.texture_mods[props->dmabuf.texture_mod_count++] = p;
@@ -337,6 +351,10 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 		const struct wlr_vk_format *format) {
 	VkResult res;
 
+	if (format->is_ycbcr && !dev->sampler_ycbcr_conversion) {
+		return;
+	}
+
 	char *format_name = drmGetFormatName(format->drm);
 	wlr_log(WLR_DEBUG, "  %s (0x%08"PRIX32")",
 		format_name ? format_name : "<unknown>", format->drm);
@@ -358,7 +376,8 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 
 	// non-dmabuf texture properties
 	const char *shm_texture_status;
-	if ((fmtp.formatProperties.optimalTilingFeatures & tex_features) == tex_features) {
+	if ((fmtp.formatProperties.optimalTilingFeatures & tex_features) == tex_features &&
+			!format->is_ycbcr) {
 		VkPhysicalDeviceImageFormatInfo2 fmti = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			.type = VK_IMAGE_TYPE_2D,

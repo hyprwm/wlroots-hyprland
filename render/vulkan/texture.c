@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <drm_fourcc.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -271,7 +272,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	const struct wlr_vk_format_props *fmt =
 		vulkan_format_props_from_drm(renderer->dev, drm_fmt);
-	if (fmt == NULL) {
+	if (fmt == NULL && fmt->format.is_ycbcr) {
 		wlr_log(WLR_ERROR, "Unsupported pixel format %"PRIx32 " (%.4s)",
 			drm_fmt, (const char*) &drm_fmt);
 		return NULL;
@@ -369,7 +370,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	}
 
 	// descriptor
-	texture->ds_pool = vulkan_alloc_texture_ds(renderer, &texture->ds);
+	texture->ds_pool = vulkan_alloc_texture_ds(renderer, renderer->ds_layout, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
 		goto error;
@@ -671,9 +672,11 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		goto error;
 	}
 
-	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(attribs->format);
-	assert(format_info);
-	texture->has_alpha = format_info->has_alpha;
+	if (!fmt->format.is_ycbcr) {
+		const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(attribs->format);
+		assert(format_info);
+		texture->has_alpha = format_info->has_alpha;
+	}
 
 	// view
 	VkImageViewCreateInfo view_info = {
@@ -697,6 +700,17 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		.image = texture->image,
 	};
 
+	VkDescriptorSetLayout ds_layout = renderer->ds_layout;
+	VkSamplerYcbcrConversionInfo ycbcr_conversion_info;
+	if (fmt->format.is_ycbcr) {
+		ds_layout = renderer->nv12_ds_layout;
+		ycbcr_conversion_info = (VkSamplerYcbcrConversionInfo){
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+			.conversion = renderer->nv12_conversion,
+		};
+		view_info.pNext = &ycbcr_conversion_info;
+	}
+
 	res = vkCreateImageView(dev, &view_info, NULL, &texture->image_view);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkCreateImageView failed", res);
@@ -704,7 +718,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	}
 
 	// descriptor
-	texture->ds_pool = vulkan_alloc_texture_ds(renderer, &texture->ds);
+	texture->ds_pool = vulkan_alloc_texture_ds(renderer, ds_layout, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
 		goto error;

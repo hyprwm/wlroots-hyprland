@@ -39,6 +39,7 @@ struct wlr_vk_device {
 	int drm_fd;
 
 	bool implicit_sync_interop;
+	bool sampler_ycbcr_conversion;
 
 	// we only ever need one queue for rendering and transfer commands
 	uint32_t queue_family;
@@ -85,6 +86,7 @@ struct wlr_vk_format {
 	uint32_t drm;
 	VkFormat vk;
 	bool is_srgb;
+	bool is_ycbcr;
 };
 
 // Returns all known format mappings.
@@ -136,6 +138,7 @@ struct wlr_vk_render_format_setup {
 
 	VkPipeline tex_identity_pipe;
 	VkPipeline tex_srgb_pipe;
+	VkPipeline tex_nv12_pipe;
 	VkPipeline quad_pipe;
 };
 
@@ -182,9 +185,10 @@ struct wlr_vk_renderer {
 	VkShaderModule tex_frag_module;
 	VkShaderModule quad_frag_module;
 
-	VkDescriptorSetLayout ds_layout;
-	VkPipelineLayout pipe_layout;
-	VkSampler sampler;
+	VkDescriptorSetLayout ds_layout, nv12_ds_layout;
+	VkPipelineLayout pipe_layout, nv12_pipe_layout;
+	VkSampler sampler, nv12_sampler;
+	VkSamplerYcbcrConversion nv12_conversion;
 
 	VkSemaphore timeline_semaphore;
 	uint64_t timeline_point;
@@ -251,7 +255,8 @@ struct wlr_vk_buffer_span vulkan_get_stage_span(
 // Tries to allocate a texture descriptor set. Will additionally
 // return the pool it was allocated from when successful (for freeing it later).
 struct wlr_vk_descriptor_pool *vulkan_alloc_texture_ds(
-	struct wlr_vk_renderer *renderer, VkDescriptorSet *ds);
+	struct wlr_vk_renderer *renderer, VkDescriptorSetLayout ds_layout,
+	VkDescriptorSet *ds);
 
 // Frees the given descriptor set from the pool its pool.
 void vulkan_free_ds(struct wlr_vk_renderer *renderer,

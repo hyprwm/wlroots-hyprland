@@ -540,6 +540,19 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 			"falling back to blocking");
 	}
 
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures phdev_sampler_ycbcr_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
+	};
+	VkPhysicalDeviceFeatures2 phdev_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+		.pNext = &phdev_sampler_ycbcr_features,
+	};
+	vkGetPhysicalDeviceFeatures2(phdev, &phdev_features);
+
+	dev->sampler_ycbcr_conversion = phdev_sampler_ycbcr_features.samplerYcbcrConversion;
+	wlr_log(WLR_DEBUG, "Sampler YCbCr conversion %s",
+		dev->sampler_ycbcr_conversion ? "supported" : "not supported");
+
 	const float prio = 1.f;
 	VkDeviceQueueCreateInfo qinfo = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -548,8 +561,13 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		.pQueuePriorities = &prio,
 	};
 
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures sampler_ycbcr_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
+		.samplerYcbcrConversion = dev->sampler_ycbcr_conversion,
+	};
 	VkPhysicalDeviceSynchronization2FeaturesKHR sync2_features = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
+		.pNext = &sampler_ycbcr_features,
 		.synchronization2 = VK_TRUE,
 	};
 	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_features = {
