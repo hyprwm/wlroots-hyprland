@@ -1001,8 +1001,12 @@ int main(int argc, char *argv[]) {
 			socket);
 	wl_display_run(server.wl_display);
 
-	/* Once wl_display_run returns, we shut down the server. */
+	/* Once wl_display_run returns, we destroy all clients then shut down the
+	 * server. */
 	wl_display_destroy_clients(server.wl_display);
+	wlr_scene_node_destroy(&server.scene->tree.node);
+	wlr_xcursor_manager_destroy(server.cursor_mgr);
+	wlr_output_layout_destroy(server.output_layout);
 	wl_display_destroy(server.wl_display);
 	return 0;
 }
