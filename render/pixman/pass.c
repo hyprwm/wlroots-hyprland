@@ -31,7 +31,6 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 	struct wlr_pixman_render_pass *pass = get_render_pass(wlr_pass);
 	struct wlr_pixman_texture *texture = get_texture(options->texture);
 	struct wlr_pixman_buffer *buffer = pass->buffer;
-	struct wlr_box dst_box = options->dst_box;
 
 	if (texture->buffer != NULL && !begin_pixman_data_ptr_access(texture->buffer,
 			&texture->image, WLR_BUFFER_DATA_PTR_ACCESS_READ)) {
@@ -47,6 +46,9 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		.height = roundf(src_fbox.height),
 	};
 
+	struct wlr_box dst_box;
+	wlr_render_texture_options_get_dst_box(options, &dst_box);
+
 	pixman_image_t *mask = NULL;
 	float alpha = wlr_render_texture_options_get_alpha(options);
 	if (alpha != 1) {
@@ -55,8 +57,14 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		});
 	}
 
+	struct wlr_box orig_box;
+	wlr_box_transform(&orig_box, &dst_box, options->transform,
+		buffer->buffer->width, buffer->buffer->height);
+
 	int32_t dest_x, dest_y, width, height;
-	if (options->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
+	if (options->transform != WL_OUTPUT_TRANSFORM_NORMAL ||
+			orig_box.width != src_box.width ||
+			orig_box.height != src_box.height) {
 		// Cosinus/sinus values are extact integers for enum wl_output_transform entries
 		int tr_cos = 1, tr_sin = 0, tr_x = 0, tr_y = 0;
 		switch (options->transform) {
@@ -84,10 +92,6 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 			break;
 		}
 
-		struct wlr_box orig_box;
-		wlr_box_transform(&orig_box, &dst_box, options->transform,
-			buffer->buffer->width, buffer->buffer->height);
-
 		struct pixman_transform transform;
 		pixman_transform_init_identity(&transform);
 		pixman_transform_rotate(&transform, NULL,
@@ -100,6 +104,9 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 			pixman_int_to_fixed(tr_x), pixman_int_to_fixed(tr_y));
 		pixman_transform_translate(&transform, NULL,
 			-pixman_int_to_fixed(orig_box.x), -pixman_int_to_fixed(orig_box.y));
+		pixman_transform_scale(&transform, NULL,
+			pixman_double_to_fixed(src_box.width / (double)orig_box.width),
+			pixman_double_to_fixed(src_box.height / (double)orig_box.height));
 		pixman_image_set_transform(texture->image, &transform);
 
 		dest_x = dest_y = 0;
