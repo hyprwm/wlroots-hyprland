@@ -134,6 +134,8 @@ static void legacy_add_rect(struct wlr_render_pass *wlr_pass,
 
 	pixman_region32_t clip;
 	get_clip_region(pass, options->clip, &clip);
+	pixman_region32_intersect_rect(&clip, &clip,
+		options->box.x, options->box.y, options->box.width, options->box.height);
 
 	float color[4] = {
 		options->color.r,
@@ -146,7 +148,14 @@ static void legacy_add_rect(struct wlr_render_pass *wlr_pass,
 	const pixman_box32_t *rects = pixman_region32_rectangles(&clip, &rects_len);
 	for (int i = 0; i < rects_len; i++) {
 		scissor(pass->renderer, &rects[i]);
-		wlr_render_quad_with_matrix(pass->renderer, color, matrix);
+		switch (options->blend_mode) {
+		case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
+			wlr_render_quad_with_matrix(pass->renderer, color, matrix);
+			break;
+		case WLR_RENDER_BLEND_MODE_NONE:
+			wlr_renderer_clear(pass->renderer, color);
+			break;
+		}
 	}
 
 	wlr_renderer_scissor(pass->renderer, NULL);

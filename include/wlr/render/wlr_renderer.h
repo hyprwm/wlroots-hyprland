@@ -177,6 +177,16 @@ struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
  */
 bool wlr_render_pass_submit(struct wlr_render_pass *render_pass);
 
+/**
+ * Blend modes.
+ */
+enum wlr_render_blend_mode {
+	/* Pre-multiplied alpha (default) */
+	WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
+	/* Blending is disabled */
+	WLR_RENDER_BLEND_MODE_NONE,
+};
+
 struct wlr_render_texture_options {
 	/* Source texture */
 	struct wlr_texture *texture;
@@ -215,6 +225,8 @@ struct wlr_render_rect_options {
 	struct wlr_render_color color;
 	/* Clip region, leave NULL to disable clipping */
 	const pixman_region32_t *clip;
+	/* Blend mode */
+	enum wlr_render_blend_mode blend_mode;
 };
 
 /**

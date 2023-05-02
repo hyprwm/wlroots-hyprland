@@ -143,6 +143,17 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	struct wlr_pixman_buffer *buffer = pass->buffer;
 	struct wlr_box box = options->box;
 
+	pixman_op_t op = 0;
+	switch (options->blend_mode) {
+	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
+		op = options->color.a == 1 ? PIXMAN_OP_SRC : PIXMAN_OP_OVER;
+		break;
+	case WLR_RENDER_BLEND_MODE_NONE:
+		op = PIXMAN_OP_SRC;
+		break;
+	}
+	assert(op != 0);
+
 	struct pixman_color color = {
 		.red = options->color.r * 0xFFFF,
 		.green = options->color.g * 0xFFFF,
@@ -153,7 +164,7 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	pixman_image_t *fill = pixman_image_create_solid_fill(&color);
 
 	pixman_image_set_clip_region32(buffer->image, (pixman_region32_t *)options->clip);
-	pixman_image_composite32(PIXMAN_OP_OVER, fill, NULL, buffer->image,
+	pixman_image_composite32(op, fill, NULL, buffer->image,
 		0, 0, 0, 0, box.x, box.y, box.width, box.height);
 	pixman_image_set_clip_region32(buffer->image, NULL);
 
