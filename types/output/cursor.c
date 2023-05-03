@@ -303,8 +303,8 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	struct wlr_renderer *renderer = output->renderer;
 	assert(allocator != NULL && renderer != NULL);
 
-	int width = texture->width;
-	int height = texture->height;
+	int width = texture->width * output->scale / scale;
+	int height = texture->height * output->scale / scale;
 	if (output->impl->get_cursor_size) {
 		// Apply hardware limitations on buffer size
 		output->impl->get_cursor_size(cursor->output, &width, &height);
