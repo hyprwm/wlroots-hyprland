@@ -312,39 +312,37 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 		return NULL;
 	}
 
-	struct wlr_box cursor_box = {
+	struct wlr_box dst_box = {
 		.width = texture->width * output->scale / scale,
 		.height = texture->height * output->scale / scale,
 	};
 
-	float output_matrix[9];
-	wlr_matrix_identity(output_matrix);
-	if (output->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
-		struct wlr_box tr_size = {
-			.width = buffer->width,
-			.height = buffer->height,
-		};
-		wlr_box_transform(&tr_size, &tr_size, output->transform, 0, 0);
+	wlr_box_transform(&dst_box, &dst_box, wlr_output_transform_invert(output->transform),
+		buffer->width, buffer->height);
 
-		wlr_matrix_translate(output_matrix, buffer->width / 2.0,
-			buffer->height / 2.0);
-		wlr_matrix_transform(output_matrix, output->transform);
-		wlr_matrix_translate(output_matrix, - tr_size.width / 2.0,
-			- tr_size.height / 2.0);
-	}
-
-	float matrix[9];
-	wlr_matrix_project_box(matrix, &cursor_box, transform, 0, output_matrix);
-
-	if (!wlr_renderer_begin_with_buffer(renderer, buffer)) {
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, buffer);
+	if (pass == NULL) {
 		wlr_buffer_unlock(buffer);
 		return NULL;
 	}
 
-	wlr_renderer_clear(renderer, (float[]){ 0.0, 0.0, 0.0, 0.0 });
-	wlr_render_texture_with_matrix(renderer, texture, matrix, 1.0);
+	transform = wlr_output_transform_invert(transform);
+	transform = wlr_output_transform_compose(transform, output->transform);
 
-	wlr_renderer_end(renderer);
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.box = { .width = buffer->width, .height = buffer->height },
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+	});
+	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
+		.texture = texture,
+		.dst_box = dst_box,
+		.transform = transform,
+	});
+
+	if (!wlr_render_pass_submit(pass)) {
+		wlr_buffer_unlock(buffer);
+		return NULL;
+	}
 
 	return buffer;
 }
