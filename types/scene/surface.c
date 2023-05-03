@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
+#include <wlr/util/transform.h>
 #include "types/wlr_scene.h"
 
 static void handle_scene_buffer_outputs_update(

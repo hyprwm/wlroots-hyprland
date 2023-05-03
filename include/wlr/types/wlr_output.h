@@ -729,19 +729,4 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
 	struct wlr_output_state *state, int *buffer_age, struct wlr_render_timer *timer);
 
-
-/**
- * Returns the transform that, when composed with `tr`, gives
- * `WL_OUTPUT_TRANSFORM_NORMAL`.
- */
-enum wl_output_transform wlr_output_transform_invert(
-	enum wl_output_transform tr);
-
-/**
- * Returns a transform that, when applied, has the same effect as applying
- * sequentially `tr_a` and `tr_b`.
- */
-enum wl_output_transform wlr_output_transform_compose(
-	enum wl_output_transform tr_a, enum wl_output_transform tr_b);
-
 #endif

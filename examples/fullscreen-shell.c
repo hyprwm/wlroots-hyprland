@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
+#include <wlr/util/transform.h>
 
 /**
  * A minimal fullscreen-shell server. It only supports rendering.

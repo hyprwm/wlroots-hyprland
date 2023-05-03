@@ -9,6 +9,7 @@
 #include <wlr/backend.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
+#include <wlr/util/transform.h>
 #include "wlr-screencopy-unstable-v1-protocol.h"
 #include "render/pixel_format.h"
 #include "render/wlr_renderer.h"

@@ -1,4 +1,4 @@
-#include <wlr/types/wlr_output.h>
+#include <wlr/util/transform.h>
 
 enum wl_output_transform wlr_output_transform_invert(
 		enum wl_output_transform tr) {

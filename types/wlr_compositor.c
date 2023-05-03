@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
+#include <wlr/util/transform.h>
 #include "types/wlr_buffer.h"
 #include "types/wlr_region.h"
 #include "types/wlr_subcompositor.h"
