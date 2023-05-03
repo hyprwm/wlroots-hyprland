@@ -879,13 +879,9 @@ static void scene_node_get_size(struct wlr_scene_node *node,
 			*width = scene_buffer->dst_width;
 			*height = scene_buffer->dst_height;
 		} else if (scene_buffer->buffer) {
-			if (scene_buffer->transform & WL_OUTPUT_TRANSFORM_90) {
-				*height = scene_buffer->buffer->width;
-				*width = scene_buffer->buffer->height;
-			} else {
-				*width = scene_buffer->buffer->width;
-				*height = scene_buffer->buffer->height;
-			}
+			*width = scene_buffer->buffer->width;
+			*height = scene_buffer->buffer->height;
+			wlr_output_transform_coords(scene_buffer->transform, width, height);
 		}
 		break;
 	}
@@ -1544,14 +1540,13 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 
 	struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
 
-	struct wlr_fbox default_box = {0};
-	if (buffer->transform & WL_OUTPUT_TRANSFORM_90) {
-		default_box.width = buffer->buffer->height;
-		default_box.height = buffer->buffer->width;
-	} else {
-		default_box.width = buffer->buffer->width;
-		default_box.height = buffer->buffer->height;
-	}
+	int default_width = buffer->buffer->width;
+	int default_height = buffer->buffer->height;
+	wlr_output_transform_coords(buffer->transform, &default_width, &default_height);
+	struct wlr_fbox default_box = {
+		.width = default_width,
+		.height = default_height,
+	};
 
 	if (!wlr_fbox_empty(&buffer->src_box) &&
 			!wlr_fbox_equal(&buffer->src_box, &default_box)) {
@@ -1679,11 +1674,8 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		render_data.scale = state->scale;
 	}
 
-	if (render_data.transform & WL_OUTPUT_TRANSFORM_90) {
-		int tmp = render_data.trans_width;
-		render_data.trans_width = render_data.trans_height;
-		render_data.trans_height = tmp;
-	}
+	wlr_output_transform_coords(render_data.transform,
+		&render_data.trans_width, &render_data.trans_height);
 
 	render_data.logical.width = render_data.trans_width / render_data.scale;
 	render_data.logical.height = render_data.trans_height / render_data.scale;

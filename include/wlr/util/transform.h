@@ -25,4 +25,9 @@ enum wl_output_transform wlr_output_transform_invert(
 enum wl_output_transform wlr_output_transform_compose(
 	enum wl_output_transform tr_a, enum wl_output_transform tr_b);
 
+/**
+ * Applies a transform to coordinates.
+ */
+void wlr_output_transform_coords(enum wl_output_transform tr, int *x, int *y);
+
 #endif

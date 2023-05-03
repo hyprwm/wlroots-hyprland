@@ -146,16 +146,10 @@ static void surface_handle_set_input_region(struct wl_client *client,
 }
 
 static void surface_state_transformed_buffer_size(struct wlr_surface_state *state,
-		int *out_width, int *out_height) {
-	int width = state->buffer_width;
-	int height = state->buffer_height;
-	if ((state->transform & WL_OUTPUT_TRANSFORM_90) != 0) {
-		int tmp = width;
-		width = height;
-		height = tmp;
-	}
-	*out_width = width;
-	*out_height = height;
+		int *width, int *height) {
+	*width = state->buffer_width;
+	*height = state->buffer_height;
+	wlr_output_transform_coords(state->transform, width, height);
 }
 
 /**

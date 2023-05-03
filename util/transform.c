@@ -23,3 +23,11 @@ enum wl_output_transform wlr_output_transform_compose(
 	}
 	return flipped | rotated;
 }
+
+void wlr_output_transform_coords(enum wl_output_transform tr, int *x, int *y) {
+	if (tr & WL_OUTPUT_TRANSFORM_90) {
+		int tmp = *x;
+		*x = *y;
+		*y = tmp;
+	}
+}
