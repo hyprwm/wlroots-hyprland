@@ -916,14 +916,13 @@ static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 	struct wlr_drm_format_set formats = {0};
 	for (size_t i = 0; i < tranches_len; i++) {
 		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
-		for (size_t j = 0; j < tranche->formats.len; j++) {
-			const struct wlr_drm_format *fmt = tranche->formats.formats[j];
-			for (size_t k = 0; k < fmt->len; k++) {
-				if (!wlr_drm_format_set_add(&formats, fmt->format, fmt->modifiers[k])) {
-					goto error_formats;
-				}
-			}
+
+		struct wlr_drm_format_set uni;
+		if (!wlr_drm_format_set_union(&uni, &formats, &tranche->formats)) {
+			goto error_formats;
 		}
+		wlr_drm_format_set_finish(&formats);
+		formats = uni;
 	}
 
 	compiled_feedback_destroy(linux_dmabuf->default_feedback);
