@@ -10,6 +10,7 @@
 #include <wlr/render/wlr_texture.h>
 #include <wlr/render/vulkan.h>
 #include <wlr/util/log.h>
+#include <xf86drm.h>
 #include "render/pixel_format.h"
 #include "render/vulkan.h"
 
@@ -267,14 +268,13 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	wlr_log(WLR_DEBUG, "vulkan_texture_from_pixels: %.4s, %dx%d",
-		(const char*) &drm_fmt, width, height);
-
 	const struct wlr_vk_format_props *fmt =
 		vulkan_format_props_from_drm(renderer->dev, drm_fmt);
 	if (fmt == NULL && fmt->format.is_ycbcr) {
-		wlr_log(WLR_ERROR, "Unsupported pixel format %"PRIx32 " (%.4s)",
-			drm_fmt, (const char*) &drm_fmt);
+		char *format_name = drmGetFormatName(drm_fmt);
+		wlr_log(WLR_ERROR, "Unsupported pixel format %s (0x%08"PRIX32")",
+			format_name, drm_fmt);
+		free(format_name);
 		return NULL;
 	}
 
@@ -440,15 +440,13 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	VkDevice dev = renderer->dev->dev;
 	*n_mems = 0u;
 
-	wlr_log(WLR_DEBUG, "vulkan_import_dmabuf: %.4s (mod %"PRIx64"), %dx%d, %d planes",
-		(const char *)&attribs->format, attribs->modifier,
-		attribs->width, attribs->height, attribs->n_planes);
-
 	struct wlr_vk_format_props *fmt = vulkan_format_props_from_drm(renderer->dev,
 		attribs->format);
 	if (fmt == NULL) {
-		wlr_log(WLR_ERROR, "Unsupported pixel format %"PRIx32 " (%.4s)",
-			attribs->format, (const char*) &attribs->format);
+		char *format_name = drmGetFormatName(attribs->format);
+		wlr_log(WLR_ERROR, "Unsupported pixel format %s (0x%08"PRIX32")",
+			format_name, attribs->format);
+		free(format_name);
 		return VK_NULL_HANDLE;
 	}
 
@@ -457,15 +455,19 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	const struct wlr_vk_format_modifier_props *mod =
 		vulkan_format_props_find_modifier(fmt, attribs->modifier, for_render);
 	if (!mod) {
-		wlr_log(WLR_ERROR, "Format %"PRIx32" (%.4s) can't be used with modifier "
-			"%"PRIx64, attribs->format, (const char*) &attribs->format,
-			attribs->modifier);
+		char *format_name = drmGetFormatName(attribs->format);
+		char *modifier_name = drmGetFormatModifierName(attribs->modifier);
+		wlr_log(WLR_ERROR, "Format %s (0x%08"PRIX32") can't be used with modifier "
+			"%s (0x%016"PRIX64")", format_name, attribs->format,
+			modifier_name, attribs->modifier);
+		free(format_name);
+		free(modifier_name);
 		return VK_NULL_HANDLE;
 	}
 
 	if ((uint32_t) attribs->width > mod->max_extent.width ||
 			(uint32_t) attribs->height > mod->max_extent.height) {
-		wlr_log(WLR_ERROR, "dmabuf is too large to import");
+		wlr_log(WLR_ERROR, "DMA-BUF is too large to import");
 		return VK_NULL_HANDLE;
 	}
 
@@ -654,8 +656,10 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	const struct wlr_vk_format_props *fmt = vulkan_format_props_from_drm(
 		renderer->dev, attribs->format);
 	if (fmt == NULL) {
-		wlr_log(WLR_ERROR, "Unsupported pixel format %"PRIx32 " (%.4s)",
-			attribs->format, (const char*) &attribs->format);
+		char *format_name = drmGetFormatName(attribs->format);
+		wlr_log(WLR_ERROR, "Unsupported pixel format %s (0x%08"PRIX32")",
+			format_name, attribs->format);
+		free(format_name);
 		return NULL;
 	}
 
