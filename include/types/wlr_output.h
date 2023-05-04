@@ -7,8 +7,9 @@
 void output_pending_resolution(struct wlr_output *output,
 	const struct wlr_output_state *state, int *width, int *height);
 
-struct wlr_drm_format *output_pick_format(struct wlr_output *output,
-	const struct wlr_drm_format_set *display_formats, uint32_t format);
+bool output_pick_format(struct wlr_output *output,
+	const struct wlr_drm_format_set *display_formats,
+	struct wlr_drm_format *format, uint32_t fmt);
 void output_clear_back_buffer(struct wlr_output *output);
 bool output_ensure_buffer(struct wlr_output *output,
 	const struct wlr_output_state *state, bool *new_back_buffer);

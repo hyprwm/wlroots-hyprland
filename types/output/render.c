@@ -179,9 +179,9 @@ void wlr_output_lock_attach_render(struct wlr_output *output, bool lock) {
 		output->attach_render_locks);
 }
 
-struct wlr_drm_format *output_pick_format(struct wlr_output *output,
+bool output_pick_format(struct wlr_output *output,
 		const struct wlr_drm_format_set *display_formats,
-		uint32_t fmt) {
+		struct wlr_drm_format *format, uint32_t fmt) {
 	struct wlr_renderer *renderer = output->renderer;
 	struct wlr_allocator *allocator = output->allocator;
 	assert(renderer != NULL && allocator != NULL);
@@ -190,43 +190,37 @@ struct wlr_drm_format *output_pick_format(struct wlr_output *output,
 		wlr_renderer_get_render_formats(renderer);
 	if (render_formats == NULL) {
 		wlr_log(WLR_ERROR, "Failed to get render formats");
-		return NULL;
+		return false;
 	}
 
 	const struct wlr_drm_format *render_format =
 		wlr_drm_format_set_get(render_formats, fmt);
 	if (render_format == NULL) {
 		wlr_log(WLR_DEBUG, "Renderer doesn't support format 0x%"PRIX32, fmt);
-		return NULL;
+		return false;
 	}
 
-	struct wlr_drm_format *format = NULL;
 	if (display_formats != NULL) {
 		const struct wlr_drm_format *display_format =
 			wlr_drm_format_set_get(display_formats, fmt);
 		if (display_format == NULL) {
 			wlr_log(WLR_DEBUG, "Output doesn't support format 0x%"PRIX32, fmt);
-			return NULL;
-		}
-		format = wlr_drm_format_intersect(display_format, render_format);
-	} else {
-		format = calloc(1, sizeof(*format));
-		if (!format) {
 			return false;
 		}
-
+		if (!wlr_drm_format_intersect(format, display_format, render_format)) {
+			wlr_log(WLR_DEBUG, "Failed to intersect display and render "
+				"modifiers for format 0x%"PRIX32 " on output %s",
+				fmt, output->name);
+			return false;
+		}
+	} else {
 		// The output can display any format
-		wlr_drm_format_copy(format, render_format);
+		if (!wlr_drm_format_copy(format, render_format)) {
+			return false;
+		}
 	}
 
-	if (format == NULL) {
-		wlr_log(WLR_DEBUG, "Failed to intersect display and render "
-			"modifiers for format 0x%"PRIX32 " on output %s",
-			fmt, output->name);
-		return NULL;
-	}
-
-	return format;
+	return true;
 }
 
 uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {

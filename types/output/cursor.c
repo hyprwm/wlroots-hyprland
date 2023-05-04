@@ -242,7 +242,8 @@ static void output_cursor_update_visible(struct wlr_output_cursor *cursor) {
 		wlr_box_intersection(&intersection, &output_box, &cursor_box);
 }
 
-static struct wlr_drm_format *output_pick_cursor_format(struct wlr_output *output) {
+static bool output_pick_cursor_format(struct wlr_output *output,
+		struct wlr_drm_format *format) {
 	struct wlr_allocator *allocator = output->allocator;
 	assert(allocator != NULL);
 
@@ -252,11 +253,11 @@ static struct wlr_drm_format *output_pick_cursor_format(struct wlr_output *outpu
 			output->impl->get_cursor_formats(output, allocator->buffer_caps);
 		if (display_formats == NULL) {
 			wlr_log(WLR_DEBUG, "Failed to get cursor display formats");
-			return NULL;
+			return false;
 		}
 	}
 
-	return output_pick_format(output, display_formats, DRM_FORMAT_ARGB8888);
+	return output_pick_format(output, display_formats, format, DRM_FORMAT_ARGB8888);
 }
 
 static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor) {
@@ -289,18 +290,16 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	if (output->cursor_swapchain == NULL ||
 			output->cursor_swapchain->width != width ||
 			output->cursor_swapchain->height != height) {
-		struct wlr_drm_format *format =
-			output_pick_cursor_format(output);
-		if (format == NULL) {
+		struct wlr_drm_format format = {0};
+		if (!output_pick_cursor_format(output, &format)) {
 			wlr_log(WLR_DEBUG, "Failed to pick cursor format");
 			return NULL;
 		}
 
 		wlr_swapchain_destroy(output->cursor_swapchain);
 		output->cursor_swapchain = wlr_swapchain_create(allocator,
-			width, height, format);
-		wlr_drm_format_finish(format);
-		free(format);
+			width, height, &format);
+		wlr_drm_format_finish(&format);
 		if (output->cursor_swapchain == NULL) {
 			wlr_log(WLR_ERROR, "Failed to create cursor swapchain");
 			return NULL;

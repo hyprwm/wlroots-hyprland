@@ -16,34 +16,35 @@ static struct wlr_swapchain *create_swapchain(struct wlr_output *output,
 
 	const struct wlr_drm_format_set *display_formats =
 		wlr_output_get_primary_formats(output, allocator->buffer_caps);
-	struct wlr_drm_format *format = output_pick_format(output, display_formats,
-		output->render_format);
-	if (format == NULL) {
+	struct wlr_drm_format format = {0};
+	if (!output_pick_format(output, display_formats, &format, output->render_format)) {
 		wlr_log(WLR_ERROR, "Failed to pick primary buffer format for output '%s'",
 			output->name);
 		return NULL;
 	}
 
-	char *format_name = drmGetFormatName(format->format);
+	char *format_name = drmGetFormatName(format.format);
 	wlr_log(WLR_DEBUG, "Choosing primary buffer format %s (0x%08"PRIX32") for output '%s'",
-		format_name ? format_name : "<unknown>", format->format, output->name);
+		format_name ? format_name : "<unknown>", format.format, output->name);
 	free(format_name);
 
-	if (!allow_modifiers && (format->len != 1 || format->modifiers[0] != DRM_FORMAT_MOD_LINEAR)) {
-		if (!wlr_drm_format_has(format, DRM_FORMAT_MOD_INVALID)) {
+	if (!allow_modifiers && (format.len != 1 || format.modifiers[0] != DRM_FORMAT_MOD_LINEAR)) {
+		if (!wlr_drm_format_has(&format, DRM_FORMAT_MOD_INVALID)) {
 			wlr_log(WLR_DEBUG, "Implicit modifiers not supported");
-			wlr_drm_format_finish(format);
-			free(format);
+			wlr_drm_format_finish(&format);
 			return NULL;
 		}
 
-		format->len = 0;
-		wlr_drm_format_add(format, DRM_FORMAT_MOD_INVALID);
+		format.len = 0;
+		if (!wlr_drm_format_add(&format, DRM_FORMAT_MOD_INVALID)) {
+			wlr_log(WLR_DEBUG, "Failed to add implicit modifier to format");
+			wlr_drm_format_finish(&format);
+			return NULL;
+		}
 	}
 
-	struct wlr_swapchain *swapchain = wlr_swapchain_create(allocator, width, height, format);
-	wlr_drm_format_finish(format);
-	free(format);
+	struct wlr_swapchain *swapchain = wlr_swapchain_create(allocator, width, height, &format);
+	wlr_drm_format_finish(&format);
 	return swapchain;
 }
 

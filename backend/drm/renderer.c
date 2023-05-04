@@ -136,50 +136,48 @@ void drm_plane_finish_surface(struct wlr_drm_plane *plane) {
 	finish_drm_surface(&plane->mgpu_surf);
 }
 
-struct wlr_drm_format *drm_plane_pick_render_format(
-		struct wlr_drm_plane *plane, struct wlr_drm_renderer *renderer) {
+bool drm_plane_pick_render_format(struct wlr_drm_plane *plane,
+		struct wlr_drm_format *fmt, struct wlr_drm_renderer *renderer) {
 	const struct wlr_drm_format_set *render_formats =
 		wlr_renderer_get_render_formats(renderer->wlr_rend);
 	if (render_formats == NULL) {
 		wlr_log(WLR_ERROR, "Failed to get render formats");
-		return NULL;
+		return false;
 	}
 
 	const struct wlr_drm_format_set *plane_formats = &plane->formats;
 
-	uint32_t fmt = DRM_FORMAT_ARGB8888;
-	if (!wlr_drm_format_set_get(&plane->formats, fmt)) {
+	uint32_t format = DRM_FORMAT_ARGB8888;
+	if (!wlr_drm_format_set_get(&plane->formats, format)) {
 		const struct wlr_pixel_format_info *format_info =
-			drm_get_pixel_format_info(fmt);
+			drm_get_pixel_format_info(format);
 		assert(format_info != NULL &&
 			format_info->opaque_substitute != DRM_FORMAT_INVALID);
-		fmt = format_info->opaque_substitute;
+		format = format_info->opaque_substitute;
 	}
 
 	const struct wlr_drm_format *render_format =
-		wlr_drm_format_set_get(render_formats, fmt);
+		wlr_drm_format_set_get(render_formats, format);
 	if (render_format == NULL) {
-		wlr_log(WLR_DEBUG, "Renderer doesn't support format 0x%"PRIX32, fmt);
-		return NULL;
+		wlr_log(WLR_DEBUG, "Renderer doesn't support format 0x%"PRIX32, format);
+		return false;
 	}
 
 	const struct wlr_drm_format *plane_format =
-		wlr_drm_format_set_get(plane_formats, fmt);
+		wlr_drm_format_set_get(plane_formats, format);
 	if (plane_format == NULL) {
 		wlr_log(WLR_DEBUG, "Plane %"PRIu32" doesn't support format 0x%"PRIX32,
-			plane->id, fmt);
-		return NULL;
+			plane->id, format);
+		return false;
 	}
 
-	struct wlr_drm_format *format =
-		wlr_drm_format_intersect(plane_format, render_format);
-	if (format == NULL) {
+	if (!wlr_drm_format_intersect(fmt, plane_format, render_format)) {
 		wlr_log(WLR_DEBUG, "Failed to intersect plane and render "
-			"modifiers for format 0x%"PRIX32, fmt);
-		return NULL;
+			"modifiers for format 0x%"PRIX32, format);
+		return false;
 	}
 
-	return format;
+	return true;
 }
 
 void drm_fb_clear(struct wlr_drm_fb **fb_ptr) {

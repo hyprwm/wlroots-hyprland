@@ -183,7 +183,7 @@ bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_dr
 	return true;
 }
 
-struct wlr_drm_format *wlr_drm_format_intersect(
+bool wlr_drm_format_intersect(struct wlr_drm_format *dst,
 		const struct wlr_drm_format *a, const struct wlr_drm_format *b) {
 	assert(a->format == b->format);
 
@@ -210,20 +210,9 @@ struct wlr_drm_format *wlr_drm_format_intersect(
 		}
 	}
 
-	// If the intersection is empty, then the formats aren't compatible with
-	// each other.
-	if (fmt.len == 0) {
-		wlr_drm_format_finish(&fmt);
-		return NULL;
-	}
-
-	struct wlr_drm_format *format = calloc(1, sizeof(*format));
-	if (!format) {
-		wlr_drm_format_finish(&fmt);
-		return NULL;
-	}
-	*format = fmt;
-	return format;
+	wlr_drm_format_finish(dst);
+	*dst = fmt;
+	return true;
 }
 
 bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
@@ -242,12 +231,24 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 				// When the two formats have no common modifier, keep
 				// intersecting the rest of the formats: they may be compatible
 				// with each other
-				struct wlr_drm_format *format =
-					wlr_drm_format_intersect(a->formats[i], b->formats[j]);
-				if (format != NULL) {
+				struct wlr_drm_format *format = calloc(1, sizeof(*format));
+				if (!format) {
+					wlr_drm_format_set_finish(&out);
+					return false;
+				}
+
+				if (!wlr_drm_format_intersect(format, a->formats[i], b->formats[j])) {
+					wlr_drm_format_set_finish(&out);
+					return false;
+				}
+
+				if (format->len == 0) {
+					wlr_drm_format_finish(format);
+				} else {
 					out.formats[out.len] = format;
 					out.len++;
 				}
+
 				break;
 			}
 		}

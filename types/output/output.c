@@ -602,15 +602,13 @@ static bool output_basic_test(struct wlr_output *output,
 
 		const struct wlr_drm_format_set *display_formats =
 			wlr_output_get_primary_formats(output, allocator->buffer_caps);
-		struct wlr_drm_format *format = output_pick_format(output, display_formats,
-			state->render_format);
-		if (format == NULL) {
+		struct wlr_drm_format format = {0};
+		if (!output_pick_format(output, display_formats, &format, state->render_format)) {
 			wlr_log(WLR_ERROR, "Failed to pick primary buffer format for output");
 			return false;
 		}
 
-		wlr_drm_format_finish(format);
-		free(format);
+		wlr_drm_format_finish(&format);
 	}
 
 	bool enabled = output->enabled;
