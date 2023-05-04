@@ -348,6 +348,8 @@ static void surface_state_move(struct wlr_surface_state *state,
 }
 
 static void surface_apply_damage(struct wlr_surface *surface) {
+	surface->has_buffer = surface->current.buffer;
+
 	if (surface->current.buffer == NULL) {
 		// NULL commit
 		if (surface->buffer != NULL) {
@@ -723,7 +725,7 @@ struct wlr_texture *wlr_surface_get_texture(struct wlr_surface *surface) {
 }
 
 bool wlr_surface_has_buffer(struct wlr_surface *surface) {
-	return wlr_surface_get_texture(surface) != NULL;
+	return surface->has_buffer;
 }
 
 bool wlr_surface_set_role(struct wlr_surface *surface,
