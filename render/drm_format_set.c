@@ -61,14 +61,14 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 
 	struct wlr_drm_format **ptr = format_set_get_ref(set, format);
 	if (ptr) {
-		return wlr_drm_format_add(ptr, modifier);
+		return wlr_drm_format_add(*ptr, modifier);
 	}
 
 	struct wlr_drm_format *fmt = wlr_drm_format_create(format);
 	if (!fmt) {
 		return false;
 	}
-	if (!wlr_drm_format_add(&fmt, modifier)) {
+	if (!wlr_drm_format_add(fmt, modifier)) {
 		wlr_drm_format_finish(fmt);
 		return false;
 	}
@@ -114,9 +114,7 @@ bool wlr_drm_format_has(const struct wlr_drm_format *fmt, uint64_t modifier) {
 	return false;
 }
 
-bool wlr_drm_format_add(struct wlr_drm_format **fmt_ptr, uint64_t modifier) {
-	struct wlr_drm_format *fmt = *fmt_ptr;
-
+bool wlr_drm_format_add(struct wlr_drm_format *fmt, uint64_t modifier) {
 	if (wlr_drm_format_has(fmt, modifier)) {
 		return true;
 	}

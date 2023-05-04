@@ -38,7 +38,7 @@ static struct wlr_swapchain *create_swapchain(struct wlr_output *output,
 		}
 
 		format->len = 0;
-		wlr_drm_format_add(&format, DRM_FORMAT_MOD_INVALID);
+		wlr_drm_format_add(format, DRM_FORMAT_MOD_INVALID);
 	}
 
 	struct wlr_swapchain *swapchain = wlr_swapchain_create(allocator, width, height, format);
