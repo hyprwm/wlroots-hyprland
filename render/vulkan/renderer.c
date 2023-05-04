@@ -2247,26 +2247,22 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	return vulkan_renderer_create_for_device(dev);
 }
 
-VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer)
-{
+VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->instance->instance;
 }
 
-VkPhysicalDevice wlr_vk_renderer_get_physical_device(struct wlr_renderer *renderer)
-{
+VkPhysicalDevice wlr_vk_renderer_get_physical_device(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->phdev;
 }
 
-VkDevice wlr_vk_renderer_get_device(struct wlr_renderer *renderer)
-{
+VkDevice wlr_vk_renderer_get_device(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->dev;
 }
 
-uint32_t wlr_vk_renderer_get_queue_family(struct wlr_renderer *renderer)
-{
+uint32_t wlr_vk_renderer_get_queue_family(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->queue_family;
 }
