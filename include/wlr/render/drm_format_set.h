@@ -73,7 +73,8 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 
 /**
  * Intersect two DRM format sets `a` and `b`, storing in the destination set
- * `dst` the format + modifier pairs which are in both source sets.
+ * `dst` the format + modifier pairs which are in both source sets. The `dst`
+ * must either be zeroed or initialized with other state to be replaced.
  *
  * Returns false on failure or when the intersection is empty.
  */
