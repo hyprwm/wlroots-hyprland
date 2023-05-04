@@ -58,8 +58,7 @@ struct wlr_drm_format_set {
 };
 
 /**
- * Free all of the DRM formats in the set, making the set empty.  Does not
- * free the set itself.
+ * Free all of the DRM formats in the set, making the set empty.
  */
 void wlr_drm_format_set_finish(struct wlr_drm_format_set *set);
 
