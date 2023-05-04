@@ -258,8 +258,6 @@ static bool drm_format_set_extend(struct wlr_drm_format_set *dst,
 
 bool wlr_drm_format_set_union(struct wlr_drm_format_set *dst,
 		const struct wlr_drm_format_set *a, const struct wlr_drm_format_set *b) {
-	assert(dst != a && dst != b);
-
 	struct wlr_drm_format_set out = {0};
 	out.capacity = a->len + b->len;
 	out.formats = calloc(out.capacity, sizeof(struct wlr_drm_format *));
@@ -276,6 +274,7 @@ bool wlr_drm_format_set_union(struct wlr_drm_format_set *dst,
 		return false;
 	}
 
+	wlr_drm_format_set_finish(dst);
 	*dst = out;
 
 	return true;

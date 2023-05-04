@@ -82,7 +82,8 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 
 /**
  * Unions DRM format set `a` and `b`, storing in the destination set
- * `dst`.
+ * `dst`. The `dst` must either be zeroed or initialized with other state
+ * to be replaced.
  *
  * Returns false on failure.
  */
