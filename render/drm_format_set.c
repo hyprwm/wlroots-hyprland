@@ -64,10 +64,12 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 		return wlr_drm_format_add(*ptr, modifier);
 	}
 
-	struct wlr_drm_format *fmt = wlr_drm_format_create(format);
+	struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
 	if (!fmt) {
 		return false;
 	}
+
+	wlr_drm_format_init(fmt, format);
 	if (!wlr_drm_format_add(fmt, modifier)) {
 		wlr_drm_format_finish(fmt);
 		return false;
@@ -92,17 +94,9 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 	return true;
 }
 
-struct wlr_drm_format *wlr_drm_format_create(uint32_t format) {
-	size_t capacity = 4;
-	struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
-	if (!fmt) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
-		return NULL;
-	}
+void wlr_drm_format_init(struct wlr_drm_format *fmt, uint32_t format) {
+	memset(fmt, 0, sizeof(*fmt));
 	fmt->format = format;
-	fmt->capacity = capacity;
-	fmt->modifiers = malloc(sizeof(*fmt->modifiers) * capacity);
-	return fmt;
 }
 
 bool wlr_drm_format_has(const struct wlr_drm_format *fmt, uint64_t modifier) {
