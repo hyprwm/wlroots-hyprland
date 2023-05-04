@@ -390,8 +390,7 @@ static void surface_apply_damage(struct wlr_surface *surface) {
 }
 
 static void surface_update_opaque_region(struct wlr_surface *surface) {
-	struct wlr_texture *texture = wlr_surface_get_texture(surface);
-	if (texture == NULL) {
+	if (!surface->has_buffer) {
 		pixman_region32_clear(&surface->opaque_region);
 		return;
 	}
