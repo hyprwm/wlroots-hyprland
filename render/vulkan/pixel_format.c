@@ -145,11 +145,46 @@ static const struct wlr_vk_format formats[] = {
 #endif
 
 	// YCbCr formats
+	// R -> V, G -> Y, B -> U
+	// 420 -> 2x2 subsampled, 422 -> 2x1 subsampled, 444 -> non-subsampled
+	{
+		.drm = DRM_FORMAT_UYVY,
+		.vk = VK_FORMAT_B8G8R8G8_422_UNORM,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_YUYV,
+		.vk = VK_FORMAT_G8B8G8R8_422_UNORM,
+		.is_ycbcr = true,
+	},
 	{
 		.drm = DRM_FORMAT_NV12,
 		.vk = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
 		.is_ycbcr = true,
 	},
+	{
+		.drm = DRM_FORMAT_NV16,
+		.vk = VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_YUV420,
+		.vk = VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_YUV422,
+		.vk = VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_YUV444,
+		.vk = VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
+		.is_ycbcr = true,
+	},
+	// TODO: add 10, 12 and 16 bit formats
+	// TODO: add DRM_FORMAT_NV24/VK_FORMAT_G8_B8R8_2PLANE_444_UNORM (requires
+	// Vulkan 1.3 or VK_EXT_ycbcr_2plane_444_formats)
 };
 
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
