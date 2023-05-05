@@ -186,9 +186,13 @@ static void destroy_render_format_setup(struct wlr_vk_renderer *renderer,
 	vkDestroyRenderPass(dev, setup->render_pass, NULL);
 	vkDestroyPipeline(dev, setup->tex_identity_pipe, NULL);
 	vkDestroyPipeline(dev, setup->tex_srgb_pipe, NULL);
-	vkDestroyPipeline(dev, setup->tex_nv12_pipe, NULL);
 	vkDestroyPipeline(dev, setup->output_pipe, NULL);
 	vkDestroyPipeline(dev, setup->quad_pipe, NULL);
+
+	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
+		vkDestroyPipeline(dev, setup->tex_ycbcr_pipelines[i], NULL);
+	}
+	free(setup->tex_ycbcr_pipelines);
 }
 
 static void shared_buffer_destroy(struct wlr_vk_renderer *r,
@@ -1385,6 +1389,21 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 }
 
+static VkPipeline get_texture_pipeline(struct wlr_vk_texture *texture,
+		struct wlr_vk_render_format_setup *render_setup) {
+	if (texture->format->is_ycbcr) {
+		size_t pipeline_layout_index = texture->pipeline_layout - texture->renderer->ycbcr_pipeline_layouts;
+		return render_setup->tex_ycbcr_pipelines[pipeline_layout_index];
+	} else {
+		if (texture->format->is_srgb) {
+			// sRGB formats already have the transfer function applied
+			return render_setup->tex_identity_pipe;
+		} else {
+			return render_setup->tex_srgb_pipe;
+		}
+	}
+}
+
 static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
 		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
 		const float matrix[static 9], float alpha) {
@@ -1407,17 +1426,8 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	}
 
 	VkPipelineLayout pipe_layout = texture->pipeline_layout->vk;
+	VkPipeline pipe = get_texture_pipeline(texture, renderer->current_render_buffer->render_setup);
 
-	VkPipeline pipe;
-	// SRGB formats already have the transfer function applied
-	if (texture->format->drm == DRM_FORMAT_NV12) {
-		pipe = renderer->current_render_buffer->render_setup->tex_nv12_pipe;
-	} else if (texture->format->is_srgb) {
-		pipe = renderer->current_render_buffer->render_setup->tex_identity_pipe;
-	} else {
-		pipe = renderer->current_render_buffer->render_setup->tex_srgb_pipe;
-	}
-	assert(pipe != VK_NULL_HANDLE);
 	if (pipe != renderer->bound_pipe) {
 		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
 		renderer->bound_pipe = pipe;
@@ -1645,7 +1655,10 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vkDestroyShaderModule(dev->dev, renderer->output_module, NULL);
 
 	finish_pipeline_layout(renderer, &renderer->default_pipeline_layout);
-	finish_pipeline_layout(renderer, &renderer->nv12_pipeline_layout);
+	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
+		finish_pipeline_layout(renderer, &renderer->ycbcr_pipeline_layouts[i]);
+	}
+	free(renderer->ycbcr_pipeline_layouts);
 
 	vkDestroySemaphore(dev->dev, renderer->timeline_semaphore, NULL);
 	vkDestroyPipelineLayout(dev->dev, renderer->output_pipe_layout, NULL);
@@ -2452,10 +2465,37 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	const struct wlr_vk_format *nv12_format = vulkan_get_format_from_drm(DRM_FORMAT_NV12);
-	if (nv12_format != NULL && renderer->dev->sampler_ycbcr_conversion &&
-			!init_ycbcr_pipeline_layout(renderer, &renderer->nv12_pipeline_layout, nv12_format)) {
-		return false;
+	size_t formats_len;
+	const struct wlr_vk_format *formats = vulkan_get_format_list(&formats_len);
+
+	size_t ycbcr_formats_len = 0;
+	for (size_t i = 0; i < formats_len; i++) {
+		if (renderer->dev->sampler_ycbcr_conversion && formats[i].is_ycbcr) {
+			ycbcr_formats_len++;
+		}
+	}
+
+	if (ycbcr_formats_len > 0) {
+		renderer->ycbcr_pipeline_layouts =
+			calloc(ycbcr_formats_len, sizeof(*renderer->ycbcr_pipeline_layouts));
+		if (renderer->ycbcr_pipeline_layouts == NULL) {
+			return false;
+		}
+
+		for (size_t i = 0; i < formats_len; i++) {
+			const struct wlr_vk_format *format = &formats[i];
+			if (!format->is_ycbcr) {
+				continue;
+			}
+
+			struct wlr_vk_pipeline_layout *pl =
+				&renderer->ycbcr_pipeline_layouts[renderer->ycbcr_pipeline_layouts_len];
+			if (!init_ycbcr_pipeline_layout(renderer, pl, format)) {
+				return false;
+			}
+
+			renderer->ycbcr_pipeline_layouts_len++;
+		}
 	}
 
 	if (!init_blend_to_output_layouts(renderer, &renderer->output_ds_layout,
@@ -2727,10 +2767,20 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		goto error;
 	}
 
-	if (renderer->dev->sampler_ycbcr_conversion && !init_tex_pipeline(renderer,
-			setup->render_pass, renderer->nv12_pipeline_layout.vk,
-			WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_nv12_pipe)) {
-		goto error;
+	if (renderer->ycbcr_pipeline_layouts_len > 0) {
+		setup->tex_ycbcr_pipelines =
+			calloc(renderer->ycbcr_pipeline_layouts_len, sizeof(*setup->tex_ycbcr_pipelines));
+		if (setup->tex_ycbcr_pipelines == NULL) {
+			goto error;
+		}
+
+		for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
+			struct wlr_vk_pipeline_layout *pipeline_layout = &renderer->ycbcr_pipeline_layouts[i];
+			if (!init_tex_pipeline(renderer, setup->render_pass, pipeline_layout->vk,
+					WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_ycbcr_pipelines[i])) {
+				goto error;
+			}
+		}
 	}
 
 	if (!init_quad_pipeline(renderer, setup->render_pass, renderer->default_pipeline_layout.vk,
@@ -2852,9 +2902,14 @@ struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer
 	if (!format->is_ycbcr) {
 		return &renderer->default_pipeline_layout;
 	}
-	if (format->drm == DRM_FORMAT_NV12 && renderer->dev->sampler_ycbcr_conversion) {
-		return &renderer->nv12_pipeline_layout;
+
+	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
+		struct wlr_vk_pipeline_layout *pl = &renderer->ycbcr_pipeline_layouts[i];
+		if (pl->ycbcr.format == format->vk) {
+			return pl;
+		}
 	}
+
 	char *name = drmGetFormatName(format->drm);
 	wlr_log(WLR_ERROR, "No pipeline layout found for format %s (0x%08"PRIX32")",
 		name, format->drm);

@@ -150,9 +150,10 @@ struct wlr_vk_render_format_setup {
 
 	VkPipeline tex_identity_pipe;
 	VkPipeline tex_srgb_pipe;
-	VkPipeline tex_nv12_pipe;
 	VkPipeline quad_pipe;
 	VkPipeline output_pipe;
+
+	VkPipeline *tex_ycbcr_pipelines; // same length as wlr_vk_renderer.ycbcr_pipeline_layouts
 };
 
 // Renderer-internal represenation of an wlr_buffer imported for rendering.
@@ -207,7 +208,8 @@ struct wlr_vk_renderer {
 	VkShaderModule output_module;
 
 	struct wlr_vk_pipeline_layout default_pipeline_layout;
-	struct wlr_vk_pipeline_layout nv12_pipeline_layout;
+	size_t ycbcr_pipeline_layouts_len;
+	struct wlr_vk_pipeline_layout *ycbcr_pipeline_layouts;
 
 	// for blend->output subpass
 	VkPipelineLayout output_pipe_layout;
