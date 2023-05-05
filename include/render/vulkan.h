@@ -297,6 +297,9 @@ struct wlr_vk_format_props *vulkan_format_props_from_drm(
 	struct wlr_vk_device *dev, uint32_t drm_format);
 struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *r);
 
+struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
+	const struct wlr_vk_format *format);
+
 // State (e.g. image texture) associated with a surface.
 struct wlr_vk_texture {
 	struct wlr_texture wlr_texture;
@@ -306,6 +309,7 @@ struct wlr_vk_texture {
 	VkImage image;
 	VkImageView image_view;
 	const struct wlr_vk_format *format;
+	struct wlr_vk_pipeline_layout *pipeline_layout;
 	VkDescriptorSet ds;
 	struct wlr_vk_descriptor_pool *ds_pool;
 	struct wlr_vk_command_buffer *last_used_cb; // to track when it can be destroyed

@@ -17,6 +17,7 @@
 #include <wlr/render/vulkan.h>
 #include <wlr/backend/interface.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
+#include <xf86drm.h>
 
 #include "render/dmabuf.h"
 #include "render/pixel_format.h"
@@ -1405,11 +1406,11 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		wl_list_insert(&renderer->foreign_textures, &texture->foreign_link);
 	}
 
-	VkPipelineLayout pipe_layout = renderer->default_pipeline_layout.vk;
+	VkPipelineLayout pipe_layout = texture->pipeline_layout->vk;
+
 	VkPipeline pipe;
 	// SRGB formats already have the transfer function applied
 	if (texture->format->drm == DRM_FORMAT_NV12) {
-		pipe_layout = renderer->nv12_pipeline_layout.vk;
 		pipe = renderer->current_render_buffer->render_setup->tex_nv12_pipe;
 	} else if (texture->format->is_srgb) {
 		pipe = renderer->current_render_buffer->render_setup->tex_identity_pipe;
@@ -2839,6 +2840,21 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	}
 
 	return vulkan_renderer_create_for_device(dev);
+}
+
+struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
+		const struct wlr_vk_format *format) {
+	if (!format->is_ycbcr) {
+		return &renderer->default_pipeline_layout;
+	}
+	if (format->drm == DRM_FORMAT_NV12 && renderer->dev->sampler_ycbcr_conversion) {
+		return &renderer->nv12_pipeline_layout;
+	}
+	char *name = drmGetFormatName(format->drm);
+	wlr_log(WLR_ERROR, "No pipeline layout found for format %s (0x%08"PRIX32")",
+		name, format->drm);
+	free(name);
+	return NULL;
 }
 
 VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer) {
