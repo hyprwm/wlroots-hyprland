@@ -1405,9 +1405,11 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		wl_list_insert(&renderer->foreign_textures, &texture->foreign_link);
 	}
 
+	VkPipelineLayout pipe_layout = renderer->pipe_layout;
 	VkPipeline pipe;
 	// SRGB formats already have the transfer function applied
 	if (texture->format->drm == DRM_FORMAT_NV12) {
+		pipe_layout = renderer->nv12_pipe_layout;
 		pipe = renderer->current_render_buffer->render_setup->tex_nv12_pipe;
 	} else if (texture->format->is_srgb) {
 		pipe = renderer->current_render_buffer->render_setup->tex_identity_pipe;
@@ -1421,7 +1423,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	}
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		renderer->pipe_layout, 0, 1, &texture->ds, 0, NULL);
+		pipe_layout, 0, 1, &texture->ds, 0, NULL);
 
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
@@ -1434,9 +1436,9 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	vert_pcr_data.uv_size[0] = box->width / wlr_texture->width;
 	vert_pcr_data.uv_size[1] = box->height / wlr_texture->height;
 
-	vkCmdPushConstants(cb, renderer->pipe_layout,
+	vkCmdPushConstants(cb, pipe_layout,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, renderer->pipe_layout,
+	vkCmdPushConstants(cb, pipe_layout,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 	vkCmdDraw(cb, 4, 1, 0, 0);
