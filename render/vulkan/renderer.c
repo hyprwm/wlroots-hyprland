@@ -1953,33 +1953,6 @@ static bool init_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler,
 	return true;
 }
 
-static bool init_ycbcr_sampler(struct wlr_vk_renderer *renderer,
-		struct wlr_vk_pipeline_layout *pipeline_layout,
-		const struct wlr_vk_format *format) {
-	VkResult res;
-
-	assert(format->is_ycbcr);
-	pipeline_layout->ycbcr.format = format->vk;
-
-	VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-		.format = format->vk,
-		.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601,
-		.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,
-		.xChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
-		.yChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
-		.chromaFilter = VK_FILTER_LINEAR,
-	};
-	res = vkCreateSamplerYcbcrConversion(renderer->dev->dev,
-		&conversion_create_info, NULL, &pipeline_layout->ycbcr.conversion);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateSamplerYcbcrConversion", res);
-		return false;
-	}
-
-	return init_sampler(renderer, &pipeline_layout->sampler, pipeline_layout->ycbcr.conversion);
-}
-
 // Initializes the VkDescriptorSetLayout and VkPipelineLayout needed
 // for the texture rendering pipeline using the given VkSampler.
 static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
@@ -2419,6 +2392,55 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
+static bool init_default_pipeline_layout(struct wlr_vk_renderer *renderer) {
+	struct wlr_vk_pipeline_layout *pipeline_layout = &renderer->default_pipeline_layout;
+
+	if (!init_sampler(renderer, &pipeline_layout->sampler, VK_NULL_HANDLE)) {
+		return false;
+	}
+
+	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool init_ycbcr_pipeline_layout(struct wlr_vk_renderer *renderer,
+		struct wlr_vk_pipeline_layout *pipeline_layout,
+		const struct wlr_vk_format *format) {
+	VkResult res;
+
+	assert(format->is_ycbcr);
+	pipeline_layout->ycbcr.format = format->vk;
+
+	VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
+		.format = format->vk,
+		.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601,
+		.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,
+		.xChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+		.yChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+		.chromaFilter = VK_FILTER_LINEAR,
+	};
+	res = vkCreateSamplerYcbcrConversion(renderer->dev->dev,
+		&conversion_create_info, NULL, &pipeline_layout->ycbcr.conversion);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateSamplerYcbcrConversion", res);
+		return false;
+	}
+
+	if (!init_sampler(renderer, &pipeline_layout->sampler, pipeline_layout->ycbcr.conversion)) {
+		return false;
+	}
+
+	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
+		return false;
+	}
+
+	return true;
+}
+
 // Creates static render data, such as sampler, layouts and shader modules
 // for the given rednerer.
 // Cleanup is done by destroying the renderer.
@@ -2426,30 +2448,13 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	const struct wlr_vk_format *nv12_format = NULL;
-	if (renderer->dev->sampler_ycbcr_conversion) {
-		nv12_format = vulkan_get_format_from_drm(DRM_FORMAT_NV12);
-	}
-
-	struct wlr_vk_pipeline_layout *default_layout = &renderer->default_pipeline_layout;
-
-	struct wlr_vk_pipeline_layout *nv12_layout = NULL;
-	if (nv12_format != NULL) {
-		nv12_layout = &renderer->nv12_pipeline_layout;
-	}
-
-	if (!init_sampler(renderer, &default_layout->sampler, VK_NULL_HANDLE)) {
-		return false;
-	}
-	if (nv12_layout != NULL && !init_ycbcr_sampler(renderer, nv12_layout, nv12_format)) {
+	if (!init_default_pipeline_layout(renderer)) {
 		return false;
 	}
 
-	if (!init_tex_layouts(renderer, default_layout->sampler, &default_layout->ds, &default_layout->vk)) {
-		return false;
-	}
-	if (nv12_layout != NULL && !init_tex_layouts(renderer, nv12_layout->sampler,
-			&nv12_layout->ds, &nv12_layout->vk)) {
+	const struct wlr_vk_format *nv12_format = vulkan_get_format_from_drm(DRM_FORMAT_NV12);
+	if (nv12_format != NULL && renderer->dev->sampler_ycbcr_conversion &&
+			!init_ycbcr_pipeline_layout(renderer, &renderer->nv12_pipeline_layout, nv12_format)) {
 		return false;
 	}
 
