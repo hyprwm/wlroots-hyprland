@@ -36,6 +36,7 @@ wlr_files += files(
 	'buffer/resource.c',
 	'wlr_compositor.c',
 	'wlr_content_type_v1.c',
+	'wlr_cursor_shape_v1.c',
 	'wlr_cursor.c',
 	'wlr_damage_ring.c',
 	'wlr_data_control_v1.c',
