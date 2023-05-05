@@ -681,7 +681,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.a = texture->has_alpha
+		.components.a = texture->has_alpha || fmt->format.is_ycbcr
 			? VK_COMPONENT_SWIZZLE_IDENTITY
 			: VK_COMPONENT_SWIZZLE_ONE,
 
