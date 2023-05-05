@@ -122,6 +122,18 @@ const struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 	struct wlr_vk_format_props *props, uint64_t mod, bool render);
 void vulkan_format_props_finish(struct wlr_vk_format_props *props);
 
+struct wlr_vk_pipeline_layout {
+	VkPipelineLayout vk;
+	VkDescriptorSetLayout ds;
+	VkSampler sampler;
+
+	// for YCbCr pipelines only
+	struct {
+		VkSamplerYcbcrConversion conversion;
+		VkFormat format;
+	} ycbcr;
+};
+
 // Constants used to pick the color transform for the texture drawing
 // fragment shader. Must match those in shaders/texture.frag
 enum wlr_vk_texture_transform {
@@ -194,10 +206,9 @@ struct wlr_vk_renderer {
 	VkShaderModule quad_frag_module;
 	VkShaderModule output_module;
 
-	VkDescriptorSetLayout ds_layout, nv12_ds_layout;
-	VkPipelineLayout pipe_layout, nv12_pipe_layout;
-	VkSampler sampler, nv12_sampler;
-	VkSamplerYcbcrConversion nv12_conversion;
+	struct wlr_vk_pipeline_layout default_pipeline_layout;
+	struct wlr_vk_pipeline_layout nv12_pipeline_layout;
+
 	// for blend->output subpass
 	VkPipelineLayout output_pipe_layout;
 	VkDescriptorSetLayout output_ds_layout;

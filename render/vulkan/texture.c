@@ -364,7 +364,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		goto error;
 	}
 
-	texture->ds_pool = vulkan_alloc_texture_ds(renderer, renderer->ds_layout, &texture->ds);
+	texture->ds_pool = vulkan_alloc_texture_ds(renderer, renderer->default_pipeline_layout.ds, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
 		goto error;
@@ -695,13 +695,13 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		.image = texture->image,
 	};
 
-	VkDescriptorSetLayout ds_layout = renderer->ds_layout;
+	VkDescriptorSetLayout ds_layout = renderer->default_pipeline_layout.ds;
 	VkSamplerYcbcrConversionInfo ycbcr_conversion_info;
 	if (fmt->format.is_ycbcr) {
-		ds_layout = renderer->nv12_ds_layout;
+		ds_layout = renderer->nv12_pipeline_layout.ds;
 		ycbcr_conversion_info = (VkSamplerYcbcrConversionInfo){
 			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-			.conversion = renderer->nv12_conversion,
+			.conversion = renderer->nv12_pipeline_layout.ycbcr.conversion,
 		};
 		view_info.pNext = &ycbcr_conversion_info;
 	}
