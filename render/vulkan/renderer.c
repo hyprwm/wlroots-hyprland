@@ -2465,12 +2465,10 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	size_t formats_len;
-	const struct wlr_vk_format *formats = vulkan_get_format_list(&formats_len);
-
 	size_t ycbcr_formats_len = 0;
-	for (size_t i = 0; i < formats_len; i++) {
-		if (renderer->dev->sampler_ycbcr_conversion && formats[i].is_ycbcr) {
+	for (size_t i = 0; i < renderer->dev->format_prop_count; i++) {
+		struct wlr_vk_format_props *props = &renderer->dev->format_props[i];
+		if (renderer->dev->sampler_ycbcr_conversion && props->format.is_ycbcr) {
 			ycbcr_formats_len++;
 		}
 	}
@@ -2482,8 +2480,8 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 			return false;
 		}
 
-		for (size_t i = 0; i < formats_len; i++) {
-			const struct wlr_vk_format *format = &formats[i];
+		for (size_t i = 0; i < renderer->dev->format_prop_count; i++) {
+			const struct wlr_vk_format *format = &renderer->dev->format_props[i].format;
 			if (!format->is_ycbcr) {
 				continue;
 			}
