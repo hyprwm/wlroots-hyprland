@@ -193,6 +193,7 @@ static const VkFormatFeatureFlags dma_tex_features =
 static const VkFormatFeatureFlags dma_tex_ycbcr_features =
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT |
+	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
 	VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
 
 static bool query_modifier_usage_support(struct wlr_vk_device *dev, VkFormat vk_format,
