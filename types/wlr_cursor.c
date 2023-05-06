@@ -481,6 +481,8 @@ void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
 			&output_cursor->output_commit);
 		output_cursor->output_commit.notify =
 			output_cursor_output_handle_output_commit;
+
+		output_cursor_output_commit_surface(output_cursor);
 	}
 }
 
