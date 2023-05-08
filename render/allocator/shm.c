@@ -71,8 +71,7 @@ static struct wlr_buffer *allocator_create_buffer(
 	wlr_buffer_init(&buffer->base, &buffer_impl, width, height);
 
 	// TODO: consider using a single file for multiple buffers
-	int bytes_per_pixel = info->bpp / 8;
-	int stride = width * bytes_per_pixel; // TODO: align?
+	int stride = pixel_format_info_min_stride(info, width); // TODO: align?
 	buffer->size = stride * height;
 	buffer->shm.fd = allocate_shm_file(buffer->size);
 	if (buffer->shm.fd < 0) {

@@ -49,7 +49,6 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 	assert(format_info);
 
 	uint32_t bsize = 0;
-	unsigned bytespb = format_info->bpp / 8;
 
 	// deferred upload by transfer; using staging buffer
 	// calculate maximum side needed
@@ -64,7 +63,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 		assert((uint32_t)rect.x2 <= texture->wlr_texture.width);
 		assert((uint32_t)rect.y2 <= texture->wlr_texture.height);
 
-		bsize += height * bytespb * width;
+		bsize += height * pixel_format_info_min_stride(format_info, width);
 	}
 
 	VkBufferImageCopy *copies = calloc((size_t)rects_len, sizeof(*copies));
@@ -74,7 +73,7 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 	}
 
 	// get staging buffer
-	struct wlr_vk_buffer_span span = vulkan_get_stage_span(renderer, bsize, bytespb);
+	struct wlr_vk_buffer_span span = vulkan_get_stage_span(renderer, bsize, format_info->bytes_per_block);
 	if (!span.buffer || span.alloc.size != bsize) {
 		wlr_log(WLR_ERROR, "Failed to retrieve staging buffer");
 		free(copies);
@@ -100,13 +99,12 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 		uint32_t height = rect.y2 - rect.y1;
 		uint32_t src_x = rect.x1;
 		uint32_t src_y = rect.y1;
-
-		uint32_t packed_stride = bytespb * width;
+		uint32_t packed_stride = (uint32_t)pixel_format_info_min_stride(format_info, width);
 
 		// write data into staging buffer span
 		const char *pdata = vdata; // data iterator
 		pdata += stride * src_y;
-		pdata += bytespb * src_x;
+		pdata += format_info->bytes_per_block * src_x;
 		if (src_x == 0 && width == texture->wlr_texture.width &&
 				stride == packed_stride) {
 			memcpy(map, pdata, packed_stride * height);

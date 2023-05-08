@@ -56,6 +56,11 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	const struct wlr_pixel_format_info *drm_fmt =
 		drm_get_pixel_format_info(texture->drm_format);
 	assert(drm_fmt);
+	if (pixel_format_info_pixels_per_block(drm_fmt) != 1) {
+		wlr_buffer_end_data_ptr_access(buffer);
+		wlr_log(WLR_ERROR, "Cannot update texture: block formats are not supported");
+		return false;
+	}
 
 	if (!pixel_format_info_check_stride(drm_fmt, stride, buffer->width)) {
 		wlr_buffer_end_data_ptr_access(buffer);
@@ -76,7 +81,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	for (int i = 0; i < rects_len; i++) {
 		pixman_box32_t rect = rects[i];
 
-		glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride / (drm_fmt->bpp / 8));
+		glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride / drm_fmt->bytes_per_block);
 		glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, rect.x1);
 		glPixelStorei(GL_UNPACK_SKIP_ROWS_EXT, rect.y1);
 
@@ -197,6 +202,10 @@ static struct wlr_texture *gles2_texture_from_pixels(
 	const struct wlr_pixel_format_info *drm_fmt =
 		drm_get_pixel_format_info(drm_format);
 	assert(drm_fmt);
+	if (pixel_format_info_pixels_per_block(drm_fmt) != 1) {
+		wlr_log(WLR_ERROR, "Cannot upload texture: block formats are not supported");
+		return NULL;
+	}
 
 	if (!pixel_format_info_check_stride(drm_fmt, stride, width)) {
 		return NULL;
@@ -227,7 +236,7 @@ static struct wlr_texture *gles2_texture_from_pixels(
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride / (drm_fmt->bpp / 8));
+	glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride / drm_fmt->bytes_per_block);
 	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
 		fmt->gl_format, fmt->gl_type, data);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 0);

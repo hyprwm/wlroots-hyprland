@@ -550,7 +550,7 @@ static void capture_output(struct wl_client *wl_client,
 	}
 
 	frame->box = buffer_box;
-	frame->shm_stride = (shm_info->bpp / 8) * buffer_box.width;
+	frame->shm_stride = pixel_format_info_min_stride(shm_info, buffer_box.width);
 
 	zwlr_screencopy_frame_v1_send_buffer(frame->resource,
 		convert_drm_format_to_wl_shm(frame->shm_format),

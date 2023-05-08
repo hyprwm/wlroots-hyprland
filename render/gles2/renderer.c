@@ -464,6 +464,10 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 	const struct wlr_pixel_format_info *drm_fmt =
 		drm_get_pixel_format_info(fmt->drm_format);
 	assert(drm_fmt);
+	if (pixel_format_info_pixels_per_block(drm_fmt) != 1) {
+		wlr_log(WLR_ERROR, "Cannot read pixels: block formats are not supported");
+		return false;
+	}
 
 	push_gles2_debug(renderer);
 
@@ -474,7 +478,7 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 
 	unsigned char *p = (unsigned char *)data + dst_y * stride;
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	uint32_t pack_stride = width * drm_fmt->bpp / 8;
+	uint32_t pack_stride = pixel_format_info_min_stride(drm_fmt, width);
 	if (pack_stride == stride && dst_x == 0) {
 		// Under these particular conditions, we can read the pixels with only
 		// one glReadPixels call
@@ -486,7 +490,7 @@ static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
 		for (size_t i = 0; i < height; ++i) {
 			uint32_t y = src_y + i;
 			glReadPixels(src_x, y, width, 1, fmt->gl_format,
-				fmt->gl_type, p + i * stride + dst_x * drm_fmt->bpp / 8);
+				fmt->gl_type, p + i * stride + dst_x * drm_fmt->bytes_per_block);
 		}
 	}
 

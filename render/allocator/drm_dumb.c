@@ -44,6 +44,9 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 		wlr_log(WLR_ERROR, "DRM format 0x%"PRIX32" not supported",
 			format->format);
 		return NULL;
+	} else if (pixel_format_info_pixels_per_block(info) != 1) {
+		wlr_log(WLR_ERROR, "Block formats are not supported");
+		return NULL;
 	}
 
 	struct wlr_drm_dumb_buffer *buffer = calloc(1, sizeof(*buffer));
@@ -55,7 +58,8 @@ static struct wlr_drm_dumb_buffer *create_buffer(
 
 	buffer->drm_fd = alloc->drm_fd;
 
-	if (drmModeCreateDumbBuffer(alloc->drm_fd, width, height, info->bpp, 0,
+	uint32_t bpp = 8 * info->bytes_per_block;
+	if (drmModeCreateDumbBuffer(alloc->drm_fd, width, height, bpp, 0,
 			&buffer->handle, &buffer->stride, &buffer->size) != 0) {
 		wlr_log_errno(WLR_ERROR, "Failed to create DRM dumb buffer");
 		goto create_destroy;

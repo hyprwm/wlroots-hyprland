@@ -1671,6 +1671,9 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		wlr_log(WLR_ERROR, "vulkan_read_pixels: could not find pixel format info "
 				"for DRM format 0x%08x", drm_format);
 		return false;
+	} else if (pixel_format_info_pixels_per_block(pixel_format_info) != 1) {
+		wlr_log(WLR_ERROR, "vulkan_read_pixels: block formats are not supported");
+		return false;
 	}
 
 	const struct wlr_vk_format *wlr_vk_format = vulkan_get_format_from_drm(drm_format);
@@ -1864,13 +1867,13 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 
 	const char *d = (const char *)v + img_sub_layout.offset;
 	unsigned char *p = (unsigned char *)data + dst_y * stride;
-	uint32_t bpp = pixel_format_info->bpp;
+	uint32_t bytes_per_pixel = pixel_format_info->bytes_per_block;
 	uint32_t pack_stride = img_sub_layout.rowPitch;
 	if (pack_stride == stride && dst_x == 0) {
 		memcpy(p, d, height * stride);
 	} else {
 		for (size_t i = 0; i < height; ++i) {
-			memcpy(p + i * stride + dst_x * bpp / 8, d + i * pack_stride, width * bpp / 8);
+			memcpy(p + i * stride + dst_x * bytes_per_pixel, d + i * pack_stride, width * bytes_per_pixel);
 		}
 	}
 
