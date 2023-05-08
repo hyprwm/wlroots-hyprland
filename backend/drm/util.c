@@ -83,6 +83,8 @@ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data)
 
 	output->model = di_info_get_model(info);
 	output->serial = di_info_get_serial(info);
+
+	di_info_destroy(info);
 }
 
 const char *drm_connector_status_str(drmModeConnection status) {
