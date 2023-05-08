@@ -389,8 +389,8 @@ static void output_cursor_output_commit_surface(
 	assert(output_cursor->surface != NULL);
 
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
-	int32_t hotspot_x = output_cursor->surface_hotspot.x * output->scale;
-	int32_t hotspot_y = output_cursor->surface_hotspot.y * output->scale;
+	int32_t hotspot_x = output_cursor->surface_hotspot.x;
+	int32_t hotspot_y = output_cursor->surface_hotspot.y;
 
 	output_cursor_set_texture(output_cursor->output_cursor, texture, false,
 		surface->current.scale, surface->current.transform,
