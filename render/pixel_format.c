@@ -158,6 +158,18 @@ static const struct wlr_pixel_format_info pixel_format_info[] = {
 		.bytes_per_block = 8,
 		.has_alpha = true,
 	},
+	{
+		.drm_format = DRM_FORMAT_YVYU,
+		.bytes_per_block = 4,
+		.block_width = 2,
+		.block_height = 1,
+	},
+	{
+		.drm_format = DRM_FORMAT_VYUY,
+		.bytes_per_block = 4,
+		.block_width = 2,
+		.block_height = 1,
+	},
 };
 
 static const size_t pixel_format_info_size =
