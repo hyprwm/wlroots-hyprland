@@ -210,8 +210,13 @@ struct wlr_drm_format *output_pick_format(struct wlr_output *output,
 		}
 		format = wlr_drm_format_intersect(display_format, render_format);
 	} else {
+		format = calloc(1, sizeof(*format));
+		if (!format) {
+			return false;
+		}
+
 		// The output can display any format
-		format = wlr_drm_format_dup(render_format);
+		wlr_drm_format_copy(format, render_format);
 	}
 
 	if (format == NULL) {

@@ -130,26 +130,22 @@ bool wlr_drm_format_add(struct wlr_drm_format *fmt, uint64_t modifier) {
 	return true;
 }
 
-struct wlr_drm_format *wlr_drm_format_dup(const struct wlr_drm_format *format) {
-	assert(format->len <= format->capacity);
+bool wlr_drm_format_copy(struct wlr_drm_format *dst, const struct wlr_drm_format *src) {
+	assert(src->len <= src->capacity);
 
-	uint64_t *modifiers = malloc(sizeof(*format->modifiers) * format->capacity);
+	uint64_t *modifiers = malloc(sizeof(*modifiers) * src->len);
 	if (!modifiers) {
-		return NULL;
+		return false;
 	}
 
-	memcpy(modifiers, format->modifiers, sizeof(*format->modifiers) * format->len);
+	memcpy(modifiers, src->modifiers, sizeof(*modifiers) * src->len);
 
-	struct wlr_drm_format *dst = calloc(1, sizeof(*dst));
-	if (!dst) {
-		return NULL;
-	}
-
-	dst->capacity = format->capacity;
-	dst->len = format->len;
+	wlr_drm_format_finish(dst);
+	dst->capacity = src->len;
+	dst->len = src->len;
+	dst->format = src->format;
 	dst->modifiers = modifiers;
-
-	return dst;
+	return true;
 }
 
 bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_drm_format_set *src) {
@@ -166,7 +162,15 @@ bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_dr
 
 	size_t i;
 	for (i = 0; i < src->len; i++) {
-		out.formats[out.len] = wlr_drm_format_dup(src->formats[i]);
+		struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
+		if (!fmt) {
+			wlr_drm_format_set_finish(&out);
+			return false;
+		}
+
+		wlr_drm_format_copy(fmt, src->formats[i]);
+
+		out.formats[out.len] = fmt;
 		if (out.formats[out.len] == NULL) {
 			wlr_drm_format_set_finish(&out);
 			return false;

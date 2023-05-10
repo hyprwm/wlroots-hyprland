@@ -19,7 +19,7 @@ struct wlr_swapchain {
 	struct wlr_allocator *allocator; // NULL if destroyed
 
 	int width, height;
-	struct wlr_drm_format *format;
+	struct wlr_drm_format format;
 
 	struct wlr_swapchain_slot slots[WLR_SWAPCHAIN_CAP];
 

@@ -6,7 +6,7 @@
 void wlr_drm_format_init(struct wlr_drm_format *fmt, uint32_t format);
 bool wlr_drm_format_has(const struct wlr_drm_format *fmt, uint64_t modifier);
 bool wlr_drm_format_add(struct wlr_drm_format *fmt, uint64_t modifier);
-struct wlr_drm_format *wlr_drm_format_dup(const struct wlr_drm_format *format);
+bool wlr_drm_format_copy(struct wlr_drm_format *dst, const struct wlr_drm_format *src);
 /**
  * Intersect modifiers for two DRM formats.
  *

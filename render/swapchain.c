@@ -26,8 +26,7 @@ struct wlr_swapchain *wlr_swapchain_create(
 	swapchain->width = width;
 	swapchain->height = height;
 
-	swapchain->format = wlr_drm_format_dup(format);
-	if (swapchain->format == NULL) {
+	if (!wlr_drm_format_copy(&swapchain->format, format)) {
 		free(swapchain);
 		return NULL;
 	}
@@ -54,8 +53,7 @@ void wlr_swapchain_destroy(struct wlr_swapchain *swapchain) {
 		slot_reset(&swapchain->slots[i]);
 	}
 	wl_list_remove(&swapchain->allocator_destroy.link);
-	wlr_drm_format_finish(swapchain->format);
-	free(swapchain->format);
+	wlr_drm_format_finish(&swapchain->format);
 	free(swapchain);
 }
 
@@ -107,7 +105,7 @@ struct wlr_buffer *wlr_swapchain_acquire(struct wlr_swapchain *swapchain,
 
 	wlr_log(WLR_DEBUG, "Allocating new swapchain buffer");
 	free_slot->buffer = wlr_allocator_create_buffer(swapchain->allocator,
-		swapchain->width, swapchain->height, swapchain->format);
+		swapchain->width, swapchain->height, &swapchain->format);
 	if (free_slot->buffer == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate buffer");
 		return NULL;

@@ -76,7 +76,7 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 	struct wlr_swapchain *old_swapchain = *swapchain_ptr;
 	if (old_swapchain != NULL &&
 			old_swapchain->width == width && old_swapchain->height == height &&
-			old_swapchain->format->format == output->render_format) {
+			old_swapchain->format.format == output->render_format) {
 		return true;
 	}
 
