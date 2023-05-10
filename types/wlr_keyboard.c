@@ -137,6 +137,20 @@ void wlr_keyboard_init(struct wlr_keyboard *kb,
 	kb->repeat_info.delay = 600;
 }
 
+static void keyboard_unset_keymap(struct wlr_keyboard *kb) {
+	xkb_keymap_unref(kb->keymap);
+	kb->keymap = NULL;
+	xkb_state_unref(kb->xkb_state);
+	kb->xkb_state = NULL;
+	free(kb->keymap_string);
+	kb->keymap_string = NULL;
+	kb->keymap_size = 0;
+	if (kb->keymap_fd >= 0) {
+		close(kb->keymap_fd);
+	}
+	kb->keymap_fd = -1;
+}
+
 void wlr_keyboard_finish(struct wlr_keyboard *kb) {
 	/* Release pressed keys */
 	size_t orig_num_keycodes = kb->num_keycodes;
@@ -153,13 +167,7 @@ void wlr_keyboard_finish(struct wlr_keyboard *kb) {
 
 	wlr_input_device_finish(&kb->base);
 
-	/* Finish xkbcommon resources */
-	xkb_state_unref(kb->xkb_state);
-	xkb_keymap_unref(kb->keymap);
-	free(kb->keymap_string);
-	if (kb->keymap_fd >= 0) {
-		close(kb->keymap_fd);
-	}
+	keyboard_unset_keymap(kb);
 }
 
 void wlr_keyboard_led_update(struct wlr_keyboard *kb, uint32_t leds) {
@@ -175,6 +183,12 @@ void wlr_keyboard_led_update(struct wlr_keyboard *kb, uint32_t leds) {
 }
 
 bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb, struct xkb_keymap *keymap) {
+	if (keymap == NULL) {
+		keyboard_unset_keymap(kb);
+		wl_signal_emit_mutable(&kb->events.keymap, kb);
+		return true;
+	}
+
 	struct xkb_state *xkb_state = xkb_state_new(kb->keymap);
 	if (xkb_state == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create XKB state");
@@ -205,16 +219,11 @@ bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb, struct xkb_keymap *keymap)
 	memcpy(dst, keymap_str, keymap_size);
 	munmap(dst, keymap_size);
 
-	xkb_keymap_unref(kb->keymap);
+	keyboard_unset_keymap(kb);
 	kb->keymap = xkb_keymap_ref(keymap);
-	xkb_state_unref(kb->xkb_state);
 	kb->xkb_state = xkb_state;
-	free(kb->keymap_string);
 	kb->keymap_string = keymap_str;
 	kb->keymap_size = keymap_size;
-	if (kb->keymap_fd >= 0) {
-		close(kb->keymap_fd);
-	}
 	kb->keymap_fd = ro_fd;
 
 	const char *led_names[WLR_LED_COUNT] = {
