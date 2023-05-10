@@ -1,7 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
@@ -340,6 +342,24 @@ static void seat_client_send_keymap(struct wlr_seat_client *client,
 		return;
 	}
 
+	enum wl_keyboard_keymap_format format;
+	int fd, devnull = -1;
+	uint32_t size;
+	if (keyboard->keymap != NULL) {
+		format = WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1;
+		fd = keyboard->keymap_fd;
+		size = keyboard->keymap_size;
+	} else {
+		format = WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP;
+		devnull = open("/dev/null", O_RDONLY | O_CLOEXEC);
+		if (devnull < 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to open /dev/null");
+			return;
+		}
+		fd = devnull;
+		size = 0;
+	}
+
 	// TODO: We should probably lift all of the keys set by the other
 	// keyboard
 	struct wl_resource *resource;
@@ -348,8 +368,11 @@ static void seat_client_send_keymap(struct wlr_seat_client *client,
 			continue;
 		}
 
-		wl_keyboard_send_keymap(resource, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
-			keyboard->keymap_fd, keyboard->keymap_size);
+		wl_keyboard_send_keymap(resource, format, fd, size);
+	}
+
+	if (devnull >= 0) {
+		close(devnull);
 	}
 }
 
