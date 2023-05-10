@@ -8,8 +8,13 @@
 #include <wlr/util/log.h>
 #include "render/drm_format_set.h"
 
+void wlr_drm_format_finish(struct wlr_drm_format *format) {
+	// For later
+}
+
 void wlr_drm_format_set_finish(struct wlr_drm_format_set *set) {
 	for (size_t i = 0; i < set->len; ++i) {
+		wlr_drm_format_finish(set->formats[i]);
 		free(set->formats[i]);
 	}
 	free(set->formats);
@@ -60,6 +65,7 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 		return false;
 	}
 	if (!wlr_drm_format_add(&fmt, modifier)) {
+		wlr_drm_format_finish(fmt);
 		return false;
 	}
 
@@ -196,6 +202,7 @@ struct wlr_drm_format *wlr_drm_format_intersect(
 	// If the intersection is empty, then the formats aren't compatible with
 	// each other.
 	if (format->len == 0) {
+		wlr_drm_format_set_finish(format);
 		free(format);
 		return NULL;
 	}

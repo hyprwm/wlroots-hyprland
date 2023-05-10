@@ -54,6 +54,7 @@ void wlr_swapchain_destroy(struct wlr_swapchain *swapchain) {
 		slot_reset(&swapchain->slots[i]);
 	}
 	wl_list_remove(&swapchain->allocator_destroy.link);
+	wlr_drm_format_finish(swapchain->format);
 	free(swapchain->format);
 	free(swapchain);
 }

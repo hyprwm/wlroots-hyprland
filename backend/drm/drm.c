@@ -513,6 +513,7 @@ static bool drm_connector_state_update_primary_fb(struct wlr_drm_connector *conn
 		// TODO: fallback to modifier-less buffer allocation
 		bool ok = init_drm_surface(&plane->mgpu_surf, &drm->mgpu_renderer,
 			source_buf->width, source_buf->height, format);
+		wlr_drm_format_finish(format);
 		free(format);
 		if (!ok) {
 			return false;
@@ -953,6 +954,7 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
 
 			bool ok = init_drm_surface(&plane->mgpu_surf, &drm->mgpu_renderer,
 				buffer->width, buffer->height, format);
+			wlr_drm_format_finish(format);
 			free(format);
 			if (!ok) {
 				return false;

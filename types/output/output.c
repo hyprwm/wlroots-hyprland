@@ -609,6 +609,7 @@ static bool output_basic_test(struct wlr_output *output,
 			return false;
 		}
 
+		wlr_drm_format_finish(format);
 		free(format);
 	}
 

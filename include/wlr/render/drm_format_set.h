@@ -26,6 +26,11 @@ struct wlr_drm_format {
 };
 
 /**
+ * Free all resources allocated to this DRM format.
+ */
+void wlr_drm_format_finish(struct wlr_drm_format *format);
+
+/**
  * A set of DRM formats and modifiers.
  *
  * This is used to describe the supported format + modifier combinations. For

@@ -32,6 +32,7 @@ static struct wlr_swapchain *create_swapchain(struct wlr_output *output,
 	if (!allow_modifiers && (format->len != 1 || format->modifiers[0] != DRM_FORMAT_MOD_LINEAR)) {
 		if (!wlr_drm_format_has(format, DRM_FORMAT_MOD_INVALID)) {
 			wlr_log(WLR_DEBUG, "Implicit modifiers not supported");
+			wlr_drm_format_finish(format);
 			free(format);
 			return NULL;
 		}
@@ -41,6 +42,7 @@ static struct wlr_swapchain *create_swapchain(struct wlr_output *output,
 	}
 
 	struct wlr_swapchain *swapchain = wlr_swapchain_create(allocator, width, height, format);
+	wlr_drm_format_finish(format);
 	free(format);
 	return swapchain;
 }
