@@ -69,6 +69,8 @@ struct wlr_cursor_output_cursor {
 
 	// only when using an XCursor as the cursor image
 	struct wlr_xcursor *xcursor;
+	size_t xcursor_index;
+	struct wl_event_source *xcursor_timer;
 };
 
 struct wlr_cursor_state {
@@ -138,8 +140,10 @@ struct wlr_cursor *wlr_cursor_create(void) {
 	return cur;
 }
 
-static void output_cursor_destroy(
-		struct wlr_cursor_output_cursor *output_cursor) {
+static void cursor_output_cursor_reset_image(struct wlr_cursor_output_cursor *output_cursor);
+
+static void output_cursor_destroy(struct wlr_cursor_output_cursor *output_cursor) {
+	cursor_output_cursor_reset_image(output_cursor);
 	wl_list_remove(&output_cursor->surface_destroy.link);
 	wl_list_remove(&output_cursor->surface_commit.link);
 	wl_list_remove(&output_cursor->output_commit.link);
@@ -371,8 +375,7 @@ void wlr_cursor_move(struct wlr_cursor *cur, struct wlr_input_device *dev,
 	wlr_cursor_warp_closest(cur, dev, lx, ly);
 }
 
-static void cursor_output_cursor_reset_image(
-		struct wlr_cursor_output_cursor *output_cursor) {
+static void cursor_output_cursor_reset_image(struct wlr_cursor_output_cursor *output_cursor) {
 	if (output_cursor->surface != NULL) {
 		wlr_surface_send_leave(output_cursor->surface,
 			output_cursor->output_cursor->output);
@@ -386,6 +389,11 @@ static void cursor_output_cursor_reset_image(
 	output_cursor->surface = NULL;
 
 	output_cursor->xcursor = NULL;
+	output_cursor->xcursor_index = 0;
+	if (output_cursor->xcursor_timer != NULL) {
+		wl_event_source_remove(output_cursor->xcursor_timer);
+	}
+	output_cursor->xcursor_timer = NULL;
 }
 
 static void output_cursor_output_commit_surface(
@@ -429,6 +437,41 @@ void wlr_cursor_unset_image(struct wlr_cursor *cur) {
 	wlr_cursor_set_image(cur, NULL, 0, 0, 0, 0, 0, 0);
 }
 
+static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *output_cursor, size_t i);
+
+static int handle_xcursor_timer(void *data) {
+	struct wlr_cursor_output_cursor *output_cursor = data;
+	size_t i = (output_cursor->xcursor_index + 1) % output_cursor->xcursor->image_count;
+	output_cursor_set_xcursor_image(output_cursor, i);
+	return 0;
+}
+
+static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *output_cursor, size_t i) {
+	struct wlr_xcursor_image *image = output_cursor->xcursor->images[i];
+
+	wlr_output_cursor_set_image(output_cursor->output_cursor,
+		image->buffer, 4 * image->width, image->width, image->height,
+		image->hotspot_x, image->hotspot_y);
+	output_cursor->xcursor_index = i;
+
+	if (output_cursor->xcursor->image_count == 1 || image->delay == 0) {
+		return;
+	}
+
+	if (output_cursor->xcursor_timer == NULL) {
+		struct wl_event_loop *event_loop =
+			wl_display_get_event_loop(output_cursor->output_cursor->output->display);
+		output_cursor->xcursor_timer =
+			wl_event_loop_add_timer(event_loop, handle_xcursor_timer, output_cursor);
+		if (output_cursor->xcursor_timer == NULL) {
+			wlr_log(WLR_ERROR, "wl_event_loop_add_timer failed");
+			return;
+		}
+	}
+
+	wl_event_source_timer_update(output_cursor->xcursor_timer, image->delay);
+}
+
 void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
 		struct wlr_xcursor_manager *manager, const char *name) {
 	struct wlr_cursor_output_cursor *output_cursor;
@@ -442,11 +485,7 @@ void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
 
 		cursor_output_cursor_reset_image(output_cursor);
 		output_cursor->xcursor = xcursor;
-
-		struct wlr_xcursor_image *image = xcursor->images[0];
-		wlr_output_cursor_set_image(output_cursor->output_cursor,
-			image->buffer, 4 * image->width, image->width, image->height,
-			image->hotspot_x, image->hotspot_y);
+		output_cursor_set_xcursor_image(output_cursor, 0);
 	}
 }
 
