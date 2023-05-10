@@ -22,7 +22,7 @@ struct wlr_drm_format {
 	// The capacity of the array; do not use.
 	size_t capacity;
 	// The actual modifiers
-	uint64_t modifiers[];
+	uint64_t *modifiers;
 };
 
 /**

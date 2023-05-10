@@ -9,7 +9,11 @@
 #include "render/drm_format_set.h"
 
 void wlr_drm_format_finish(struct wlr_drm_format *format) {
-	// For later
+	if (!format) {
+		return;
+	}
+
+	free(format->modifiers);
 }
 
 void wlr_drm_format_set_finish(struct wlr_drm_format_set *set) {
@@ -90,14 +94,14 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 
 struct wlr_drm_format *wlr_drm_format_create(uint32_t format) {
 	size_t capacity = 4;
-	struct wlr_drm_format *fmt =
-		calloc(1, sizeof(*fmt) + sizeof(fmt->modifiers[0]) * capacity);
+	struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
 	if (!fmt) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;
 	}
 	fmt->format = format;
 	fmt->capacity = capacity;
+	fmt->modifiers = malloc(sizeof(*fmt->modifiers) * capacity);
 	return fmt;
 }
 
@@ -120,14 +124,14 @@ bool wlr_drm_format_add(struct wlr_drm_format **fmt_ptr, uint64_t modifier) {
 	if (fmt->len == fmt->capacity) {
 		size_t capacity = fmt->capacity ? fmt->capacity * 2 : 4;
 
-		fmt = realloc(fmt, sizeof(*fmt) + sizeof(fmt->modifiers[0]) * capacity);
-		if (!fmt) {
+		uint64_t *new_modifiers = realloc(fmt->modifiers, sizeof(*fmt->modifiers) * capacity);
+		if (!new_modifiers) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			return false;
 		}
 
 		fmt->capacity = capacity;
-		*fmt_ptr = fmt;
+		fmt->modifiers = new_modifiers;
 	}
 
 	fmt->modifiers[fmt->len++] = modifier;
@@ -136,14 +140,24 @@ bool wlr_drm_format_add(struct wlr_drm_format **fmt_ptr, uint64_t modifier) {
 
 struct wlr_drm_format *wlr_drm_format_dup(const struct wlr_drm_format *format) {
 	assert(format->len <= format->capacity);
-	size_t format_size = sizeof(struct wlr_drm_format) +
-		format->capacity * sizeof(format->modifiers[0]);
-	struct wlr_drm_format *duped_format = malloc(format_size);
-	if (duped_format == NULL) {
+
+	uint64_t *modifiers = malloc(sizeof(*format->modifiers) * format->capacity);
+	if (!modifiers) {
 		return NULL;
 	}
-	memcpy(duped_format, format, format_size);
-	return duped_format;
+
+	memcpy(modifiers, format->modifiers, sizeof(*format->modifiers) * format->len);
+
+	struct wlr_drm_format *dst = calloc(1, sizeof(*dst));
+	if (!dst) {
+		return NULL;
+	}
+
+	dst->capacity = format->capacity;
+	dst->len = format->len;
+	dst->modifiers = modifiers;
+
+	return dst;
 }
 
 bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_drm_format_set *src) {
@@ -177,23 +191,24 @@ struct wlr_drm_format *wlr_drm_format_intersect(
 		const struct wlr_drm_format *a, const struct wlr_drm_format *b) {
 	assert(a->format == b->format);
 
-	size_t format_cap = a->len < b->len ? a->len : b->len;
-	size_t format_size = sizeof(struct wlr_drm_format) +
-		format_cap * sizeof(a->modifiers[0]);
-	struct wlr_drm_format *format = calloc(1, format_size);
-	if (format == NULL) {
-		wlr_log_errno(WLR_ERROR, "Allocation failed");
-		return NULL;
+	size_t capacity = a->len < b->len ? a->len : b->len;
+	uint64_t *modifiers = malloc(sizeof(*modifiers) * capacity);
+	if (!modifiers) {
+		return false;
 	}
-	format->format = a->format;
-	format->capacity = format_cap;
+
+	struct wlr_drm_format fmt = {
+		.capacity = capacity,
+		.len = 0,
+		.modifiers = modifiers,
+		.format = a->format,
+	};
 
 	for (size_t i = 0; i < a->len; i++) {
 		for (size_t j = 0; j < b->len; j++) {
 			if (a->modifiers[i] == b->modifiers[j]) {
-				assert(format->len < format->capacity);
-				format->modifiers[format->len] = a->modifiers[i];
-				format->len++;
+				assert(fmt.len < fmt.capacity);
+				fmt.modifiers[fmt.len++] = a->modifiers[i];
 				break;
 			}
 		}
@@ -201,12 +216,17 @@ struct wlr_drm_format *wlr_drm_format_intersect(
 
 	// If the intersection is empty, then the formats aren't compatible with
 	// each other.
-	if (format->len == 0) {
-		wlr_drm_format_set_finish(format);
-		free(format);
+	if (fmt.len == 0) {
+		wlr_drm_format_finish(&fmt);
 		return NULL;
 	}
 
+	struct wlr_drm_format *format = calloc(1, sizeof(*format));
+	if (!format) {
+		wlr_drm_format_finish(&fmt);
+		return NULL;
+	}
+	*format = fmt;
 	return format;
 }
 
