@@ -174,17 +174,48 @@ void wlr_keyboard_led_update(struct wlr_keyboard *kb, uint32_t leds) {
 	}
 }
 
-bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb,
-		struct xkb_keymap *keymap) {
+bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb, struct xkb_keymap *keymap) {
+	struct xkb_state *xkb_state = xkb_state_new(kb->keymap);
+	if (xkb_state == NULL) {
+		wlr_log(WLR_ERROR, "Failed to create XKB state");
+		return false;
+	}
+
+	char *keymap_str = xkb_keymap_get_as_string(kb->keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
+	if (keymap_str == NULL) {
+		wlr_log(WLR_ERROR, "Failed to get string version of keymap");
+		goto error_xkb_state;
+	}
+	size_t keymap_size = strlen(kb->keymap_string) + 1;
+
+	int rw_fd = -1, ro_fd = -1;
+	if (!allocate_shm_file_pair(keymap_size, &rw_fd, &ro_fd)) {
+		wlr_log(WLR_ERROR, "Failed to allocate shm file for keymap");
+		goto error_keymap_str;
+	}
+
+	void *dst = mmap(NULL, keymap_size, PROT_READ | PROT_WRITE, MAP_SHARED, rw_fd, 0);
+	close(rw_fd);
+	if (dst == MAP_FAILED) {
+		wlr_log_errno(WLR_ERROR, "mmap failed");
+		close(ro_fd);
+		goto error_keymap_str;
+	}
+
+	memcpy(dst, keymap_str, keymap_size);
+	munmap(dst, keymap_size);
+
 	xkb_keymap_unref(kb->keymap);
 	kb->keymap = xkb_keymap_ref(keymap);
-
 	xkb_state_unref(kb->xkb_state);
-	kb->xkb_state = xkb_state_new(kb->keymap);
-	if (kb->xkb_state == NULL) {
-		wlr_log(WLR_ERROR, "Failed to create XKB state");
-		goto err;
+	kb->xkb_state = xkb_state;
+	free(kb->keymap_string);
+	kb->keymap_string = keymap_str;
+	kb->keymap_size = keymap_size;
+	if (kb->keymap_fd >= 0) {
+		close(kb->keymap_fd);
 	}
+	kb->keymap_fd = ro_fd;
 
 	const char *led_names[WLR_LED_COUNT] = {
 		XKB_LED_NAME_NUM,
@@ -210,40 +241,6 @@ bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb,
 		kb->mod_indexes[i] = xkb_map_mod_get_index(kb->keymap, mod_names[i]);
 	}
 
-	char *tmp_keymap_string = xkb_keymap_get_as_string(kb->keymap,
-		XKB_KEYMAP_FORMAT_TEXT_V1);
-	if (tmp_keymap_string == NULL) {
-		wlr_log(WLR_ERROR, "Failed to get string version of keymap");
-		goto err;
-	}
-	free(kb->keymap_string);
-	kb->keymap_string = tmp_keymap_string;
-	kb->keymap_size = strlen(kb->keymap_string) + 1;
-
-	int rw_fd = -1, ro_fd = -1;
-	if (!allocate_shm_file_pair(kb->keymap_size, &rw_fd, &ro_fd)) {
-		wlr_log(WLR_ERROR, "Failed to allocate shm file for keymap");
-		goto err;
-	}
-
-	void *dst = mmap(NULL, kb->keymap_size, PROT_READ | PROT_WRITE,
-		MAP_SHARED, rw_fd, 0);
-	if (dst == MAP_FAILED) {
-		wlr_log_errno(WLR_ERROR, "mmap failed");
-		close(rw_fd);
-		close(ro_fd);
-		goto err;
-	}
-
-	memcpy(dst, kb->keymap_string, kb->keymap_size);
-	munmap(dst, kb->keymap_size);
-	close(rw_fd);
-
-	if (kb->keymap_fd >= 0) {
-		close(kb->keymap_fd);
-	}
-	kb->keymap_fd = ro_fd;
-
 	for (size_t i = 0; i < kb->num_keycodes; ++i) {
 		xkb_keycode_t keycode = kb->keycodes[i] + 8;
 		xkb_state_update_key(kb->xkb_state, keycode, XKB_KEY_DOWN);
@@ -252,15 +249,13 @@ bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb,
 	keyboard_modifier_update(kb);
 
 	wl_signal_emit_mutable(&kb->events.keymap, kb);
+
 	return true;
 
-err:
-	xkb_state_unref(kb->xkb_state);
-	kb->xkb_state = NULL;
-	xkb_keymap_unref(keymap);
-	kb->keymap = NULL;
-	free(kb->keymap_string);
-	kb->keymap_string = NULL;
+error_keymap_str:
+	free(keymap_str);
+error_xkb_state:
+	xkb_state_unref(xkb_state);
 	return false;
 }
 
