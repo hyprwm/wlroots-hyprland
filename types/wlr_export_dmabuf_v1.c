@@ -41,6 +41,7 @@ static void frame_destroy(struct wlr_export_dmabuf_frame_v1 *frame) {
 	}
 	wl_list_remove(&frame->link);
 	wl_list_remove(&frame->output_commit.link);
+	wl_list_remove(&frame->output_destroy.link);
 	// Make the frame resource inert
 	wl_resource_set_user_data(frame->resource, NULL);
 	free(frame);
@@ -93,6 +94,11 @@ static void frame_output_handle_commit(struct wl_listener *listener,
 	frame_destroy(frame);
 }
 
+static void frame_output_handle_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_export_dmabuf_frame_v1 *frame = wl_container_of(listener, frame, output_destroy);
+	frame_destroy(frame);
+}
+
 
 static const struct zwlr_export_dmabuf_manager_v1_interface manager_impl;
 
@@ -118,6 +124,7 @@ static void manager_handle_capture_output(struct wl_client *client,
 	}
 	frame->manager = manager;
 	wl_list_init(&frame->output_commit.link);
+	wl_list_init(&frame->output_destroy.link);
 
 	uint32_t version = wl_resource_get_version(manager_resource);
 	frame->resource = wl_resource_create(client,
@@ -150,6 +157,8 @@ static void manager_handle_capture_output(struct wl_client *client,
 	wl_list_remove(&frame->output_commit.link);
 	wl_signal_add(&output->events.commit, &frame->output_commit);
 	frame->output_commit.notify = frame_output_handle_commit;
+	wl_signal_add(&output->events.destroy, &frame->output_destroy);
+	frame->output_destroy.notify = frame_output_handle_destroy;
 
 	wlr_output_schedule_frame(output);
 }

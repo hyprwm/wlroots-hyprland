@@ -34,6 +34,7 @@ struct wlr_export_dmabuf_frame_v1 {
 	bool cursor_locked;
 
 	struct wl_listener output_commit;
+	struct wl_listener output_destroy;
 };
 
 struct wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager_v1_create(
