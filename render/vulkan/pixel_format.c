@@ -145,13 +145,11 @@ static const struct wlr_vk_format formats[] = {
 #endif
 
 	// YCbCr formats
-#if WLR_LITTLE_ENDIAN
 	{
 		.drm = DRM_FORMAT_NV12,
 		.vk = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
 		.is_ycbcr = true,
 	},
-#endif
 };
 
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len) {
