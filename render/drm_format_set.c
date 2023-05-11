@@ -221,6 +221,7 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 				// When the two formats have no common modifier, keep
 				// intersecting the rest of the formats: they may be compatible
 				// with each other
+				out.formats[out.len] = (struct wlr_drm_format){0};
 				if (!wlr_drm_format_intersect(&out.formats[out.len],
 						&a->formats[i], &b->formats[j])) {
 					wlr_drm_format_set_finish(&out);
