@@ -476,7 +476,7 @@ static ssize_t get_drm_format_set_index(const struct wlr_drm_format_set *set,
 	const struct wlr_drm_format *fmt;
 	size_t idx = 0;
 	for (size_t i = 0; i < set->len; i++) {
-		fmt = set->formats[i];
+		fmt = &set->formats[i];
 		if (fmt->format == format) {
 			format_found = true;
 			break;
@@ -508,7 +508,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 
 	size_t table_len = 0;
 	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
-		const struct wlr_drm_format *fmt = fallback_tranche->formats.formats[i];
+		const struct wlr_drm_format *fmt = &fallback_tranche->formats.formats[i];
 		table_len += fmt->len;
 	}
 	assert(table_len > 0);
@@ -534,7 +534,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 
 	size_t n = 0;
 	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
-		const struct wlr_drm_format *fmt = fallback_tranche->formats.formats[i];
+		const struct wlr_drm_format *fmt = &fallback_tranche->formats.formats[i];
 
 		for (size_t k = 0; k < fmt->len; k++) {
 			table[n] = (struct wlr_linux_dmabuf_feedback_v1_table_entry){
@@ -579,7 +579,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		n = 0;
 		uint16_t *indices = compiled_tranche->indices.data;
 		for (size_t j = 0; j < tranche->formats.len; j++) {
-			const struct wlr_drm_format *fmt = tranche->formats.formats[j];
+			const struct wlr_drm_format *fmt = &tranche->formats.formats[j];
 			for (size_t k = 0; k < fmt->len; k++) {
 				ssize_t index = get_drm_format_set_index(
 					&fallback_tranche->formats, fmt->format, fmt->modifiers[k]);
@@ -820,7 +820,7 @@ static void linux_dmabuf_send_modifiers(struct wl_resource *resource,
 static void linux_dmabuf_send_formats(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		struct wl_resource *resource) {
 	for (size_t i = 0; i < linux_dmabuf->default_formats.len; i++) {
-		const struct wlr_drm_format *fmt = linux_dmabuf->default_formats.formats[i];
+		const struct wlr_drm_format *fmt = &linux_dmabuf->default_formats.formats[i];
 		linux_dmabuf_send_modifiers(resource, fmt);
 	}
 }

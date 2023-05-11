@@ -18,8 +18,7 @@ void wlr_drm_format_finish(struct wlr_drm_format *format) {
 
 void wlr_drm_format_set_finish(struct wlr_drm_format_set *set) {
 	for (size_t i = 0; i < set->len; ++i) {
-		wlr_drm_format_finish(set->formats[i]);
-		free(set->formats[i]);
+		wlr_drm_format_finish(&set->formats[i]);
 	}
 	free(set->formats);
 
@@ -28,10 +27,10 @@ void wlr_drm_format_set_finish(struct wlr_drm_format_set *set) {
 	set->formats = NULL;
 }
 
-static struct wlr_drm_format **format_set_get_ref(struct wlr_drm_format_set *set,
+static struct wlr_drm_format *format_set_get(const struct wlr_drm_format_set *set,
 		uint32_t format) {
 	for (size_t i = 0; i < set->len; ++i) {
-		if (set->formats[i]->format == format) {
+		if (set->formats[i].format == format) {
 			return &set->formats[i];
 		}
 	}
@@ -41,9 +40,7 @@ static struct wlr_drm_format **format_set_get_ref(struct wlr_drm_format_set *set
 
 const struct wlr_drm_format *wlr_drm_format_set_get(
 		const struct wlr_drm_format_set *set, uint32_t format) {
-	struct wlr_drm_format **ptr =
-		format_set_get_ref((struct wlr_drm_format_set *)set, format);
-	return ptr ? *ptr : NULL;
+	return format_set_get(set, format);
 }
 
 bool wlr_drm_format_set_has(const struct wlr_drm_format_set *set,
@@ -59,35 +56,29 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 		uint64_t modifier) {
 	assert(format != DRM_FORMAT_INVALID);
 
-	struct wlr_drm_format **ptr = format_set_get_ref(set, format);
-	if (ptr) {
-		return wlr_drm_format_add(*ptr, modifier);
+	struct wlr_drm_format *existing = format_set_get(set, format);
+	if (existing) {
+		return wlr_drm_format_add(existing, modifier);
 	}
 
-	struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
-	if (!fmt) {
-		return false;
-	}
-
-	wlr_drm_format_init(fmt, format);
-	if (!wlr_drm_format_add(fmt, modifier)) {
-		wlr_drm_format_finish(fmt);
+	struct wlr_drm_format fmt;
+	wlr_drm_format_init(&fmt, format);
+	if (!wlr_drm_format_add(&fmt, modifier)) {
+		wlr_drm_format_finish(&fmt);
 		return false;
 	}
 
 	if (set->len == set->capacity) {
-		size_t new = set->capacity ? set->capacity * 2 : 4;
+		size_t capacity = set->capacity ? set->capacity * 2 : 4;
 
-		struct wlr_drm_format **tmp = realloc(set->formats,
-			sizeof(set->formats[0]) * new);
-		if (!tmp) {
+		struct wlr_drm_format *fmts = realloc(set->formats, sizeof(*fmts) * capacity);
+		if (!fmts) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
-			free(fmt);
 			return false;
 		}
 
-		set->capacity = new;
-		set->formats = tmp;
+		set->capacity = capacity;
+		set->formats = fmts;
 	}
 
 	set->formats[set->len++] = fmt;
@@ -149,7 +140,7 @@ bool wlr_drm_format_copy(struct wlr_drm_format *dst, const struct wlr_drm_format
 }
 
 bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_drm_format_set *src) {
-	struct wlr_drm_format **formats = malloc(src->len * sizeof(formats[0]));
+	struct wlr_drm_format *formats = malloc(src->len * sizeof(formats[0]));
 	if (formats == NULL) {
 		return false;
 	}
@@ -168,13 +159,12 @@ bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_dr
 			return false;
 		}
 
-		wlr_drm_format_copy(fmt, src->formats[i]);
-
-		out.formats[out.len] = fmt;
-		if (out.formats[out.len] == NULL) {
+		out.formats[out.len] = (struct wlr_drm_format){0};
+		if (!wlr_drm_format_copy(&out.formats[out.len], &src->formats[i])) {
 			wlr_drm_format_set_finish(&out);
 			return false;
 		}
+
 		out.len++;
 	}
 
@@ -219,7 +209,7 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 		const struct wlr_drm_format_set *a, const struct wlr_drm_format_set *b) {
 	struct wlr_drm_format_set out = {0};
 	out.capacity = a->len < b->len ? a->len : b->len;
-	out.formats = calloc(out.capacity, sizeof(struct wlr_drm_format *));
+	out.formats = malloc(sizeof(*out.formats) * out.capacity);
 	if (out.formats == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return false;
@@ -227,25 +217,19 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 
 	for (size_t i = 0; i < a->len; i++) {
 		for (size_t j = 0; j < b->len; j++) {
-			if (a->formats[i]->format == b->formats[j]->format) {
+			if (a->formats[i].format == b->formats[j].format) {
 				// When the two formats have no common modifier, keep
 				// intersecting the rest of the formats: they may be compatible
 				// with each other
-				struct wlr_drm_format *format = calloc(1, sizeof(*format));
-				if (!format) {
+				if (!wlr_drm_format_intersect(&out.formats[out.len],
+						&a->formats[i], &b->formats[j])) {
 					wlr_drm_format_set_finish(&out);
 					return false;
 				}
 
-				if (!wlr_drm_format_intersect(format, a->formats[i], b->formats[j])) {
-					wlr_drm_format_set_finish(&out);
-					return false;
-				}
-
-				if (format->len == 0) {
-					wlr_drm_format_finish(format);
+				if (out.formats[out.len].len == 0) {
+					wlr_drm_format_finish(&out.formats[out.len]);
 				} else {
-					out.formats[out.len] = format;
 					out.len++;
 				}
 
@@ -267,7 +251,7 @@ bool wlr_drm_format_set_intersect(struct wlr_drm_format_set *dst,
 static bool drm_format_set_extend(struct wlr_drm_format_set *dst,
 		const struct wlr_drm_format_set *src) {
 	for (size_t i = 0; i < src->len; i++) {
-		struct wlr_drm_format *format = src->formats[i];
+		struct wlr_drm_format *format = &src->formats[i];
 		for (size_t j = 0; j < format->len; j++) {
 			if (!wlr_drm_format_set_add(dst, format->format, format->modifiers[j])) {
 				wlr_log_errno(WLR_ERROR, "Adding format/modifier to set failed");
@@ -283,7 +267,7 @@ bool wlr_drm_format_set_union(struct wlr_drm_format_set *dst,
 		const struct wlr_drm_format_set *a, const struct wlr_drm_format_set *b) {
 	struct wlr_drm_format_set out = {0};
 	out.capacity = a->len + b->len;
-	out.formats = calloc(out.capacity, sizeof(struct wlr_drm_format *));
+	out.formats = malloc(sizeof(*out.formats) * out.capacity);
 	if (out.formats == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return false;

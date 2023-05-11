@@ -271,7 +271,7 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 		// Forbid implicit modifiers, because their meaning changes from one
 		// GPU to another.
 		for (size_t i = 0; i < texture_formats->len; i++) {
-			const struct wlr_drm_format *fmt = texture_formats->formats[i];
+			const struct wlr_drm_format *fmt = &texture_formats->formats[i];
 			for (size_t j = 0; j < fmt->len; j++) {
 				uint64_t mod = fmt->modifiers[j];
 				if (mod == DRM_FORMAT_MOD_INVALID) {

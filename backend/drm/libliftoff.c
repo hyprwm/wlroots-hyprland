@@ -265,7 +265,7 @@ static void update_layer_feedback(struct wlr_drm_backend *drm,
 		}
 
 		for (size_t j = 0; j < plane->formats.len; j++) {
-			const struct wlr_drm_format *format = plane->formats.formats[j];
+			const struct wlr_drm_format *format = &plane->formats.formats[j];
 			for (size_t k = 0; k < format->len; k++) {
 				wlr_drm_format_set_add(&formats, format->format,
 					format->modifiers[k]);

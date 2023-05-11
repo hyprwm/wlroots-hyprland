@@ -54,7 +54,7 @@ struct wlr_drm_format_set {
 	// The capacity of the array; private to wlroots
 	size_t capacity;
 	// A pointer to an array of `struct wlr_drm_format *` of length `len`.
-	struct wlr_drm_format **formats;
+	struct wlr_drm_format *formats;
 };
 
 /**

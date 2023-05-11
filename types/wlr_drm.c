@@ -161,7 +161,7 @@ static void drm_bind(struct wl_client *client, void *data,
 	wl_drm_send_capabilities(resource, WL_DRM_CAPABILITY_PRIME);
 
 	for (size_t i = 0; i < drm->formats.len; i++) {
-		const struct wlr_drm_format *fmt = drm->formats.formats[i];
+		const struct wlr_drm_format *fmt = &drm->formats.formats[i];
 		if (wlr_drm_format_has(fmt, DRM_FORMAT_MOD_INVALID)) {
 			wl_drm_send_format(resource, fmt->format);
 		}
