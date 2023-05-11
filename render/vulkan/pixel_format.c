@@ -182,7 +182,35 @@ static const struct wlr_vk_format formats[] = {
 		.vk = VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
 		.is_ycbcr = true,
 	},
-	// TODO: add 10, 12 and 16 bit formats
+	// 3PACK16 formats split the memory in three 16-bit words, so they have an
+	// inverted channel order compared to DRM formats.
+#if WLR_LITTLE_ENDIAN
+	{
+		.drm = DRM_FORMAT_P010,
+		.vk = VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_P210,
+		.vk = VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_P012,
+		.vk = VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_P016,
+		.vk = VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
+		.is_ycbcr = true,
+	},
+	{
+		.drm = DRM_FORMAT_Q410,
+		.vk = VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
+		.is_ycbcr = true,
+	},
+#endif
 	// TODO: add DRM_FORMAT_NV24/VK_FORMAT_G8_B8R8_2PLANE_444_UNORM (requires
 	// Vulkan 1.3 or VK_EXT_ycbcr_2plane_444_formats)
 };
