@@ -569,6 +569,13 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 
 	VkDevice dev = buffer->renderer->dev->dev;
 
+	// TODO: asynchronously wait for the command buffers using this render
+	// buffer to complete (just like we do for textures)
+	VkResult res = vkQueueWaitIdle(buffer->renderer->dev->queue);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkQueueWaitIdle", res);
+	}
+
 	vkDestroyFramebuffer(dev, buffer->framebuffer, NULL);
 	vkDestroyImageView(dev, buffer->image_view, NULL);
 	vkDestroyImage(dev, buffer->image, NULL);
