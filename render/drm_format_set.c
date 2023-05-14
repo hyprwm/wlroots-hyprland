@@ -153,12 +153,6 @@ bool wlr_drm_format_set_copy(struct wlr_drm_format_set *dst, const struct wlr_dr
 
 	size_t i;
 	for (i = 0; i < src->len; i++) {
-		struct wlr_drm_format *fmt = calloc(1, sizeof(*fmt));
-		if (!fmt) {
-			wlr_drm_format_set_finish(&out);
-			return false;
-		}
-
 		out.formats[out.len] = (struct wlr_drm_format){0};
 		if (!wlr_drm_format_copy(&out.formats[out.len], &src->formats[i])) {
 			wlr_drm_format_set_finish(&out);
