@@ -34,14 +34,14 @@ static void backend_destroy(struct wlr_backend *wlr_backend) {
 		return;
 	}
 
-	wl_list_remove(&backend->display_destroy.link);
+	wlr_backend_finish(wlr_backend);
 
 	struct wlr_headless_output *output, *output_tmp;
 	wl_list_for_each_safe(output, output_tmp, &backend->outputs, link) {
 		wlr_output_destroy(&output->wlr_output);
 	}
 
-	wlr_backend_finish(wlr_backend);
+	wl_list_remove(&backend->display_destroy.link);
 
 	free(backend);
 }
