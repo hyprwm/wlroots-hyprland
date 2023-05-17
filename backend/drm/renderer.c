@@ -177,6 +177,12 @@ bool drm_plane_pick_render_format(struct wlr_drm_plane *plane,
 		return false;
 	}
 
+	if (fmt->len == 0) {
+		wlr_drm_format_finish(fmt);
+		wlr_log(WLR_DEBUG, "Failed to find matching plane and renderer modifiers");
+		return false;
+	}
+
 	return true;
 }
 
