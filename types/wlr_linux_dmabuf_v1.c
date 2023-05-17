@@ -502,13 +502,20 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 	size_t tranches_len = feedback->tranches.size / sizeof(struct wlr_linux_dmabuf_feedback_v1_tranche);
 	assert(tranches_len > 0);
 
-	// Require the last tranche to be the fallback tranche and contain all
-	// formats/modifiers
-	const struct wlr_linux_dmabuf_feedback_v1_tranche *fallback_tranche = &tranches[tranches_len - 1];
+	// Make one big format set that contains all formats across all tranches so that we
+	// can build an index
+	struct wlr_drm_format_set all_formats = {0};
+	for (size_t i = 0; i < tranches_len; i++) {
+		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
+		if (!wlr_drm_format_set_union(&all_formats, &all_formats, &tranche->formats)) {
+			wlr_log(WLR_ERROR, "Failed to union scanout formats into one tranche");
+			return false;
+		}
+	}
 
 	size_t table_len = 0;
-	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
-		const struct wlr_drm_format *fmt = &fallback_tranche->formats.formats[i];
+	for (size_t i = 0; i < all_formats.len; i++) {
+		const struct wlr_drm_format *fmt = &all_formats.formats[i];
 		table_len += fmt->len;
 	}
 	assert(table_len > 0);
@@ -533,8 +540,8 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 	close(rw_fd);
 
 	size_t n = 0;
-	for (size_t i = 0; i < fallback_tranche->formats.len; i++) {
-		const struct wlr_drm_format *fmt = &fallback_tranche->formats.formats[i];
+	for (size_t i = 0; i < all_formats.len; i++) {
+		const struct wlr_drm_format *fmt = &all_formats.formats[i];
 
 		for (size_t k = 0; k < fmt->len; k++) {
 			table[n] = (struct wlr_linux_dmabuf_feedback_v1_table_entry){
@@ -561,8 +568,8 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 	compiled->table_fd = ro_fd;
 	compiled->table_size = table_size;
 
-	// Build the indices lists for all but the last (fallback) tranches
-	for (size_t i = 0; i < tranches_len - 1; i++) {
+	// Build the indices lists for all tranches
+	for (size_t i = 0; i < tranches_len; i++) {
 		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
 		struct wlr_linux_dmabuf_feedback_v1_compiled_tranche *compiled_tranche =
 			&compiled->tranches[i];
@@ -582,7 +589,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 			const struct wlr_drm_format *fmt = &tranche->formats.formats[j];
 			for (size_t k = 0; k < fmt->len; k++) {
 				ssize_t index = get_drm_format_set_index(
-					&fallback_tranche->formats, fmt->format, fmt->modifiers[k]);
+					&all_formats, fmt->format, fmt->modifiers[k]);
 				if (index < 0) {
 					wlr_log(WLR_ERROR, "Format 0x%" PRIX32 " and modifier "
 						"0x%" PRIX64 " are in tranche #%zu but are missing "
@@ -595,26 +602,6 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 			}
 		}
 		compiled_tranche->indices.size = n * sizeof(uint16_t);
-	}
-
-	struct wlr_linux_dmabuf_feedback_v1_compiled_tranche *fallback_compiled_tranche =
-		&compiled->tranches[compiled->tranches_len - 1];
-	fallback_compiled_tranche->target_device = fallback_tranche->target_device;
-	fallback_compiled_tranche->flags = fallback_tranche->flags;
-
-	// Build the indices list for the last (fallback) tranche
-	wl_array_init(&fallback_compiled_tranche->indices);
-	if (!wl_array_add(&fallback_compiled_tranche->indices,
-			table_len * sizeof(uint16_t))) {
-		wlr_log(WLR_ERROR, "Failed to allocate fallback tranche indices array");
-		goto error_compiled;
-	}
-
-	n = 0;
-	uint16_t *index_ptr;
-	wl_array_for_each(index_ptr, &fallback_compiled_tranche->indices) {
-		*index_ptr = n;
-		n++;
 	}
 
 	return compiled;
