@@ -220,6 +220,12 @@ bool output_pick_format(struct wlr_output *output,
 		}
 	}
 
+	if (format->len == 0) {
+		wlr_drm_format_finish(format);
+		wlr_log(WLR_DEBUG, "Failed to pick output format");
+		return false;
+	}
+
 	return true;
 }
 
