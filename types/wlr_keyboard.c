@@ -189,18 +189,18 @@ bool wlr_keyboard_set_keymap(struct wlr_keyboard *kb, struct xkb_keymap *keymap)
 		return true;
 	}
 
-	struct xkb_state *xkb_state = xkb_state_new(kb->keymap);
+	struct xkb_state *xkb_state = xkb_state_new(keymap);
 	if (xkb_state == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create XKB state");
 		return false;
 	}
 
-	char *keymap_str = xkb_keymap_get_as_string(kb->keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
+	char *keymap_str = xkb_keymap_get_as_string(keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
 	if (keymap_str == NULL) {
 		wlr_log(WLR_ERROR, "Failed to get string version of keymap");
 		goto error_xkb_state;
 	}
-	size_t keymap_size = strlen(kb->keymap_string) + 1;
+	size_t keymap_size = strlen(keymap_str) + 1;
 
 	int rw_fd = -1, ro_fd = -1;
 	if (!allocate_shm_file_pair(keymap_size, &rw_fd, &ro_fd)) {
