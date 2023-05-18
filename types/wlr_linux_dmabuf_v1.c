@@ -509,7 +509,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		const struct wlr_linux_dmabuf_feedback_v1_tranche *tranche = &tranches[i];
 		if (!wlr_drm_format_set_union(&all_formats, &all_formats, &tranche->formats)) {
 			wlr_log(WLR_ERROR, "Failed to union scanout formats into one tranche");
-			return false;
+			goto err_all_formats;
 		}
 	}
 
@@ -534,7 +534,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		wlr_log_errno(WLR_ERROR, "mmap failed");
 		close(rw_fd);
 		close(ro_fd);
-		return NULL;
+		goto err_all_formats;
 	}
 
 	close(rw_fd);
@@ -560,7 +560,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		tranches_len * sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled_tranche));
 	if (compiled == NULL) {
 		close(ro_fd);
-		return NULL;
+		goto err_all_formats;
 	}
 
 	compiled->main_device = feedback->main_device;
@@ -604,11 +604,15 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 		compiled_tranche->indices.size = n * sizeof(uint16_t);
 	}
 
+	wlr_drm_format_set_finish(&all_formats);
+
 	return compiled;
 
 error_compiled:
 	close(compiled->table_fd);
 	free(compiled);
+err_all_formats:
+	wlr_drm_format_set_finish(&all_formats);
 	return NULL;
 }
 
