@@ -100,8 +100,9 @@ static void scene_buffer_unmark_client_buffer(struct wlr_scene_buffer *scene_buf
 	buffer->n_ignore_locks--;
 }
 
-static void set_buffer_with_surface_state(struct wlr_scene_buffer *scene_buffer,
-		struct wlr_surface *surface) {
+static void surface_reconfigure(struct wlr_scene_surface *scene_surface) {
+	struct wlr_scene_buffer *scene_buffer = scene_surface->buffer;
+	struct wlr_surface *surface = scene_surface->surface;
 	struct wlr_surface_state *state = &surface->current;
 
 	wlr_scene_buffer_set_opaque_region(scene_buffer, &surface->opaque_region);
@@ -131,7 +132,7 @@ static void handle_scene_surface_surface_commit(
 		wl_container_of(listener, surface, surface_commit);
 	struct wlr_scene_buffer *scene_buffer = surface->buffer;
 
-	set_buffer_with_surface_state(scene_buffer, surface->surface);
+	surface_reconfigure(surface);
 
 	// If the surface has requested a frame done event, honour that. The
 	// frame_callback_list will be populated in this case. We should only
@@ -231,7 +232,7 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent
 	wlr_addon_init(&surface->addon, &scene_buffer->node.addons,
 		scene_buffer, &surface_addon_impl);
 
-	set_buffer_with_surface_state(scene_buffer, wlr_surface);
+	surface_reconfigure(surface);
 
 	return surface;
 }
