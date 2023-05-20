@@ -15,7 +15,6 @@ struct wlr_scene_subsurface_tree {
 	struct wlr_surface *surface;
 	struct wlr_scene_surface *scene_surface;
 
-	struct wl_listener tree_destroy;
 	struct wl_listener surface_destroy;
 	struct wl_listener surface_commit;
 	struct wl_listener surface_map;
@@ -24,6 +23,8 @@ struct wlr_scene_subsurface_tree {
 
 	struct wlr_scene_subsurface_tree *parent; // NULL for the top-level surface
 
+	struct wlr_addon scene_addon;
+
 	// Only valid if the surface is a sub-surface
 
 	struct wlr_addon surface_addon;
@@ -31,16 +32,15 @@ struct wlr_scene_subsurface_tree {
 	struct wl_listener subsurface_destroy;
 };
 
-static void subsurface_tree_handle_tree_destroy(struct wl_listener *listener,
-		void *data) {
+static void subsurface_tree_addon_destroy(struct wlr_addon *addon) {
 	struct wlr_scene_subsurface_tree *subsurface_tree =
-		wl_container_of(listener, subsurface_tree, tree_destroy);
+		wl_container_of(addon, subsurface_tree, scene_addon);
 	// tree and scene_surface will be cleaned up by scene_node_finish
 	if (subsurface_tree->parent) {
 		wlr_addon_finish(&subsurface_tree->surface_addon);
 		wl_list_remove(&subsurface_tree->subsurface_destroy.link);
 	}
-	wl_list_remove(&subsurface_tree->tree_destroy.link);
+	wlr_addon_finish(&subsurface_tree->scene_addon);
 	wl_list_remove(&subsurface_tree->surface_destroy.link);
 	wl_list_remove(&subsurface_tree->surface_commit.link);
 	wl_list_remove(&subsurface_tree->surface_map.link);
@@ -49,13 +49,13 @@ static void subsurface_tree_handle_tree_destroy(struct wl_listener *listener,
 	free(subsurface_tree);
 }
 
-static const struct wlr_addon_interface subsurface_tree_addon_impl;
+static const struct wlr_addon_interface subsurface_tree_surface_addon_impl;
 
 static struct wlr_scene_subsurface_tree *subsurface_tree_from_subsurface(
 		struct wlr_scene_subsurface_tree *parent,
 		struct wlr_subsurface *subsurface) {
 	struct wlr_addon *addon = wlr_addon_find(&subsurface->surface->addons,
-		parent, &subsurface_tree_addon_impl);
+		parent, &subsurface_tree_surface_addon_impl);
 	assert(addon != NULL);
 	struct wlr_scene_subsurface_tree *subsurface_tree =
 		wl_container_of(addon, subsurface_tree, surface_addon);
@@ -137,15 +137,15 @@ static void subsurface_tree_handle_surface_unmap(struct wl_listener *listener,
 	wlr_scene_node_set_enabled(&subsurface_tree->tree->node, false);
 }
 
-static void subsurface_tree_addon_destroy(struct wlr_addon *addon) {
+static void subsurface_tree_surface_addon_destroy(struct wlr_addon *addon) {
 	struct wlr_scene_subsurface_tree *subsurface_tree =
 		wl_container_of(addon, subsurface_tree, surface_addon);
 	wlr_scene_node_destroy(&subsurface_tree->tree->node);
 }
 
-static const struct wlr_addon_interface subsurface_tree_addon_impl = {
+static const struct wlr_addon_interface subsurface_tree_surface_addon_impl = {
 	.name = "wlr_scene_subsurface_tree",
-	.destroy = subsurface_tree_addon_destroy,
+	.destroy = subsurface_tree_surface_addon_destroy,
 };
 
 static struct wlr_scene_subsurface_tree *scene_surface_tree_create(
@@ -163,7 +163,7 @@ static bool subsurface_tree_create_subsurface(
 	child->parent = parent;
 
 	wlr_addon_init(&child->surface_addon, &subsurface->surface->addons,
-		parent, &subsurface_tree_addon_impl);
+		parent, &subsurface_tree_surface_addon_impl);
 
 	child->subsurface_destroy.notify = subsurface_tree_handle_subsurface_destroy;
 	wl_signal_add(&subsurface->events.destroy, &child->subsurface_destroy);
@@ -180,6 +180,11 @@ static void subsurface_tree_handle_surface_new_subsurface(
 		wl_resource_post_no_memory(subsurface->resource);
 	}
 }
+
+static const struct wlr_addon_interface subsurface_tree_addon_impl = {
+	.name = "wlr_scene_subsurface_tree",
+	.destroy = subsurface_tree_addon_destroy,
+};
 
 static struct wlr_scene_subsurface_tree *scene_surface_tree_create(
 		struct wlr_scene_tree *parent, struct wlr_surface *surface) {
@@ -218,9 +223,8 @@ static struct wlr_scene_subsurface_tree *scene_surface_tree_create(
 
 	subsurface_tree_reconfigure(subsurface_tree);
 
-	subsurface_tree->tree_destroy.notify = subsurface_tree_handle_tree_destroy;
-	wl_signal_add(&subsurface_tree->tree->node.events.destroy,
-		&subsurface_tree->tree_destroy);
+	wlr_addon_init(&subsurface_tree->scene_addon, &subsurface_tree->tree->node.addons,
+		NULL, &subsurface_tree_addon_impl);
 
 	subsurface_tree->surface_destroy.notify = subsurface_tree_handle_surface_destroy;
 	wl_signal_add(&surface->events.destroy, &subsurface_tree->surface_destroy);
