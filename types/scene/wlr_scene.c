@@ -754,16 +754,14 @@ void wlr_scene_buffer_set_opaque_region(struct wlr_scene_buffer *scene_buffer,
 
 void wlr_scene_buffer_set_source_box(struct wlr_scene_buffer *scene_buffer,
 		const struct wlr_fbox *box) {
-	struct wlr_fbox *cur = &scene_buffer->src_box;
-	if ((wlr_fbox_empty(box) && wlr_fbox_empty(cur)) ||
-			(box != NULL && wlr_fbox_equal(cur, box))) {
+	if (wlr_fbox_equal(&scene_buffer->src_box, box)) {
 		return;
 	}
 
 	if (box != NULL) {
-		memcpy(cur, box, sizeof(*box));
+		scene_buffer->src_box = *box;
 	} else {
-		memset(cur, 0, sizeof(*cur));
+		scene_buffer->src_box = (struct wlr_fbox){0};
 	}
 
 	scene_node_update(&scene_buffer->node, NULL);

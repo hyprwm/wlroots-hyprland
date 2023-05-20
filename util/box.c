@@ -175,6 +175,13 @@ void wlr_fbox_transform(struct wlr_fbox *dest, const struct wlr_fbox *box,
 #ifdef WLR_USE_UNSTABLE
 
 bool wlr_box_equal(const struct wlr_box *a, const struct wlr_box *b) {
+	if (wlr_box_empty(a)) {
+		a = NULL;
+	}
+	if (wlr_box_empty(b)) {
+		b = NULL;
+	}
+
 	if (a == NULL || b == NULL) {
 		return a == b;
 	}
@@ -184,6 +191,13 @@ bool wlr_box_equal(const struct wlr_box *a, const struct wlr_box *b) {
 }
 
 bool wlr_fbox_equal(const struct wlr_fbox *a, const struct wlr_fbox *b) {
+	if (wlr_fbox_empty(a)) {
+		a = NULL;
+	}
+	if (wlr_fbox_empty(b)) {
+		b = NULL;
+	}
+
 	if (a == NULL || b == NULL) {
 		return a == b;
 	}
