@@ -309,10 +309,6 @@ static bool gles2_render_subtexture_with_matrix(
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
 
-	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
-	// to GL_FALSE
-	wlr_matrix_transpose(gl_matrix, gl_matrix);
-
 	push_gles2_debug(renderer);
 
 	if (!texture->has_alpha && alpha == 1.0) {
@@ -367,10 +363,6 @@ static void gles2_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 
 	float gl_matrix[9];
 	wlr_matrix_multiply(gl_matrix, renderer->projection, matrix);
-
-	// OpenGL ES 2 requires the glUniformMatrix3fv transpose parameter to be set
-	// to GL_FALSE
-	wlr_matrix_transpose(gl_matrix, gl_matrix);
 
 	push_gles2_debug(renderer);
 
