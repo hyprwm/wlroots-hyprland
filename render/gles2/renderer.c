@@ -85,19 +85,15 @@ static const struct wlr_addon_interface buffer_addon_impl = {
 	.destroy = handle_buffer_destroy,
 };
 
-static struct wlr_gles2_buffer *get_buffer(struct wlr_gles2_renderer *renderer,
+static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *renderer,
 		struct wlr_buffer *wlr_buffer) {
 	struct wlr_addon *addon =
 		wlr_addon_find(&wlr_buffer->addons, renderer, &buffer_addon_impl);
-	if (addon == NULL) {
-		return NULL;
+	if (addon) {
+		struct wlr_gles2_buffer *buffer = wl_container_of(addon, buffer, addon);
+		return buffer;
 	}
-	struct wlr_gles2_buffer *buffer = wl_container_of(addon, buffer, addon);
-	return buffer;
-}
 
-static struct wlr_gles2_buffer *create_buffer(struct wlr_gles2_renderer *renderer,
-		struct wlr_buffer *wlr_buffer) {
 	struct wlr_gles2_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (buffer == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
@@ -180,10 +176,7 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 
 	wlr_egl_make_current(renderer->egl);
 
-	struct wlr_gles2_buffer *buffer = get_buffer(renderer, wlr_buffer);
-	if (buffer == NULL) {
-		buffer = create_buffer(renderer, wlr_buffer);
-	}
+	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
 	if (buffer == NULL) {
 		return false;
 	}
