@@ -2405,10 +2405,9 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
-static bool init_default_pipeline_layout(struct wlr_vk_renderer *renderer) {
-	struct wlr_vk_pipeline_layout *pipeline_layout = &renderer->default_pipeline_layout;
-
-	if (!init_sampler(renderer, &pipeline_layout->sampler, VK_NULL_HANDLE)) {
+static bool init_pipeline_layout(struct wlr_vk_renderer *renderer,
+		struct wlr_vk_pipeline_layout *pipeline_layout) {
+	if (!init_sampler(renderer, &pipeline_layout->sampler, pipeline_layout->ycbcr.conversion)) {
 		return false;
 	}
 
@@ -2443,15 +2442,7 @@ static bool init_ycbcr_pipeline_layout(struct wlr_vk_renderer *renderer,
 		return false;
 	}
 
-	if (!init_sampler(renderer, &pipeline_layout->sampler, pipeline_layout->ycbcr.conversion)) {
-		return false;
-	}
-
-	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
-		return false;
-	}
-
-	return true;
+	return init_pipeline_layout(renderer, pipeline_layout);
 }
 
 // Creates static render data, such as sampler, layouts and shader modules
@@ -2461,7 +2452,7 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	if (!init_default_pipeline_layout(renderer)) {
+	if (!init_pipeline_layout(renderer, &renderer->default_pipeline_layout)) {
 		return false;
 	}
 
