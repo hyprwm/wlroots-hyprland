@@ -80,8 +80,6 @@ static VkBool32 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 	return false;
 }
 
-
-// instance
 struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 	// we require vulkan 1.1
 	PFN_vkEnumerateInstanceVersion pfEnumInstanceVersion =
@@ -99,7 +97,6 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 		return NULL;
 	}
 
-	// query extension support
 	uint32_t avail_extc = 0;
 	VkResult res;
 	res = vkEnumerateInstanceExtensionProperties(NULL, &avail_extc, NULL);
@@ -121,7 +118,6 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 			avail_ext_props[j].extensionName, avail_ext_props[j].specVersion);
 	}
 
-	// create instance
 	struct wlr_vk_instance *ini = calloc(1, sizeof(*ini));
 	if (!ini) {
 		wlr_log_errno(WLR_ERROR, "allocation failed");
@@ -187,7 +183,6 @@ struct wlr_vk_instance *vulkan_instance_create(bool debug) {
 		goto error;
 	}
 
-	// debug callback
 	if (debug_utils_found) {
 		ini->api.createDebugUtilsMessengerEXT =
 			(PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
@@ -228,7 +223,6 @@ void vulkan_instance_destroy(struct wlr_vk_instance *ini) {
 	free(ini);
 }
 
-// physical device matching
 static void log_phdev(const VkPhysicalDeviceProperties *props) {
 	uint32_t vv_major = VK_VERSION_MAJOR(props->apiVersion);
 	uint32_t vv_minor = VK_VERSION_MINOR(props->apiVersion);
@@ -429,7 +423,6 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		VkPhysicalDevice phdev) {
 	VkResult res;
 
-	// check for extensions
 	uint32_t avail_extc = 0;
 	res = vkEnumerateDeviceExtensionProperties(phdev, NULL,
 		&avail_extc, NULL);
@@ -451,7 +444,6 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 			avail_ext_props[j].extensionName, avail_ext_props[j].specVersion);
 	}
 
-	// create device
 	struct wlr_vk_device *dev = calloc(1, sizeof(*dev));
 	if (!dev) {
 		wlr_log_errno(WLR_ERROR, "allocation failed");
@@ -485,7 +477,6 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		}
 	}
 
-	// queue families
 	{
 		uint32_t qfam_count;
 		vkGetPhysicalDeviceQueueFamilyProperties(phdev, &qfam_count, NULL);
@@ -502,7 +493,6 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 				break;
 			}
 		}
-
 		assert(graphics_found);
 	}
 
@@ -601,7 +591,6 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	load_device_proc(dev, "vkImportSemaphoreFdKHR", &dev->api.vkImportSemaphoreFdKHR);
 	load_device_proc(dev, "vkQueueSubmit2KHR", &dev->api.vkQueueSubmit2KHR);
 
-	// - check device format support -
 	size_t max_fmts;
 	const struct wlr_vk_format *fmts = vulkan_get_format_list(&max_fmts);
 	dev->shm_formats = calloc(max_fmts, sizeof(*dev->shm_formats));

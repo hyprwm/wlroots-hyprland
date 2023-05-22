@@ -263,9 +263,6 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		.pNext = &modp,
 	};
 
-	// the first call to vkGetPhysicalDeviceFormatProperties2 did only
-	// retrieve the number of modifiers, we now have to retrieve
-	// the modifiers
 	modp.pDrmFormatModifierProperties =
 		calloc(modifier_count, sizeof(*modp.pDrmFormatModifierProperties));
 	if (!modp.pDrmFormatModifierProperties) {

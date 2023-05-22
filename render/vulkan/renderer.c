@@ -71,8 +71,6 @@ static float color_to_linear(float non_linear) {
 		non_linear / 12.92;
 }
 
-// renderer
-// util
 static void mat3_to_mat4(const float mat3[9], float mat4[4][4]) {
 	memset(mat4, 0, sizeof(float) * 16);
 	mat4[0][0] = mat3[0];
@@ -578,7 +576,6 @@ static uint64_t end_command_buffer(struct wlr_vk_command_buffer *cb,
 	return cb->timeline_point;
 }
 
-// buffer import
 static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	wl_list_remove(&buffer->link);
 	wlr_addon_finish(&buffer->addon);
@@ -867,7 +864,6 @@ static struct wlr_vk_render_buffer *get_render_buffer(
 	return buffer;
 }
 
-// interface implementation
 static bool vulkan_bind_buffer(struct wlr_renderer *wlr_renderer,
 		struct wlr_buffer *wlr_buffer) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
@@ -1139,7 +1135,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 			texture->transitioned = true;
 		}
 
-		// acquire
 		acquire_barriers[idx] = (VkImageMemoryBarrier){
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
@@ -1154,7 +1149,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 			.subresourceRange.levelCount = 1,
 		};
 
-		// release
 		release_barriers[idx] = (VkImageMemoryBarrier){
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			.srcQueueFamilyIndex = renderer->dev->queue_family,
@@ -1965,8 +1959,6 @@ static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	// layouts
-	// descriptor set
 	VkDescriptorSetLayoutBinding ds_binding = {
 		.binding = 0,
 		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -1987,7 +1979,6 @@ static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
 		return false;
 	}
 
-	// pipeline layout
 	VkPushConstantRange pc_ranges[2] = {
 		{
 			.size = sizeof(struct vert_pcr_data),
@@ -2023,7 +2014,6 @@ static bool init_blend_to_output_layouts(struct wlr_vk_renderer *renderer,
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	// layouts, descriptor set
 	VkDescriptorSetLayoutBinding ds_binding = {
 		.binding = 0,
 		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
@@ -2092,7 +2082,6 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 		.pData = &color_transform_type,
 	};
 
-	// shaders
 	VkPipelineShaderStageCreateInfo tex_stages[2] = {
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -2109,7 +2098,6 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 		},
 	};
 
-	// info
 	VkPipelineInputAssemblyStateCreateInfo assembly = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
@@ -2187,8 +2175,6 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 		.pVertexInputState = &vertex,
 	};
 
-	// NOTE: use could use a cache here for faster loading
-	// store it somewhere like $XDG_CACHE_HOME/wlroots/vk_pipe_cache
 	VkPipelineCache cache = VK_NULL_HANDLE;
 	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, pipe);
 	if (res != VK_SUCCESS) {
@@ -2204,7 +2190,6 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	// shaders
 	VkPipelineShaderStageCreateInfo tex_stages[2] = {
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -2220,7 +2205,6 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 		},
 	};
 
-	// info
 	VkPipelineInputAssemblyStateCreateInfo assembly = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
@@ -2291,8 +2275,6 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 		.pVertexInputState = &vertex,
 	};
 
-	// NOTE: use could use a cache here for faster loading
-	// store it somewhere like $XDG_CACHE_HOME/wlroots/vk_pipe_cache
 	VkPipelineCache cache = VK_NULL_HANDLE;
 	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, pipe);
 	if (res != VK_SUCCESS) {
@@ -2362,7 +2344,6 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	// tex frags
 	sinfo = (VkShaderModuleCreateInfo){
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.codeSize = sizeof(texture_frag_data),
@@ -2374,7 +2355,6 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	// quad frag
 	sinfo = (VkShaderModuleCreateInfo){
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.codeSize = sizeof(quad_frag_data),
@@ -2386,7 +2366,6 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		return false;
 	}
 
-	// quad frag
 	sinfo = (VkShaderModuleCreateInfo){
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.codeSize = sizeof(output_frag_data),
@@ -2418,7 +2397,6 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 
 	setup->render_format = format;
 
-	// util
 	VkDevice dev = renderer->dev->dev;
 	VkResult res;
 
@@ -2638,7 +2616,6 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		},
 	};
 
-	// info
 	VkPipelineInputAssemblyStateCreateInfo assembly = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
@@ -2715,8 +2692,6 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		.pVertexInputState = &vertex,
 	};
 
-	// NOTE: use could use a cache here for faster loading
-	// store it somewhere like $XDG_CACHE_HOME/wlroots/vk_pipe_cache.bin
 	VkPipelineCache cache = VK_NULL_HANDLE;
 	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, &setup->quad_pipe);
 	if (res != VK_SUCCESS) {
@@ -2754,7 +2729,6 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 		goto error;
 	}
 
-	// command pool
 	VkCommandPoolCreateInfo cpool_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -2796,9 +2770,6 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	wlr_log(WLR_INFO, "Run with VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation "
 		"to enable the validation layer");
 
-	// NOTE: we could add functionality to allow the compositor passing its
-	// name and version to this function. Just use dummies until then,
-	// shouldn't be relevant to the driver anyways
 	struct wlr_vk_instance *ini = vulkan_instance_create(default_debug);
 	if (!ini) {
 		wlr_log(WLR_ERROR, "creating vulkan instance for renderer failed");
@@ -2812,7 +2783,6 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 		return NULL;
 	}
 
-	// queue families
 	uint32_t qfam_count;
 	vkGetPhysicalDeviceQueueFamilyProperties(phdev, &qfam_count, NULL);
 	VkQueueFamilyProperties queue_props[qfam_count];

@@ -283,7 +283,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	texture->format = &fmt->format;
 
-	// create image
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = VK_IMAGE_TYPE_2D,
@@ -304,7 +303,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		goto error;
 	}
 
-	// memory
 	VkMemoryRequirements mem_reqs;
 	vkGetImageMemoryRequirements(dev, texture->image, &mem_reqs);
 
@@ -338,7 +336,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	assert(format_info);
 	texture->has_alpha = format_info->has_alpha;
 
-	// view
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -367,7 +364,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		goto error;
 	}
 
-	// descriptor
 	texture->ds_pool = vulkan_alloc_texture_ds(renderer, renderer->ds_layout, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
@@ -389,7 +385,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 
-	// write data
 	pixman_region32_t region;
 	pixman_region32_init_rect(&region, 0, 0, width, height);
 	if (!write_pixels(texture, stride, &region, data, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -483,7 +478,6 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		return VK_NULL_HANDLE;
 	}
 
-	// image
 	VkExternalMemoryHandleTypeFlagBits htype =
 		VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
 
@@ -680,7 +674,6 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		texture->has_alpha = format_info->has_alpha;
 	}
 
-	// view
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -719,7 +712,6 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		goto error;
 	}
 
-	// descriptor
 	texture->ds_pool = vulkan_alloc_texture_ds(renderer, ds_layout, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
