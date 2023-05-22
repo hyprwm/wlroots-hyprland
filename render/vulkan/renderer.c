@@ -1912,6 +1912,38 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.texture_from_buffer = vulkan_texture_from_buffer,
 };
 
+static bool init_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler,
+		VkSamplerYcbcrConversion ycbcr_conversion) {
+	VkSamplerCreateInfo sampler_create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.magFilter = VK_FILTER_LINEAR,
+		.minFilter = VK_FILTER_LINEAR,
+		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.minLod = 0.f,
+		.maxLod = 0.25f,
+	};
+
+	VkSamplerYcbcrConversionInfo conversion_info;
+	if (ycbcr_conversion != VK_NULL_HANDLE) {
+		conversion_info = (VkSamplerYcbcrConversionInfo){
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+			.conversion = ycbcr_conversion,
+		};
+		sampler_create_info.pNext = &conversion_info;
+	}
+
+	VkResult res = vkCreateSampler(renderer->dev->dev, &sampler_create_info, NULL, sampler);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateSampler", res);
+		return false;
+	}
+
+	return true;
+}
+
 static bool init_nv12_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler) {
 	VkResult res;
 
@@ -1930,27 +1962,7 @@ static bool init_nv12_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampl
 		return false;
 	}
 
-	VkSamplerYcbcrConversionInfo conversion_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-		.conversion = renderer->nv12_conversion,
-	};
-	VkSamplerCreateInfo sampler_create_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.pNext = &conversion_info,
-		.magFilter = VK_FILTER_LINEAR,
-		.minFilter = VK_FILTER_LINEAR,
-		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
-	};
-	res = vkCreateSampler(renderer->dev->dev, &sampler_create_info, NULL, sampler);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateSampler", res);
-		return false;
-	}
-
-	return true;
+	return init_sampler(renderer, sampler, renderer->nv12_conversion);
 }
 
 // Initializes the VkDescriptorSetLayout and VkPipelineLayout needed
@@ -2399,25 +2411,9 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	// default sampler (non ycbcr)
-	VkSamplerCreateInfo sampler_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.magFilter = VK_FILTER_LINEAR,
-		.minFilter = VK_FILTER_LINEAR,
-		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.minLod = 0.f,
-		.maxLod = 0.25f,
-	};
-
-	res = vkCreateSampler(dev, &sampler_info, NULL, &renderer->sampler);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("Failed to create sampler", res);
+	if (!init_sampler(renderer, &renderer->sampler, VK_NULL_HANDLE)) {
 		return false;
 	}
-
 	if (renderer->dev->sampler_ycbcr_conversion && !init_nv12_sampler(renderer, &renderer->nv12_sampler)) {
 		return false;
 	}
