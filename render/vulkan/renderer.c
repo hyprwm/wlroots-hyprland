@@ -2405,13 +2405,11 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 		.magFilter = VK_FILTER_LINEAR,
 		.minFilter = VK_FILTER_LINEAR,
 		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-		.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		.maxAnisotropy = 1.f,
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		.minLod = 0.f,
 		.maxLod = 0.25f,
-		.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
 	};
 
 	res = vkCreateSampler(dev, &sampler_info, NULL, &renderer->sampler);
