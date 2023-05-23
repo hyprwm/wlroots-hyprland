@@ -41,6 +41,11 @@ struct wlr_fbox {
 };
 
 /**
+ * Functions below accept NULL where a box is expected, which is treated
+ * the same as an empty box.
+ */
+
+/**
  * Finds the closest point within the box bounds.
  *
  * Returns NAN if the box is empty.

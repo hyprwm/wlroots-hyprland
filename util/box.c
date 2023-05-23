@@ -8,7 +8,7 @@
 void wlr_box_closest_point(const struct wlr_box *box, double x, double y,
 		double *dest_x, double *dest_y) {
 	// if box is empty, then it contains no points, so no closest point either
-	if (box->width <= 0 || box->height <= 0) {
+	if (wlr_box_empty(box)) {
 		*dest_x = NAN;
 		*dest_y = NAN;
 		return;
@@ -71,6 +71,11 @@ bool wlr_box_contains_point(const struct wlr_box *box, double x, double y) {
 
 void wlr_box_transform(struct wlr_box *dest, const struct wlr_box *box,
 		enum wl_output_transform transform, int width, int height) {
+	if (wlr_box_empty(box)) {
+		*dest = (struct wlr_box){0};
+		return;
+	}
+
 	struct wlr_box src = *box;
 
 	if (transform % 2 == 0) {
@@ -123,6 +128,11 @@ bool wlr_fbox_empty(const struct wlr_fbox *box) {
 
 void wlr_fbox_transform(struct wlr_fbox *dest, const struct wlr_fbox *box,
 		enum wl_output_transform transform, double width, double height) {
+	if (wlr_fbox_empty(box)) {
+		*dest = (struct wlr_fbox){0};
+		return;
+	}
+
 	struct wlr_fbox src = *box;
 
 	if (transform % 2 == 0) {
