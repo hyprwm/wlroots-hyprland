@@ -43,10 +43,7 @@ bool wlr_box_intersection(struct wlr_box *dest, const struct wlr_box *box_a,
 	bool b_empty = wlr_box_empty(box_b);
 
 	if (a_empty || b_empty) {
-		dest->x = 0;
-		dest->y = 0;
-		dest->width = -100;
-		dest->height = -100;
+		*dest = (struct wlr_box){0};
 		return false;
 	}
 
