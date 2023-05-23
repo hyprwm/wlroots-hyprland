@@ -444,6 +444,9 @@ static EGLDeviceEXT get_egl_device_from_drm_fd(struct wlr_egl *egl,
 	if (egl->procs.eglQueryDevicesEXT == NULL) {
 		wlr_log(WLR_DEBUG, "EGL_EXT_device_enumeration not supported");
 		return EGL_NO_DEVICE_EXT;
+	} else if (!egl->exts.EXT_device_query) {
+		wlr_log(WLR_DEBUG, "EGL_EXT_device_query not supported");
+		return EGL_NO_DEVICE_EXT;
 	}
 
 	EGLint nb_devices = 0;
