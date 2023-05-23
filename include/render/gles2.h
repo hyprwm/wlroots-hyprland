@@ -25,10 +25,10 @@ struct wlr_gles2_pixel_format {
 struct wlr_gles2_tex_shader {
 	GLuint program;
 	GLint proj;
+	GLint tex_proj;
 	GLint tex;
 	GLint alpha;
 	GLint pos_attrib;
-	GLint tex_attrib;
 };
 
 struct wlr_gles2_renderer {

@@ -321,27 +321,21 @@ static bool gles2_render_subtexture_with_matrix(
 	glUniform1i(shader->tex, 0);
 	glUniform1f(shader->alpha, alpha);
 
-	const GLfloat x1 = box->x / wlr_texture->width;
-	const GLfloat y1 = box->y / wlr_texture->height;
-	const GLfloat x2 = (box->x + box->width) / wlr_texture->width;
-	const GLfloat y2 = (box->y + box->height) / wlr_texture->height;
-	const GLfloat texcoord[] = {
-		x2, y1, // top right
-		x1, y1, // top left
-		x2, y2, // bottom right
-		x1, y2, // bottom left
-	};
+	float tex_matrix[9];
+	wlr_matrix_identity(tex_matrix);
+	wlr_matrix_translate(tex_matrix, box->x / texture->wlr_texture.width,
+		box->y / texture->wlr_texture.height);
+	wlr_matrix_scale(tex_matrix, box->width / texture->wlr_texture.width,
+		box->height / texture->wlr_texture.height);
+	glUniformMatrix3fv(shader->tex_proj, 1, GL_FALSE, tex_matrix);
 
 	glVertexAttribPointer(shader->pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, verts);
-	glVertexAttribPointer(shader->tex_attrib, 2, GL_FLOAT, GL_FALSE, 0, texcoord);
 
 	glEnableVertexAttribArray(shader->pos_attrib);
-	glEnableVertexAttribArray(shader->tex_attrib);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	glDisableVertexAttribArray(shader->pos_attrib);
-	glDisableVertexAttribArray(shader->tex_attrib);
 
 	glBindTexture(texture->target, 0);
 
@@ -828,10 +822,10 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 		goto error;
 	}
 	renderer->shaders.tex_rgba.proj = glGetUniformLocation(prog, "proj");
+	renderer->shaders.tex_rgba.tex_proj = glGetUniformLocation(prog, "tex_proj");
 	renderer->shaders.tex_rgba.tex = glGetUniformLocation(prog, "tex");
 	renderer->shaders.tex_rgba.alpha = glGetUniformLocation(prog, "alpha");
 	renderer->shaders.tex_rgba.pos_attrib = glGetAttribLocation(prog, "pos");
-	renderer->shaders.tex_rgba.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
 	renderer->shaders.tex_rgbx.program = prog =
 		link_program(renderer, common_vert_src, tex_rgbx_frag_src);
@@ -839,10 +833,10 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 		goto error;
 	}
 	renderer->shaders.tex_rgbx.proj = glGetUniformLocation(prog, "proj");
+	renderer->shaders.tex_rgbx.tex_proj = glGetUniformLocation(prog, "tex_proj");
 	renderer->shaders.tex_rgbx.tex = glGetUniformLocation(prog, "tex");
 	renderer->shaders.tex_rgbx.alpha = glGetUniformLocation(prog, "alpha");
 	renderer->shaders.tex_rgbx.pos_attrib = glGetAttribLocation(prog, "pos");
-	renderer->shaders.tex_rgbx.tex_attrib = glGetAttribLocation(prog, "texcoord");
 
 	if (renderer->exts.OES_egl_image_external) {
 		renderer->shaders.tex_ext.program = prog =
@@ -851,10 +845,10 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 			goto error;
 		}
 		renderer->shaders.tex_ext.proj = glGetUniformLocation(prog, "proj");
+		renderer->shaders.tex_ext.tex_proj = glGetUniformLocation(prog, "tex_proj");
 		renderer->shaders.tex_ext.tex = glGetUniformLocation(prog, "tex");
 		renderer->shaders.tex_ext.alpha = glGetUniformLocation(prog, "alpha");
 		renderer->shaders.tex_ext.pos_attrib = glGetAttribLocation(prog, "pos");
-		renderer->shaders.tex_ext.tex_attrib = glGetAttribLocation(prog, "texcoord");
 	}
 
 	pop_gles2_debug(renderer);
