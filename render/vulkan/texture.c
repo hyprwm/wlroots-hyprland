@@ -265,6 +265,79 @@ static struct wlr_vk_texture *vulkan_texture_create(
 	return texture;
 }
 
+static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
+	VkResult res;
+	VkDevice dev = texture->renderer->dev->dev;
+
+	const struct wlr_pixel_format_info *format_info =
+		drm_get_pixel_format_info(texture->format->drm);
+	if (format_info != NULL) {
+		texture->has_alpha = format_info->has_alpha;
+	} else {
+		// We don't have format info for multi-planar formats
+		assert(texture->format->is_ycbcr);
+	}
+
+	VkImageViewCreateInfo view_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = texture->format->vk,
+		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+		.components.a = texture->has_alpha || texture->format->is_ycbcr
+			? VK_COMPONENT_SWIZZLE_IDENTITY
+			: VK_COMPONENT_SWIZZLE_ONE,
+		.subresourceRange = (VkImageSubresourceRange){
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+		.image = texture->image,
+	};
+
+	VkSamplerYcbcrConversionInfo ycbcr_conversion_info;
+	if (texture->format->is_ycbcr) {
+		assert(texture->pipeline_layout->ycbcr.conversion != VK_NULL_HANDLE);
+		ycbcr_conversion_info = (VkSamplerYcbcrConversionInfo){
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+			.conversion = texture->pipeline_layout->ycbcr.conversion,
+		};
+		view_info.pNext = &ycbcr_conversion_info;
+	}
+
+	res = vkCreateImageView(dev, &view_info, NULL, &texture->image_view);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateImageView failed", res);
+		return false;
+	}
+
+	texture->ds_pool = vulkan_alloc_texture_ds(texture->renderer, texture->pipeline_layout->ds, &texture->ds);
+	if (!texture->ds_pool) {
+		wlr_log(WLR_ERROR, "failed to allocate descriptor");
+		return false;
+	}
+
+	VkDescriptorImageInfo ds_img_info = {
+		.imageView = texture->image_view,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
+
+	VkWriteDescriptorSet ds_write = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.dstSet = texture->ds,
+		.pImageInfo = &ds_img_info,
+	};
+
+	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
+
+	return true;
+}
+
 static struct wlr_texture *vulkan_texture_from_pixels(
 		struct wlr_vk_renderer *renderer, uint32_t drm_fmt, uint32_t stride,
 		uint32_t width, uint32_t height, const void *data) {
@@ -338,58 +411,9 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		goto error;
 	}
 
-	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(drm_fmt);
-	assert(format_info);
-	texture->has_alpha = format_info->has_alpha;
-
-	VkImageViewCreateInfo view_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->format->vk,
-		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.a = texture->has_alpha
-			? VK_COMPONENT_SWIZZLE_IDENTITY
-			: VK_COMPONENT_SWIZZLE_ONE,
-
-		.subresourceRange = (VkImageSubresourceRange) {
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1,
-		},
-		.image = texture->image,
-	};
-
-	res = vkCreateImageView(dev, &view_info, NULL,
-		&texture->image_view);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateImageView failed", res);
+	if (!vulkan_texture_init_view(texture)) {
 		goto error;
 	}
-
-	texture->ds_pool = vulkan_alloc_texture_ds(renderer, renderer->default_pipeline_layout.ds, &texture->ds);
-	if (!texture->ds_pool) {
-		wlr_log(WLR_ERROR, "failed to allocate descriptor");
-		goto error;
-	}
-
-	VkDescriptorImageInfo ds_img_info = {
-		.imageView = texture->image_view,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-
-	VkWriteDescriptorSet ds_write = {
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		.dstSet = texture->ds,
-		.pImageInfo = &ds_img_info,
-	};
-
-	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 
 	pixman_region32_t region;
 	pixman_region32_init_rect(&region, 0, 0, width, height);
@@ -648,9 +672,6 @@ error_image:
 static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		struct wlr_vk_renderer *renderer,
 		struct wlr_dmabuf_attributes *attribs) {
-	VkResult res;
-	VkDevice dev = renderer->dev->dev;
-
 	const struct wlr_vk_format_props *fmt = vulkan_format_props_from_drm(
 		renderer->dev, attribs->format);
 	if (fmt == NULL) {
@@ -680,69 +701,10 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		goto error;
 	}
 
-	if (!fmt->format.is_ycbcr) {
-		const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(attribs->format);
-		assert(format_info);
-		texture->has_alpha = format_info->has_alpha;
-	}
-
-	VkImageViewCreateInfo view_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->format->vk,
-		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-		.components.a = texture->has_alpha || fmt->format.is_ycbcr
-			? VK_COMPONENT_SWIZZLE_IDENTITY
-			: VK_COMPONENT_SWIZZLE_ONE,
-
-		.subresourceRange = (VkImageSubresourceRange) {
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1,
-		},
-		.image = texture->image,
-	};
-
-	VkSamplerYcbcrConversionInfo ycbcr_conversion_info;
-	if (fmt->format.is_ycbcr) {
-		assert(texture->pipeline_layout->ycbcr.conversion != VK_NULL_HANDLE);
-		ycbcr_conversion_info = (VkSamplerYcbcrConversionInfo){
-			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-			.conversion = texture->pipeline_layout->ycbcr.conversion,
-		};
-		view_info.pNext = &ycbcr_conversion_info;
-	}
-
-	res = vkCreateImageView(dev, &view_info, NULL, &texture->image_view);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateImageView failed", res);
+	if (!vulkan_texture_init_view(texture)) {
 		goto error;
 	}
 
-	texture->ds_pool = vulkan_alloc_texture_ds(renderer, texture->pipeline_layout->ds, &texture->ds);
-	if (!texture->ds_pool) {
-		wlr_log(WLR_ERROR, "failed to allocate descriptor");
-		goto error;
-	}
-
-	VkDescriptorImageInfo ds_img_info = {
-		.imageView = texture->image_view,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-
-	VkWriteDescriptorSet ds_write = {
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		.dstSet = texture->ds,
-		.pImageInfo = &ds_img_info,
-	};
-
-	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 	texture->dmabuf_imported = true;
 
 	return texture;
