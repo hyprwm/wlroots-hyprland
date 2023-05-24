@@ -238,16 +238,16 @@ static const VkImageUsageFlags tex_usage =
 static const VkImageUsageFlags dma_tex_usage =
 	VK_IMAGE_USAGE_SAMPLED_BIT;
 
-static const VkFormatFeatureFlags tex_features =
+static const VkFormatFeatureFlags render_features =
+	VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
+	VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
+static const VkFormatFeatureFlags shm_tex_features =
 	VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
 	VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
 	// NOTE: we don't strictly require this, we could create a NEAREST
 	// sampler for formats that need it, in case this ever makes problems.
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
-static const VkFormatFeatureFlags render_features =
-	VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
-	VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
 static const VkFormatFeatureFlags dma_tex_features =
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
 	// NOTE: we don't strictly require this, we could create a NEAREST
@@ -434,7 +434,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 
 	// non-dmabuf texture properties
 	const char *shm_texture_status;
-	if ((fmtp.formatProperties.optimalTilingFeatures & tex_features) == tex_features &&
+	if ((fmtp.formatProperties.optimalTilingFeatures & shm_tex_features) == shm_tex_features &&
 			!format->is_ycbcr) {
 		VkPhysicalDeviceImageFormatInfo2 fmti = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
