@@ -76,13 +76,3 @@ void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
 	};
 	vkCmdPipelineBarrier(cb, srcs, dsts, 0, 0, NULL, 0, NULL, 1, &barrier);
 }
-
-bool vulkan_has_extension(size_t count, const char **exts, const char *find) {
-	for (unsigned i = 0; i < count; ++i) {
-		if (strcmp(exts[i], find) == 0) {
-			return true;
-		}
-	}
-
-	return false;
-}

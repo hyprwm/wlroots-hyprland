@@ -367,7 +367,6 @@ struct wlr_vk_buffer_span {
 };
 
 // util
-bool vulkan_has_extension(size_t count, const char **exts, const char *find);
 const char *vulkan_strerror(VkResult err);
 void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
 	VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
