@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <wlr/util/log.h>
 #include <xf86drm.h>
+#include "render/pixel_format.h"
 #include "render/vulkan.h"
 
 static const struct wlr_vk_format formats[] = {
@@ -433,10 +434,12 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 	struct wlr_vk_format_props props = {0};
 	props.format = *format;
 
+	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(format->drm);
+
 	// non-dmabuf texture properties
 	const char *shm_texture_status;
 	if ((fmtp.formatProperties.optimalTilingFeatures & shm_tex_features) == shm_tex_features &&
-			!format->is_ycbcr) {
+			!format->is_ycbcr && format_info != NULL) {
 		VkPhysicalDeviceImageFormatInfo2 fmti = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			.type = VK_IMAGE_TYPE_2D,
