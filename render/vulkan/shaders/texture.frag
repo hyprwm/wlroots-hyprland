@@ -11,6 +11,7 @@ layout(push_constant) uniform UBO {
 
 layout (constant_id = 0) const int TEXTURE_TRANSFORM = 0;
 
+// Matches enum wlr_vk_texture_transform
 #define TEXTURE_TRANSFORM_IDENTITY 0
 #define TEXTURE_TRANSFORM_SRGB 1
 
