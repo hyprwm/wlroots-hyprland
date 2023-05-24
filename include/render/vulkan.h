@@ -372,10 +372,6 @@ const char *vulkan_strerror(VkResult err);
 void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
 	VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
 	VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta);
-void vulkan_change_layout_queue(VkCommandBuffer cb, VkImage img,
-	VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
-	VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta,
-	uint32_t src_family, uint32_t dst_family);
 
 #define wlr_vk_error(fmt, res, ...) wlr_log(WLR_ERROR, fmt ": %s (%d)", \
 	vulkan_strerror(res), res, ##__VA_ARGS__)

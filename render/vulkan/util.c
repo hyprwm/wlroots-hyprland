@@ -58,10 +58,9 @@ const char *vulkan_strerror(VkResult err) {
 #undef ERR_STR
 }
 
-void vulkan_change_layout_queue(VkCommandBuffer cb, VkImage img,
+void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
 		VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
-		VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta,
-		uint32_t src_family, uint32_t dst_family) {
+		VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta) {
 	VkImageMemoryBarrier barrier = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		.oldLayout = ol,
@@ -72,18 +71,10 @@ void vulkan_change_layout_queue(VkCommandBuffer cb, VkImage img,
 		.subresourceRange.levelCount = 1,
 		.srcAccessMask = srca,
 		.dstAccessMask = dsta,
-		.srcQueueFamilyIndex = src_family,
-		.dstQueueFamilyIndex = dst_family,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 	};
-
 	vkCmdPipelineBarrier(cb, srcs, dsts, 0, 0, NULL, 0, NULL, 1, &barrier);
-}
-
-void vulkan_change_layout(VkCommandBuffer cb, VkImage img,
-		VkImageLayout ol, VkPipelineStageFlags srcs, VkAccessFlags srca,
-		VkImageLayout nl, VkPipelineStageFlags dsts, VkAccessFlags dsta) {
-	vulkan_change_layout_queue(cb, img, ol, srcs, srca, nl, dsts, dsta,
-		VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED);
 }
 
 bool vulkan_has_extension(size_t count, const char **exts, const char *find) {
