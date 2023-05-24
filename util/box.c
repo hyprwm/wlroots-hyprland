@@ -71,12 +71,10 @@ bool wlr_box_contains_point(const struct wlr_box *box, double x, double y) {
 
 void wlr_box_transform(struct wlr_box *dest, const struct wlr_box *box,
 		enum wl_output_transform transform, int width, int height) {
-	if (wlr_box_empty(box)) {
-		*dest = (struct wlr_box){0};
-		return;
+	struct wlr_box src = {0};
+	if (box != NULL) {
+		src = *box;
 	}
-
-	struct wlr_box src = *box;
 
 	if (transform % 2 == 0) {
 		dest->width = src.width;
@@ -128,12 +126,10 @@ bool wlr_fbox_empty(const struct wlr_fbox *box) {
 
 void wlr_fbox_transform(struct wlr_fbox *dest, const struct wlr_fbox *box,
 		enum wl_output_transform transform, double width, double height) {
-	if (wlr_fbox_empty(box)) {
-		*dest = (struct wlr_fbox){0};
-		return;
+	struct wlr_fbox src = {0};
+	if (box != NULL) {
+		src = *box;
 	}
-
-	struct wlr_fbox src = *box;
 
 	if (transform % 2 == 0) {
 		dest->width = src.width;
