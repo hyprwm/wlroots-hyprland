@@ -253,10 +253,8 @@ static const VkFormatFeatureFlags dma_tex_features =
 	// NOTE: we don't strictly require this, we could create a NEAREST
 	// sampler for formats that need it, in case this ever makes problems.
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
-static const VkFormatFeatureFlags dma_tex_ycbcr_features =
-	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+static const VkFormatFeatureFlags ycbcr_tex_features =
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT |
-	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
 	VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
 
 static bool query_modifier_usage_support(struct wlr_vk_device *dev, VkFormat vk_format,
@@ -375,7 +373,10 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 		// check that specific modifier for texture usage
 		errmsg = "unknown error";
-		VkFormatFeatureFlags features = props->format.is_ycbcr ? dma_tex_ycbcr_features : dma_tex_features;
+		VkFormatFeatureFlags features = dma_tex_features;
+		if (props->format.is_ycbcr) {
+			features |= ycbcr_tex_features;
+		}
 		if ((m.drmFormatModifierTilingFeatures & features) == features) {
 			struct wlr_vk_format_modifier_props p = {0};
 			if (query_modifier_usage_support(dev, props->format.vk, dma_tex_usage, &m, &p, &errmsg)) {
