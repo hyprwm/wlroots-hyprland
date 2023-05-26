@@ -10,14 +10,14 @@
 #include "types/wlr_output.h"
 
 static struct wlr_swapchain *create_swapchain(struct wlr_output *output,
-		int width, int height, bool allow_modifiers) {
+		int width, int height, uint32_t render_format, bool allow_modifiers) {
 	struct wlr_allocator *allocator = output->allocator;
 	assert(output->allocator != NULL);
 
 	const struct wlr_drm_format_set *display_formats =
 		wlr_output_get_primary_formats(output, allocator->buffer_caps);
 	struct wlr_drm_format format = {0};
-	if (!output_pick_format(output, display_formats, &format, output->render_format)) {
+	if (!output_pick_format(output, display_formats, &format, render_format)) {
 		wlr_log(WLR_ERROR, "Failed to pick primary buffer format for output '%s'",
 			output->name);
 		return NULL;
@@ -73,15 +73,20 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 	int width, height;
 	output_pending_resolution(output, state, &width, &height);
 
+	uint32_t format = output->render_format;
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+		format = state->render_format;
+	}
+
 	// Re-use the existing swapchain if possible
 	struct wlr_swapchain *old_swapchain = *swapchain_ptr;
 	if (old_swapchain != NULL &&
 			old_swapchain->width == width && old_swapchain->height == height &&
-			old_swapchain->format.format == output->render_format) {
+			old_swapchain->format.format == format) {
 		return true;
 	}
 
-	struct wlr_swapchain *swapchain = create_swapchain(output, width, height, true);
+	struct wlr_swapchain *swapchain = create_swapchain(output, width, height, format, true);
 	if (swapchain == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create swapchain for output '%s'", output->name);
 		return false;
@@ -92,7 +97,7 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 		wlr_log(WLR_DEBUG, "Output test failed on '%s', retrying without modifiers",
 			output->name);
 		wlr_swapchain_destroy(swapchain);
-		swapchain = create_swapchain(output, width, height, false);
+		swapchain = create_swapchain(output, width, height, format, false);
 		if (swapchain == NULL) {
 			wlr_log(WLR_ERROR, "Failed to create modifier-less swapchain for output '%s'",
 				output->name);
