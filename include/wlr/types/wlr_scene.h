@@ -330,6 +330,12 @@ struct wlr_scene_buffer *wlr_scene_buffer_from_node(struct wlr_scene_node *node)
 struct wlr_scene_tree *wlr_scene_tree_from_node(struct wlr_scene_node *node);
 
 /**
+ * If this node represents a wlr_scene_rect, that rect will be returned. It
+ * is not legal to feed a node that does not represent a wlr_scene_rect.
+ */
+struct wlr_scene_rect *wlr_scene_rect_from_node(struct wlr_scene_node *node);
+
+/**
  * If this buffer is backed by a surface, then the struct wlr_scene_surface is
  * returned. If not, NULL will be returned.
  */

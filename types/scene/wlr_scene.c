@@ -27,8 +27,7 @@ struct wlr_scene_tree *wlr_scene_tree_from_node(struct wlr_scene_node *node) {
 	return tree;
 }
 
-static struct wlr_scene_rect *scene_rect_from_node(
-		struct wlr_scene_node *node) {
+struct wlr_scene_rect *wlr_scene_rect_from_node(struct wlr_scene_node *node) {
 	assert(node->type == WLR_SCENE_NODE_RECT);
 	struct wlr_scene_rect *rect = wl_container_of(node, rect, node);
 	return rect;
@@ -231,7 +230,7 @@ static bool scene_nodes_in_box(struct wlr_scene_node *node, struct wlr_box *box,
 static void scene_node_opaque_region(struct wlr_scene_node *node, int x, int y,
 		pixman_region32_t *opaque) {
 	if (node->type == WLR_SCENE_NODE_RECT) {
-		struct wlr_scene_rect *scene_rect = scene_rect_from_node(node);
+		struct wlr_scene_rect *scene_rect = wlr_scene_rect_from_node(node);
 		if (scene_rect->color[3] != 1) {
 			return;
 		}
@@ -821,7 +820,7 @@ static void scene_node_get_size(struct wlr_scene_node *node,
 	case WLR_SCENE_NODE_TREE:
 		return;
 	case WLR_SCENE_NODE_RECT:;
-		struct wlr_scene_rect *scene_rect = scene_rect_from_node(node);
+		struct wlr_scene_rect *scene_rect = wlr_scene_rect_from_node(node);
 		*width = scene_rect->width;
 		*height = scene_rect->height;
 		break;
@@ -1096,7 +1095,7 @@ static void scene_node_render(struct wlr_scene_node *node,
 		assert(false);
 		break;
 	case WLR_SCENE_NODE_RECT:;
-		struct wlr_scene_rect *scene_rect = scene_rect_from_node(node);
+		struct wlr_scene_rect *scene_rect = wlr_scene_rect_from_node(node);
 
 		wlr_render_pass_add_rect(render_pass, &(struct wlr_render_rect_options){
 			.box = dst_box,
@@ -1341,7 +1340,7 @@ static bool scene_node_invisible(struct wlr_scene_node *node) {
 	if (node->type == WLR_SCENE_NODE_TREE) {
 		return true;
 	} else if (node->type == WLR_SCENE_NODE_RECT) {
-		struct wlr_scene_rect *rect = scene_rect_from_node(node);
+		struct wlr_scene_rect *rect = wlr_scene_rect_from_node(node);
 
 		return rect->color[3] == 0.f;
 	} else if (node->type == WLR_SCENE_NODE_BUFFER) {
@@ -1371,7 +1370,7 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
 	// If we see a black rect, we can ignore rendering everything under the rect
 	// and even the rect itself.
 	if (node->type == WLR_SCENE_NODE_RECT && data->calculate_visibility) {
-		struct wlr_scene_rect *rect = scene_rect_from_node(node);
+		struct wlr_scene_rect *rect = wlr_scene_rect_from_node(node);
 		float *black = (float[4]){ 0.f, 0.f, 0.f, 1.f };
 
 		if (memcmp(rect->color, black, sizeof(float) * 4) == 0) {
