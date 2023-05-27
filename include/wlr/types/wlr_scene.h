@@ -166,6 +166,7 @@ struct wlr_scene_buffer {
 
 	// private state
 
+	float opacity;
 	uint64_t active_outputs;
 	struct wlr_texture *texture;
 	struct wlr_fbox src_box;
@@ -414,6 +415,12 @@ void wlr_scene_buffer_set_dest_size(struct wlr_scene_buffer *scene_buffer,
  */
 void wlr_scene_buffer_set_transform(struct wlr_scene_buffer *scene_buffer,
 	enum wl_output_transform transform);
+
+/**
+* Sets the opacity of this buffer
+*/
+void wlr_scene_buffer_set_opacity(struct wlr_scene_buffer *scene_buffer,
+	float opacity);
 
 /**
  * Calls the buffer's frame_done signal.

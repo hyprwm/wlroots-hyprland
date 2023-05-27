@@ -241,6 +241,10 @@ static void scene_node_opaque_region(struct wlr_scene_node *node, int x, int y,
 			return;
 		}
 
+		if (scene_buffer->opacity != 1) {
+			return;
+		}
+
 		if (!buffer_is_opaque(scene_buffer->buffer)) {
 			pixman_region32_copy(opaque, &scene_buffer->opaque_region);
 			pixman_region32_translate(opaque, x, y);
@@ -604,6 +608,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 	wl_signal_init(&scene_buffer->events.output_present);
 	wl_signal_init(&scene_buffer->events.frame_done);
 	pixman_region32_init(&scene_buffer->opaque_region);
+	scene_buffer->opacity = 1;
 
 	scene_node_update(&scene_buffer->node, NULL);
 
@@ -792,6 +797,16 @@ void wlr_scene_buffer_send_frame_done(struct wlr_scene_buffer *scene_buffer,
 	if (pixman_region32_not_empty(&scene_buffer->node.visible)) {
 		wl_signal_emit_mutable(&scene_buffer->events.frame_done, now);
 	}
+}
+
+void wlr_scene_buffer_set_opacity(struct wlr_scene_buffer *scene_buffer,
+		float opacity) {
+	if (scene_buffer->opacity == opacity) {
+		return;
+	}
+
+	scene_buffer->opacity = opacity;
+	scene_node_update(&scene_buffer->node, NULL);
 }
 
 static struct wlr_texture *scene_buffer_get_texture(
@@ -1127,6 +1142,7 @@ static void scene_node_render(struct wlr_scene_node *node,
 			.dst_box = dst_box,
 			.transform = transform,
 			.clip = &render_region,
+			.alpha = &scene_buffer->opacity,
 		});
 
 		wl_signal_emit_mutable(&scene_buffer->events.output_present, scene_output);
