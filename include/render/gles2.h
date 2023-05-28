@@ -112,6 +112,11 @@ struct wlr_gles2_texture {
 	struct wlr_addon buffer_addon;
 };
 
+struct wlr_gles2_render_pass {
+	struct wlr_render_pass base;
+	struct wlr_gles2_buffer *buffer;
+	float projection_matrix[9];
+};
 
 bool is_gles2_pixel_format_supported(const struct wlr_gles2_renderer *renderer,
 	const struct wlr_gles2_pixel_format *format);
@@ -134,5 +139,7 @@ void push_gles2_debug_(struct wlr_gles2_renderer *renderer,
 	const char *file, const char *func);
 #define push_gles2_debug(renderer) push_gles2_debug_(renderer, _WLR_FILENAME, __func__)
 void pop_gles2_debug(struct wlr_gles2_renderer *renderer);
+
+struct wlr_gles2_render_pass *begin_gles2_buffer_pass(struct wlr_gles2_buffer *buffer);
 
 #endif

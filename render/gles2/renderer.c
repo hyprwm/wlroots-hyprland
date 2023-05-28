@@ -536,6 +536,25 @@ static void gles2_destroy(struct wlr_renderer *wlr_renderer) {
 	free(renderer);
 }
 
+static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
+		struct wlr_buffer *wlr_buffer) {
+	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
+	if (!wlr_egl_make_current(renderer->egl)) {
+		return NULL;
+	}
+
+	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
+	if (!buffer) {
+		return NULL;
+	}
+
+	struct wlr_gles2_render_pass *pass = begin_gles2_buffer_pass(buffer);
+	if (!pass) {
+		return NULL;
+	}
+	return &pass->base;
+}
+
 static const struct wlr_renderer_impl renderer_impl = {
 	.destroy = gles2_destroy,
 	.bind_buffer = gles2_bind_buffer,
@@ -553,6 +572,7 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_drm_fd = gles2_get_drm_fd,
 	.get_render_buffer_caps = gles2_get_render_buffer_caps,
 	.texture_from_buffer = gles2_texture_from_buffer,
+	.begin_buffer_pass = gles2_begin_buffer_pass,
 };
 
 void push_gles2_debug_(struct wlr_gles2_renderer *renderer,
