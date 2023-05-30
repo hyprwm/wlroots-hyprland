@@ -579,6 +579,7 @@ struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *rend
 	VkResult res = vkBeginCommandBuffer(cb->vk, &begin_info);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkBeginCommandBuffer", res);
+		vulkan_reset_command_buffer(cb);
 		free(pass);
 		return NULL;
 	}
