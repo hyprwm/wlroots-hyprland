@@ -67,12 +67,14 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	struct wlr_vk_renderer *renderer = pass->renderer;
 	struct wlr_vk_command_buffer *render_cb = pass->command_buffer;
 	struct wlr_vk_render_buffer *render_buffer = pass->render_buffer;
+	struct wlr_vk_command_buffer *stage_cb = NULL;
+	VkSemaphoreSubmitInfoKHR *render_wait = NULL;
 
 	if (vulkan_record_stage_cb(renderer) == VK_NULL_HANDLE) {
-		return false;
+		goto error;
 	}
 
-	struct wlr_vk_command_buffer *stage_cb = renderer->stage.cb;
+	stage_cb = renderer->stage.cb;
 	assert(stage_cb != NULL);
 	renderer->stage.cb = NULL;
 
@@ -112,13 +114,13 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	uint32_t barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
 	VkImageMemoryBarrier *acquire_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
 	VkImageMemoryBarrier *release_barriers = calloc(barrier_count, sizeof(VkImageMemoryBarrier));
-	VkSemaphoreSubmitInfoKHR *render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(VkSemaphoreSubmitInfoKHR));
+	render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(VkSemaphoreSubmitInfoKHR));
 	if (acquire_barriers == NULL || release_barriers == NULL || render_wait == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(acquire_barriers);
 		free(release_barriers);
 		free(render_wait);
-		return false;
+		goto error;
 	}
 
 	struct wlr_vk_texture *texture, *tmp_tex;
@@ -270,7 +272,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	// and we have a renderpass dependency for that.
 	uint64_t stage_timeline_point = vulkan_end_command_buffer(stage_cb, renderer);
 	if (stage_timeline_point == 0) {
-		return false;
+		goto error;
 	}
 
 	VkCommandBufferSubmitInfoKHR stage_cb_info = {
@@ -307,7 +309,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 
 	uint64_t render_timeline_point = vulkan_end_command_buffer(render_cb, renderer);
 	if (render_timeline_point == 0) {
-		return false;
+		goto error;
 	}
 
 	uint32_t render_signal_len = 1;
@@ -331,7 +333,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 				NULL, &render_cb->binary_semaphore);
 			if (res != VK_SUCCESS) {
 				wlr_vk_error("vkCreateSemaphore", res);
-				return false;
+				goto error;
 			}
 		}
 
@@ -360,10 +362,10 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	if (res == VK_ERROR_DEVICE_LOST) {
 		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
 		wl_signal_emit_mutable(&renderer->wlr_renderer.events.lost, NULL);
-		return false;
+		goto error;
 	} else if (res != VK_SUCCESS) {
 		wlr_vk_error("vkQueueSubmit", res);
-		return false;
+		goto error;
 	}
 
 	free(render_wait);
@@ -378,12 +380,20 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	}
 
 	if (!vulkan_sync_render_buffer(renderer, render_buffer, render_cb)) {
-		return false;
+		wlr_log(WLR_ERROR, "Failed to sync render buffer");
 	}
 
 	wlr_buffer_unlock(render_buffer->wlr_buffer);
 	free(pass);
 	return true;
+
+error:
+	free(render_wait);
+	vulkan_reset_command_buffer(stage_cb);
+	vulkan_reset_command_buffer(render_cb);
+	wlr_buffer_unlock(render_buffer->wlr_buffer);
+	free(pass);
+	return false;
 }
 
 static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,

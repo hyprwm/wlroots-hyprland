@@ -328,6 +328,7 @@ struct wlr_vk_command_buffer *vulkan_acquire_command_buffer(
 	struct wlr_vk_renderer *renderer);
 uint64_t vulkan_end_command_buffer(struct wlr_vk_command_buffer *cb,
 	struct wlr_vk_renderer *renderer);
+void vulkan_reset_command_buffer(struct wlr_vk_command_buffer *cb);
 bool vulkan_wait_command_buffer(struct wlr_vk_command_buffer *cb,
 	struct wlr_vk_renderer *renderer);
 

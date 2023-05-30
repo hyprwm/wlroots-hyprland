@@ -567,6 +567,19 @@ uint64_t vulkan_end_command_buffer(struct wlr_vk_command_buffer *cb,
 	return cb->timeline_point;
 }
 
+void vulkan_reset_command_buffer(struct wlr_vk_command_buffer *cb) {
+	if (cb == NULL) {
+		return;
+	}
+
+	cb->recording = false;
+
+	VkResult res = vkResetCommandBuffer(cb->vk, 0);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkResetCommandBuffer", res);
+	}
+}
+
 static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	wl_list_remove(&buffer->link);
 	wlr_addon_finish(&buffer->addon);
