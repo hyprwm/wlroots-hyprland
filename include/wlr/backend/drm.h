@@ -15,6 +15,7 @@
 #include <wlr/types/wlr_output.h>
 
 struct wlr_drm_backend;
+typedef struct _drmModeModeInfo drmModeModeInfo;
 
 struct wlr_drm_lease {
 	int fd;
@@ -74,7 +75,6 @@ void wlr_drm_lease_terminate(struct wlr_drm_lease *lease);
 /**
  * Add mode to the list of available modes.
  */
-typedef struct _drmModeModeInfo drmModeModeInfo;
 struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 	const drmModeModeInfo *mode);
 
