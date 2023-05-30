@@ -40,9 +40,6 @@ compositors = {
 	'rotation': {
 		'src': ['rotation.c', 'cat.c'],
 	},
-	'multi-pointer': {
-		'src': 'multi-pointer.c',
-	},
 	'output-layout': {
 		'src': ['output-layout.c', 'cat.c'],
 	},
