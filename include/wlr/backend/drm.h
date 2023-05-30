@@ -79,6 +79,13 @@ struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 	const drmModeModeInfo *mode);
 
 /**
+ * Get the raw DRM mode information from a struct wlr_output_mode.
+ *
+ * The mode passed in must belong to a DRM output.
+ */
+const drmModeModeInfo *wlr_drm_mode_get_info(struct wlr_output_mode *mode);
+
+/**
  * Get the connector's panel orientation.
  *
  * On some devices the panel is mounted in the casing in such a way that the

@@ -907,6 +907,11 @@ struct wlr_output_mode *wlr_drm_connector_add_mode(struct wlr_output *output,
 	return &mode->wlr_mode;
 }
 
+const drmModeModeInfo *wlr_drm_mode_get_info(struct wlr_output_mode *wlr_mode) {
+	const struct wlr_drm_mode *mode = wl_container_of(wlr_mode, mode, wlr_mode);
+	return &mode->drm_mode;
+}
+
 static bool drm_connector_set_cursor(struct wlr_output *output,
 		struct wlr_buffer *buffer, int hotspot_x, int hotspot_y) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
