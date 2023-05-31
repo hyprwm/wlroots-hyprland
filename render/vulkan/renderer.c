@@ -1774,6 +1774,9 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 	}
 
 	VkCommandBuffer cb = vulkan_record_stage_cb(vk_renderer);
+	if (cb == VK_NULL_HANDLE) {
+		return false;
+	}
 
 	vulkan_change_layout(cb, dst_image,
 			VK_IMAGE_LAYOUT_UNDEFINED,

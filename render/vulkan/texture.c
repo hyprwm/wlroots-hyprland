@@ -143,6 +143,11 @@ static bool write_pixels(struct wlr_vk_texture *texture,
 	// record staging cb
 	// will be executed before next frame
 	VkCommandBuffer cb = vulkan_record_stage_cb(renderer);
+	if (cb == VK_NULL_HANDLE) {
+		free(copies);
+		return false;
+	}
+
 	vulkan_change_layout(cb, texture->image,
 		old_layout, src_stage, src_access,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
