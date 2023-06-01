@@ -41,6 +41,9 @@ static void virtual_keyboard_keymap(struct wl_client *client,
 		uint32_t size) {
 	struct wlr_virtual_keyboard_v1 *keyboard =
 		virtual_keyboard_from_resource(resource);
+	if (keyboard == NULL) {
+		return;
+	}
 
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!context) {
@@ -75,6 +78,9 @@ static void virtual_keyboard_key(struct wl_client *client,
 		uint32_t state) {
 	struct wlr_virtual_keyboard_v1 *keyboard =
 		virtual_keyboard_from_resource(resource);
+	if (keyboard == NULL) {
+		return;
+	}
 	if (!keyboard->has_keymap) {
 		wl_resource_post_error(resource,
 			ZWP_VIRTUAL_KEYBOARD_V1_ERROR_NO_KEYMAP,
@@ -95,6 +101,9 @@ static void virtual_keyboard_modifiers(struct wl_client *client,
 		uint32_t mods_latched, uint32_t mods_locked, uint32_t group) {
 	struct wlr_virtual_keyboard_v1 *keyboard =
 		virtual_keyboard_from_resource(resource);
+	if (keyboard == NULL) {
+		return;
+	}
 	if (!keyboard->has_keymap) {
 		wl_resource_post_error(resource,
 			ZWP_VIRTUAL_KEYBOARD_V1_ERROR_NO_KEYMAP,
@@ -145,6 +154,20 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 		struct wl_resource *seat, uint32_t id) {
 	struct wlr_virtual_keyboard_manager_v1 *manager =
 		manager_from_resource(resource);
+	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
+
+	struct wl_resource *keyboard_resource = wl_resource_create(client,
+		&zwp_virtual_keyboard_v1_interface, wl_resource_get_version(resource),
+		id);
+	if (!keyboard_resource) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(keyboard_resource, &virtual_keyboard_impl,
+		NULL, virtual_keyboard_destroy_resource);
+	if (seat_client == NULL) {
+		return;
+	}
 
 	struct wlr_virtual_keyboard_v1 *virtual_keyboard = calloc(1,
 		sizeof(struct wlr_virtual_keyboard_v1));
@@ -156,22 +179,9 @@ static void virtual_keyboard_manager_create_virtual_keyboard(
 	wlr_keyboard_init(&virtual_keyboard->keyboard, &keyboard_impl,
 		"wlr_virtual_keyboard_v1");
 
-	struct wl_resource *keyboard_resource = wl_resource_create(client,
-		&zwp_virtual_keyboard_v1_interface, wl_resource_get_version(resource),
-		id);
-	if (!keyboard_resource) {
-		free(virtual_keyboard);
-		wl_client_post_no_memory(client);
-		return;
-	}
-
-	wl_resource_set_implementation(keyboard_resource, &virtual_keyboard_impl,
-		virtual_keyboard, virtual_keyboard_destroy_resource);
-
-	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
-
 	virtual_keyboard->resource = keyboard_resource;
 	virtual_keyboard->seat = seat_client->seat;
+	wl_resource_set_user_data(keyboard_resource, virtual_keyboard);
 
 	wl_list_insert(&manager->virtual_keyboards, &virtual_keyboard->link);
 
