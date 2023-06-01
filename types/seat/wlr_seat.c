@@ -176,13 +176,20 @@ static struct wlr_seat_client *seat_client_create(struct wlr_seat *wlr_seat,
 
 static void seat_handle_bind(struct wl_client *client, void *_wlr_seat,
 		uint32_t version, uint32_t id) {
+	// `wlr_seat` can be NULL if the seat global is being destroyed
 	struct wlr_seat *wlr_seat = _wlr_seat;
-	assert(client && wlr_seat);
+	assert(client);
 
 	struct wl_resource *wl_resource =
 		wl_resource_create(client, &wl_seat_interface, version, id);
 	if (wl_resource == NULL) {
 		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(wl_resource, &seat_impl, NULL,
+		seat_client_handle_resource_destroy);
+	wl_list_init(wl_resource_get_link(wl_resource));
+	if (wlr_seat == NULL) {
 		return;
 	}
 
@@ -198,8 +205,7 @@ static void seat_handle_bind(struct wl_client *client, void *_wlr_seat,
 		return;
 	}
 
-	wl_resource_set_implementation(wl_resource, &seat_impl,
-		seat_client, seat_client_handle_resource_destroy);
+	wl_resource_set_user_data(wl_resource, seat_client);
 	wl_list_insert(&seat_client->resources, wl_resource_get_link(wl_resource));
 	if (version >= WL_SEAT_NAME_SINCE_VERSION) {
 		wl_seat_send_name(wl_resource, wlr_seat->name);
