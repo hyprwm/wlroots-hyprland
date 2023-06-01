@@ -593,6 +593,19 @@ static void manager_handle_get_data_device(struct wl_client *client,
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
 
+	uint32_t version = wl_resource_get_version(manager_resource);
+	struct wl_resource *resource = wl_resource_create(client,
+		&zwlr_data_control_device_v1_interface, version, id);
+	if (resource == NULL) {
+		wl_resource_post_no_memory(manager_resource);
+		return;
+	}
+	wl_resource_set_implementation(resource, &control_impl, NULL,
+		control_handle_resource_destroy);
+	if (seat_client == NULL) {
+		return;
+	}
+
 	struct wlr_data_control_device_v1 *device =
 		calloc(1, sizeof(struct wlr_data_control_device_v1));
 	if (device == NULL) {
@@ -601,18 +614,8 @@ static void manager_handle_get_data_device(struct wl_client *client,
 	}
 	device->manager = manager;
 	device->seat = seat_client->seat;
-
-	uint32_t version = wl_resource_get_version(manager_resource);
-	device->resource = wl_resource_create(client,
-		&zwlr_data_control_device_v1_interface, version, id);
-	if (device->resource == NULL) {
-		wl_resource_post_no_memory(manager_resource);
-		free(device);
-		return;
-	}
-	wl_resource_set_implementation(device->resource, &control_impl, device,
-		control_handle_resource_destroy);
-	struct wl_resource *resource = device->resource;
+	device->resource = resource;
+	wl_resource_set_user_data(resource, device);
 
 	device->seat_destroy.notify = control_handle_seat_destroy;
 	wl_signal_add(&device->seat->events.destroy, &device->seat_destroy);
