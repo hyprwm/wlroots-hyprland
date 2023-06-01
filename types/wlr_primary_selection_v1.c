@@ -397,13 +397,6 @@ static void device_manager_handle_get_device(struct wl_client *client,
 	struct wlr_primary_selection_v1_device_manager *manager =
 		manager_from_resource(manager_resource);
 
-	struct wlr_primary_selection_v1_device *device =
-		get_or_create_device(manager, seat_client->seat);
-	if (device == NULL) {
-		wl_resource_post_no_memory(manager_resource);
-		return;
-	}
-
 	uint32_t version = wl_resource_get_version(manager_resource);
 	struct wl_resource *resource = wl_resource_create(client,
 		&zwp_primary_selection_device_v1_interface, version, id);
@@ -411,8 +404,21 @@ static void device_manager_handle_get_device(struct wl_client *client,
 		wl_resource_post_no_memory(manager_resource);
 		return;
 	}
-	wl_resource_set_implementation(resource, &device_impl, device,
+	wl_resource_set_implementation(resource, &device_impl, NULL,
 		device_handle_resource_destroy);
+	wl_list_init(wl_resource_get_link(resource));
+	if (seat_client == NULL) {
+		return;
+	}
+
+	struct wlr_primary_selection_v1_device *device =
+		get_or_create_device(manager, seat_client->seat);
+	if (device == NULL) {
+		wl_resource_destroy(resource);
+		wl_resource_post_no_memory(manager_resource);
+		return;
+	}
+	wl_resource_set_user_data(resource, device);
 	wl_list_insert(&device->resources, wl_resource_get_link(resource));
 
 	if (device->seat->keyboard_state.focused_client == seat_client) {
