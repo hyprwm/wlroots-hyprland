@@ -424,6 +424,7 @@ static void output_cursor_output_handle_surface_destroy(
 	struct wlr_cursor_output_cursor *output_cursor =
 		wl_container_of(listener, output_cursor, surface_destroy);
 	assert(output_cursor->surface != NULL);
+	wlr_output_cursor_set_buffer(output_cursor->output_cursor, NULL, 0, 0);
 	cursor_output_cursor_reset_image(output_cursor);
 }
 
