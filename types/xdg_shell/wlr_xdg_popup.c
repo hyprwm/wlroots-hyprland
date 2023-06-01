@@ -274,6 +274,10 @@ static void xdg_popup_handle_grab(struct wl_client *client,
 
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
+	if (seat_client == NULL) {
+		wlr_surface_destroy_role_object(popup->base->surface);
+		return;
+	}
 	if (popup->sent_initial_configure) {
 		wl_resource_post_error(popup->resource,
 			XDG_POPUP_ERROR_INVALID_GRAB,
