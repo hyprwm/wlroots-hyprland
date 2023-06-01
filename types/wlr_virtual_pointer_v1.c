@@ -259,7 +259,7 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 	if (seat) {
 		struct wlr_seat_client *seat_client =
 			wlr_seat_client_from_resource(seat);
-		event.suggested_seat = seat_client->seat;
+		event.suggested_seat = seat_client != NULL ? seat_client->seat : NULL;
 	}
 
 	if (output) {
