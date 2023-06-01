@@ -239,6 +239,21 @@ static void text_input_handle_focused_surface_destroy(
 
 static void text_input_manager_get_text_input(struct wl_client *client,
 		struct wl_resource *resource, uint32_t id, struct wl_resource *seat) {
+	int version = wl_resource_get_version(resource);
+	struct wl_resource *text_input_resource = wl_resource_create(client,
+		&zwp_text_input_v3_interface, version, id);
+	if (text_input_resource == NULL) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(text_input_resource, &text_input_impl,
+		NULL, text_input_resource_destroy);
+
+	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
+	if (seat_client == NULL) {
+		return;
+	}
+
 	struct wlr_text_input_v3 *text_input =
 		calloc(1, sizeof(struct wlr_text_input_v3));
 	if (text_input == NULL) {
@@ -251,20 +266,9 @@ static void text_input_manager_get_text_input(struct wl_client *client,
 	wl_signal_init(&text_input->events.disable);
 	wl_signal_init(&text_input->events.destroy);
 
-	int version = wl_resource_get_version(resource);
-	struct wl_resource *text_input_resource = wl_resource_create(client,
-		&zwp_text_input_v3_interface, version, id);
-	if (text_input_resource == NULL) {
-		free(text_input);
-		wl_client_post_no_memory(client);
-		return;
-	}
 	text_input->resource = text_input_resource;
+	wl_resource_set_user_data(text_input_resource, text_input);
 
-	wl_resource_set_implementation(text_input->resource, &text_input_impl,
-		text_input, text_input_resource_destroy);
-
-	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
 	struct wlr_seat *wlr_seat = seat_client->seat;
 	text_input->seat = wlr_seat;
 	wl_signal_add(&seat_client->events.destroy,
