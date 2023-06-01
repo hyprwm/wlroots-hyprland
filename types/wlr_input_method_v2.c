@@ -500,6 +500,21 @@ static void manager_get_input_method(struct wl_client *client,
 		uint32_t input_method_id) {
 	struct wlr_input_method_manager_v2 *im_manager =
 		input_method_manager_from_resource(resource);
+	struct wlr_seat_client *seat_client = wlr_seat_client_from_resource(seat);
+
+	int version = wl_resource_get_version(resource);
+	struct wl_resource *im_resource = wl_resource_create(client,
+		&zwp_input_method_v2_interface, version, input_method_id);
+	if (im_resource == NULL) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(im_resource, &input_method_impl,
+		NULL, input_method_resource_destroy);
+	wl_list_init(wl_resource_get_link(im_resource));
+	if (seat_client == NULL) {
+		return;
+	}
 
 	struct wlr_input_method_v2 *input_method = calloc(1,
 		sizeof(struct wlr_input_method_v2));
@@ -512,18 +527,8 @@ static void manager_get_input_method(struct wl_client *client,
 	wl_signal_init(&input_method->events.new_popup_surface);
 	wl_signal_init(&input_method->events.grab_keyboard);
 	wl_signal_init(&input_method->events.destroy);
-	int version = wl_resource_get_version(resource);
-	struct wl_resource *im_resource = wl_resource_create(client,
-		&zwp_input_method_v2_interface, version, input_method_id);
-	if (im_resource == NULL) {
-		free(input_method);
-		wl_client_post_no_memory(client);
-		return;
-	}
-	wl_resource_set_implementation(im_resource, &input_method_impl,
-		input_method, input_method_resource_destroy);
 
-	input_method->seat_client = wlr_seat_client_from_resource(seat);
+	input_method->seat_client = seat_client;
 	input_method->seat = input_method->seat_client->seat;
 	wl_signal_add(&input_method->seat_client->events.destroy,
 		&input_method->seat_client_destroy);
@@ -531,6 +536,7 @@ static void manager_get_input_method(struct wl_client *client,
 		input_method_handle_seat_client_destroy;
 
 	input_method->resource = im_resource;
+	wl_resource_set_user_data(im_resource, input_method);
 	wl_list_insert(&im_manager->input_methods,
 		wl_resource_get_link(input_method->resource));
 	wl_signal_emit_mutable(&im_manager->events.input_method, input_method);
