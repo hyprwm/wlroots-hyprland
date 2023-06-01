@@ -165,6 +165,9 @@ static void create_idle_timer(struct wl_client *client,
 	}
 	wl_resource_set_implementation(resource, &idle_timeout_impl,
 		NULL, handle_timer_resource_destroy);
+	if (client_seat == NULL) {
+		return;
+	}
 
 	if (!create_timer(idle, client_seat->seat, timeout, resource)) {
 		wl_resource_post_no_memory(resource);
