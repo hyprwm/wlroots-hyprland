@@ -239,6 +239,10 @@ static void data_device_manager_get_data_device(struct wl_client *client,
 	}
 	wl_resource_set_implementation(resource, &data_device_impl, seat_client,
 		data_device_handle_resource_destroy);
+	if (seat_client == NULL) {
+		wl_list_init(wl_resource_get_link(resource));
+		return;
+	}
 	wl_list_insert(&seat_client->data_devices, wl_resource_get_link(resource));
 
 	struct wlr_seat_client *focused_client =
