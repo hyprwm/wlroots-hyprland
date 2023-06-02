@@ -134,6 +134,13 @@ static void lock_surface_role_commit(struct wlr_surface *surface) {
 		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
 	assert(lock_surface != NULL);
 
+	if (!wlr_surface_has_buffer(surface)) {
+		wl_resource_post_error(lock_surface->resource,
+			EXT_SESSION_LOCK_SURFACE_V1_ERROR_NULL_BUFFER,
+			"session lock surface is committed with a null buffer");
+		return;
+	}
+
 	if (!lock_surface->configured) {
 		wl_resource_post_error(lock_surface->resource,
 			EXT_SESSION_LOCK_SURFACE_V1_ERROR_COMMIT_BEFORE_FIRST_ACK,
@@ -153,16 +160,6 @@ static void lock_surface_role_commit(struct wlr_surface *surface) {
 	lock_surface->current = lock_surface->pending;
 
 	wlr_surface_map(surface);
-}
-
-static void lock_surface_role_unmap(struct wlr_surface *surface) {
-	struct wlr_session_lock_surface_v1 *lock_surface =
-		wlr_session_lock_surface_v1_try_from_wlr_surface(surface);
-	assert(lock_surface != NULL);
-
-	wl_resource_post_error(lock_surface->resource,
-		EXT_SESSION_LOCK_SURFACE_V1_ERROR_NULL_BUFFER,
-		"session lock surfaces committed with null buffer");
 }
 
 static void lock_surface_role_destroy(struct wlr_surface *surface) {
@@ -191,7 +188,6 @@ static void lock_surface_role_destroy(struct wlr_surface *surface) {
 static const struct wlr_surface_role lock_surface_role = {
 	.name = "ext_session_lock_surface_v1",
 	.commit = lock_surface_role_commit,
-	.unmap = lock_surface_role_unmap,
 	.destroy = lock_surface_role_destroy,
 };
 
