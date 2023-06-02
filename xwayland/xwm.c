@@ -885,7 +885,9 @@ static void read_surface_property(struct wlr_xwm *xwm,
 
 static void xwayland_surface_handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = wl_container_of(listener, xsurface, surface_commit);
-	wlr_surface_map(xsurface->surface);
+	if (wlr_surface_has_buffer(xsurface->surface)) {
+		wlr_surface_map(xsurface->surface);
+	}
 }
 
 static void xwayland_surface_handle_map(struct wl_listener *listener, void *data) {
