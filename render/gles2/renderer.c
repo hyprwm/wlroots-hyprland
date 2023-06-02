@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <assert.h>
 #include <drm_fourcc.h>
 #include <GLES2/gl2.h>
@@ -5,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
@@ -18,6 +20,7 @@
 #include "render/gles2.h"
 #include "render/pixel_format.h"
 #include "types/wlr_matrix.h"
+#include "util/time.h"
 
 #include "common_vert_src.h"
 #include "quad_frag_src.h"
@@ -33,6 +36,7 @@ static const GLfloat verts[] = {
 };
 
 static const struct wlr_renderer_impl renderer_impl;
+static const struct wlr_render_timer_impl render_timer_impl;
 
 bool wlr_renderer_is_gles2(struct wlr_renderer *wlr_renderer) {
 	return wlr_renderer->impl == &renderer_impl;
@@ -50,6 +54,16 @@ static struct wlr_gles2_renderer *gles2_get_renderer_in_context(
 	assert(wlr_egl_is_current(renderer->egl));
 	assert(renderer->current_buffer != NULL);
 	return renderer;
+}
+
+bool wlr_render_timer_is_gles2(struct wlr_render_timer *timer) {
+	return timer->impl == &render_timer_impl;
+}
+
+struct wlr_gles2_render_timer *gles2_get_render_timer(struct wlr_render_timer *wlr_timer) {
+	assert(wlr_render_timer_is_gles2(wlr_timer));
+	struct wlr_gles2_render_timer *timer = wl_container_of(wlr_timer, timer, base);
+	return timer;
 }
 
 static void destroy_buffer(struct wlr_gles2_buffer *buffer) {
@@ -543,16 +557,89 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 		return NULL;
 	}
 
+	struct wlr_gles2_render_timer *timer = gles2_get_render_timer(options->timer);
+	clock_gettime(CLOCK_MONOTONIC, &timer->cpu_start);
+
 	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
 	if (!buffer) {
 		return NULL;
 	}
 
-	struct wlr_gles2_render_pass *pass = begin_gles2_buffer_pass(buffer);
+	struct wlr_gles2_render_pass *pass = begin_gles2_buffer_pass(buffer, timer);
 	if (!pass) {
 		return NULL;
 	}
 	return &pass->base;
+}
+
+static struct wlr_render_timer *gles2_render_timer_create(struct wlr_renderer *wlr_renderer) {
+	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
+	if (!renderer->exts.EXT_disjoint_timer_query) {
+		wlr_log(WLR_ERROR, "can't create timer, EXT_disjoint_timer_query not available");
+		return NULL;
+	}
+
+	struct wlr_gles2_render_timer *timer = calloc(1, sizeof(struct wlr_gles2_render_timer));
+	if (!timer) {
+		return NULL;
+	}
+	timer->base.impl = &render_timer_impl;
+	timer->renderer = renderer;
+
+	struct wlr_egl_context prev_ctx;
+	wlr_egl_save_context(&prev_ctx);
+	wlr_egl_make_current(renderer->egl);
+	renderer->procs.glGenQueriesEXT(1, &timer->id);
+	wlr_egl_restore_context(&prev_ctx);
+
+	return (struct wlr_render_timer *)timer;
+}
+
+static int gles2_get_render_time(struct wlr_render_timer *wlr_timer) {
+	struct wlr_gles2_render_timer *timer = gles2_get_render_timer(wlr_timer);
+	struct wlr_gles2_renderer *renderer = timer->renderer;
+
+	struct wlr_egl_context prev_ctx;
+	wlr_egl_save_context(&prev_ctx);
+	wlr_egl_make_current(renderer->egl);
+
+	GLint64 disjoint;
+	renderer->procs.glGetInteger64vEXT(GL_GPU_DISJOINT_EXT, &disjoint);
+	if (disjoint) {
+		wlr_log(WLR_ERROR, "a disjoint operation occurred and the render timer is invalid");
+		wlr_egl_restore_context(&prev_ctx);
+		return -1;
+	}
+
+	GLint available;
+	renderer->procs.glGetQueryObjectivEXT(timer->id,
+		GL_QUERY_RESULT_AVAILABLE_EXT, &available);
+	if (!available) {
+		wlr_log(WLR_ERROR, "timer was read too early, gpu isn't done!");
+		wlr_egl_restore_context(&prev_ctx);
+		return -1;
+	}
+
+	GLuint64 gl_render_end;
+	renderer->procs.glGetQueryObjectui64vEXT(timer->id, GL_QUERY_RESULT_EXT,
+		&gl_render_end);
+
+	int64_t cpu_nsec_total = timespec_to_nsec(&timer->cpu_end) - timespec_to_nsec(&timer->cpu_start);
+
+	wlr_egl_restore_context(&prev_ctx);
+	return gl_render_end - timer->gl_cpu_end + cpu_nsec_total;
+}
+
+static void gles2_render_timer_destroy(struct wlr_render_timer *wlr_timer) {
+	struct wlr_gles2_render_timer *timer = (struct wlr_gles2_render_timer *)wlr_timer;
+	struct wlr_gles2_renderer *renderer = timer->renderer;
+
+	struct wlr_egl_context prev_ctx;
+	wlr_egl_save_context(&prev_ctx);
+	wlr_egl_make_current(renderer->egl);
+	renderer->procs.glDeleteQueriesEXT(1, &timer->id);
+	wlr_egl_restore_context(&prev_ctx);
+	free(timer);
 }
 
 static const struct wlr_renderer_impl renderer_impl = {
@@ -573,6 +660,12 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_render_buffer_caps = gles2_get_render_buffer_caps,
 	.texture_from_buffer = gles2_texture_from_buffer,
 	.begin_buffer_pass = gles2_begin_buffer_pass,
+	.render_timer_create = gles2_render_timer_create,
+};
+
+static const struct wlr_render_timer_impl render_timer_impl = {
+	.get_duration_ns = gles2_get_render_time,
+	.destroy = gles2_render_timer_destroy,
 };
 
 void push_gles2_debug_(struct wlr_gles2_renderer *renderer,
@@ -810,6 +903,16 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 			wlr_log(WLR_DEBUG, "GPU reset notifications are disabled");
 			break;
 		}
+	}
+
+	if (check_gl_ext(exts_str, "GL_EXT_disjoint_timer_query")) {
+		renderer->exts.EXT_disjoint_timer_query = true;
+		load_gl_proc(&renderer->procs.glGenQueriesEXT, "glGenQueriesEXT");
+		load_gl_proc(&renderer->procs.glDeleteQueriesEXT, "glDeleteQueriesEXT");
+		load_gl_proc(&renderer->procs.glQueryCounterEXT, "glQueryCounterEXT");
+		load_gl_proc(&renderer->procs.glGetQueryObjectivEXT, "glGetQueryObjectivEXT");
+		load_gl_proc(&renderer->procs.glGetQueryObjectui64vEXT, "glGetQueryObjectui64vEXT");
+		load_gl_proc(&renderer->procs.glGetInteger64vEXT, "glGetInteger64vEXT");
 	}
 
 	if (renderer->exts.KHR_debug) {

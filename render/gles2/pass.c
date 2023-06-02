@@ -1,6 +1,8 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include <assert.h>
 #include <pixman.h>
+#include <time.h>
 #include <wlr/types/wlr_matrix.h>
 #include "render/gles2.h"
 #include "types/wlr_matrix.h"
@@ -18,6 +20,19 @@ static struct wlr_gles2_render_pass *get_render_pass(struct wlr_render_pass *wlr
 static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	struct wlr_gles2_render_pass *pass = get_render_pass(wlr_pass);
 	struct wlr_gles2_renderer *renderer = pass->buffer->renderer;
+	struct wlr_gles2_render_timer *timer = pass->timer;
+
+	if (timer) {
+		// clear disjoint flag
+		GLint64 disjoint;
+		renderer->procs.glGetInteger64vEXT(GL_GPU_DISJOINT_EXT, &disjoint);
+		// set up the query
+		renderer->procs.glQueryCounterEXT(timer->id, GL_TIMESTAMP_EXT);
+		// get end-of-CPU-work time in GL time domain
+		renderer->procs.glGetInteger64vEXT(GL_TIMESTAMP_EXT, &timer->gl_cpu_end);
+		// get end-of-CPU-work time in CPU time domain
+		clock_gettime(CLOCK_MONOTONIC, &timer->cpu_end);
+	}
 	push_gles2_debug(renderer);
 	glFlush();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -219,7 +234,8 @@ static const char *reset_status_str(GLenum status) {
 	}
 }
 
-struct wlr_gles2_render_pass *begin_gles2_buffer_pass(struct wlr_gles2_buffer *buffer) {
+struct wlr_gles2_render_pass *begin_gles2_buffer_pass(struct wlr_gles2_buffer *buffer,
+		struct wlr_gles2_render_timer *timer) {
 	struct wlr_gles2_renderer *renderer = buffer->renderer;
 	struct wlr_buffer *wlr_buffer = buffer->buffer;
 
@@ -240,6 +256,7 @@ struct wlr_gles2_render_pass *begin_gles2_buffer_pass(struct wlr_gles2_buffer *b
 	wlr_render_pass_init(&pass->base, &render_pass_impl);
 	wlr_buffer_lock(wlr_buffer);
 	pass->buffer = buffer;
+	pass->timer = timer;
 
 	matrix_projection(pass->projection_matrix, wlr_buffer->width, wlr_buffer->height,
 		WL_OUTPUT_TRANSFORM_FLIPPED_180);
