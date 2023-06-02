@@ -434,10 +434,6 @@ static void surface_commit_state(struct wlr_surface *surface,
 		struct wlr_surface_state *next) {
 	assert(next->cached_state_locks == 0);
 
-	if (surface->role_data != NULL && surface->role->precommit != NULL) {
-		surface->role->precommit(surface, next);
-	}
-
 	wl_signal_emit_mutable(&surface->events.precommit, next);
 
 	bool invalid_buffer = next->committed & WLR_SURFACE_STATE_BUFFER;
