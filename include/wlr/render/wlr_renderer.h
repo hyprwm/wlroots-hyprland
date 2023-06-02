@@ -162,13 +162,22 @@ void wlr_renderer_destroy(struct wlr_renderer *renderer);
 struct wlr_render_pass;
 
 /**
+ * An object that can be queried after a render to get the duration of the render.
+ */
+struct wlr_render_timer;
+
+struct wlr_buffer_pass_options {
+	struct wlr_render_timer *timer;
+};
+
+/**
  * Begin a new render pass with the supplied destination buffer.
  *
  * Callers must call wlr_render_pass_submit() once they are done with the
  * render pass.
  */
-struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
-	struct wlr_renderer *renderer, struct wlr_buffer *buffer);
+struct wlr_render_pass *wlr_renderer_begin_buffer_pass(struct wlr_renderer *renderer,
+	struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options);
 
 /**
  * Submit the render pass.
@@ -234,5 +243,22 @@ struct wlr_render_rect_options {
  */
 void wlr_render_pass_add_rect(struct wlr_render_pass *render_pass,
 	const struct wlr_render_rect_options *options);
+
+/**
+ * Allocate and initialise a new render timer.
+ */
+struct wlr_render_timer *wlr_render_timer_create(struct wlr_renderer *renderer);
+
+/**
+ * Get the render duration in nanoseconds from the timer.
+ *
+ * Returns -1 if the duration is unavailable.
+ */
+int wlr_render_timer_get_duration_ns(struct wlr_render_timer *timer);
+
+/**
+ * Destroy the render timer.
+ */
+void wlr_render_timer_destroy(struct wlr_render_timer *timer);
 
 #endif

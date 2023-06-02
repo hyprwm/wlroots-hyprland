@@ -494,7 +494,7 @@ static uint32_t pixman_get_render_buffer_caps(struct wlr_renderer *renderer) {
 }
 
 static struct wlr_render_pass *pixman_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
-		struct wlr_buffer *wlr_buffer) {
+		struct wlr_buffer *wlr_buffer, struct wlr_buffer_pass_options *options) {
 	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
 
 	struct wlr_pixman_buffer *buffer = get_buffer(renderer, wlr_buffer);

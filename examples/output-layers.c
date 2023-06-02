@@ -94,7 +94,8 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 	wlr_output_effective_resolution(output->wlr_output, &width, &height);
 
 	struct wlr_output_state output_state = {0};
-	struct wlr_render_pass *pass = wlr_output_begin_render_pass(output->wlr_output, &output_state, NULL);
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(output->wlr_output, &output_state,
+		NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
 		.box = { .width = width, .height = height },

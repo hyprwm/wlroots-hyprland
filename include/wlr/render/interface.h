@@ -49,7 +49,8 @@ struct wlr_renderer_impl {
 	struct wlr_texture *(*texture_from_buffer)(struct wlr_renderer *renderer,
 		struct wlr_buffer *buffer);
 	struct wlr_render_pass *(*begin_buffer_pass)(struct wlr_renderer *renderer,
-		struct wlr_buffer *buffer);
+		struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options);
+	struct wlr_render_timer *(*render_timer_create)(struct wlr_renderer *renderer);
 };
 
 void wlr_renderer_init(struct wlr_renderer *renderer,
@@ -77,6 +78,15 @@ struct wlr_render_pass_impl {
 		const struct wlr_render_texture_options *options);
 	void (*add_rect)(struct wlr_render_pass *pass,
 		const struct wlr_render_rect_options *options);
+};
+
+struct wlr_render_timer {
+	const struct wlr_render_timer_impl *impl;
+};
+
+struct wlr_render_timer_impl {
+	int (*get_duration_ns)(struct wlr_render_timer *timer);
+	void (*destroy)(struct wlr_render_timer *timer);
 };
 
 void wlr_render_texture_options_get_src_box(const struct wlr_render_texture_options *options,

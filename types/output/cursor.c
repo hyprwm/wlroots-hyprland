@@ -318,7 +318,7 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	wlr_box_transform(&dst_box, &dst_box, wlr_output_transform_invert(output->transform),
 		buffer->width, buffer->height);
 
-	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, buffer);
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, buffer, NULL);
 	if (pass == NULL) {
 		wlr_buffer_unlock(buffer);
 		return NULL;

@@ -14,6 +14,7 @@
 #include <time.h>
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/util/addon.h>
 
@@ -590,7 +591,7 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
  * Same as wlr_output_attach_render(), but returns a struct wlr_render_pass.
  */
 struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
-	struct wlr_output_state *state, int *buffer_age);
+	struct wlr_output_state *state, int *buffer_age, struct wlr_render_timer *timer);
 
 
 /**

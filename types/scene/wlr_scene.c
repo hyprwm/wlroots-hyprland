@@ -1673,7 +1673,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	wlr_damage_ring_get_buffer_damage(&scene_output->damage_ring,
 		buffer_age, &damage);
 
-	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(renderer, buffer);
+	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(renderer, buffer, NULL);
 	if (render_pass == NULL) {
 		pixman_region32_fini(&damage);
 		wlr_buffer_unlock(buffer);

@@ -102,7 +102,7 @@ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 		goto error_tex;
 	}
 
-	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, dst);
+	struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(renderer, dst, NULL);
 	if (pass == NULL) {
 		wlr_log(WLR_ERROR, "Failed to begin render pass with multi-GPU destination buffer");
 		goto error_dst;

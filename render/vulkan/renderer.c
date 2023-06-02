@@ -1916,7 +1916,8 @@ static uint32_t vulkan_get_render_buffer_caps(struct wlr_renderer *wlr_renderer)
 	return WLR_BUFFER_CAP_DMABUF;
 }
 
-static struct wlr_render_pass *vulkan_begin_buffer_pass(struct wlr_renderer *wlr_renderer, struct wlr_buffer *buffer) {
+static struct wlr_render_pass *vulkan_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
+		struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 
 	struct wlr_vk_render_buffer *render_buffer = get_render_buffer(renderer, buffer);

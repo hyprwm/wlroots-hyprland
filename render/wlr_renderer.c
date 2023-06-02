@@ -413,10 +413,31 @@ int wlr_renderer_get_drm_fd(struct wlr_renderer *r) {
 	return r->impl->get_drm_fd(r);
 }
 
-struct wlr_render_pass *wlr_renderer_begin_buffer_pass(
-		struct wlr_renderer *renderer, struct wlr_buffer *buffer) {
+struct wlr_render_pass *wlr_renderer_begin_buffer_pass(struct wlr_renderer *renderer,
+		struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options) {
 	if (!renderer->impl->begin_buffer_pass) {
 		return begin_legacy_buffer_render_pass(renderer, buffer);
 	}
-	return renderer->impl->begin_buffer_pass(renderer, buffer);
+	return renderer->impl->begin_buffer_pass(renderer, buffer, options);
+}
+
+struct wlr_render_timer *wlr_render_timer_create(struct wlr_renderer *renderer) {
+	if (!renderer->impl->render_timer_create) {
+		return NULL;
+	}
+	return renderer->impl->render_timer_create(renderer);
+}
+
+int wlr_render_timer_get_duration_ns(struct wlr_render_timer *timer) {
+	if (!timer->impl->get_duration_ns) {
+		return -1;
+	}
+	return timer->impl->get_duration_ns(timer);
+}
+
+void wlr_render_timer_destroy(struct wlr_render_timer *timer) {
+	if (!timer->impl->destroy) {
+		return;
+	}
+	timer->impl->destroy(timer);
 }

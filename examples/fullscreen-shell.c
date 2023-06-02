@@ -90,7 +90,8 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 	wlr_output_effective_resolution(output->wlr_output, &width, &height);
 
 	struct wlr_output_state state = {0};
-	struct wlr_render_pass *pass = wlr_output_begin_render_pass(output->wlr_output, &state, NULL);
+	struct wlr_render_pass *pass = wlr_output_begin_render_pass(output->wlr_output, &state, NULL,
+		NULL);
 	if (pass == NULL) {
 		return;
 	}
