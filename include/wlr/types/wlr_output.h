@@ -39,6 +39,8 @@ struct wlr_output_cursor {
 	bool enabled;
 	bool visible;
 	uint32_t width, height;
+	float scale;
+	enum wl_output_transform transform;
 	int32_t hotspot_x, hotspot_y;
 	struct wlr_texture *texture;
 	bool own_texture;
