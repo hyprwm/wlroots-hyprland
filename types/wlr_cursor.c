@@ -463,7 +463,9 @@ void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
 
 	struct wlr_cursor_output_cursor *output_cursor;
 	wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
-		if (surface == output_cursor->surface) {
+		if (surface == output_cursor->surface &&
+				hotspot_x == output_cursor->surface_hotspot.x &&
+				hotspot_y == output_cursor->surface_hotspot.y) {
 			continue;
 		}
 
