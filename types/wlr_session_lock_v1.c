@@ -180,7 +180,6 @@ static void lock_surface_role_destroy(struct wlr_surface *surface) {
 		free(configure);
 	}
 
-	assert(wl_list_empty(&lock_surface->events.map.listener_list));
 	assert(wl_list_empty(&lock_surface->events.destroy.listener_list));
 
 	wl_list_remove(&lock_surface->output_destroy.link);
@@ -286,7 +285,6 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 
 	wl_list_init(&lock_surface->configure_list);
 
-	wl_signal_init(&lock_surface->events.map);
 	wl_signal_init(&lock_surface->events.destroy);
 
 	wl_signal_add(&output->events.destroy, &lock_surface->output_destroy);

@@ -73,7 +73,6 @@ struct wlr_session_lock_surface_v1 {
 	struct wlr_session_lock_surface_v1_state pending;
 
 	struct {
-		struct wl_signal map;
 		struct wl_signal destroy;
 	} events;
 
