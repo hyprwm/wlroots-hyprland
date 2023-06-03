@@ -1953,38 +1953,6 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.begin_buffer_pass = vulkan_begin_buffer_pass,
 };
 
-static bool init_sampler(struct wlr_vk_renderer *renderer, VkSampler *sampler,
-		VkSamplerYcbcrConversion ycbcr_conversion) {
-	VkSamplerCreateInfo sampler_create_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.magFilter = VK_FILTER_LINEAR,
-		.minFilter = VK_FILTER_LINEAR,
-		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.minLod = 0.f,
-		.maxLod = 0.25f,
-	};
-
-	VkSamplerYcbcrConversionInfo conversion_info;
-	if (ycbcr_conversion != VK_NULL_HANDLE) {
-		conversion_info = (VkSamplerYcbcrConversionInfo){
-			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-			.conversion = ycbcr_conversion,
-		};
-		sampler_create_info.pNext = &conversion_info;
-	}
-
-	VkResult res = vkCreateSampler(renderer->dev->dev, &sampler_create_info, NULL, sampler);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateSampler", res);
-		return false;
-	}
-
-	return true;
-}
-
 // Initializes the VkDescriptorSetLayout and VkPipelineLayout needed
 // for the texture rendering pipeline using the given VkSampler.
 static bool init_tex_layouts(struct wlr_vk_renderer *renderer,
@@ -2392,19 +2360,6 @@ static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
-static bool init_pipeline_layout(struct wlr_vk_renderer *renderer,
-		struct wlr_vk_pipeline_layout *pipeline_layout) {
-	if (!init_sampler(renderer, &pipeline_layout->sampler, pipeline_layout->ycbcr.conversion)) {
-		return false;
-	}
-
-	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
-		return false;
-	}
-
-	return true;
-}
-
 struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 		struct wlr_vk_renderer *renderer,
 		const struct wlr_vk_pipeline_layout_key *key) {
@@ -2424,6 +2379,19 @@ struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 
 	VkResult res;
 
+	VkSamplerYcbcrConversionInfo conversion_info;
+	VkSamplerCreateInfo sampler_create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.magFilter = VK_FILTER_LINEAR,
+		.minFilter = VK_FILTER_LINEAR,
+		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.minLod = 0.f,
+		.maxLod = 0.25f,
+	};
+
 	if (key->ycbcr_format) {
 		VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
 			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
@@ -2441,11 +2409,24 @@ struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 			free(pipeline_layout);
 			return NULL;
 		}
+
+		conversion_info = (VkSamplerYcbcrConversionInfo){
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+			.conversion = pipeline_layout->ycbcr.conversion,
+		};
+		sampler_create_info.pNext = &conversion_info;
 	}
 
-	if (!init_pipeline_layout(renderer, pipeline_layout)) {
+	res = vkCreateSampler(renderer->dev->dev, &sampler_create_info, NULL, &pipeline_layout->sampler);
+	if (res != VK_SUCCESS) {
+		wlr_vk_error("vkCreateSampler", res);
 		free(pipeline_layout);
-		return NULL;
+		return false;
+	}
+
+	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
+		free(pipeline_layout);
+		return false;
 	}
 
 	wl_list_insert(&renderer->pipeline_layouts, &pipeline_layout->link);
