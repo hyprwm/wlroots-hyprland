@@ -470,18 +470,16 @@ static void surface_commit_state(struct wlr_surface *surface,
 
 	// commit subsurface order
 	struct wlr_subsurface *subsurface;
-	wl_list_for_each_reverse(subsurface, &surface->pending.subsurfaces_above,
-			pending.link) {
+	wl_list_for_each(subsurface, &surface->pending.subsurfaces_below, pending.link) {
 		wl_list_remove(&subsurface->current.link);
-		wl_list_insert(&surface->current.subsurfaces_above,
+		wl_list_insert(surface->current.subsurfaces_below.prev,
 			&subsurface->current.link);
 
 		subsurface_handle_parent_commit(subsurface);
 	}
-	wl_list_for_each_reverse(subsurface, &surface->pending.subsurfaces_below,
-			pending.link) {
+	wl_list_for_each(subsurface, &surface->pending.subsurfaces_above, pending.link) {
 		wl_list_remove(&subsurface->current.link);
-		wl_list_insert(&surface->current.subsurfaces_below,
+		wl_list_insert(surface->current.subsurfaces_above.prev,
 			&subsurface->current.link);
 
 		subsurface_handle_parent_commit(subsurface);
