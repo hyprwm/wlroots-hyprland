@@ -735,6 +735,15 @@ void wlr_surface_map(struct wlr_surface *surface) {
 	}
 	assert(wlr_surface_has_buffer(surface));
 	surface->mapped = true;
+
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_below, current.link) {
+		subsurface_consider_map(subsurface);
+	}
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_above, current.link) {
+		subsurface_consider_map(subsurface);
+	}
+
 	wl_signal_emit_mutable(&surface->events.map, NULL);
 }
 

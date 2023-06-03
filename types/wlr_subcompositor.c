@@ -189,7 +189,7 @@ const struct wlr_surface_role subsurface_role;
  * - The subsurface has a buffer
  * - Its parent is mapped
  */
-static void subsurface_consider_map(struct wlr_subsurface *subsurface) {
+void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 	if (subsurface->surface->mapped || !wlr_surface_has_buffer(subsurface->surface)) {
 		return;
 	}
@@ -329,7 +329,6 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 		subsurface->added = true;
 		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
 			subsurface);
-		subsurface_consider_map(subsurface);
 	}
 }
 
