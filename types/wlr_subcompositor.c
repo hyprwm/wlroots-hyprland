@@ -220,22 +220,6 @@ static void subsurface_role_commit(struct wlr_surface *surface) {
 	subsurface_consider_map(subsurface);
 }
 
-static void subsurface_role_unmap(struct wlr_surface *surface) {
-	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
-	assert(subsurface != NULL);
-
-	// Unmap all children
-	struct wlr_subsurface *child;
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_below,
-			current.link) {
-		wlr_surface_unmap(child->surface);
-	}
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_above,
-			current.link) {
-		wlr_surface_unmap(child->surface);
-	}
-}
-
 static void subsurface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
 	assert(subsurface != NULL);
@@ -259,7 +243,6 @@ static void subsurface_role_destroy(struct wlr_surface *surface) {
 const struct wlr_surface_role subsurface_role = {
 	.name = "wl_subsurface",
 	.commit = subsurface_role_commit,
-	.unmap = subsurface_role_unmap,
 	.destroy = subsurface_role_destroy,
 };
 

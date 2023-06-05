@@ -754,6 +754,14 @@ void wlr_surface_unmap(struct wlr_surface *surface) {
 	if (surface->role != NULL && surface->role->unmap != NULL) {
 		surface->role->unmap(surface);
 	}
+
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_below, current.link) {
+		wlr_surface_unmap(subsurface->surface);
+	}
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_above, current.link) {
+		wlr_surface_unmap(subsurface->surface);
+	}
 }
 
 bool wlr_surface_set_role(struct wlr_surface *surface,
