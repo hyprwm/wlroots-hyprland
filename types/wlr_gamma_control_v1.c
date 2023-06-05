@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -119,7 +120,7 @@ static void gamma_control_handle_set_gamma(struct wl_client *client,
 		goto error_fd;
 	}
 
-	ssize_t n_read = read(fd, table, table_size);
+	ssize_t n_read = pread(fd, table, table_size, 0);
 	if (n_read < 0) {
 		wlr_log_errno(WLR_ERROR, "failed to read gamma table");
 		gamma_control_send_failed(gamma_control);
