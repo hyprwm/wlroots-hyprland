@@ -2,6 +2,7 @@
 #define UTIL_SHM_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 int create_shm_file(void);
 int allocate_shm_file(size_t size);

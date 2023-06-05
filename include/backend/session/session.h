@@ -1,6 +1,9 @@
 #ifndef BACKEND_SESSION_SESSION_H
 #define BACKEND_SESSION_SESSION_H
 
+#include <stdbool.h>
+
+struct wl_display;
 struct wlr_session;
 
 struct wlr_session *libseat_session_create(struct wl_display *disp);

@@ -5,8 +5,10 @@
 #include <stdint.h>
 #include <wlr/backend.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/util/addon.h>
 
 struct wlr_drm_backend;
+struct wlr_drm_format;
 struct wlr_drm_plane;
 struct wlr_buffer;
 

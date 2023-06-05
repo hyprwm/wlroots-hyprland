@@ -25,6 +25,7 @@
 * Author:  Keith Packard, SuSE, Inc.
 */
 
+#include <stddef.h>
 #include <stdint.h>
 
 static const uint32_t cursor_data[] = {

@@ -1,6 +1,7 @@
 #ifndef UTIL_TIME_H
 #define UTIL_TIME_H
 
+#include <stdint.h>
 #include <time.h>
 
 /**
