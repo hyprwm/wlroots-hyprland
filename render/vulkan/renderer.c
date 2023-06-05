@@ -2100,6 +2100,10 @@ static bool pipeline_key_equals(const struct wlr_vk_pipeline_key *a,
 		return false;
 	}
 
+	if (a->blend_mode != b->blend_mode) {
+		return false;
+	}
+
 	if (a->source != b->source) {
 		return false;
 	}
@@ -2194,7 +2198,7 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 	};
 
 	VkPipelineColorBlendAttachmentState blend_attachment = {
-		.blendEnable = true,
+		.blendEnable = key->blend_mode == WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
 		// we generally work with pre-multiplied alpha
 		.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
 		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,

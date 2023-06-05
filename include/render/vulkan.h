@@ -150,6 +150,7 @@ enum wlr_vk_shader_source {
 struct wlr_vk_pipeline_key {
 	enum wlr_vk_shader_source source;
 	struct wlr_vk_pipeline_layout *layout;
+	enum wlr_render_blend_mode blend_mode;
 
 	// only used if source is texture
 	enum wlr_vk_texture_transform texture_transform;
