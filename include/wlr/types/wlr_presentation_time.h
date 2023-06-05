@@ -74,7 +74,7 @@ struct wlr_presentation_feedback *wlr_presentation_surface_sampled(
 	struct wlr_presentation *presentation, struct wlr_surface *surface);
 void wlr_presentation_feedback_send_presented(
 	struct wlr_presentation_feedback *feedback,
-	struct wlr_presentation_event *event);
+	const struct wlr_presentation_event *event);
 void wlr_presentation_feedback_destroy(
 	struct wlr_presentation_feedback *feedback);
 

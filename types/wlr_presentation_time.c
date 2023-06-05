@@ -28,7 +28,7 @@ static void feedback_handle_resource_destroy(struct wl_resource *resource) {
 
 static void feedback_resource_send_presented(
 		struct wl_resource *feedback_resource,
-		struct wlr_presentation_event *event) {
+		const struct wlr_presentation_event *event) {
 	struct wl_client *client = wl_resource_get_client(feedback_resource);
 	struct wl_resource *output_resource;
 	wl_resource_for_each(output_resource, &event->output->resources) {
@@ -207,7 +207,7 @@ struct wlr_presentation *wlr_presentation_create(struct wl_display *display,
 
 void wlr_presentation_feedback_send_presented(
 		struct wlr_presentation_feedback *feedback,
-		struct wlr_presentation_event *event) {
+		const struct wlr_presentation_event *event) {
 	struct wl_resource *resource, *tmp;
 	wl_resource_for_each_safe(resource, tmp, &feedback->resources) {
 		feedback_resource_send_presented(resource, event);
