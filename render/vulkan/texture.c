@@ -689,6 +689,8 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	}
 
 	texture->format = &fmt->format;
+	texture->transform = !texture->format->is_ycbcr && texture->format->is_srgb ?
+		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
 
 	texture->pipeline_layout = vulkan_get_pipeline_layout(renderer, texture->format);
 	if (texture->pipeline_layout == NULL) {

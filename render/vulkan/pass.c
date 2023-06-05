@@ -70,6 +70,10 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	struct wlr_vk_command_buffer *stage_cb = NULL;
 	VkSemaphoreSubmitInfoKHR *render_wait = NULL;
 
+	if (pass->failed) {
+		goto error;
+	}
+
 	if (vulkan_record_stage_cb(renderer) == VK_NULL_HANDLE) {
 		goto error;
 	}
@@ -527,17 +531,24 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 	};
 	mat3_to_mat4(matrix, vert_pcr_data.mat4);
 
-	VkPipelineLayout pipeline_layout = texture->pipeline_layout->vk;
-	VkPipeline pipeline = vulkan_get_texture_pipeline(texture, render_buffer->render_setup);
+	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
+		render_buffer->render_setup,
+		&(struct wlr_vk_pipeline_key) {
+			.layout = texture->pipeline_layout,
+			.texture_transform = texture->transform,
+		});
+	if (!pipe) {
+		pass->failed = true;
+	}
 
-	bind_pipeline(pass, pipeline);
+	bind_pipeline(pass, pipe->vk);
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipeline_layout, 0, 1, &texture->ds, 0, NULL);
+		pipe->key.layout->vk, 0, 1, &texture->ds, 0, NULL);
 
-	vkCmdPushConstants(cb, pipeline_layout,
+	vkCmdPushConstants(cb, pipe->key.layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipeline_layout,
+	vkCmdPushConstants(cb, pipe->key.layout->vk,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 

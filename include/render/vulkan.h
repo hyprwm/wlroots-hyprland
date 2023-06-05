@@ -142,6 +142,19 @@ enum wlr_vk_texture_transform {
 	WLR_VK_TEXTURE_TRANSFORM_SRGB = 1,
 };
 
+struct wlr_vk_pipeline_key {
+	enum wlr_vk_texture_transform texture_transform;
+	struct wlr_vk_pipeline_layout *layout;
+};
+
+struct wlr_vk_pipeline {
+	struct wlr_vk_pipeline_key key;
+
+	VkPipeline vk;
+	struct wlr_vk_render_format_setup *setup;
+	struct wl_list link; // struct wlr_vk_render_format_setup
+};
+
 // For each format we want to render, we need a separate renderpass
 // and therefore also separate pipelines.
 struct wlr_vk_render_format_setup {
@@ -149,12 +162,11 @@ struct wlr_vk_render_format_setup {
 	VkFormat render_format; // used in renderpass
 	VkRenderPass render_pass;
 
-	VkPipeline tex_identity_pipe;
-	VkPipeline tex_srgb_pipe;
 	VkPipeline quad_pipe;
 	VkPipeline output_pipe;
 
-	VkPipeline *tex_ycbcr_pipelines; // same length as wlr_vk_renderer.ycbcr_pipeline_layouts
+	struct wlr_vk_renderer *renderer;
+	struct wl_list pipelines; // struct wlr_vk_pipeline.link
 };
 
 // Renderer-internal represenation of an wlr_buffer imported for rendering.
@@ -268,6 +280,10 @@ struct wlr_vk_vert_pcr_data {
 	float uv_size[2];
 };
 
+struct wlr_vk_pipeline *setup_get_or_create_pipeline(
+	struct wlr_vk_render_format_setup *setup,
+	const struct wlr_vk_pipeline_key *key);
+
 // Creates a vulkan renderer for the given device.
 struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev);
 
@@ -287,6 +303,7 @@ struct wlr_vk_render_pass {
 	struct wlr_vk_command_buffer *command_buffer;
 	VkPipeline bound_pipeline;
 	float projection[9];
+	bool failed;
 };
 
 struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *renderer,
@@ -321,8 +338,6 @@ struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *r);
 
 struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
 	const struct wlr_vk_format *format);
-VkPipeline vulkan_get_texture_pipeline(struct wlr_vk_texture *texture,
-	struct wlr_vk_render_format_setup *render_setup);
 
 struct wlr_vk_command_buffer *vulkan_acquire_command_buffer(
 	struct wlr_vk_renderer *renderer);
@@ -346,6 +361,7 @@ struct wlr_vk_texture {
 	VkImageView image_view;
 	const struct wlr_vk_format *format;
 	struct wlr_vk_pipeline_layout *pipeline_layout;
+	enum wlr_vk_texture_transform transform;
 	VkDescriptorSet ds;
 	struct wlr_vk_descriptor_pool *ds_pool;
 	struct wlr_vk_command_buffer *last_used_cb; // to track when it can be destroyed

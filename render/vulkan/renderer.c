@@ -177,15 +177,14 @@ static void destroy_render_format_setup(struct wlr_vk_renderer *renderer,
 
 	VkDevice dev = renderer->dev->dev;
 	vkDestroyRenderPass(dev, setup->render_pass, NULL);
-	vkDestroyPipeline(dev, setup->tex_identity_pipe, NULL);
-	vkDestroyPipeline(dev, setup->tex_srgb_pipe, NULL);
 	vkDestroyPipeline(dev, setup->output_pipe, NULL);
 	vkDestroyPipeline(dev, setup->quad_pipe, NULL);
 
-	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
-		vkDestroyPipeline(dev, setup->tex_ycbcr_pipelines[i], NULL);
+	struct wlr_vk_pipeline *pipeline, *tmp_pipeline;
+	wl_list_for_each_safe(pipeline, tmp_pipeline, &setup->pipelines, link) {
+		vkDestroyPipeline(dev, pipeline->vk, NULL);
+		free(pipeline);
 	}
-	free(setup->tex_ycbcr_pipelines);
 }
 
 static void shared_buffer_destroy(struct wlr_vk_renderer *r,
@@ -1387,21 +1386,6 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 }
 
-VkPipeline vulkan_get_texture_pipeline(struct wlr_vk_texture *texture,
-		struct wlr_vk_render_format_setup *render_setup) {
-	if (texture->format->is_ycbcr) {
-		size_t pipeline_layout_index = texture->pipeline_layout - texture->renderer->ycbcr_pipeline_layouts;
-		return render_setup->tex_ycbcr_pipelines[pipeline_layout_index];
-	} else {
-		if (texture->format->is_srgb) {
-			// sRGB formats already have the transfer function applied
-			return render_setup->tex_identity_pipe;
-		} else {
-			return render_setup->tex_srgb_pipe;
-		}
-	}
-}
-
 static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
 		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
 		const float matrix[static 9], float alpha) {
@@ -1423,16 +1407,23 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		wl_list_insert(&renderer->foreign_textures, &texture->foreign_link);
 	}
 
-	VkPipelineLayout pipe_layout = texture->pipeline_layout->vk;
-	VkPipeline pipe = vulkan_get_texture_pipeline(texture, renderer->current_render_buffer->render_setup);
+	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
+		renderer->current_render_buffer->render_setup,
+		&(struct wlr_vk_pipeline_key) {
+			.layout = texture->pipeline_layout,
+			.texture_transform = texture->transform,
+		});
+	if (!pipe) {
+		return false;
+	}
 
-	if (pipe != renderer->bound_pipe) {
-		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
-		renderer->bound_pipe = pipe;
+	if (pipe->vk != renderer->bound_pipe) {
+		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->vk);
+		renderer->bound_pipe = pipe->vk;
 	}
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe_layout, 0, 1, &texture->ds, 0, NULL);
+		pipe->key.layout->vk, 0, 1, &texture->ds, 0, NULL);
 
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
@@ -1445,9 +1436,9 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	vert_pcr_data.uv_size[0] = box->width / wlr_texture->width;
 	vert_pcr_data.uv_size[1] = box->height / wlr_texture->height;
 
-	vkCmdPushConstants(cb, pipe_layout,
+	vkCmdPushConstants(cb, pipe->key.layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipe_layout,
+	vkCmdPushConstants(cb, pipe->key.layout->vk,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 	vkCmdDraw(cb, 4, 1, 0, 0);
@@ -2095,15 +2086,37 @@ static bool init_blend_to_output_layouts(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
+static bool pipeline_key_equals(const struct wlr_vk_pipeline_key *a,
+		const struct wlr_vk_pipeline_key *b) {
+	return a->texture_transform == b->texture_transform && a->layout == b->layout;
+}
+
 // Initializes the pipeline for rendering textures and using the given
 // VkRenderPass and VkPipelineLayout.
-static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
-		VkRenderPass rp, VkPipelineLayout pipe_layout,
-		enum wlr_vk_texture_transform transform, VkPipeline *pipe) {
+struct wlr_vk_pipeline *setup_get_or_create_pipeline(
+		struct wlr_vk_render_format_setup *setup,
+		const struct wlr_vk_pipeline_key *key) {
+	struct wlr_vk_pipeline *pipeline;
+	wl_list_for_each(pipeline, &setup->pipelines, link) {
+		if (pipeline_key_equals(&pipeline->key, key)) {
+			return pipeline;
+		}
+	}
+
+	pipeline = calloc(1, sizeof(*pipeline));
+	if (!pipeline) {
+		return NULL;
+	}
+
+	struct wlr_vk_renderer *renderer = setup->renderer;
+
+	pipeline->setup = setup;
+	pipeline->key = *key;
+
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 
-	uint32_t color_transform_type = transform;
+	uint32_t color_transform_type = key->texture_transform;
 
 	VkSpecializationMapEntry spec_entry = {
 		.constantID = 0,
@@ -2196,8 +2209,8 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 
 	VkGraphicsPipelineCreateInfo pinfo = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.layout = pipe_layout,
-		.renderPass = rp,
+		.layout = key->layout->vk,
+		.renderPass = setup->render_pass,
 		.subpass = 0,
 		.stageCount = 2,
 		.pStages = tex_stages,
@@ -2212,13 +2225,15 @@ static bool init_tex_pipeline(struct wlr_vk_renderer *renderer,
 	};
 
 	VkPipelineCache cache = VK_NULL_HANDLE;
-	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, pipe);
+	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, &pipeline->vk);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("failed to create vulkan pipelines:", res);
-		return false;
+		free(pipeline);
+		return NULL;
 	}
 
-	return true;
+	wl_list_insert(&setup->pipelines, &pipeline->link);
+	return pipeline;
 }
 
 static bool init_quad_pipeline(struct wlr_vk_renderer *renderer,
@@ -2578,6 +2593,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	}
 
 	setup->render_format = format;
+	setup->renderer = renderer;
+	wl_list_init(&setup->pipelines);
 
 	VkDevice dev = renderer->dev->dev;
 	VkResult res;
@@ -2767,29 +2784,26 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		}
 	}
 
-	if (!init_tex_pipeline(renderer, setup->render_pass, renderer->default_pipeline_layout.vk,
-			WLR_VK_TEXTURE_TRANSFORM_IDENTITY, &setup->tex_identity_pipe)) {
+	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_IDENTITY,
+		.layout = &renderer->default_pipeline_layout,
+	})) {
 		goto error;
 	}
 
-	if (!init_tex_pipeline(renderer, setup->render_pass, renderer->default_pipeline_layout.vk,
-			WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_srgb_pipe)) {
+	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
+		.layout = &renderer->default_pipeline_layout,
+	})) {
 		goto error;
 	}
 
-	if (renderer->ycbcr_pipeline_layouts_len > 0) {
-		setup->tex_ycbcr_pipelines =
-			calloc(renderer->ycbcr_pipeline_layouts_len, sizeof(*setup->tex_ycbcr_pipelines));
-		if (setup->tex_ycbcr_pipelines == NULL) {
+	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
+		if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+			.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
+			.layout = &renderer->ycbcr_pipeline_layouts[i],
+		})) {
 			goto error;
-		}
-
-		for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
-			struct wlr_vk_pipeline_layout *pipeline_layout = &renderer->ycbcr_pipeline_layouts[i];
-			if (!init_tex_pipeline(renderer, setup->render_pass, pipeline_layout->vk,
-					WLR_VK_TEXTURE_TRANSFORM_SRGB, &setup->tex_ycbcr_pipelines[i])) {
-				goto error;
-			}
 		}
 	}
 
