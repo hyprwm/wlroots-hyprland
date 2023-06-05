@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_touch.h>
+#include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
 #include "types/wlr_output.h"
@@ -65,6 +66,9 @@ struct wlr_cursor_output_cursor {
 	struct wl_listener surface_commit;
 	struct wl_listener surface_destroy;
 	struct wl_listener output_commit;
+
+	// only when using an XCursor as the cursor image
+	struct wlr_xcursor *xcursor;
 };
 
 struct wlr_cursor_state {
@@ -380,6 +384,8 @@ static void cursor_output_cursor_reset_image(
 	wl_list_init(&output_cursor->surface_commit.link);
 	wl_list_init(&output_cursor->output_commit.link);
 	output_cursor->surface = NULL;
+
+	output_cursor->xcursor = NULL;
 }
 
 static void output_cursor_output_commit_surface(
@@ -416,6 +422,27 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 		cursor_output_cursor_reset_image(output_cursor);
 		wlr_output_cursor_set_image(output_cursor->output_cursor, pixels,
 			stride, width, height, hotspot_x, hotspot_y);
+	}
+}
+
+void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
+		struct wlr_xcursor_manager *manager, const char *name) {
+	struct wlr_cursor_output_cursor *output_cursor;
+	wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
+		float scale = output_cursor->output_cursor->output->scale;
+		wlr_xcursor_manager_load(manager, scale);
+		struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(manager, name, scale);
+		if (xcursor == NULL || output_cursor->xcursor == xcursor) {
+			continue;
+		}
+
+		cursor_output_cursor_reset_image(output_cursor);
+		output_cursor->xcursor = xcursor;
+
+		struct wlr_xcursor_image *image = xcursor->images[0];
+		wlr_output_cursor_set_image(output_cursor->output_cursor,
+			image->buffer, 4 * image->width, image->width, image->height,
+			image->hotspot_x, image->hotspot_y);
 	}
 }
 

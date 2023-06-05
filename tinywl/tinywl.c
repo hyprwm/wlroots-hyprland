@@ -449,8 +449,7 @@ static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
 		/* If there's no view under the cursor, set the cursor image to a
 		 * default. This is what makes the cursor image appear when you move it
 		 * around the screen, not over any views. */
-		wlr_xcursor_manager_set_cursor_image(
-				server->cursor_mgr, "default", server->cursor);
+		wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 	}
 	if (surface) {
 		/*
@@ -927,9 +926,8 @@ int main(int argc, char *argv[]) {
 	/* Creates an xcursor manager, another wlroots utility which loads up
 	 * Xcursor themes to source cursor images from and makes sure that cursor
 	 * images are available at all scale factors on the screen (necessary for
-	 * HiDPI support). We add a cursor theme at scale factor 1 to begin with. */
+	 * HiDPI support). */
 	server.cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-	wlr_xcursor_manager_load(server.cursor_mgr, 1);
 
 	/*
 	 * wlr_cursor *only* displays an image on screen. It does not move around
