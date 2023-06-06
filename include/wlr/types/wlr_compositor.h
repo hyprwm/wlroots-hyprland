@@ -123,6 +123,8 @@ struct wlr_surface {
 	/**
 	 * The current input region, in surface-local coordinates. It is clipped to
 	 * the surface bounds.
+	 *
+	 * If the protocol states that the input region is ignored, this is empty.
 	 */
 	pixman_region32_t input_region;
 	/**
