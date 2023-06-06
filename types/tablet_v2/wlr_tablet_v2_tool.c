@@ -17,6 +17,7 @@
 static const struct wlr_tablet_tool_v2_grab_interface default_tool_grab_interface;
 
 static void tablet_tool_cursor_surface_handle_commit(struct wlr_surface *surface) {
+	pixman_region32_clear(&surface->input_region);
 	if (wlr_surface_has_buffer(surface)) {
 		wlr_surface_map(surface);
 	}

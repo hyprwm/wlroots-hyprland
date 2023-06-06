@@ -350,6 +350,7 @@ static void drag_handle_drag_source_destroy(struct wl_listener *listener,
 static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	assert(surface->role == &drag_icon_surface_role);
 
+	pixman_region32_clear(&surface->input_region);
 	if (wlr_surface_has_buffer(surface)) {
 		wlr_surface_map(surface);
 	}
@@ -383,9 +384,7 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 
 	icon->surface->role_data = icon;
 
-	if (wlr_surface_has_buffer(surface)) {
-		wlr_surface_map(surface);
-	}
+	drag_icon_surface_role_commit(surface);
 
 	return icon;
 }

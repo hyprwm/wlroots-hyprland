@@ -71,6 +71,7 @@ struct wlr_seat_client *wlr_seat_client_from_pointer_resource(
 }
 
 static void pointer_cursor_surface_handle_commit(struct wlr_surface *surface) {
+	pixman_region32_clear(&surface->input_region);
 	if (wlr_surface_has_buffer(surface)) {
 		wlr_surface_map(surface);
 	}
