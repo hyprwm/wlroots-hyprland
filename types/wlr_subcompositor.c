@@ -183,33 +183,9 @@ static const struct wl_subsurface_interface subsurface_implementation = {
 
 const struct wlr_surface_role subsurface_role;
 
-/**
- * Checks if this subsurface needs to be marked as mapped. The subsurface
- * is considered mapped if both:
- * - The subsurface has a buffer
- * - Its parent is mapped
- */
 void subsurface_consider_map(struct wlr_subsurface *subsurface) {
-	if (subsurface->surface->mapped || !wlr_surface_has_buffer(subsurface->surface)) {
-		return;
-	}
-
-	if (!subsurface->parent->mapped) {
-		return;
-	}
-
-	// Now we can map the subsurface
-	wlr_surface_map(subsurface->surface);
-
-	// Try mapping all children too
-	struct wlr_subsurface *child;
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_below,
-			current.link) {
-		subsurface_consider_map(child);
-	}
-	wl_list_for_each(child, &subsurface->surface->current.subsurfaces_above,
-			current.link) {
-		subsurface_consider_map(child);
+	if (subsurface->parent->mapped && wlr_surface_has_buffer(subsurface->surface)) {
+		wlr_surface_map(subsurface->surface);
 	}
 }
 
@@ -312,6 +288,7 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 		subsurface->added = true;
 		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
 			subsurface);
+		subsurface_consider_map(subsurface);
 	}
 }
 
