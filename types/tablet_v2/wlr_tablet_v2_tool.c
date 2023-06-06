@@ -16,8 +16,15 @@
 
 static const struct wlr_tablet_tool_v2_grab_interface default_tool_grab_interface;
 
+static void tablet_tool_cursor_surface_handle_commit(struct wlr_surface *surface) {
+	if (wlr_surface_has_buffer(surface)) {
+		wlr_surface_map(surface);
+	}
+}
+
 static const struct wlr_surface_role tablet_tool_cursor_surface_role = {
 	.name = "wp_tablet_tool-cursor",
+	.commit = tablet_tool_cursor_surface_handle_commit,
 };
 
 static void handle_tablet_tool_v2_set_cursor(struct wl_client *client,
@@ -36,6 +43,8 @@ static void handle_tablet_tool_v2_set_cursor(struct wl_client *client,
 				surface_resource, ZWP_TABLET_TOOL_V2_ERROR_ROLE)) {
 			return;
 		}
+
+		tablet_tool_cursor_surface_handle_commit(surface);
 	}
 
 	struct wlr_tablet_v2_event_cursor evt = {
