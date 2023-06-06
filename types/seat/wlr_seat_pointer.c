@@ -70,8 +70,15 @@ struct wlr_seat_client *wlr_seat_client_from_pointer_resource(
 	return wl_resource_get_user_data(resource);
 }
 
+static void pointer_cursor_surface_handle_commit(struct wlr_surface *surface) {
+	if (wlr_surface_has_buffer(surface)) {
+		wlr_surface_map(surface);
+	}
+}
+
 static const struct wlr_surface_role pointer_cursor_surface_role = {
 	.name = "wl_pointer-cursor",
+	.commit = pointer_cursor_surface_handle_commit,
 };
 
 static void pointer_set_cursor(struct wl_client *client,
@@ -91,6 +98,8 @@ static void pointer_set_cursor(struct wl_client *client,
 				surface_resource, WL_POINTER_ERROR_ROLE)) {
 			return;
 		}
+
+		pointer_cursor_surface_handle_commit(surface);
 	}
 
 	struct wlr_seat_pointer_request_set_cursor_event event = {
