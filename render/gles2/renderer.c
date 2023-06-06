@@ -557,8 +557,11 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 		return NULL;
 	}
 
-	struct wlr_gles2_render_timer *timer = gles2_get_render_timer(options->timer);
-	clock_gettime(CLOCK_MONOTONIC, &timer->cpu_start);
+	struct wlr_gles2_render_timer *timer = NULL;
+	if (options->timer) {
+		timer = gles2_get_render_timer(options->timer);
+		clock_gettime(CLOCK_MONOTONIC, &timer->cpu_start);
+	}
 
 	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
 	if (!buffer) {
