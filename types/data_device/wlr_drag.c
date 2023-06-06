@@ -106,6 +106,13 @@ out:
 	wl_signal_emit_mutable(&drag->events.focus, drag);
 }
 
+static void drag_icon_destroy(struct wlr_drag_icon *icon) {
+	icon->drag->icon = NULL;
+	wl_list_remove(&icon->surface_destroy.link);
+	wl_signal_emit_mutable(&icon->events.destroy, icon);
+	free(icon);
+}
+
 static void drag_destroy(struct wlr_drag *drag) {
 	if (drag->cancelling) {
 		return;
@@ -145,7 +152,7 @@ static void drag_destroy(struct wlr_drag *drag) {
 	}
 
 	if (drag->icon != NULL) {
-		wlr_surface_destroy_role_object(drag->icon->surface);
+		drag_icon_destroy(drag->icon);
 	}
 	free(drag);
 }
@@ -356,19 +363,17 @@ static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 	}
 }
 
-static void drag_icon_surface_role_destroy(struct wlr_surface *surface) {
-	assert(surface->role == &drag_icon_surface_role);
-	struct wlr_drag_icon *icon = surface->role_data;
-
-	wl_signal_emit_mutable(&icon->events.destroy, icon);
-	free(icon);
-}
-
 const struct wlr_surface_role drag_icon_surface_role = {
 	.name = "wl_data_device-icon",
 	.commit = drag_icon_surface_role_commit,
-	.destroy = drag_icon_surface_role_destroy,
 };
+
+static void drag_icon_handle_surface_destroy(struct wl_listener *listener,
+		void *data) {
+	struct wlr_drag_icon *icon =
+		wl_container_of(listener, icon, surface_destroy);
+	drag_icon_destroy(icon);
+}
 
 static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 		struct wlr_surface *surface) {
@@ -382,7 +387,8 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 
 	wl_signal_init(&icon->events.destroy);
 
-	icon->surface->role_data = icon;
+	icon->surface_destroy.notify = drag_icon_handle_surface_destroy;
+	wl_signal_add(&surface->events.destroy, &icon->surface_destroy);
 
 	drag_icon_surface_role_commit(surface);
 
