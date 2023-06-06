@@ -418,6 +418,12 @@ struct wlr_render_pass *wlr_renderer_begin_buffer_pass(struct wlr_renderer *rend
 	if (!renderer->impl->begin_buffer_pass) {
 		return begin_legacy_buffer_render_pass(renderer, buffer);
 	}
+
+	struct wlr_buffer_pass_options default_options = {0};
+	if (!options) {
+		options = &default_options;
+	}
+
 	return renderer->impl->begin_buffer_pass(renderer, buffer, options);
 }
 
