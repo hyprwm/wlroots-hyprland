@@ -24,12 +24,23 @@ struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
 struct wl_display *wlr_wl_backend_get_remote_display(struct wlr_backend *backend);
 
 /**
- * Adds a new output to this backend. You may remove outputs by destroying them.
+ * Adds a new output to this backend.
+ *
+ * This creates a new xdg_toplevel in the parent Wayland compositor.
+ *
+ * You may remove outputs by destroying them.
+ *
  * Note that if called before initializing the backend, this will return NULL
  * and your outputs will be created during initialization (and given to you via
  * the new_output signal).
  */
 struct wlr_output *wlr_wl_output_create(struct wlr_backend *backend);
+
+/**
+ * Create a new output from an existing struct wl_surface.
+ */
+struct wlr_output *wlr_wl_output_create_from_surface(struct wlr_backend *backend,
+		struct wl_surface *surface);
 
 /**
  * Check whether the provided backend is a Wayland backend.

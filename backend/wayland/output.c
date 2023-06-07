@@ -668,9 +668,15 @@ static void output_destroy(struct wlr_output *wlr_output) {
 	if (output->zxdg_toplevel_decoration_v1) {
 		zxdg_toplevel_decoration_v1_destroy(output->zxdg_toplevel_decoration_v1);
 	}
-	xdg_toplevel_destroy(output->xdg_toplevel);
-	xdg_surface_destroy(output->xdg_surface);
-	wl_surface_destroy(output->surface);
+	if (output->xdg_toplevel) {
+		xdg_toplevel_destroy(output->xdg_toplevel);
+	}
+	if (output->xdg_surface) {
+		xdg_surface_destroy(output->xdg_surface);
+	}
+	if (output->own_surface) {
+		wl_surface_destroy(output->surface);
+	}
 	wl_display_flush(output->backend->remote_display);
 	free(output);
 }
@@ -751,15 +757,10 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
 	.close = xdg_toplevel_handle_close,
 };
 
-struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
-	struct wlr_wl_backend *backend = get_wl_backend_from_backend(wlr_backend);
-	if (!backend->started) {
-		++backend->requested_outputs;
-		return NULL;
-	}
-
-	struct wlr_wl_output *output;
-	if (!(output = calloc(sizeof(struct wlr_wl_output), 1))) {
+static struct wlr_wl_output *output_create(struct wlr_wl_backend *backend,
+		struct wl_surface *surface) {
+	struct wlr_wl_output *output = calloc(1, sizeof(*output));
+	if (output == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_wl_output");
 		return NULL;
 	}
@@ -781,22 +782,60 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 	snprintf(description, sizeof(description), "Wayland output %zu", output_num);
 	wlr_output_set_description(wlr_output, description);
 
+	output->surface = surface;
 	output->backend = backend;
 	wl_list_init(&output->presentation_feedbacks);
 
-	output->surface = wl_compositor_create_surface(backend->compositor);
-	if (!output->surface) {
-		wlr_log_errno(WLR_ERROR, "Could not create output surface");
-		goto error;
-	}
 	wl_proxy_set_tag((struct wl_proxy *)output->surface, &surface_tag);
 	wl_surface_set_user_data(output->surface, output);
+
+	wl_list_insert(&backend->outputs, &output->link);
+
+	return output;
+}
+
+static void output_start(struct wlr_wl_output *output) {
+	struct wlr_output *wlr_output = &output->wlr_output;
+	struct wlr_wl_backend *backend = output->backend;
+
+	wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
+
+	struct wlr_wl_seat *seat;
+	wl_list_for_each(seat, &backend->seats, link) {
+		if (seat->wl_pointer) {
+			create_pointer(seat, output);
+		}
+	}
+}
+
+struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
+	struct wlr_wl_backend *backend = get_wl_backend_from_backend(wlr_backend);
+	if (!backend->started) {
+		++backend->requested_outputs;
+		return NULL;
+	}
+
+	struct wl_surface *surface = wl_compositor_create_surface(backend->compositor);
+	if (surface == NULL) {
+		wlr_log(WLR_ERROR, "Could not create output surface");
+		return NULL;
+	}
+
+	struct wlr_wl_output *output = output_create(backend, surface);
+	if (output == NULL) {
+		wl_surface_destroy(surface);
+		return NULL;
+	}
+
+	output->own_surface = true;
+
 	output->xdg_surface =
 		xdg_wm_base_get_xdg_surface(backend->xdg_wm_base, output->surface);
 	if (!output->xdg_surface) {
 		wlr_log_errno(WLR_ERROR, "Could not get xdg surface");
 		goto error;
 	}
+
 	output->xdg_toplevel =
 		xdg_surface_get_toplevel(output->xdg_surface);
 	if (!output->xdg_toplevel) {
@@ -816,7 +855,7 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 			ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
 	}
 
-	wlr_wl_output_set_title(wlr_output, NULL);
+	wlr_wl_output_set_title(&output->wlr_output, NULL);
 
 	xdg_toplevel_set_app_id(output->xdg_toplevel, "wlroots");
 	xdg_surface_add_listener(output->xdg_surface,
@@ -827,16 +866,7 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 
 	wl_display_roundtrip(output->backend->remote_display);
 
-	wl_list_insert(&backend->outputs, &output->link);
-
-	wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
-
-	struct wlr_wl_seat *seat;
-	wl_list_for_each(seat, &backend->seats, link) {
-		if (seat->wl_pointer) {
-			create_pointer(seat, output);
-		}
-	}
+	output_start(output);
 
 	// TODO: let the compositor do this bit
 	if (backend->activation_v1 && backend->activation_token) {
@@ -844,15 +874,32 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 				backend->activation_token, output->surface);
 	}
 
-	return wlr_output;
+	return &output->wlr_output;
 
 error:
 	wlr_output_destroy(&output->wlr_output);
 	return NULL;
 }
 
+struct wlr_output *wlr_wl_output_create_from_surface(struct wlr_backend *wlr_backend,
+		struct wl_surface *surface) {
+	struct wlr_wl_backend *backend = get_wl_backend_from_backend(wlr_backend);
+	assert(backend->started);
+
+	struct wlr_wl_output *output = output_create(backend, surface);
+	if (output == NULL) {
+		wl_surface_destroy(surface);
+		return NULL;
+	}
+
+	output_start(output);
+
+	return &output->wlr_output;
+}
+
 void wlr_wl_output_set_title(struct wlr_output *output, const char *title) {
 	struct wlr_wl_output *wl_output = get_wl_output_from_output(output);
+	assert(wl_output->xdg_toplevel != NULL);
 
 	char wl_title[32];
 	if (title == NULL) {

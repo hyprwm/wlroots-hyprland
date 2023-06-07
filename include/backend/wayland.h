@@ -84,6 +84,7 @@ struct wlr_wl_output {
 	struct wl_list link;
 
 	struct wl_surface *surface;
+	bool own_surface;
 	struct wl_callback *frame_callback;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;
