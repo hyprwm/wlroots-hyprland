@@ -434,8 +434,8 @@ static void output_cursor_output_handle_surface_commit(
 		wl_container_of(listener, output_cursor, surface_commit);
 	struct wlr_surface *surface = output_cursor->surface;
 
-	output_cursor->surface_hotspot.x += surface->current.dx;
-	output_cursor->surface_hotspot.y += surface->current.dy;
+	output_cursor->surface_hotspot.x -= surface->current.dx;
+	output_cursor->surface_hotspot.y -= surface->current.dy;
 
 	output_cursor_output_commit_surface(output_cursor);
 }
