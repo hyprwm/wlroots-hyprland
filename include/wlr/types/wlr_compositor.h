@@ -74,7 +74,15 @@ struct wlr_surface_state {
 struct wlr_surface_role {
 	const char *name;
 	/**
+	 * If true, the role isn't represented by any object.
+	 * For example, this applies to cursor surfaces.
+	 */
+	bool no_object;
+	/**
 	 * Called when a new surface state is committed. May be NULL.
+	 *
+	 * If the role is represented by an object, this is only called if
+	 * such object exists.
 	 */
 	void (*commit)(struct wlr_surface *surface);
 	/**
@@ -224,6 +232,10 @@ typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
 /**
  * Set the lifetime role for this surface. Returns true on success or false if
  * the role cannot be set.
+ *
+ * If the role is represented by an object, role_data must be non-NULL.
+ * Alternatively, if the role isn't represented by any object, role_data must
+ * be NULL.
  */
 bool wlr_surface_set_role(struct wlr_surface *surface,
 	const struct wlr_surface_role *role, void *role_data,

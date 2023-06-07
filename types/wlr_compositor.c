@@ -491,7 +491,8 @@ static void surface_commit_state(struct wlr_surface *surface,
 		surface->pending.seq++;
 	}
 
-	if (surface->role_data != NULL && surface->role->commit != NULL) {
+	if (surface->role != NULL && surface->role->commit != NULL &&
+			(surface->role_data != NULL || surface->role->no_object)) {
 		surface->role->commit(surface);
 	}
 
@@ -768,6 +769,7 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
 		const struct wlr_surface_role *role, void *role_data,
 		struct wl_resource *error_resource, uint32_t error_code) {
 	assert(role != NULL);
+	assert((role_data == NULL) == role->no_object);
 
 	if (surface->role != NULL && surface->role != role) {
 		if (error_resource != NULL) {

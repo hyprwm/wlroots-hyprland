@@ -365,6 +365,7 @@ static void drag_icon_surface_role_commit(struct wlr_surface *surface) {
 
 const struct wlr_surface_role drag_icon_surface_role = {
 	.name = "wl_data_device-icon",
+	.no_object = true,
 	.commit = drag_icon_surface_role_commit,
 };
 

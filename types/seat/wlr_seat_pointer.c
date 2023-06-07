@@ -79,6 +79,7 @@ static void pointer_cursor_surface_handle_commit(struct wlr_surface *surface) {
 
 static const struct wlr_surface_role pointer_cursor_surface_role = {
 	.name = "wl_pointer-cursor",
+	.no_object = true,
 	.commit = pointer_cursor_surface_handle_commit,
 };
 

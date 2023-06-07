@@ -25,6 +25,7 @@ static void tablet_tool_cursor_surface_handle_commit(struct wlr_surface *surface
 
 static const struct wlr_surface_role tablet_tool_cursor_surface_role = {
 	.name = "wp_tablet_tool-cursor",
+	.no_object = true,
 	.commit = tablet_tool_cursor_surface_handle_commit,
 };
 
