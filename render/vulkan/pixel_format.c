@@ -233,7 +233,7 @@ const struct wlr_vk_format *vulkan_get_format_from_drm(uint32_t drm_format) {
 static const VkImageUsageFlags render_usage =
 	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 	VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-static const VkImageUsageFlags tex_usage =
+static const VkImageUsageFlags shm_tex_usage =
 	VK_IMAGE_USAGE_SAMPLED_BIT |
 	VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 static const VkImageUsageFlags dma_tex_usage =
@@ -436,7 +436,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 
 	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(format->drm);
 
-	// non-dmabuf texture properties
+	// shm texture properties
 	const char *shm_texture_status;
 	if ((fmtp.formatProperties.optimalTilingFeatures & shm_tex_features) == shm_tex_features &&
 			!format->is_ycbcr && format_info != NULL) {
@@ -445,7 +445,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 			.type = VK_IMAGE_TYPE_2D,
 			.format = format->vk,
 			.tiling = VK_IMAGE_TILING_OPTIMAL,
-			.usage = tex_usage,
+			.usage = shm_tex_usage,
 		};
 		VkImageFormatProperties2 ifmtp = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
