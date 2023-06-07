@@ -82,9 +82,12 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 		// Apply output shader to map blend image to actual output image
 		vkCmdNextSubpass(render_cb->vk, VK_SUBPASS_CONTENTS_INLINE);
 
+		int width = pass->render_buffer->wlr_buffer->width;
+		int height = pass->render_buffer->wlr_buffer->height;
+
 		float final_matrix[9] = {
-			pass->render_buffer->wlr_buffer->width, 0, -1,
-			0, pass->render_buffer->wlr_buffer->height, -1,
+			width, 0, -1,
+			0, height, -1,
 			0, 0, 0,
 		};
 		struct wlr_vk_vert_pcr_data vert_pcr_data = {
@@ -100,6 +103,9 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 			VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->output_pipe_layout,
 			0, 1, &render_buffer->blend_descriptor_set, 0, NULL);
 
+		vkCmdSetScissor(render_cb->vk, 0, 1, &(VkRect2D){
+			.extent = { width, height },
+		});
 		vkCmdDraw(render_cb->vk, 4, 1, 0, 0);
 	}
 
