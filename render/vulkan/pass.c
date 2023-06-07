@@ -83,8 +83,8 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 		vkCmdNextSubpass(render_cb->vk, VK_SUBPASS_CONTENTS_INLINE);
 
 		float final_matrix[9] = {
-			renderer->render_width, 0, -1,
-			0, renderer->render_height, -1,
+			pass->render_buffer->wlr_buffer->width, 0, -1,
+			0, pass->render_buffer->wlr_buffer->height, -1,
 			0, 0, 0,
 		};
 		struct wlr_vk_vert_pcr_data vert_pcr_data = {
