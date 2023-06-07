@@ -73,8 +73,17 @@ struct wlr_surface_state {
 
 struct wlr_surface_role {
 	const char *name;
+	/**
+	 * Called when a new surface state is committed. May be NULL.
+	 */
 	void (*commit)(struct wlr_surface *surface);
+	/**
+	 * Called when the surface is unmapped. May be NULL.
+	 */
 	void (*unmap)(struct wlr_surface *surface);
+	/**
+	 * Called when the object representing the role is destroyed. May be NULL.
+	 */
 	void (*destroy)(struct wlr_surface *surface);
 };
 
@@ -138,8 +147,16 @@ struct wlr_surface {
 
 	bool mapped;
 
-	const struct wlr_surface_role *role; // the lifetime-bound role or NULL
-	void *role_data; // role-specific data
+	/**
+	 * The lifetime-bound role of the surface. NULL if the role was never set.
+	 */
+	const struct wlr_surface_role *role;
+
+	/**
+	 * The role object representing the role. NULL if the role isn't
+	 * represented by any object or the object was destroyed.
+	 */
+	void *role_data;
 
 	struct {
 		struct wl_signal client_commit;
@@ -213,7 +230,10 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
 	struct wl_resource *error_resource, uint32_t error_code);
 
 /**
- * Destroy the role object for this surface. This doesn't reset the role.
+ * Destroy the object representing the surface's role. If it doesn't exist,
+ * this function is no-op.
+ *
+ * This doesn't reset the surface role itself.
  */
 void wlr_surface_destroy_role_object(struct wlr_surface *surface);
 
