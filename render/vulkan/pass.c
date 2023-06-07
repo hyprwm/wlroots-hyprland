@@ -82,12 +82,6 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 		// Apply output shader to map blend image to actual output image
 		vkCmdNextSubpass(render_cb->vk, VK_SUBPASS_CONTENTS_INLINE);
 
-		VkPipeline pipe = render_buffer->render_setup->output_pipe;
-		if (pipe != renderer->bound_pipe) {
-			vkCmdBindPipeline(render_cb->vk, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
-			renderer->bound_pipe = pipe;
-		}
-
 		float final_matrix[9] = {
 			renderer->render_width, 0, -1,
 			0, renderer->render_height, -1,
@@ -99,6 +93,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 		};
 		mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
 
+		bind_pipeline(pass, render_buffer->render_setup->output_pipe);
 		vkCmdPushConstants(render_cb->vk, renderer->output_pipe_layout,
 			VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
 		vkCmdBindDescriptorSets(render_cb->vk,
