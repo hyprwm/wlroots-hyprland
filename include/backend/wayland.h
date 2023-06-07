@@ -30,6 +30,7 @@ struct wlr_wl_backend {
 
 	/* remote state */
 	struct wl_display *remote_display;
+	bool own_remote_display;
 	struct wl_event_source *remote_display_src;
 	struct wl_registry *registry;
 	struct wl_compositor *compositor;

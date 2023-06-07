@@ -529,7 +529,9 @@ static void backend_destroy(struct wlr_backend *backend) {
 	wl_compositor_destroy(wl->compositor);
 	wl_registry_destroy(wl->registry);
 	wl_display_flush(wl->remote_display);
-	wl_display_disconnect(wl->remote_display);
+	if (wl->own_remote_display) {
+		wl_display_disconnect(wl->remote_display);
+	}
 	free(wl);
 }
 
@@ -568,7 +570,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
-		const char *remote) {
+		struct wl_display *remote_display) {
 	wlr_log(WLR_INFO, "Creating wayland backend");
 
 	struct wlr_wl_backend *wl = calloc(1, sizeof(*wl));
@@ -585,10 +587,15 @@ struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
 	wl_list_init(&wl->buffers);
 	wl->presentation_clock = CLOCK_MONOTONIC;
 
-	wl->remote_display = wl_display_connect(remote);
-	if (!wl->remote_display) {
-		wlr_log_errno(WLR_ERROR, "Could not connect to remote display");
-		goto error_wl;
+	if (remote_display != NULL) {
+		wl->remote_display = remote_display;
+	} else {
+		wl->remote_display = wl_display_connect(NULL);
+		if (!wl->remote_display) {
+			wlr_log_errno(WLR_ERROR, "Could not connect to remote display");
+			goto error_wl;
+		}
+		wl->own_remote_display = true;
 	}
 
 	wl->registry = wl_display_get_registry(wl->remote_display);
@@ -685,7 +692,9 @@ error_registry:
 	}
 	wl_registry_destroy(wl->registry);
 error_display:
-	wl_display_disconnect(wl->remote_display);
+	if (wl->own_remote_display) {
+		wl_display_disconnect(wl->remote_display);
+	}
 error_wl:
 	wlr_backend_finish(&wl->backend);
 	free(wl);

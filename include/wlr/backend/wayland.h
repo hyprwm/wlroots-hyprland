@@ -12,12 +12,11 @@ struct wlr_input_device;
  * Creates a new Wayland backend. This backend will be created with no outputs;
  * you must use wlr_wl_output_create() to add them.
  *
- * The `remote` argument is the name of the host compositor wayland socket. Set
- * to NULL for the default behaviour (WAYLAND_DISPLAY env variable or wayland-0
- * default).
+ * The remote_display argument is an existing libwayland-client struct wl_display
+ * to use. Leave it NULL to create a new connection to the compositor.
  */
 struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
-		const char *remote);
+		struct wl_display *remote_display);
 
 /**
  * Returns the remote struct wl_display used by the Wayland backend.
