@@ -292,49 +292,6 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 	}
 }
 
-static struct wlr_subsurface *subsurface_create(struct wlr_surface *surface,
-		struct wlr_surface *parent, uint32_t version, uint32_t id) {
-	struct wl_client *client = wl_resource_get_client(surface->resource);
-
-	struct wlr_subsurface *subsurface =
-		calloc(1, sizeof(struct wlr_subsurface));
-	if (!subsurface) {
-		wl_client_post_no_memory(client);
-		return NULL;
-	}
-	subsurface->synchronized = true;
-	subsurface->surface = surface;
-	subsurface->resource =
-		wl_resource_create(client, &wl_subsurface_interface, version, id);
-	if (subsurface->resource == NULL) {
-		free(subsurface);
-		wl_client_post_no_memory(client);
-		return NULL;
-	}
-	wl_resource_set_implementation(subsurface->resource,
-		&subsurface_implementation, subsurface, subsurface_resource_destroy);
-
-	wl_signal_init(&subsurface->events.destroy);
-
-	wl_signal_add(&surface->events.client_commit,
-		&subsurface->surface_client_commit);
-	subsurface->surface_client_commit.notify =
-		subsurface_handle_surface_client_commit;
-
-	// link parent
-	subsurface->parent = parent;
-	wl_signal_add(&parent->events.destroy, &subsurface->parent_destroy);
-	subsurface->parent_destroy.notify = subsurface_handle_parent_destroy;
-
-	wl_list_init(&subsurface->current.link);
-	wl_list_insert(parent->pending.subsurfaces_above.prev,
-		&subsurface->pending.link);
-
-	surface->role_data = subsurface;
-
-	return subsurface;
-}
-
 struct wlr_subsurface *wlr_subsurface_try_from_wlr_surface(struct wlr_surface *surface) {
 	if (surface->role != &subsurface_role) {
 		return NULL;
@@ -354,8 +311,15 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 	struct wlr_surface *parent = wlr_surface_from_resource(parent_resource);
 
-	if (!wlr_surface_set_role(surface, &subsurface_role, NULL,
+	struct wlr_subsurface *subsurface = calloc(1, sizeof(struct wlr_subsurface));
+	if (!subsurface) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	if (!wlr_surface_set_role(surface, &subsurface_role, subsurface,
 			resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE)) {
+		free(subsurface);
 		return;
 	}
 
@@ -364,10 +328,37 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 			WL_SUBCOMPOSITOR_ERROR_BAD_PARENT,
 			"wl_subsurface@%" PRIu32
 			" cannot be a parent of itself or its ancestor", id);
+		free(subsurface);
 		return;
 	}
 
-	subsurface_create(surface, parent, wl_resource_get_version(resource), id);
+	subsurface->synchronized = true;
+	subsurface->surface = surface;
+	subsurface->resource = wl_resource_create(client, &wl_subsurface_interface,
+		wl_resource_get_version(resource), id);
+	if (subsurface->resource == NULL) {
+		free(subsurface);
+		wl_client_post_no_memory(client);
+		return;
+	}
+	wl_resource_set_implementation(subsurface->resource,
+		&subsurface_implementation, subsurface, subsurface_resource_destroy);
+
+	wl_signal_init(&subsurface->events.destroy);
+
+	wl_signal_add(&surface->events.client_commit,
+		&subsurface->surface_client_commit);
+	subsurface->surface_client_commit.notify =
+		subsurface_handle_surface_client_commit;
+
+	// link parent
+	subsurface->parent = parent;
+	wl_signal_add(&parent->events.destroy, &subsurface->parent_destroy);
+	subsurface->parent_destroy.notify = subsurface_handle_parent_destroy;
+
+	wl_list_init(&subsurface->current.link);
+	wl_list_insert(parent->pending.subsurfaces_above.prev,
+		&subsurface->pending.link);
 }
 
 static const struct wl_subcompositor_interface subcompositor_impl = {
