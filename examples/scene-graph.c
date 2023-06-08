@@ -57,7 +57,7 @@ struct output {
 static void output_handle_frame(struct wl_listener *listener, void *data) {
 	struct output *output = wl_container_of(listener, output, frame);
 
-	if (!wlr_scene_output_commit(output->scene_output)) {
+	if (!wlr_scene_output_commit(output->scene_output, NULL)) {
 		return;
 	}
 

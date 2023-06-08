@@ -209,6 +209,11 @@ struct wlr_scene_output {
 	struct wl_array render_list;
 };
 
+struct wlr_scene_timer {
+	int64_t pre_render_duration;
+	struct wlr_render_timer *render_timer;
+};
+
 /** A layer shell scene helper */
 struct wlr_scene_layer_surface_v1 {
 	struct wlr_scene_tree *tree;
@@ -455,16 +460,30 @@ void wlr_scene_output_destroy(struct wlr_scene_output *scene_output);
 void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
 	int lx, int ly);
 
+struct wlr_scene_output_state_options {
+	struct wlr_scene_timer *timer;
+};
+
 /**
  * Render and commit an output.
  */
-bool wlr_scene_output_commit(struct wlr_scene_output *scene_output);
+bool wlr_scene_output_commit(struct wlr_scene_output *scene_output,
+	const struct wlr_scene_output_state_options *options);
 
 /**
  * Render and populate given output state.
  */
 bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
-	struct wlr_output_state *state);
+	struct wlr_output_state *state, const struct wlr_scene_output_state_options *options);
+
+/**
+ * Retrieve the duration in nanoseconds between the last wlr_scene_output_commit() call and the end
+ * of its operations, including those on the GPU that may have finished after the call returned.
+ *
+ * Returns -1 if the duration is unavailable.
+ */
+int64_t wlr_scene_timer_get_duration_ns(struct wlr_scene_timer *timer);
+void wlr_scene_timer_finish(struct wlr_scene_timer *timer);
 
 /**
  * Call wlr_surface_send_frame_done() on all surfaces in the scene rendered by

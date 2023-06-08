@@ -1584,7 +1584,8 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 	return true;
 }
 
-bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
+bool wlr_scene_output_commit(struct wlr_scene_output *scene_output,
+		const struct wlr_scene_output_state_options *options) {
 	if (!scene_output->output->needs_frame && !pixman_region32_not_empty(
 			&scene_output->damage_ring.current)) {
 		return true;
@@ -1593,7 +1594,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 	bool ok = false;
 	struct wlr_output_state state;
 	wlr_output_state_init(&state);
-	if (!wlr_scene_output_build_state(scene_output, &state)) {
+	if (!wlr_scene_output_build_state(scene_output, &state, options)) {
 		goto out;
 	}
 
@@ -1610,7 +1611,19 @@ out:
 }
 
 bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
-		struct wlr_output_state *state) {
+		struct wlr_output_state *state, const struct wlr_scene_output_state_options *options) {
+	struct wlr_scene_output_state_options default_options = {0};
+	if (!options) {
+		options = &default_options;
+	}
+	struct wlr_scene_timer *timer = options->timer;
+	struct timespec start_time;
+	if (timer) {
+		clock_gettime(CLOCK_MONOTONIC, &start_time);
+		wlr_scene_timer_finish(timer);
+		*timer = (struct wlr_scene_timer){0};
+	}
+
 	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
 		// if the state is being disabled, do nothing.
 		return true;
@@ -1683,6 +1696,12 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	}
 
 	if (scanout) {
+		if (timer) {
+			struct timespec end_time, duration;
+			clock_gettime(CLOCK_MONOTONIC, &end_time);
+			timespec_sub(&duration, &end_time, &start_time);
+			timer->pre_render_duration = timespec_to_nsec(&duration);
+		}
 		return true;
 	}
 
@@ -1742,7 +1761,19 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		return false;
 	}
 
-	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(output->renderer, buffer, NULL);
+	if (timer) {
+		timer->render_timer = wlr_render_timer_create(output->renderer);
+
+		struct timespec end_time, duration;
+		clock_gettime(CLOCK_MONOTONIC, &end_time);
+		timespec_sub(&duration, &end_time, &start_time);
+		timer->pre_render_duration = timespec_to_nsec(&duration);
+	}
+
+	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(output->renderer, buffer,
+			&(struct wlr_buffer_pass_options){
+		.timer = timer ? timer->render_timer : NULL,
+	});
 	if (render_pass == NULL) {
 		wlr_buffer_unlock(buffer);
 		return false;
@@ -1857,6 +1888,21 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	}
 
 	return true;
+}
+
+int64_t wlr_scene_timer_get_duration_ns(struct wlr_scene_timer *timer) {
+	int64_t pre_render = timer->pre_render_duration;
+	if (!timer->render_timer) {
+		return pre_render;
+	}
+	int64_t render = wlr_render_timer_get_duration_ns(timer->render_timer);
+	return render != -1 ? pre_render + render : -1;
+}
+
+void wlr_scene_timer_finish(struct wlr_scene_timer *timer) {
+	if (timer->render_timer) {
+		wlr_render_timer_destroy(timer->render_timer);
+	}
 }
 
 static void scene_node_send_frame_done(struct wlr_scene_node *node,

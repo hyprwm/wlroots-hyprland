@@ -559,7 +559,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 		scene, output->wlr_output);
 
 	/* Render the scene if needed and commit the output */
-	wlr_scene_output_commit(scene_output);
+	wlr_scene_output_commit(scene_output, NULL);
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
