@@ -36,13 +36,12 @@ void handle_keyboard_key(struct libinput_event *event,
 		struct wlr_keyboard *kb) {
 	struct libinput_event_keyboard *kbevent =
 		libinput_event_get_keyboard_event(event);
-	struct wlr_keyboard_key_event wlr_event = { 0 };
-	wlr_event.time_msec =
-		usec_to_msec(libinput_event_keyboard_get_time_usec(kbevent));
-	wlr_event.keycode = libinput_event_keyboard_get_key(kbevent);
-	enum libinput_key_state state =
-		libinput_event_keyboard_get_key_state(kbevent);
-	switch (state) {
+	struct wlr_keyboard_key_event wlr_event = {
+		.time_msec = usec_to_msec(libinput_event_keyboard_get_time_usec(kbevent)),
+		.keycode = libinput_event_keyboard_get_key(kbevent),
+		.update_state = true,
+	};
+	switch (libinput_event_keyboard_get_key_state(kbevent)) {
 	case LIBINPUT_KEY_STATE_RELEASED:
 		wlr_event.state = WL_KEYBOARD_KEY_STATE_RELEASED;
 		break;
@@ -50,6 +49,5 @@ void handle_keyboard_key(struct libinput_event *event,
 		wlr_event.state = WL_KEYBOARD_KEY_STATE_PRESSED;
 		break;
 	}
-	wlr_event.update_state = true;
 	wlr_keyboard_notify_key(kb, &wlr_event);
 }

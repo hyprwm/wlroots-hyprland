@@ -45,11 +45,11 @@ void handle_touch_up(struct libinput_event *event,
 		struct wlr_touch *touch) {
 	struct libinput_event_touch *tevent =
 		libinput_event_get_touch_event(event);
-	struct wlr_touch_up_event wlr_event = { 0 };
-	wlr_event.touch = touch;
-	wlr_event.time_msec =
-		usec_to_msec(libinput_event_touch_get_time_usec(tevent));
-	wlr_event.touch_id = libinput_event_touch_get_seat_slot(tevent);
+	struct wlr_touch_up_event wlr_event = {
+		.touch = touch,
+		.time_msec = usec_to_msec(libinput_event_touch_get_time_usec(tevent)),
+		.touch_id = libinput_event_touch_get_seat_slot(tevent),
+	};
 	wl_signal_emit_mutable(&touch->events.up, &wlr_event);
 }
 
@@ -57,13 +57,13 @@ void handle_touch_motion(struct libinput_event *event,
 		struct wlr_touch *touch) {
 	struct libinput_event_touch *tevent =
 		libinput_event_get_touch_event(event);
-	struct wlr_touch_motion_event wlr_event = { 0 };
-	wlr_event.touch = touch;
-	wlr_event.time_msec =
-		usec_to_msec(libinput_event_touch_get_time_usec(tevent));
-	wlr_event.touch_id = libinput_event_touch_get_seat_slot(tevent);
-	wlr_event.x = libinput_event_touch_get_x_transformed(tevent, 1);
-	wlr_event.y = libinput_event_touch_get_y_transformed(tevent, 1);
+	struct wlr_touch_motion_event wlr_event = {
+		.touch = touch,
+		.time_msec = usec_to_msec(libinput_event_touch_get_time_usec(tevent)),
+		.touch_id = libinput_event_touch_get_seat_slot(tevent),
+		.x = libinput_event_touch_get_x_transformed(tevent, 1),
+		.y = libinput_event_touch_get_y_transformed(tevent, 1),
+	};
 	wl_signal_emit_mutable(&touch->events.motion, &wlr_event);
 }
 
@@ -71,11 +71,11 @@ void handle_touch_cancel(struct libinput_event *event,
 		struct wlr_touch *touch) {
 	struct libinput_event_touch *tevent =
 		libinput_event_get_touch_event(event);
-	struct wlr_touch_cancel_event wlr_event = { 0 };
-	wlr_event.touch = touch;
-	wlr_event.time_msec =
-		usec_to_msec(libinput_event_touch_get_time_usec(tevent));
-	wlr_event.touch_id = libinput_event_touch_get_seat_slot(tevent);
+	struct wlr_touch_cancel_event wlr_event = {
+		.touch = touch,
+		.time_msec = usec_to_msec(libinput_event_touch_get_time_usec(tevent)),
+		.touch_id = libinput_event_touch_get_seat_slot(tevent),
+	};
 	wl_signal_emit_mutable(&touch->events.cancel, &wlr_event);
 }
 
