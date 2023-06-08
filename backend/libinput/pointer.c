@@ -63,12 +63,22 @@ void handle_pointer_button(struct libinput_event *event,
 	wlr_event.time_msec =
 		usec_to_msec(libinput_event_pointer_get_time_usec(pevent));
 	wlr_event.button = libinput_event_pointer_get_button(pevent);
+	// Ignore events which aren't a seat-wide state change. For instance, if
+	// the same button is pressed twice on the same seat, ignore the second
+	// press.
+	uint32_t seat_count = libinput_event_pointer_get_seat_button_count(pevent);
 	switch (libinput_event_pointer_get_button_state(pevent)) {
 	case LIBINPUT_BUTTON_STATE_PRESSED:
 		wlr_event.state = WLR_BUTTON_PRESSED;
+		if (seat_count != 1) {
+			return;
+		}
 		break;
 	case LIBINPUT_BUTTON_STATE_RELEASED:
 		wlr_event.state = WLR_BUTTON_RELEASED;
+		if (seat_count != 0) {
+			return;
+		}
 		break;
 	}
 	wl_signal_emit_mutable(&pointer->events.button, &wlr_event);
