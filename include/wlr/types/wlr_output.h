@@ -573,6 +573,13 @@ void wlr_output_state_set_buffer(struct wlr_output_state *state,
 	struct wlr_buffer *buffer);
 bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 	size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b);
+/**
+ * Sets the state's damage region.
+ *
+ * This should be called in along with wlr_output_state_set_buffer().
+ */
+void wlr_output_state_set_damage(struct wlr_output_state *state,
+	const pixman_region32_t *damage);
 
 
 /**

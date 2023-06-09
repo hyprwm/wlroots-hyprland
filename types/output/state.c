@@ -76,6 +76,18 @@ void wlr_output_state_set_buffer(struct wlr_output_state *state,
 	state->buffer = wlr_buffer_lock(buffer);
 }
 
+void wlr_output_state_set_damage(struct wlr_output_state *state,
+		const pixman_region32_t *damage) {
+	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
+		pixman_region32_fini(&state->damage);
+	}
+
+	state->committed |= WLR_OUTPUT_STATE_DAMAGE;
+
+	pixman_region32_init(&state->damage);
+	pixman_region32_copy(&state->damage, damage);
+}
+
 bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 		size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b) {
 	uint16_t *gamma_lut = NULL;
