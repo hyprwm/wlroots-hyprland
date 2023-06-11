@@ -14,6 +14,7 @@
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
 #include "types/wlr_buffer.h"
+#include "types/wlr_output.h"
 #include "types/wlr_scene.h"
 #include "util/array.h"
 #include "util/env.h"
@@ -1464,7 +1465,7 @@ static void scene_buffer_send_dmabuf_feedback(const struct wlr_scene *scene,
 }
 
 static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *buffer,
-		const struct render_data *data) {
+		struct wlr_output_state *state, const struct render_data *data) {
 	const struct wlr_scene_output *scene_output = data->output;
 	struct wlr_scene_node *node = &buffer->node;
 
@@ -1480,6 +1481,11 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 	}
 
 	if (node->type != WLR_SCENE_NODE_BUFFER) {
+		return false;
+	}
+
+	if (state->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_ENABLED)) {
+		// Legacy DRM will explode if we try to modeset with a direct scanout buffer
 		return false;
 	}
 
@@ -1517,40 +1523,58 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 }
 
 static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
-		struct wlr_scene_output *scene_output) {
-	struct wlr_output_state state = {
-		.committed = WLR_OUTPUT_STATE_BUFFER,
-		.buffer = buffer->buffer,
-	};
+		struct wlr_scene_output *scene_output, struct wlr_output_state *state) {
+	wlr_output_state_set_buffer(state, buffer->buffer);
 
-	if (!wlr_output_test_state(scene_output->output, &state)) {
+	pixman_region32_t frame_damage;
+	get_frame_damage(scene_output, &frame_damage);
+	wlr_output_state_set_damage(state, &frame_damage);
+	pixman_region32_fini(&frame_damage);
+
+	if (!wlr_output_test_state(scene_output->output, state)) {
+		// reset buffer and damage
+		state->committed &= ~(WLR_OUTPUT_STATE_BUFFER | WLR_OUTPUT_STATE_DAMAGE);
+		wlr_buffer_unlock(state->buffer);
+		pixman_region32_fini(&state->damage);
+
 		return false;
 	}
 
 	wl_signal_emit_mutable(&buffer->events.output_present, scene_output);
-
-	state.committed |= WLR_OUTPUT_STATE_DAMAGE;
-	get_frame_damage(scene_output, &state.damage);
-	bool ok = wlr_output_commit_state(scene_output->output, &state);
-	pixman_region32_fini(&state.damage);
-	if (!ok) {
-		return false;
-	}
-
-	wlr_damage_ring_rotate(&scene_output->damage_ring);
-
 	return true;
 }
 
 bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
-	struct wlr_output *output = scene_output->output;
-	enum wlr_scene_debug_damage_option debug_damage =
-		scene_output->scene->debug_damage_option;
-
-	if (!output->needs_frame && !pixman_region32_not_empty(
+	if (!scene_output->output->needs_frame && !pixman_region32_not_empty(
 			&scene_output->damage_ring.current)) {
 		return true;
 	}
+
+	struct wlr_output_state state = {0};
+	if (!wlr_scene_output_build_state(scene_output, &state)) {
+		return false;
+	}
+
+	bool success = wlr_output_commit_state(scene_output->output, &state);
+	wlr_output_state_finish(&state);
+
+	if (success) {
+		wlr_damage_ring_rotate(&scene_output->damage_ring);
+	}
+
+	return success;
+}
+
+bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+		struct wlr_output_state *state) {
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
+		// if the state is being disabled, do nothing.
+		return true;
+	}
+
+	struct wlr_output *output = scene_output->output;
+	enum wlr_scene_debug_damage_option debug_damage =
+		scene_output->scene->debug_damage_option;
 
 	struct render_data render_data = {
 		.transform = output->transform,
@@ -1559,8 +1583,25 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		.output = scene_output,
 	};
 
-	wlr_output_effective_resolution(output,
+	output_pending_resolution(output, state,
 		&render_data.logical.width, &render_data.logical.height);
+
+	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		render_data.transform = state->transform;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_SCALE) {
+		render_data.scale = state->scale;
+	}
+
+	if (render_data.transform & WL_OUTPUT_TRANSFORM_90) {
+		int tmp = render_data.logical.width;
+		render_data.logical.width = render_data.logical.height;
+		render_data.logical.height = tmp;
+	}
+
+	render_data.logical.width /= render_data.scale;
+	render_data.logical.height /= render_data.scale;
 
 	struct render_list_constructor_data list_con = {
 		.box = render_data.logical,
@@ -1587,7 +1628,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		if (node->type == WLR_SCENE_NODE_BUFFER) {
 			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
 
-			if (scene_buffer_can_consider_direct_scanout(buffer, &render_data)) {
+			if (scene_buffer_can_consider_direct_scanout(buffer, state, &render_data)) {
 				if (buffer->primary_output == scene_output) {
 					struct wlr_linux_dmabuf_feedback_v1_init_options options = {
 						.main_renderer = output->renderer,
@@ -1598,7 +1639,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 					sent_direct_scanout_feedback = true;
 				}
 
-				scanout = scene_buffer_try_direct_scanout(buffer, scene_output);
+				scanout = scene_buffer_try_direct_scanout(buffer, scene_output, state);
 			}
 		}
 	}
@@ -1660,7 +1701,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		pixman_region32_fini(&acc_damage);
 	}
 
-	if (!wlr_output_configure_primary_swapchain(output, NULL, &output->swapchain)) {
+	if (!wlr_output_configure_primary_swapchain(output, state, &output->swapchain)) {
 		return false;
 	}
 
@@ -1770,26 +1811,20 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		return false;
 	}
 
-	wlr_output_attach_buffer(output, buffer);
+	wlr_output_state_set_buffer(state, buffer);
 	wlr_buffer_unlock(buffer);
 
 	pixman_region32_t frame_damage;
 	get_frame_damage(scene_output, &frame_damage);
-	wlr_output_set_damage(output, &frame_damage);
+	wlr_output_state_set_damage(state, &frame_damage);
 	pixman_region32_fini(&frame_damage);
-
-	bool success = wlr_output_commit(output);
-
-	if (success) {
-		wlr_damage_ring_rotate(&scene_output->damage_ring);
-	}
 
 	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_HIGHLIGHT &&
 			!wl_list_empty(&scene_output->damage_highlight_regions)) {
 		wlr_output_schedule_frame(scene_output->output);
 	}
 
-	return success;
+	return true;
 }
 
 static void scene_node_send_frame_done(struct wlr_scene_node *node,

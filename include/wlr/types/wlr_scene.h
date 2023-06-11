@@ -39,6 +39,7 @@ struct wlr_scene_buffer;
 
 struct wlr_presentation;
 struct wlr_linux_dmabuf_v1;
+struct wlr_output_state;
 
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy);
@@ -444,10 +445,18 @@ void wlr_scene_output_destroy(struct wlr_scene_output *scene_output);
  */
 void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
 	int lx, int ly);
+
 /**
  * Render and commit an output.
  */
 bool wlr_scene_output_commit(struct wlr_scene_output *scene_output);
+
+/**
+ * Render and populate given output state.
+ */
+bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+    struct wlr_output_state *state);
+
 /**
  * Call wlr_surface_send_frame_done() on all surfaces in the scene rendered by
  * wlr_scene_output_commit() for which wlr_scene_surface.primary_output
