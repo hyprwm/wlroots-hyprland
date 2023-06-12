@@ -196,7 +196,6 @@ struct wlr_seat_pointer_state {
 	} events;
 };
 
-// TODO: May be useful to be able to simulate keyboard input events
 struct wlr_seat_keyboard_state {
 	struct wlr_seat *seat;
 	struct wlr_keyboard *keyboard;
