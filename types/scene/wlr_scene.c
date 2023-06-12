@@ -1534,21 +1534,25 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 
 static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
 		struct wlr_scene_output *scene_output, struct wlr_output_state *state) {
-	wlr_output_state_set_buffer(state, buffer->buffer);
+	struct wlr_output_state pending = {0};
+	if (!wlr_output_state_copy(&pending, state)) {
+		return false;
+	}
+
+	wlr_output_state_set_buffer(&pending, buffer->buffer);
 
 	pixman_region32_t frame_damage;
 	get_frame_damage(scene_output, &frame_damage);
-	wlr_output_state_set_damage(state, &frame_damage);
+	wlr_output_state_set_damage(&pending, &frame_damage);
 	pixman_region32_fini(&frame_damage);
 
-	if (!wlr_output_test_state(scene_output->output, state)) {
-		// reset buffer and damage
-		state->committed &= ~(WLR_OUTPUT_STATE_BUFFER | WLR_OUTPUT_STATE_DAMAGE);
-		wlr_buffer_unlock(state->buffer);
-		pixman_region32_fini(&state->damage);
-
+	if (!wlr_output_test_state(scene_output->output, &pending)) {
+		wlr_output_state_finish(&pending);
 		return false;
 	}
+
+	wlr_output_state_copy(state, &pending);
+	wlr_output_state_finish(&pending);
 
 	wl_signal_emit_mutable(&buffer->events.output_present, scene_output);
 	return true;
