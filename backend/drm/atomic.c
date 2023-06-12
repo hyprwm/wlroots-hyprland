@@ -143,6 +143,32 @@ bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 	return true;
 }
 
+bool create_fb_damage_clips_blob(struct wlr_drm_backend *drm,
+		struct wlr_drm_fb *fb, const pixman_region32_t *damage, uint32_t *blob_id) {
+	if (!pixman_region32_not_empty(damage)) {
+		*blob_id = 0;
+		return true;
+	}
+
+	int width = fb->wlr_buf->width;
+	int height = fb->wlr_buf->height;
+
+	pixman_region32_t clipped;
+	pixman_region32_init(&clipped);
+	pixman_region32_intersect_rect(&clipped, damage, 0, 0, width, height);
+
+	int rects_len;
+	const pixman_box32_t *rects = pixman_region32_rectangles(&clipped, &rects_len);
+	int ret = drmModeCreatePropertyBlob(drm->fd, rects, sizeof(*rects) * rects_len, blob_id);
+	pixman_region32_fini(&clipped);
+	if (ret != 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to create FB_DAMAGE_CLIPS property blob");
+		return false;
+	}
+
+	return true;
+}
+
 static uint64_t max_bpc_for_format(uint32_t format) {
 	switch (format) {
 	case DRM_FORMAT_XRGB2101010:
@@ -271,15 +297,9 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 
 	uint32_t fb_damage_clips = 0;
 	if ((state->base->committed & WLR_OUTPUT_STATE_DAMAGE) &&
-			pixman_region32_not_empty(&state->base->damage) &&
 			crtc->primary->props.fb_damage_clips != 0) {
-		int rects_len;
-		const pixman_box32_t *rects =
-			pixman_region32_rectangles(&state->base->damage, &rects_len);
-		if (drmModeCreatePropertyBlob(drm->fd, rects,
-				sizeof(*rects) * rects_len, &fb_damage_clips) != 0) {
-			wlr_log_errno(WLR_ERROR, "Failed to create FB_DAMAGE_CLIPS property blob");
-		}
+		create_fb_damage_clips_blob(drm, state->primary_fb,
+			&state->base->damage, &fb_damage_clips);
 	}
 
 	bool prev_vrr_enabled =

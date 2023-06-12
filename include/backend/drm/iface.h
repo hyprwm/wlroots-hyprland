@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <pixman.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
@@ -10,6 +11,7 @@ struct wlr_drm_backend;
 struct wlr_drm_connector;
 struct wlr_drm_crtc;
 struct wlr_drm_connector_state;
+struct wlr_drm_fb;
 
 // Used to provide atomic or legacy DRM functions
 struct wlr_drm_interface {
@@ -33,5 +35,7 @@ bool create_mode_blob(struct wlr_drm_backend *drm,
 	const struct wlr_drm_connector_state *state, uint32_t *blob_id);
 bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 	size_t size, const uint16_t *lut, uint32_t *blob_id);
+bool create_fb_damage_clips_blob(struct wlr_drm_backend *drm,
+	struct wlr_drm_fb *fb, const pixman_region32_t *damage, uint32_t *blob_id);
 
 #endif
