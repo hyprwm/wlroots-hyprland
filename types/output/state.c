@@ -4,11 +4,13 @@
 #include "types/wlr_output.h"
 
 void wlr_output_state_finish(struct wlr_output_state *state) {
-	wlr_buffer_unlock(state->buffer);
-	// struct wlr_buffer is ref'counted, so the pointer may remain valid after
-	// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
-	// reads it after output_state_finish().
-	state->buffer = NULL;
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		wlr_buffer_unlock(state->buffer);
+		// struct wlr_buffer is ref'counted, so the pointer may remain valid after
+		// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
+		// reads it after output_state_finish().
+		state->buffer = NULL;
+	}
 	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
 		pixman_region32_fini(&state->damage);
 	}
@@ -71,8 +73,11 @@ void wlr_output_state_set_subpixel(struct wlr_output_state *state,
 
 void wlr_output_state_set_buffer(struct wlr_output_state *state,
 		struct wlr_buffer *buffer) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		wlr_buffer_unlock(state->buffer);
+	}
+
 	state->committed |= WLR_OUTPUT_STATE_BUFFER;
-	wlr_buffer_unlock(state->buffer);
 	state->buffer = wlr_buffer_lock(buffer);
 }
 
