@@ -14,7 +14,9 @@ void wlr_output_state_finish(struct wlr_output_state *state) {
 	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
 		pixman_region32_fini(&state->damage);
 	}
-	free(state->gamma_lut);
+	if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
+		free(state->gamma_lut);
+	}
 }
 
 void wlr_output_state_set_enabled(struct wlr_output_state *state,
@@ -97,7 +99,11 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 		size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b) {
 	uint16_t *gamma_lut = NULL;
 	if (ramp_size > 0) {
-		gamma_lut = realloc(state->gamma_lut, 3 * ramp_size * sizeof(uint16_t));
+		if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
+			gamma_lut = realloc(state->gamma_lut, 3 * ramp_size * sizeof(uint16_t));
+		} else {
+			gamma_lut = malloc(3 * ramp_size * sizeof(uint16_t));
+		}
 		if (gamma_lut == NULL) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			return false;
