@@ -290,6 +290,7 @@ struct render_data {
 	enum wl_output_transform transform;
 	float scale;
 	struct wlr_box logical;
+	int trans_width, trans_height;
 
 	struct wlr_scene_output *output;
 
@@ -299,14 +300,12 @@ struct render_data {
 
 static void transform_output_damage(pixman_region32_t *damage, const struct render_data *data) {
 	enum wl_output_transform transform = wlr_output_transform_invert(data->transform);
-	wlr_region_transform(damage, damage, transform,
-		data->logical.width, data->logical.height);
+	wlr_region_transform(damage, damage, transform, data->trans_width, data->trans_height);
 }
 
 static void transform_output_box(struct wlr_box *box, const struct render_data *data) {
 	enum wl_output_transform transform = wlr_output_transform_invert(data->transform);
-	wlr_box_transform(box, box, transform,
-		data->logical.width, data->logical.height);
+	wlr_box_transform(box, box, transform, data->trans_width, data->trans_height);
 }
 
 static void scene_damage_outputs(struct wlr_scene *scene, pixman_region32_t *damage) {
@@ -1586,7 +1585,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	};
 
 	output_pending_resolution(output, state,
-		&render_data.logical.width, &render_data.logical.height);
+		&render_data.trans_width, &render_data.trans_height);
 
 	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
 		render_data.transform = state->transform;
@@ -1597,13 +1596,13 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	}
 
 	if (render_data.transform & WL_OUTPUT_TRANSFORM_90) {
-		int tmp = render_data.logical.width;
-		render_data.logical.width = render_data.logical.height;
-		render_data.logical.height = tmp;
+		int tmp = render_data.trans_width;
+		render_data.trans_width = render_data.trans_height;
+		render_data.trans_height = tmp;
 	}
 
-	render_data.logical.width /= render_data.scale;
-	render_data.logical.height /= render_data.scale;
+	render_data.logical.width = render_data.trans_width / render_data.scale;
+	render_data.logical.height = render_data.trans_height / render_data.scale;
 
 	struct render_list_constructor_data list_con = {
 		.box = render_data.logical,
