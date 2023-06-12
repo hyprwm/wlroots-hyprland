@@ -469,25 +469,29 @@ void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
 			continue;
 		}
 
-		cursor_output_cursor_reset_image(output_cursor);
+		if (surface != output_cursor->surface) {
+			// Only send wl_surface.leave if the surface changes
+			cursor_output_cursor_reset_image(output_cursor);
 
-		output_cursor->surface = surface;
+			output_cursor->surface = surface;
+
+			wl_signal_add(&surface->events.destroy,
+				&output_cursor->surface_destroy);
+			output_cursor->surface_destroy.notify =
+				output_cursor_output_handle_surface_destroy;
+			wl_signal_add(&surface->events.commit,
+				&output_cursor->surface_commit);
+			output_cursor->surface_commit.notify =
+				output_cursor_output_handle_surface_commit;
+
+			wl_signal_add(&output_cursor->output_cursor->output->events.commit,
+				&output_cursor->output_commit);
+			output_cursor->output_commit.notify =
+				output_cursor_output_handle_output_commit;
+		}
+
 		output_cursor->surface_hotspot.x = hotspot_x;
 		output_cursor->surface_hotspot.y = hotspot_y;
-
-		wl_signal_add(&surface->events.destroy,
-			&output_cursor->surface_destroy);
-		output_cursor->surface_destroy.notify =
-			output_cursor_output_handle_surface_destroy;
-		wl_signal_add(&surface->events.commit,
-			&output_cursor->surface_commit);
-		output_cursor->surface_commit.notify =
-			output_cursor_output_handle_surface_commit;
-
-		wl_signal_add(&output_cursor->output_cursor->output->events.commit,
-			&output_cursor->output_commit);
-		output_cursor->output_commit.notify =
-			output_cursor_output_handle_output_commit;
 
 		output_cursor_output_commit_surface(output_cursor);
 	}
