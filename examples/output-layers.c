@@ -82,11 +82,9 @@ static void output_handle_frame(struct wl_listener *listener, void *data) {
 		};
 	}
 
-	struct wlr_output_state output_state = {
-		.committed = WLR_OUTPUT_STATE_LAYERS,
-		.layers = layers_arr.data,
-		.layers_len = layers_arr.size / sizeof(struct wlr_output_layer_state),
-	};
+	struct wlr_output_state output_state = {0};
+	wlr_output_state_set_layers(&output_state, layers_arr.data,
+		layers_arr.size / sizeof(struct wlr_output_layer_state));
 
 	if (!wlr_output_test_state(output->wlr_output, &output_state)) {
 		wlr_log(WLR_ERROR, "wlr_output_test() failed");

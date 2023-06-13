@@ -120,3 +120,10 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 	state->gamma_lut = gamma_lut;
 	return true;
 }
+
+void wlr_output_state_set_layers(struct wlr_output_state *state,
+		struct wlr_output_layer_state *layers, size_t layers_len) {
+	state->committed |= WLR_OUTPUT_STATE_LAYERS;
+	state->layers = layers;
+	state->layers_len = layers_len;
+}

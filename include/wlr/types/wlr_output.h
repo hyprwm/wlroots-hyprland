@@ -580,6 +580,13 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
  */
 void wlr_output_state_set_damage(struct wlr_output_state *state,
 	const pixman_region32_t *damage);
+/**
+ * Set the state's layers.
+ *
+ * The array must be kept valid by the caller until wlr_output_state_finish().
+ */
+void wlr_output_state_set_layers(struct wlr_output_state *state,
+	struct wlr_output_layer_state *layers, size_t layers_len);
 
 
 /**
