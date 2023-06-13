@@ -1484,7 +1484,9 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 		return false;
 	}
 
-	if (state->committed & (WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_ENABLED)) {
+	if (state->committed & (WLR_OUTPUT_STATE_MODE |
+			WLR_OUTPUT_STATE_ENABLED |
+			WLR_OUTPUT_STATE_RENDER_FORMAT)) {
 		// Legacy DRM will explode if we try to modeset with a direct scanout buffer
 		return false;
 	}
