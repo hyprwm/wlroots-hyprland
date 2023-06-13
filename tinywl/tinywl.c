@@ -602,13 +602,16 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 	 * refresh rate), and each monitor supports only a specific set of modes. We
 	 * just pick the monitor's preferred mode, a more sophisticated compositor
 	 * would let the user configure it. */
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-		wlr_output_set_mode(wlr_output, mode);
-		wlr_output_enable(wlr_output, true);
-		if (!wlr_output_commit(wlr_output)) {
+	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
+	if (mode != NULL) {
+		struct wlr_output_state state = {0};
+		wlr_output_state_set_mode(&state, mode);
+		wlr_output_state_set_enabled(&state, true);
+		if (!wlr_output_commit_state(wlr_output, &state)) {
+			wlr_output_state_finish(&state);
 			return;
 		}
+		wlr_output_state_finish(&state);
 	}
 
 	/* Allocates and configures our state for this output */
