@@ -193,52 +193,6 @@ struct wlr_output *wlr_output_from_resource(struct wl_resource *resource) {
 	return wl_resource_get_user_data(resource);
 }
 
-void wlr_output_enable(struct wlr_output *output, bool enable) {
-	wlr_output_state_set_enabled(&output->pending, enable);
-}
-
-void wlr_output_set_mode(struct wlr_output *output,
-		struct wlr_output_mode *mode) {
-	wlr_output_state_set_mode(&output->pending, mode);
-}
-
-void wlr_output_set_custom_mode(struct wlr_output *output, int32_t width,
-		int32_t height, int32_t refresh) {
-	// If there is a fixed mode which matches what the user wants, use that
-	struct wlr_output_mode *mode;
-	wl_list_for_each(mode, &output->modes, link) {
-		if (mode->width == width && mode->height == height &&
-				mode->refresh == refresh) {
-			wlr_output_set_mode(output, mode);
-			return;
-		}
-	}
-
-	wlr_output_state_set_custom_mode(&output->pending, width, height, refresh);
-}
-
-void wlr_output_set_transform(struct wlr_output *output,
-		enum wl_output_transform transform) {
-	wlr_output_state_set_transform(&output->pending, transform);
-}
-
-void wlr_output_set_scale(struct wlr_output *output, float scale) {
-	wlr_output_state_set_scale(&output->pending, scale);
-}
-
-void wlr_output_enable_adaptive_sync(struct wlr_output *output, bool enabled) {
-	wlr_output_state_set_adaptive_sync_enabled(&output->pending, enabled);
-}
-
-void wlr_output_set_render_format(struct wlr_output *output, uint32_t format) {
-	wlr_output_state_set_render_format(&output->pending, format);
-}
-
-void wlr_output_set_subpixel(struct wlr_output *output,
-		enum wl_output_subpixel subpixel) {
-	wlr_output_state_set_subpixel(&output->pending, subpixel);
-}
-
 void wlr_output_set_name(struct wlr_output *output, const char *name) {
 	assert(output->global == NULL);
 
@@ -266,12 +220,6 @@ void wlr_output_set_description(struct wlr_output *output, const char *desc) {
 	wlr_output_schedule_done(output);
 
 	wl_signal_emit_mutable(&output->events.description, output);
-}
-
-static void output_state_move(struct wlr_output_state *dst,
-		struct wlr_output_state *src) {
-	*dst = *src;
-	wlr_output_state_init(src);
 }
 
 static void output_apply_state(struct wlr_output *output,
@@ -417,7 +365,6 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.description);
 	wl_signal_init(&output->events.request_state);
 	wl_signal_init(&output->events.destroy);
-	wlr_output_state_init(&output->pending);
 
 	output->software_cursor_locks = env_parse_bool("WLR_NO_HARDWARE_CURSORS");
 	if (output->software_cursor_locks) {
@@ -478,8 +425,6 @@ void wlr_output_destroy(struct wlr_output *output) {
 	free(output->model);
 	free(output->serial);
 
-	wlr_output_state_finish(&output->pending);
-
 	if (output->impl && output->impl->destroy) {
 		output->impl->destroy(output);
 	} else {
@@ -519,42 +464,6 @@ struct wlr_output_mode *wlr_output_preferred_mode(struct wlr_output *output) {
 
 	// No preferred mode, choose the first one
 	return wl_container_of(output->modes.next, mode, link);
-}
-
-static void output_state_clear_buffer(struct wlr_output_state *state) {
-	if (!(state->committed & WLR_OUTPUT_STATE_BUFFER)) {
-		return;
-	}
-
-	wlr_buffer_unlock(state->buffer);
-	state->buffer = NULL;
-
-	state->committed &= ~WLR_OUTPUT_STATE_BUFFER;
-}
-
-void wlr_output_set_damage(struct wlr_output *output,
-		const pixman_region32_t *damage) {
-	pixman_region32_intersect_rect(&output->pending.damage, damage,
-		0, 0, output->width, output->height);
-	output->pending.committed |= WLR_OUTPUT_STATE_DAMAGE;
-}
-
-void wlr_output_set_layers(struct wlr_output *output,
-		struct wlr_output_layer_state *layers, size_t layers_len) {
-	wlr_output_state_set_layers(&output->pending, layers, layers_len);
-}
-
-static void output_state_clear_gamma_lut(struct wlr_output_state *state) {
-	free(state->gamma_lut);
-	state->gamma_lut = NULL;
-	state->committed &= ~WLR_OUTPUT_STATE_GAMMA_LUT;
-}
-
-static void output_state_clear(struct wlr_output_state *state) {
-	output_state_clear_buffer(state);
-	output_state_clear_gamma_lut(state);
-	pixman_region32_clear(&state->damage);
-	state->committed = 0;
 }
 
 void output_pending_resolution(struct wlr_output *output,
@@ -758,12 +667,6 @@ bool wlr_output_test_state(struct wlr_output *output,
 	return success;
 }
 
-bool wlr_output_test(struct wlr_output *output) {
-	struct wlr_output_state state = output->pending;
-
-	return wlr_output_test_state(output, &state);
-}
-
 bool wlr_output_commit_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	uint32_t unchanged = output_compare_state(output, state);
@@ -827,25 +730,6 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	}
 
 	return true;
-}
-
-bool wlr_output_commit(struct wlr_output *output) {
-	// Make sure the pending state is cleared before the output is committed
-	struct wlr_output_state state = {0};
-	output_state_move(&state, &output->pending);
-
-	bool ok = wlr_output_commit_state(output, &state);
-	wlr_output_state_finish(&state);
-	return ok;
-}
-
-void wlr_output_rollback(struct wlr_output *output) {
-	output_state_clear(&output->pending);
-}
-
-void wlr_output_attach_buffer(struct wlr_output *output,
-		struct wlr_buffer *buffer) {
-	wlr_output_state_set_buffer(&output->pending, buffer);
 }
 
 void wlr_output_send_frame(struct wlr_output *output) {
@@ -951,11 +835,6 @@ void wlr_output_send_request_state(struct wlr_output *output,
 		.state = &copy,
 	};
 	wl_signal_emit_mutable(&output->events.request_state, &event);
-}
-
-void wlr_output_set_gamma(struct wlr_output *output, size_t size,
-		const uint16_t *r, const uint16_t *g, const uint16_t *b) {
-	wlr_output_state_set_gamma_lut(&output->pending, size, r, g, b);
 }
 
 size_t wlr_output_get_gamma_size(struct wlr_output *output) {
