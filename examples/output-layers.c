@@ -175,10 +175,12 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
 	wl_list_insert(&server->outputs, &output->link);
 
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-		wlr_output_set_mode(wlr_output, mode);
-		wlr_output_commit(wlr_output);
+	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
+	if (mode != NULL) {
+		struct wlr_output_state state = {0};
+		wlr_output_state_set_mode(&state, mode);
+		wlr_output_commit_state(wlr_output, &state);
+		wlr_output_state_finish(&state);
 	}
 
 	wlr_output_create_global(wlr_output);

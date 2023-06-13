@@ -107,10 +107,11 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
-		wlr_output_set_mode(output, mode);
+		struct wlr_output_state state = {0};
+		wlr_output_state_set_mode(&state, mode);
+		wlr_output_commit_state(sample_output->output, &state);
+		wlr_output_state_finish(&state);
 	}
-
-	wlr_output_commit(sample_output->output);
 }
 
 static void keyboard_key_notify(struct wl_listener *listener, void *data) {

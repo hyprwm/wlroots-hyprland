@@ -166,10 +166,11 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 	if (mode != NULL) {
-		wlr_output_set_mode(wlr_output, mode);
+		struct wlr_output_state state = {0};
+		wlr_output_state_set_mode(&state, mode);
+		wlr_output_commit_state(wlr_output, &state);
+		wlr_output_state_finish(&state);
 	}
-
-	wlr_output_commit(wlr_output);
 }
 
 static void server_handle_present_surface(struct wl_listener *listener,

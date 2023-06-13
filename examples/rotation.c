@@ -122,7 +122,9 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	sample_output->x_offs = sample_output->y_offs = 0;
 	sample_output->x_vel = sample_output->y_vel = 128;
 
-	wlr_output_set_transform(output, sample->transform);
+	struct wlr_output_state state = {0};
+	wlr_output_state_set_transform(&state, sample->transform);
+
 	sample_output->output = output;
 	sample_output->sample = sample;
 	wl_signal_add(&output->events.frame, &sample_output->frame);
@@ -133,10 +135,11 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
-		wlr_output_set_mode(output, mode);
+		wlr_output_state_set_mode(&state, mode);
 	}
 
-	wlr_output_commit(output);
+	wlr_output_commit_state(output, &state);
+	wlr_output_state_finish(&state);
 }
 
 static void keyboard_key_notify(struct wl_listener *listener, void *data) {
