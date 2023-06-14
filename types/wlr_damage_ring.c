@@ -29,12 +29,16 @@ void wlr_damage_ring_finish(struct wlr_damage_ring *ring) {
 void wlr_damage_ring_set_bounds(struct wlr_damage_ring *ring,
 		int32_t width, int32_t height) {
 	if (width == 0 || height == 0) {
-		ring->width = INT_MAX;
-		ring->height = INT_MAX;
-	} else {
-		ring->width = width;
-		ring->height = height;
+		width = INT_MAX;
+		height = INT_MAX;
 	}
+
+	if (ring->width == width && ring->height == height) {
+		return;
+	}
+
+	ring->width = width;
+	ring->height = height;
 	wlr_damage_ring_add_whole(ring);
 }
 
