@@ -462,8 +462,23 @@ bool wlr_output_commit(struct wlr_output *output);
  * Discard the pending output state.
  */
 void wlr_output_rollback(struct wlr_output *output);
+
+/**
+ * Test whether this output state would be accepted by the backend. If this
+ * function returns true, wlr_output_commit_state() will only fail due to a
+ * runtime error. This function does not change the current state of the
+ * output.
+ */
 bool wlr_output_test_state(struct wlr_output *output,
 	const struct wlr_output_state *state);
+/**
+ * Attempts to apply the state to this output. This function may fail for any
+ * reason and return false. If failed, none of the state would have been applied,
+ * this function is atomic. If the commit succeeded, true is returned.
+ *
+ * Note: wlr_output_state_finish() would typically be called after the state
+ * has been committed.
+ */
 bool wlr_output_commit_state(struct wlr_output *output,
 	const struct wlr_output_state *state);
 /**
@@ -552,38 +567,131 @@ bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 	double x, double y);
 void wlr_output_cursor_destroy(struct wlr_output_cursor *cursor);
 
-
+/**
+ * Releases all resources associated with an output state.
+ */
 void wlr_output_state_finish(struct wlr_output_state *state);
+/**
+ * Enables or disables an output. A disabled output is turned off and doesn't
+ * emit `frame` events.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_enabled(struct wlr_output_state *state,
 	bool enabled);
+/**
+ * Sets the output mode of an output. An output mode will specify the resolution
+ * and refresh rate, among other things.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_mode(struct wlr_output_state *state,
 	struct wlr_output_mode *mode);
+/**
+ * Sets a custom output mode for an output. See wlr_output_state_set_mode()
+ * for details.
+ *
+ * When the output advertises fixed modes, custom modes are not guaranteed to
+ * work correctly, they may result in visual artifacts. If a suitable fixed mode
+ * is available, compositors should prefer it and use wlr_output_state_set_mode()
+ * instead of custom modes.
+ *
+ * Setting `refresh` to zero lets the backend pick a preferred value. The
+ * output needs to be enabled.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_custom_mode(struct wlr_output_state *state,
 	int32_t width, int32_t height, int32_t refresh);
+/**
+ * Sets the scale of an output. The scale is used to increase the size of UI
+ * elements to aid users who use high DPI outputs.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_scale(struct wlr_output_state *state, float scale);
+/**
+ * Sets the transform of an output. The transform is used to rotate or flip
+ * the contents of the screen.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_transform(struct wlr_output_state *state,
 	enum wl_output_transform transform);
+/**
+ * Enables or disable adaptive sync for an output (ie. variable refresh rate).
+ * Compositors can inspect `wlr_output.adaptive_sync_status` to query the
+ * effective status. Backends that don't support adaptive sync will reject the
+ * output commit.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_adaptive_sync_enabled(struct wlr_output_state *state,
 	bool enabled);
+/**
+ * Sets the render format for an output.
+ *
+ * The default value is DRM_FORMAT_XRGB8888.
+ *
+ * While high bit depth render formats are necessary for a monitor to receive
+ * useful high bit data, they do not guarantee it; a DRM_FORMAT_XBGR2101010
+ * buffer will only lead to sending 10-bpc image data to the monitor if
+ * hardware and software permit this.
+ *
+ * This only affects the format of the output buffer used when rendering using
+ * the output's own swapchain as with wlr_output_begin_render_pass(). It has no
+ * impact on the cursor buffer format, or on the formats supported for direct
+ * scan-out (see also wlr_output_state_set_buffer()).
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_render_format(struct wlr_output_state *state,
 	uint32_t format);
+/**
+ * Sets the subpixel layout hint for an output. Note that this is only a hint
+ * and may be ignored. The default value depends on the backend.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_subpixel(struct wlr_output_state *state,
 	enum wl_output_subpixel subpixel);
+/**
+ * Sets the buffer for an output. The buffer contains the contents of the
+ * screen. If the compositor wishes to present a new frame, they must commit
+ * with a buffer.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 void wlr_output_state_set_buffer(struct wlr_output_state *state,
 	struct wlr_buffer *buffer);
+/**
+ * Sets the gamma table for an output. `r`, `g` and `b` are gamma ramps for
+ * red, green and blue. `size` is the length of the ramps and must not exceed
+ * the value returned by wlr_output_get_gamma_size().
+ *
+ * Providing zero-sized ramps resets the gamma table.
+ *
+ * This state will be applied once wlr_output_commit_state() is called.
+ */
 bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 	size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b);
 /**
- * Sets the state's damage region.
+ * Sets the damage region for an output. This is used as a hint to the backend
+ * and can be used to reduce power consumption or increase performance on some
+ * devices.
  *
  * This should be called in along with wlr_output_state_set_buffer().
+ * This state will be applied once wlr_output_commit_state() is called.
  */
 void wlr_output_state_set_damage(struct wlr_output_state *state,
 	const pixman_region32_t *damage);
 /**
- * Set the state's layers.
+ * Set the output layers for an output. Output layers are used to try and take
+ * advantage of backend features that may reduce the amount of things that
+ * need to be composited.
  *
  * The array must be kept valid by the caller until wlr_output_state_finish().
+ * This state will be applied once wlr_output_commit_state() is called.
  */
 void wlr_output_state_set_layers(struct wlr_output_state *state,
 	struct wlr_output_layer_state *layers, size_t layers_len);
