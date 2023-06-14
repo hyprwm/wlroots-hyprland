@@ -169,7 +169,6 @@ subdir('xwayland')
 subdir('include')
 
 wlr_inc = include_directories('include')
-proto_inc = include_directories('protocol')
 
 symbols_file = 'wlroots.syms'
 symbols_flag = '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(), symbols_file)
@@ -177,7 +176,7 @@ lib_wlr = library(
 	meson.project_name(), wlr_files,
 	soversion: soversion.to_string(),
 	dependencies: wlr_deps,
-	include_directories: [wlr_inc, proto_inc],
+	include_directories: [wlr_inc],
 	install: true,
 	link_args: symbols_flag,
 	link_depends: symbols_file,
