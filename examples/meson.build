@@ -200,7 +200,6 @@ foreach name, info : compositors
 		name,
 		[info.get('src'), extra_src],
 		dependencies: [wlroots, libdrm],
-		include_directories: [wlr_inc, proto_inc],
 		build_by_default: get_option('examples'),
 	)
 endforeach
