@@ -223,3 +223,14 @@ foreach name, info : clients
 		build_by_default: get_option('examples'),
 	)
 endforeach
+
+executable(
+	'embedded',
+	[
+		'embedded.c',
+		'egl_common.c',
+		protocols_code['xdg-shell'],
+		protocols_client_header['xdg-shell'],
+	],
+	dependencies: [wlroots, wayland_client, wayland_egl, egl, glesv2],
+)
