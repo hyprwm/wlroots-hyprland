@@ -1215,9 +1215,6 @@ static void scene_node_output_update(struct wlr_scene_node *node,
 }
 
 static void scene_output_update_geometry(struct wlr_scene_output *scene_output) {
-	int width, height;
-	wlr_output_transformed_resolution(scene_output->output, &width, &height);
-	wlr_damage_ring_set_bounds(&scene_output->damage_ring, width, height);
 	wlr_damage_ring_add_whole(&scene_output->damage_ring);
 	wlr_output_schedule_frame(scene_output->output);
 
@@ -1702,6 +1699,9 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		wlr_damage_ring_add(&scene_output->damage_ring, &acc_damage);
 		pixman_region32_fini(&acc_damage);
 	}
+
+	wlr_damage_ring_set_bounds(&scene_output->damage_ring,
+		render_data.trans_width, render_data.trans_height);
 
 	if (!wlr_output_configure_primary_swapchain(output, state, &output->swapchain)) {
 		return false;
