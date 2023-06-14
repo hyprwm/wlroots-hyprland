@@ -36,10 +36,25 @@ static const uint32_t SUPPORTED_OUTPUT_STATE =
 
 static size_t last_output_num = 0;
 
+static const char *surface_tag = "wlr_wl_output";
+
 static struct wlr_wl_output *get_wl_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_wl(wlr_output));
 	struct wlr_wl_output *output = wl_container_of(wlr_output, output, wlr_output);
+	return output;
+}
+
+struct wlr_wl_output *get_wl_output_from_surface(struct wlr_wl_backend *wl,
+		struct wl_surface *surface) {
+	if (wl_proxy_get_tag((struct wl_proxy *)surface) != &surface_tag) {
+		return NULL;
+	}
+	struct wlr_wl_output *output = wl_surface_get_user_data(surface);
+	assert(output != NULL);
+	if (output->backend != wl) {
+		return NULL;
+	}
 	return output;
 }
 
@@ -774,6 +789,7 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 		wlr_log_errno(WLR_ERROR, "Could not create output surface");
 		goto error;
 	}
+	wl_proxy_set_tag((struct wl_proxy *)output->surface, &surface_tag);
 	wl_surface_set_user_data(output->surface, output);
 	output->xdg_surface =
 		xdg_wm_base_get_xdg_surface(backend->xdg_wm_base, output->surface);

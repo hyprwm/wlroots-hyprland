@@ -154,6 +154,8 @@ struct wlr_wl_seat {
 };
 
 struct wlr_wl_backend *get_wl_backend_from_backend(struct wlr_backend *backend);
+struct wlr_wl_output *get_wl_output_from_surface(struct wlr_wl_backend *wl,
+	struct wl_surface *surface);
 void update_wl_output_cursor(struct wlr_wl_output *output);
 
 void init_seat_keyboard(struct wlr_wl_seat *seat);

@@ -38,8 +38,10 @@ static void pointer_handle_enter(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct wlr_wl_output *output = wl_surface_get_user_data(surface);
-	assert(output);
+	struct wlr_wl_output *output = get_wl_output_from_surface(seat->backend, surface);
+	if (output == NULL) {
+		return;
+	}
 
 	struct wlr_wl_pointer *pointer = output_get_pointer(output, wl_pointer);
 	seat->active_pointer = pointer;
@@ -64,8 +66,10 @@ static void pointer_handle_leave(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
-	struct wlr_wl_output *output = wl_surface_get_user_data(surface);
-	assert(output);
+	struct wlr_wl_output *output = get_wl_output_from_surface(seat->backend, surface);
+	if (output == NULL) {
+		return;
+	}
 
 	if (seat->active_pointer != NULL &&
 			seat->active_pointer->output == output) {

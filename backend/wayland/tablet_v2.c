@@ -504,8 +504,13 @@ static void handle_tablet_tool_proximity_in(void *data,
 	struct tablet_tool *tool = data;
 	assert(tablet_id == tool->seat->zwp_tablet_v2);
 
+	struct wlr_wl_output *output = get_wl_output_from_surface(tool->seat->backend, surface);
+	if (output == NULL) {
+		return;
+	}
+
 	tool->is_in = true;
-	tool->output = wl_surface_get_user_data(surface);
+	tool->output = output;
 }
 
 static void handle_tablet_tool_proximity_out(void *data,
