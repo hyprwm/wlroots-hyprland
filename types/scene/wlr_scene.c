@@ -1586,6 +1586,10 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		&render_data.trans_width, &render_data.trans_height);
 
 	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		if (render_data.transform != state->transform) {
+			wlr_damage_ring_add_whole(&scene_output->damage_ring);
+		}
+
 		render_data.transform = state->transform;
 	}
 
