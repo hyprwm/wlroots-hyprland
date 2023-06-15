@@ -425,6 +425,10 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 	}
 }
 
+void wlr_cursor_unset_image(struct wlr_cursor *cur) {
+	wlr_cursor_set_image(cur, NULL, 0, 0, 0, 0, 0, 0);
+}
+
 void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
 		struct wlr_xcursor_manager *manager, const char *name) {
 	struct wlr_cursor_output_cursor *output_cursor;

@@ -148,6 +148,11 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 	int32_t hotspot_y, float scale);
 
 /**
+ * Hide the cursor image.
+ */
+void wlr_cursor_unset_image(struct wlr_cursor *cur);
+
+/**
  * Set the cursor image from an XCursor theme.
  *
  * The image will be loaded from the struct wlr_xcursor_manager.
