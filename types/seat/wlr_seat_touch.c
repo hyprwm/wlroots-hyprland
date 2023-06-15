@@ -454,11 +454,6 @@ void seat_client_create_inert_touch(struct wl_client *client, uint32_t version,
 }
 
 void seat_client_destroy_touch(struct wl_resource *resource) {
-	struct wlr_seat_client *seat_client =
-		seat_client_from_touch_resource(resource);
-	if (seat_client == NULL) {
-		return;
-	}
 	wl_list_remove(wl_resource_get_link(resource));
 	wl_list_init(wl_resource_get_link(resource));
 	wl_resource_set_user_data(resource, NULL);

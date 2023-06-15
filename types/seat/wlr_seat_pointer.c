@@ -553,11 +553,6 @@ void seat_client_create_inert_pointer(struct wl_client *client,
 }
 
 void seat_client_destroy_pointer(struct wl_resource *resource) {
-	struct wlr_seat_client *seat_client =
-		wlr_seat_client_from_pointer_resource(resource);
-	if (seat_client == NULL) {
-		return;
-	}
 	wl_list_remove(wl_resource_get_link(resource));
 	wl_list_init(wl_resource_get_link(resource));
 	wl_resource_set_user_data(resource, NULL);
