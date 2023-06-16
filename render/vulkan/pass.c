@@ -432,13 +432,24 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 		wlr_matrix_project_box(matrix, &options->box, WL_OUTPUT_TRANSFORM_NORMAL, 0, proj);
 		wlr_matrix_multiply(matrix, pass->projection, matrix);
 
+		struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
+			pass->render_buffer->render_setup,
+			&(struct wlr_vk_pipeline_key) {
+				.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
+				.layout = &renderer->default_pipeline_layout,
+			});
+		if (!pipe) {
+			pass->failed = true;
+			break;
+		}
+
 		struct wlr_vk_vert_pcr_data vert_pcr_data = {
 			.uv_off = { 0, 0 },
 			.uv_size = { 1, 1 },
 		};
 		mat3_to_mat4(matrix, vert_pcr_data.mat4);
 
-		bind_pipeline(pass, pass->render_buffer->render_setup->quad_pipe);
+		bind_pipeline(pass, pipe->vk);
 		vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
 			VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
 		vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
@@ -534,6 +545,7 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
 		render_buffer->render_setup,
 		&(struct wlr_vk_pipeline_key) {
+			.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 			.layout = texture->pipeline_layout,
 			.texture_transform = texture->transform,
 		});

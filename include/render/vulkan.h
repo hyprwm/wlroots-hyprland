@@ -142,9 +142,17 @@ enum wlr_vk_texture_transform {
 	WLR_VK_TEXTURE_TRANSFORM_SRGB = 1,
 };
 
+enum wlr_vk_shader_source {
+	WLR_VK_SHADER_SOURCE_TEXTURE,
+	WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
+};
+
 struct wlr_vk_pipeline_key {
-	enum wlr_vk_texture_transform texture_transform;
+	enum wlr_vk_shader_source source;
 	struct wlr_vk_pipeline_layout *layout;
+
+	// only used if source is texture
+	enum wlr_vk_texture_transform texture_transform;
 };
 
 struct wlr_vk_pipeline {
@@ -162,7 +170,6 @@ struct wlr_vk_render_format_setup {
 	VkFormat render_format; // used in renderpass
 	VkRenderPass render_pass;
 
-	VkPipeline quad_pipe;
 	VkPipeline output_pipe;
 
 	struct wlr_vk_renderer *renderer;

@@ -178,7 +178,6 @@ static void destroy_render_format_setup(struct wlr_vk_renderer *renderer,
 	VkDevice dev = renderer->dev->dev;
 	vkDestroyRenderPass(dev, setup->render_pass, NULL);
 	vkDestroyPipeline(dev, setup->output_pipe, NULL);
-	vkDestroyPipeline(dev, setup->quad_pipe, NULL);
 
 	struct wlr_vk_pipeline *pipeline, *tmp_pipeline;
 	wl_list_for_each_safe(pipeline, tmp_pipeline, &setup->pipelines, link) {
@@ -1509,10 +1508,19 @@ static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	VkCommandBuffer cb = renderer->current_command_buffer->vk;
 
-	VkPipeline pipe = renderer->current_render_buffer->render_setup->quad_pipe;
-	if (pipe != renderer->bound_pipe) {
-		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
-		renderer->bound_pipe = pipe;
+	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
+		renderer->current_render_buffer->render_setup,
+		&(struct wlr_vk_pipeline_key) {
+			.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
+			.layout = &renderer->default_pipeline_layout,
+		});
+	if (!pipe) {
+		return;
+	}
+
+	if (pipe->vk != renderer->bound_pipe) {
+		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->vk);
+		renderer->bound_pipe = pipe->vk;
 	}
 
 	float final_matrix[9];
@@ -2088,7 +2096,20 @@ static bool init_blend_to_output_layouts(struct wlr_vk_renderer *renderer,
 
 static bool pipeline_key_equals(const struct wlr_vk_pipeline_key *a,
 		const struct wlr_vk_pipeline_key *b) {
-	return a->texture_transform == b->texture_transform && a->layout == b->layout;
+	if (a->layout != b->layout) {
+		return false;
+	}
+
+	if (a->source != b->source) {
+		return false;
+	}
+
+	if (a->source == WLR_VK_SHADER_SOURCE_TEXTURE &&
+			a->texture_transform != b->texture_transform) {
+		return false;
+	}
+
+	return true;
 }
 
 // Initializes the pipeline for rendering textures and using the given
@@ -2131,21 +2152,33 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 		.pData = &color_transform_type,
 	};
 
-	VkPipelineShaderStageCreateInfo tex_stages[2] = {
-		{
+	VkPipelineShaderStageCreateInfo stages[2];
+	stages[0] = (VkPipelineShaderStageCreateInfo) {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.stage = VK_SHADER_STAGE_VERTEX_BIT,
+		.module = renderer->vert_module,
+		.pName = "main",
+	};
+
+	switch (key->source) {
+	case WLR_VK_SHADER_SOURCE_SINGLE_COLOR:
+		stages[1] = (VkPipelineShaderStageCreateInfo) {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_VERTEX_BIT,
-			.module = renderer->vert_module,
+			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.module = renderer->quad_frag_module,
 			.pName = "main",
-		},
-		{
+		};
+		break;
+	case WLR_VK_SHADER_SOURCE_TEXTURE:
+		stages[1] = (VkPipelineShaderStageCreateInfo) {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
 			.module = renderer->tex_frag_module,
 			.pName = "main",
 			.pSpecializationInfo = &specialization,
-		},
-	};
+		};
+		break;
+	}
 
 	VkPipelineInputAssemblyStateCreateInfo assembly = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -2213,7 +2246,7 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 		.renderPass = setup->render_pass,
 		.subpass = 0,
 		.stageCount = 2,
-		.pStages = tex_stages,
+		.pStages = stages,
 
 		.pInputAssemblyState = &assembly,
 		.pRasterizationState = &rasterization,
@@ -2234,111 +2267,6 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 
 	wl_list_insert(&setup->pipelines, &pipeline->link);
 	return pipeline;
-}
-
-static bool init_quad_pipeline(struct wlr_vk_renderer *renderer,
-		VkRenderPass rp, VkPipelineLayout pipe_layout, VkPipeline *pipe) {
-	VkResult res;
-	VkDevice dev = renderer->dev->dev;
-
-	VkPipelineShaderStageCreateInfo quad_stages[2] = {
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_VERTEX_BIT,
-			.module = renderer->vert_module,
-			.pName = "main",
-		},
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.module = renderer->quad_frag_module,
-			.pName = "main",
-		},
-	};
-
-	VkPipelineInputAssemblyStateCreateInfo assembly = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-	};
-
-	VkPipelineRasterizationStateCreateInfo rasterization = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.polygonMode = VK_POLYGON_MODE_FILL,
-		.cullMode = VK_CULL_MODE_NONE,
-		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-		.lineWidth = 1.f,
-	};
-
-	VkPipelineColorBlendAttachmentState blend_attachment = {
-		.blendEnable = true,
-		.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.colorBlendOp = VK_BLEND_OP_ADD,
-		.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-		.alphaBlendOp = VK_BLEND_OP_ADD,
-		.colorWriteMask =
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT,
-	};
-
-	VkPipelineColorBlendStateCreateInfo blend = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.attachmentCount = 1,
-		.pAttachments = &blend_attachment,
-	};
-
-	VkPipelineMultisampleStateCreateInfo multisample = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-	};
-
-	VkPipelineViewportStateCreateInfo viewport = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.viewportCount = 1,
-		.scissorCount = 1,
-	};
-
-	VkDynamicState dynStates[2] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR,
-	};
-	VkPipelineDynamicStateCreateInfo dynamic = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.pDynamicStates = dynStates,
-		.dynamicStateCount = 2,
-	};
-
-	VkPipelineVertexInputStateCreateInfo vertex = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-	};
-
-	VkGraphicsPipelineCreateInfo pinfo = {
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.layout = pipe_layout,
-		.renderPass = rp,
-		.subpass = 0,
-		.stageCount = 2,
-		.pStages = quad_stages,
-		.pInputAssemblyState = &assembly,
-		.pRasterizationState = &rasterization,
-		.pColorBlendState = &blend,
-		.pMultisampleState = &multisample,
-		.pViewportState = &viewport,
-		.pDynamicState = &dynamic,
-		.pVertexInputState = &vertex,
-	};
-
-	VkPipelineCache cache = VK_NULL_HANDLE;
-	res = vkCreateGraphicsPipelines(dev, cache, 1, &pinfo, NULL, pipe);
-	if (res != VK_SUCCESS) {
-		wlr_log(WLR_ERROR, "failed to create vulkan quad pipeline: %d", res);
-		return false;
-	}
-
-	return true;
 }
 
 static bool init_blend_to_output_pipeline(struct wlr_vk_renderer *renderer,
@@ -2482,7 +2410,7 @@ static bool init_ycbcr_pipeline_layout(struct wlr_vk_renderer *renderer,
 }
 
 // Creates static render data, such as sampler, layouts and shader modules
-// for the given rednerer.
+// for the given renderer.
 // Cleanup is done by destroying the renderer.
 static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 	VkResult res;
@@ -2785,6 +2713,14 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	}
 
 	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+		.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
+		.layout = &renderer->default_pipeline_layout,
+	})) {
+		goto error;
+	}
+
+	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+		.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_IDENTITY,
 		.layout = &renderer->default_pipeline_layout,
 	})) {
@@ -2792,6 +2728,7 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	}
 
 	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+		.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
 		.layout = &renderer->default_pipeline_layout,
 	})) {
@@ -2800,16 +2737,12 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 
 	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
 		if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+			.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 			.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
 			.layout = &renderer->ycbcr_pipeline_layouts[i],
 		})) {
 			goto error;
 		}
-	}
-
-	if (!init_quad_pipeline(renderer, setup->render_pass, renderer->default_pipeline_layout.vk,
-			&setup->quad_pipe)) {
-		goto error;
 	}
 
 	wl_list_insert(&renderer->render_format_setups, &setup->link);
