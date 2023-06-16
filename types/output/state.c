@@ -129,3 +129,39 @@ void wlr_output_state_set_layers(struct wlr_output_state *state,
 	state->layers = layers;
 	state->layers_len = layers_len;
 }
+
+bool wlr_output_state_copy(struct wlr_output_state *dst,
+		const struct wlr_output_state *src) {
+	struct wlr_output_state copy = *src;
+	copy.committed &= ~(WLR_OUTPUT_STATE_BUFFER |
+		WLR_OUTPUT_STATE_DAMAGE |
+		WLR_OUTPUT_STATE_GAMMA_LUT);
+
+	if (src->committed & WLR_OUTPUT_STATE_BUFFER) {
+		wlr_output_state_set_buffer(&copy, src->buffer);
+	}
+
+	if (src->committed & WLR_OUTPUT_STATE_DAMAGE) {
+		wlr_output_state_set_damage(&copy, &src->damage);
+	}
+
+	if (src->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
+		size_t gamma_buffer_size = 3 * src->gamma_lut_size * sizeof(uint16_t);
+		copy.gamma_lut = malloc(gamma_buffer_size);
+		if (!copy.gamma_lut) {
+			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			goto err;
+		}
+
+		copy.committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
+		memcpy(copy.gamma_lut, src->gamma_lut, gamma_buffer_size);
+		copy.gamma_lut_size = src->gamma_lut_size;
+	}
+
+	wlr_output_state_finish(dst);
+	*dst = copy;
+	return true;
+err:
+	wlr_output_state_finish(&copy);
+	return false;
+}

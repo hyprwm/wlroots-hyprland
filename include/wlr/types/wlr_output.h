@@ -690,11 +690,23 @@ void wlr_output_state_set_damage(struct wlr_output_state *state,
  * advantage of backend features that may reduce the amount of things that
  * need to be composited.
  *
- * The array must be kept valid by the caller until wlr_output_state_finish().
+ * The array must be kept valid by the caller until wlr_output_state_finish()
+ * and all copies of the state have been finished as well.
  * This state will be applied once wlr_output_commit_state() is called.
  */
 void wlr_output_state_set_layers(struct wlr_output_state *state,
 	struct wlr_output_layer_state *layers, size_t layers_len);
+
+/**
+ * Copies the output state from src to dst. It is safe to then
+ * wlr_output_state_finish() src and have dst still be valid.
+ *
+ * Note: The lifetime of the output layers inside the state are not managed. It
+ * is the responsibility of the constructor of the output layers to make sure
+ * they remain valid for the output state and all copies made.
+ */
+bool wlr_output_state_copy(struct wlr_output_state *dst,
+	const struct wlr_output_state *src);
 
 
 /**
