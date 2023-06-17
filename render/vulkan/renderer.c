@@ -1419,13 +1419,19 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 		return false;
 	}
 
+	struct wlr_vk_texture_view *view =
+		vulkan_texture_get_or_create_view(texture, pipe->layout);
+	if (!view) {
+		return false;
+	}
+
 	if (pipe->vk != renderer->bound_pipe) {
 		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->vk);
 		renderer->bound_pipe = pipe->vk;
 	}
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe->layout->vk, 0, 1, &texture->ds, 0, NULL);
+		pipe->layout->vk, 0, 1, &view->ds, 0, NULL);
 
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);

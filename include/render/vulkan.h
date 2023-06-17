@@ -295,12 +295,24 @@ struct wlr_vk_vert_pcr_data {
 	float uv_size[2];
 };
 
+struct wlr_vk_texture_view {
+	struct wl_list link; // struct wlr_vk_texture.views
+	const struct wlr_vk_pipeline_layout *layout;
+
+	VkDescriptorSet ds;
+	VkImageView image_view;
+	struct wlr_vk_descriptor_pool *ds_pool;
+};
+
 struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 	struct wlr_vk_render_format_setup *setup,
 	const struct wlr_vk_pipeline_key *key);
 struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 	struct wlr_vk_renderer *renderer,
 	const struct wlr_vk_pipeline_layout_key *key);
+struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(
+	struct wlr_vk_texture *texture,
+	const struct wlr_vk_pipeline_layout *layout);
 
 // Creates a vulkan renderer for the given device.
 struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev);
@@ -373,11 +385,8 @@ struct wlr_vk_texture {
 	uint32_t mem_count;
 	VkDeviceMemory memories[WLR_DMABUF_MAX_PLANES];
 	VkImage image;
-	VkImageView image_view;
 	const struct wlr_vk_format *format;
 	enum wlr_vk_texture_transform transform;
-	VkDescriptorSet ds;
-	struct wlr_vk_descriptor_pool *ds_pool;
 	struct wlr_vk_command_buffer *last_used_cb; // to track when it can be destroyed
 	bool dmabuf_imported;
 	bool owned; // if dmabuf_imported: whether we have ownership of the image
@@ -392,6 +401,8 @@ struct wlr_vk_texture {
 	struct wlr_addon buffer_addon;
 	// For DMA-BUF implicit sync interop
 	VkSemaphore foreign_semaphores[WLR_DMABUF_MAX_PLANES];
+
+	struct wl_list views; // struct wlr_vk_texture_ds.link
 };
 
 struct wlr_vk_texture *vulkan_get_texture(struct wlr_texture *wlr_texture);

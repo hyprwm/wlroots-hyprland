@@ -214,8 +214,12 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 	wl_list_remove(&texture->link);
 
 	VkDevice dev = texture->renderer->dev->dev;
-	if (texture->ds && texture->ds_pool) {
-		vulkan_free_ds(texture->renderer, texture->ds_pool, texture->ds);
+
+	struct wlr_vk_texture_view *view, *tmp_view;
+	wl_list_for_each_safe(view, tmp_view, &texture->views, link) {
+		vulkan_free_ds(texture->renderer, view->ds_pool, view->ds);
+		vkDestroyImageView(dev, view->image_view, NULL);
+		free(view);
 	}
 
 	for (size_t i = 0; i < WLR_DMABUF_MAX_PLANES; i++) {
@@ -224,7 +228,6 @@ void vulkan_texture_destroy(struct wlr_vk_texture *texture) {
 		}
 	}
 
-	vkDestroyImageView(dev, texture->image_view, NULL);
 	vkDestroyImage(dev, texture->image, NULL);
 
 	for (unsigned i = 0u; i < texture->mem_count; ++i) {
@@ -262,21 +265,28 @@ static struct wlr_vk_texture *vulkan_texture_create(
 		&texture_impl, width, height);
 	texture->renderer = renderer;
 	wl_list_insert(&renderer->textures, &texture->link);
+	wl_list_init(&texture->views);
 	return texture;
 }
 
-static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
-	VkResult res;
-	VkDevice dev = texture->renderer->dev->dev;
+struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_texture *texture,
+		const struct wlr_vk_pipeline_layout *pipeline_layout) {
+	struct wlr_vk_texture_view *view;
+	wl_list_for_each(view, &texture->views, link) {
+		if (view->layout == pipeline_layout) {
+			return view;
+		}
+	}
 
-	struct wlr_vk_pipeline_layout *pipeline_layout = get_or_create_pipeline_layout(
-		texture->renderer, &(struct wlr_vk_pipeline_layout_key) {
-			.ycbcr_format = texture->format->is_ycbcr ? texture->format : NULL,
-		});
-	if (!pipeline_layout) {
-		wlr_log(WLR_ERROR, "Failed to create a pipeline layout for a texture");
+	view = calloc(1, sizeof(*view));
+	if (!view) {
 		return NULL;
 	}
+
+	view->layout = pipeline_layout;
+
+	VkResult res;
+	VkDevice dev = texture->renderer->dev->dev;
 
 	const struct wlr_pixel_format_info *format_info =
 		drm_get_pixel_format_info(texture->format->drm);
@@ -317,20 +327,22 @@ static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
 		view_info.pNext = &ycbcr_conversion_info;
 	}
 
-	res = vkCreateImageView(dev, &view_info, NULL, &texture->image_view);
+	res = vkCreateImageView(dev, &view_info, NULL, &view->image_view);
 	if (res != VK_SUCCESS) {
+		free(view);
 		wlr_vk_error("vkCreateImageView failed", res);
-		return false;
+		return NULL;
 	}
 
-	texture->ds_pool = vulkan_alloc_texture_ds(texture->renderer, pipeline_layout->ds, &texture->ds);
-	if (!texture->ds_pool) {
+	view->ds_pool = vulkan_alloc_texture_ds(texture->renderer, pipeline_layout->ds, &view->ds);
+	if (!view->ds_pool) {
+		free(view);
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
-		return false;
+		return NULL;
 	}
 
 	VkDescriptorImageInfo ds_img_info = {
-		.imageView = texture->image_view,
+		.imageView = view->image_view,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 
@@ -338,13 +350,14 @@ static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 		.descriptorCount = 1,
 		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		.dstSet = texture->ds,
+		.dstSet = view->ds,
 		.pImageInfo = &ds_img_info,
 	};
 
 	vkUpdateDescriptorSets(dev, 1, &ds_write, 0, NULL);
 
-	return true;
+	wl_list_insert(&texture->views, &view->link);
+	return view;
 }
 
 static struct wlr_texture *vulkan_texture_from_pixels(
@@ -416,10 +429,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	res = vkBindImageMemory(dev, texture->image, texture->memories[0], 0);
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkBindMemory failed", res);
-		goto error;
-	}
-
-	if (!vulkan_texture_init_view(texture)) {
 		goto error;
 	}
 
@@ -703,10 +712,6 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	texture->image = vulkan_import_dmabuf(renderer, attribs,
 		texture->memories, &texture->mem_count, false);
 	if (!texture->image) {
-		goto error;
-	}
-
-	if (!vulkan_texture_init_view(texture)) {
 		goto error;
 	}
 

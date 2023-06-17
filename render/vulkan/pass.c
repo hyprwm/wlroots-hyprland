@@ -555,10 +555,17 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		return;
 	}
 
+	struct wlr_vk_texture_view *view =
+		vulkan_texture_get_or_create_view(texture, pipe->layout);
+	if (!view) {
+		pass->failed = true;
+		return;
+	}
+
 	bind_pipeline(pass, pipe->vk);
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe->layout->vk, 0, 1, &texture->ds, 0, NULL);
+		pipe->layout->vk, 0, 1, &view->ds, 0, NULL);
 
 	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
