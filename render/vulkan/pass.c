@@ -404,7 +404,6 @@ error:
 static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 		const struct wlr_render_rect_options *options) {
 	struct wlr_vk_render_pass *pass = get_render_pass(wlr_pass);
-	struct wlr_vk_renderer *renderer = pass->renderer;
 	VkCommandBuffer cb = pass->command_buffer->vk;
 
 	// Input color values are given in sRGB space, shader expects
@@ -436,7 +435,7 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 			pass->render_buffer->render_setup,
 			&(struct wlr_vk_pipeline_key) {
 				.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
-				.layout = &renderer->default_pipeline_layout,
+				.layout = { .ycbcr_format = NULL },
 			});
 		if (!pipe) {
 			pass->failed = true;
@@ -450,9 +449,9 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 		mat3_to_mat4(matrix, vert_pcr_data.mat4);
 
 		bind_pipeline(pass, pipe->vk);
-		vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
+		vkCmdPushConstants(cb, pipe->layout->vk,
 			VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-		vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
+		vkCmdPushConstants(cb, pipe->layout->vk,
 			VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float) * 4,
 			linear_color);
 
@@ -546,21 +545,24 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		render_buffer->render_setup,
 		&(struct wlr_vk_pipeline_key) {
 			.source = WLR_VK_SHADER_SOURCE_TEXTURE,
-			.layout = texture->pipeline_layout,
+			.layout = {
+				.ycbcr_format = texture->format->is_ycbcr ? texture->format : NULL,
+			},
 			.texture_transform = texture->transform,
 		});
 	if (!pipe) {
 		pass->failed = true;
+		return;
 	}
 
 	bind_pipeline(pass, pipe->vk);
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe->key.layout->vk, 0, 1, &texture->ds, 0, NULL);
+		pipe->layout->vk, 0, 1, &texture->ds, 0, NULL);
 
-	vkCmdPushConstants(cb, pipe->key.layout->vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipe->key.layout->vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 

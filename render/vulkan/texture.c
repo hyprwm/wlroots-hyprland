@@ -269,6 +269,15 @@ static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
 	VkResult res;
 	VkDevice dev = texture->renderer->dev->dev;
 
+	struct wlr_vk_pipeline_layout *pipeline_layout = get_or_create_pipeline_layout(
+		texture->renderer, &(struct wlr_vk_pipeline_layout_key) {
+			.ycbcr_format = texture->format->is_ycbcr ? texture->format : NULL,
+		});
+	if (!pipeline_layout) {
+		wlr_log(WLR_ERROR, "Failed to create a pipeline layout for a texture");
+		return NULL;
+	}
+
 	const struct wlr_pixel_format_info *format_info =
 		drm_get_pixel_format_info(texture->format->drm);
 	if (format_info != NULL) {
@@ -300,10 +309,10 @@ static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
 
 	VkSamplerYcbcrConversionInfo ycbcr_conversion_info;
 	if (texture->format->is_ycbcr) {
-		assert(texture->pipeline_layout->ycbcr.conversion != VK_NULL_HANDLE);
+		assert(pipeline_layout->ycbcr.conversion != VK_NULL_HANDLE);
 		ycbcr_conversion_info = (VkSamplerYcbcrConversionInfo){
 			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-			.conversion = texture->pipeline_layout->ycbcr.conversion,
+			.conversion = pipeline_layout->ycbcr.conversion,
 		};
 		view_info.pNext = &ycbcr_conversion_info;
 	}
@@ -314,7 +323,7 @@ static bool vulkan_texture_init_view(struct wlr_vk_texture *texture) {
 		return false;
 	}
 
-	texture->ds_pool = vulkan_alloc_texture_ds(texture->renderer, texture->pipeline_layout->ds, &texture->ds);
+	texture->ds_pool = vulkan_alloc_texture_ds(texture->renderer, pipeline_layout->ds, &texture->ds);
 	if (!texture->ds_pool) {
 		wlr_log(WLR_ERROR, "failed to allocate descriptor");
 		return false;
@@ -360,7 +369,6 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 	}
 
 	texture->format = &fmt->format;
-	texture->pipeline_layout = &renderer->default_pipeline_layout;
 
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -691,11 +699,6 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 	texture->format = &fmt->format;
 	texture->transform = !texture->format->is_ycbcr && texture->format->is_srgb ?
 		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
-
-	texture->pipeline_layout = vulkan_get_pipeline_layout(renderer, texture->format);
-	if (texture->pipeline_layout == NULL) {
-		goto error;
-	}
 
 	texture->image = vulkan_import_dmabuf(renderer, attribs,
 		texture->memories, &texture->mem_count, false);

@@ -123,7 +123,13 @@ const struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
 	struct wlr_vk_format_props *props, uint64_t mod, bool render);
 void vulkan_format_props_finish(struct wlr_vk_format_props *props);
 
+struct wlr_vk_pipeline_layout_key {
+	const struct wlr_vk_format *ycbcr_format;
+};
+
 struct wlr_vk_pipeline_layout {
+	struct wlr_vk_pipeline_layout_key key;
+
 	VkPipelineLayout vk;
 	VkDescriptorSetLayout ds;
 	VkSampler sampler;
@@ -133,6 +139,8 @@ struct wlr_vk_pipeline_layout {
 		VkSamplerYcbcrConversion conversion;
 		VkFormat format;
 	} ycbcr;
+
+	struct wl_list link; // struct wlr_vk_renderer.pipeline_layouts
 };
 
 // Constants used to pick the color transform for the texture drawing
@@ -148,8 +156,8 @@ enum wlr_vk_shader_source {
 };
 
 struct wlr_vk_pipeline_key {
+	struct wlr_vk_pipeline_layout_key layout;
 	enum wlr_vk_shader_source source;
-	struct wlr_vk_pipeline_layout *layout;
 	enum wlr_render_blend_mode blend_mode;
 
 	// only used if source is texture
@@ -160,6 +168,7 @@ struct wlr_vk_pipeline {
 	struct wlr_vk_pipeline_key key;
 
 	VkPipeline vk;
+	const struct wlr_vk_pipeline_layout *layout;
 	struct wlr_vk_render_format_setup *setup;
 	struct wl_list link; // struct wlr_vk_render_format_setup
 };
@@ -168,7 +177,7 @@ struct wlr_vk_pipeline {
 // and therefore also separate pipelines.
 struct wlr_vk_render_format_setup {
 	struct wl_list link; // wlr_vk_renderer.render_format_setups
-	VkFormat render_format; // used in renderpass
+	const struct wlr_vk_format *render_format; // used in renderpass
 	VkRenderPass render_pass;
 
 	VkPipeline output_pipe;
@@ -228,9 +237,7 @@ struct wlr_vk_renderer {
 	VkShaderModule quad_frag_module;
 	VkShaderModule output_module;
 
-	struct wlr_vk_pipeline_layout default_pipeline_layout;
-	size_t ycbcr_pipeline_layouts_len;
-	struct wlr_vk_pipeline_layout *ycbcr_pipeline_layouts;
+	struct wl_list pipeline_layouts; // struct wlr_vk_pipeline_layout.link
 
 	// for blend->output subpass
 	VkPipelineLayout output_pipe_layout;
@@ -291,6 +298,9 @@ struct wlr_vk_vert_pcr_data {
 struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 	struct wlr_vk_render_format_setup *setup,
 	const struct wlr_vk_pipeline_key *key);
+struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
+	struct wlr_vk_renderer *renderer,
+	const struct wlr_vk_pipeline_layout_key *key);
 
 // Creates a vulkan renderer for the given device.
 struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev);
@@ -344,9 +354,6 @@ struct wlr_vk_format_props *vulkan_format_props_from_drm(
 	struct wlr_vk_device *dev, uint32_t drm_format);
 struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *r);
 
-struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
-	const struct wlr_vk_format *format);
-
 struct wlr_vk_command_buffer *vulkan_acquire_command_buffer(
 	struct wlr_vk_renderer *renderer);
 uint64_t vulkan_end_command_buffer(struct wlr_vk_command_buffer *cb,
@@ -368,7 +375,6 @@ struct wlr_vk_texture {
 	VkImage image;
 	VkImageView image_view;
 	const struct wlr_vk_format *format;
-	struct wlr_vk_pipeline_layout *pipeline_layout;
 	enum wlr_vk_texture_transform transform;
 	VkDescriptorSet ds;
 	struct wlr_vk_descriptor_pool *ds_pool;

@@ -56,7 +56,8 @@ struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *wlr_renderer) {
 }
 
 static struct wlr_vk_render_format_setup *find_or_create_render_setup(
-		struct wlr_vk_renderer *renderer, VkFormat format, bool has_blending_buffer);
+		struct wlr_vk_renderer *renderer, const struct wlr_vk_format *format,
+		bool has_blending_buffer);
 
 // https://www.w3.org/Graphics/Color/srgb
 static float color_to_linear(float non_linear) {
@@ -793,7 +794,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 	bool has_blending_buffer = !fmt->format.is_srgb;
 
 	buffer->render_setup = find_or_create_render_setup(
-		renderer, fmt->format.vk, has_blending_buffer);
+		renderer, &fmt->format, has_blending_buffer);
 	if (!buffer->render_setup) {
 		goto error;
 	}
@@ -1409,7 +1410,9 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
 		renderer->current_render_buffer->render_setup,
 		&(struct wlr_vk_pipeline_key) {
-			.layout = texture->pipeline_layout,
+			.layout = {
+				.ycbcr_format = texture->format->is_ycbcr ? texture->format : NULL,
+			},
 			.texture_transform = texture->transform,
 		});
 	if (!pipe) {
@@ -1422,7 +1425,7 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	}
 
 	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe->key.layout->vk, 0, 1, &texture->ds, 0, NULL);
+		pipe->layout->vk, 0, 1, &texture->ds, 0, NULL);
 
 	float final_matrix[9];
 	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
@@ -1435,9 +1438,9 @@ static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_render
 	vert_pcr_data.uv_size[0] = box->width / wlr_texture->width;
 	vert_pcr_data.uv_size[1] = box->height / wlr_texture->height;
 
-	vkCmdPushConstants(cb, pipe->key.layout->vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipe->key.layout->vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
 		&alpha);
 	vkCmdDraw(cb, 4, 1, 0, 0);
@@ -1512,7 +1515,9 @@ static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 		renderer->current_render_buffer->render_setup,
 		&(struct wlr_vk_pipeline_key) {
 			.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
-			.layout = &renderer->default_pipeline_layout,
+			.layout = {
+				.ycbcr_format = NULL,
+			},
 		});
 	if (!pipe) {
 		return;
@@ -1546,9 +1551,9 @@ static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
 	linear_color[2] = color_to_linear(color[2]);
 	linear_color[3] = color[3]; // no conversion for alpha
 
-	vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, renderer->default_pipeline_layout.vk,
+	vkCmdPushConstants(cb, pipe->layout->vk,
 		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float) * 4,
 		linear_color);
 	vkCmdDraw(cb, 4, 1, 0, 0);
@@ -1576,15 +1581,6 @@ static uint32_t vulkan_preferred_read_format(
 		return DRM_FORMAT_INVALID;
 	}
 	return dmabuf.format;
-}
-
-static void finish_pipeline_layout(struct wlr_vk_renderer *renderer,
-		struct wlr_vk_pipeline_layout *pipeline_layout) {
-	struct wlr_vk_device *dev = renderer->dev;
-	vkDestroyPipelineLayout(dev->dev, pipeline_layout->vk, NULL);
-	vkDestroyDescriptorSetLayout(dev->dev, pipeline_layout->ds, NULL);
-	vkDestroySampler(dev->dev, pipeline_layout->sampler, NULL);
-	vkDestroySamplerYcbcrConversion(dev->dev, pipeline_layout->ycbcr.conversion, NULL);
 }
 
 static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
@@ -1651,11 +1647,14 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vkDestroyShaderModule(dev->dev, renderer->quad_frag_module, NULL);
 	vkDestroyShaderModule(dev->dev, renderer->output_module, NULL);
 
-	finish_pipeline_layout(renderer, &renderer->default_pipeline_layout);
-	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
-		finish_pipeline_layout(renderer, &renderer->ycbcr_pipeline_layouts[i]);
+	struct wlr_vk_pipeline_layout *pipeline_layout, *pipeline_layout_tmp;
+	wl_list_for_each_safe(pipeline_layout, pipeline_layout_tmp,
+			&renderer->pipeline_layouts, link) {
+		vkDestroyPipelineLayout(dev->dev, pipeline_layout->vk, NULL);
+		vkDestroyDescriptorSetLayout(dev->dev, pipeline_layout->ds, NULL);
+		vkDestroySampler(dev->dev, pipeline_layout->sampler, NULL);
+		vkDestroySamplerYcbcrConversion(dev->dev, pipeline_layout->ycbcr.conversion, NULL);
 	}
-	free(renderer->ycbcr_pipeline_layouts);
 
 	vkDestroySemaphore(dev->dev, renderer->timeline_semaphore, NULL);
 	vkDestroyPipelineLayout(dev->dev, renderer->output_pipe_layout, NULL);
@@ -1698,7 +1697,7 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		return false;
 	}
 	VkFormat dst_format = wlr_vk_format->vk;
-	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format;
+	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
 	VkFormatProperties dst_format_props = {0}, src_format_props = {0};
 	vkGetPhysicalDeviceFormatProperties(vk_renderer->dev->phdev, dst_format, &dst_format_props);
 	vkGetPhysicalDeviceFormatProperties(vk_renderer->dev->phdev, src_format, &src_format_props);
@@ -2094,9 +2093,22 @@ static bool init_blend_to_output_layouts(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
+static bool pipeline_layout_key_equals(
+		const struct wlr_vk_pipeline_layout_key *a,
+		const struct wlr_vk_pipeline_layout_key *b) {
+	assert(!a->ycbcr_format || a->ycbcr_format->is_ycbcr);
+	assert(!b->ycbcr_format || b->ycbcr_format->is_ycbcr);
+
+	if (a->ycbcr_format != b->ycbcr_format) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool pipeline_key_equals(const struct wlr_vk_pipeline_key *a,
 		const struct wlr_vk_pipeline_key *b) {
-	if (a->layout != b->layout) {
+	if (!pipeline_layout_key_equals(&a->layout, &b->layout)) {
 		return false;
 	}
 
@@ -2128,15 +2140,22 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 		}
 	}
 
+	struct wlr_vk_renderer *renderer = setup->renderer;
+
+	struct wlr_vk_pipeline_layout *pipeline_layout = get_or_create_pipeline_layout(
+		renderer, &key->layout);
+	if (!pipeline_layout) {
+		return NULL;
+	}
+
 	pipeline = calloc(1, sizeof(*pipeline));
 	if (!pipeline) {
 		return NULL;
 	}
 
-	struct wlr_vk_renderer *renderer = setup->renderer;
-
 	pipeline->setup = setup;
 	pipeline->key = *key;
+	pipeline->layout = pipeline_layout;
 
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
@@ -2246,7 +2265,7 @@ struct wlr_vk_pipeline *setup_get_or_create_pipeline(
 
 	VkGraphicsPipelineCreateInfo pinfo = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.layout = key->layout->vk,
+		.layout = pipeline_layout->vk,
 		.renderPass = setup->render_pass,
 		.subpass = 0,
 		.stageCount = 2,
@@ -2386,31 +2405,51 @@ static bool init_pipeline_layout(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
-static bool init_ycbcr_pipeline_layout(struct wlr_vk_renderer *renderer,
-		struct wlr_vk_pipeline_layout *pipeline_layout,
-		const struct wlr_vk_format *format) {
-	VkResult res;
-
-	assert(format->is_ycbcr);
-	pipeline_layout->ycbcr.format = format->vk;
-
-	VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-		.format = format->vk,
-		.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601,
-		.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,
-		.xChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
-		.yChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
-		.chromaFilter = VK_FILTER_LINEAR,
-	};
-	res = vkCreateSamplerYcbcrConversion(renderer->dev->dev,
-		&conversion_create_info, NULL, &pipeline_layout->ycbcr.conversion);
-	if (res != VK_SUCCESS) {
-		wlr_vk_error("vkCreateSamplerYcbcrConversion", res);
-		return false;
+struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
+		struct wlr_vk_renderer *renderer,
+		const struct wlr_vk_pipeline_layout_key *key) {
+	struct wlr_vk_pipeline_layout *pipeline_layout;
+	wl_list_for_each(pipeline_layout, &renderer->pipeline_layouts, link) {
+		if (pipeline_layout_key_equals(&pipeline_layout->key, key)) {
+			return pipeline_layout;
+		}
 	}
 
-	return init_pipeline_layout(renderer, pipeline_layout);
+	pipeline_layout = calloc(1, sizeof(*pipeline_layout));
+	if (!pipeline_layout) {
+		return NULL;
+	}
+
+	pipeline_layout->key = *key;
+
+	VkResult res;
+
+	if (key->ycbcr_format) {
+		VkSamplerYcbcrConversionCreateInfo conversion_create_info = {
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
+			.format = key->ycbcr_format->vk,
+			.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601,
+			.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,
+			.xChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+			.yChromaOffset = VK_CHROMA_LOCATION_MIDPOINT,
+			.chromaFilter = VK_FILTER_LINEAR,
+		};
+		res = vkCreateSamplerYcbcrConversion(renderer->dev->dev,
+			&conversion_create_info, NULL, &pipeline_layout->ycbcr.conversion);
+		if (res != VK_SUCCESS) {
+			wlr_vk_error("vkCreateSamplerYcbcrConversion", res);
+			free(pipeline_layout);
+			return NULL;
+		}
+	}
+
+	if (!init_pipeline_layout(renderer, pipeline_layout)) {
+		free(pipeline_layout);
+		return NULL;
+	}
+
+	wl_list_insert(&renderer->pipeline_layouts, &pipeline_layout->link);
+	return pipeline_layout;
 }
 
 // Creates static render data, such as sampler, layouts and shader modules
@@ -2419,41 +2458,6 @@ static bool init_ycbcr_pipeline_layout(struct wlr_vk_renderer *renderer,
 static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
-
-	if (!init_pipeline_layout(renderer, &renderer->default_pipeline_layout)) {
-		return false;
-	}
-
-	size_t ycbcr_formats_len = 0;
-	for (size_t i = 0; i < renderer->dev->format_prop_count; i++) {
-		struct wlr_vk_format_props *props = &renderer->dev->format_props[i];
-		if (renderer->dev->sampler_ycbcr_conversion && props->format.is_ycbcr) {
-			ycbcr_formats_len++;
-		}
-	}
-
-	if (ycbcr_formats_len > 0) {
-		renderer->ycbcr_pipeline_layouts =
-			calloc(ycbcr_formats_len, sizeof(*renderer->ycbcr_pipeline_layouts));
-		if (renderer->ycbcr_pipeline_layouts == NULL) {
-			return false;
-		}
-
-		for (size_t i = 0; i < renderer->dev->format_prop_count; i++) {
-			const struct wlr_vk_format *format = &renderer->dev->format_props[i].format;
-			if (!format->is_ycbcr) {
-				continue;
-			}
-
-			struct wlr_vk_pipeline_layout *pl =
-				&renderer->ycbcr_pipeline_layouts[renderer->ycbcr_pipeline_layouts_len];
-			if (!init_ycbcr_pipeline_layout(renderer, pl, format)) {
-				return false;
-			}
-
-			renderer->ycbcr_pipeline_layouts_len++;
-		}
-	}
 
 	if (!init_blend_to_output_layouts(renderer, &renderer->output_ds_layout,
 			&renderer->output_pipe_layout)) {
@@ -2510,7 +2514,8 @@ static bool init_static_render_data(struct wlr_vk_renderer *renderer) {
 }
 
 static struct wlr_vk_render_format_setup *find_or_create_render_setup(
-		struct wlr_vk_renderer *renderer, VkFormat format, bool has_blending_buffer) {
+		struct wlr_vk_renderer *renderer, const struct wlr_vk_format *format,
+		bool has_blending_buffer) {
 	struct wlr_vk_render_format_setup *setup;
 	wl_list_for_each(setup, &renderer->render_format_setups, link) {
 		if (setup->render_format == format) {
@@ -2544,7 +2549,7 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 				.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			},
 			{
-				.format = format,
+				.format = format->vk,
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -2649,7 +2654,7 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		}
 	} else {
 		VkAttachmentDescription attachment = {
-			.format = format,
+			.format = format->vk,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -2718,7 +2723,7 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 
 	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
 		.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
-		.layout = &renderer->default_pipeline_layout,
+		.layout = { .ycbcr_format = NULL },
 	})) {
 		goto error;
 	}
@@ -2726,7 +2731,7 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
 		.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_IDENTITY,
-		.layout = &renderer->default_pipeline_layout,
+		.layout = {.ycbcr_format = NULL },
 	})) {
 		goto error;
 	}
@@ -2734,18 +2739,24 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 	if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
 		.source = WLR_VK_SHADER_SOURCE_TEXTURE,
 		.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
-		.layout = &renderer->default_pipeline_layout,
+		.layout = {.ycbcr_format = NULL },
 	})) {
 		goto error;
 	}
 
-	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
-		if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
-			.source = WLR_VK_SHADER_SOURCE_TEXTURE,
-			.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
-			.layout = &renderer->ycbcr_pipeline_layouts[i],
-		})) {
-			goto error;
+	for (size_t i = 0; i < renderer->dev->format_prop_count; i++) {
+		const struct wlr_vk_format *format = &renderer->dev->format_props[i].format;
+		const struct wlr_vk_pipeline_layout_key layout = {
+			.ycbcr_format = format,
+		};
+
+		if (format->is_ycbcr) {
+			if (!setup_get_or_create_pipeline(setup, &(struct wlr_vk_pipeline_key){
+				.texture_transform = WLR_VK_TEXTURE_TRANSFORM_SRGB,
+				.layout = layout
+			})) {
+				goto error;
+			}
 		}
 	}
 
@@ -2774,6 +2785,7 @@ struct wlr_renderer *vulkan_renderer_create_for_device(struct wlr_vk_device *dev
 	wl_list_init(&renderer->output_descriptor_pools);
 	wl_list_init(&renderer->render_format_setups);
 	wl_list_init(&renderer->render_buffers);
+	wl_list_init(&renderer->pipeline_layouts);
 
 	if (!init_static_render_data(renderer)) {
 		goto error;
@@ -2858,26 +2870,6 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 	return vulkan_renderer_create_for_device(dev);
 }
 
-struct wlr_vk_pipeline_layout *vulkan_get_pipeline_layout(struct wlr_vk_renderer *renderer,
-		const struct wlr_vk_format *format) {
-	if (!format->is_ycbcr) {
-		return &renderer->default_pipeline_layout;
-	}
-
-	for (size_t i = 0; i < renderer->ycbcr_pipeline_layouts_len; i++) {
-		struct wlr_vk_pipeline_layout *pl = &renderer->ycbcr_pipeline_layouts[i];
-		if (pl->ycbcr.format == format->vk) {
-			return pl;
-		}
-	}
-
-	char *name = drmGetFormatName(format->drm);
-	wlr_log(WLR_ERROR, "No pipeline layout found for format %s (0x%08"PRIX32")",
-		name, format->drm);
-	free(name);
-	return NULL;
-}
-
 VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->instance->instance;
@@ -2902,6 +2894,6 @@ void wlr_vk_renderer_get_current_image_attribs(struct wlr_renderer *renderer,
 		struct wlr_vk_image_attribs *attribs) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	attribs->image = vk_renderer->current_render_buffer->image;
-	attribs->format = vk_renderer->current_render_buffer->render_setup->render_format;
+	attribs->format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
 	attribs->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
