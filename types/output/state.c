@@ -112,7 +112,9 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 		memcpy(gamma_lut + ramp_size, g, ramp_size * sizeof(uint16_t));
 		memcpy(gamma_lut + 2 * ramp_size, b, ramp_size * sizeof(uint16_t));
 	} else {
-		free(state->gamma_lut);
+		if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
+			free(state->gamma_lut);
+		}
 	}
 
 	state->committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
