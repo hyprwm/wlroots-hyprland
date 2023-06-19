@@ -401,11 +401,6 @@ void wlr_output_effective_resolution(struct wlr_output *output,
 void wlr_output_attach_buffer(struct wlr_output *output,
 	struct wlr_buffer *buffer);
 /**
- * Get the preferred format for reading pixels.
- * This function might change the current rendering context.
- */
-uint32_t wlr_output_preferred_read_format(struct wlr_output *output);
-/**
  * Set the damage region for the frame to be submitted. This is the region of
  * the screen that has changed since the last frame.
  *

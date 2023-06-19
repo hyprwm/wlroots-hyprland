@@ -288,90 +288,6 @@ static const struct wlr_drm_format_set *gles2_get_render_formats(
 	return wlr_egl_get_dmabuf_render_formats(renderer->egl);
 }
 
-static uint32_t gles2_preferred_read_format(
-		struct wlr_renderer *wlr_renderer) {
-	struct wlr_gles2_renderer *renderer =
-		gles2_get_renderer_in_context(wlr_renderer);
-
-	push_gles2_debug(renderer);
-
-	GLint gl_format = -1, gl_type = -1, alpha_size = -1;
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &gl_format);
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &gl_type);
-	glGetIntegerv(GL_ALPHA_BITS, &alpha_size);
-
-	pop_gles2_debug(renderer);
-
-	const struct wlr_gles2_pixel_format *fmt =
-		get_gles2_format_from_gl(gl_format, gl_type, alpha_size > 0);
-	if (fmt != NULL) {
-		return fmt->drm_format;
-	}
-
-	if (renderer->exts.EXT_read_format_bgra) {
-		return DRM_FORMAT_XRGB8888;
-	}
-	return DRM_FORMAT_XBGR8888;
-}
-
-static bool gles2_read_pixels(struct wlr_renderer *wlr_renderer,
-		uint32_t drm_format, uint32_t stride,
-		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
-		uint32_t dst_x, uint32_t dst_y, void *data) {
-	struct wlr_gles2_renderer *renderer =
-		gles2_get_renderer_in_context(wlr_renderer);
-
-	const struct wlr_gles2_pixel_format *fmt =
-		get_gles2_format_from_drm(drm_format);
-	if (fmt == NULL || !is_gles2_pixel_format_supported(renderer, fmt)) {
-		wlr_log(WLR_ERROR, "Cannot read pixels: unsupported pixel format 0x%"PRIX32, drm_format);
-		return false;
-	}
-
-	if (fmt->gl_format == GL_BGRA_EXT && !renderer->exts.EXT_read_format_bgra) {
-		wlr_log(WLR_ERROR,
-			"Cannot read pixels: missing GL_EXT_read_format_bgra extension");
-		return false;
-	}
-
-	const struct wlr_pixel_format_info *drm_fmt =
-		drm_get_pixel_format_info(fmt->drm_format);
-	assert(drm_fmt);
-	if (pixel_format_info_pixels_per_block(drm_fmt) != 1) {
-		wlr_log(WLR_ERROR, "Cannot read pixels: block formats are not supported");
-		return false;
-	}
-
-	push_gles2_debug(renderer);
-
-	// Make sure any pending drawing is finished before we try to read it
-	glFinish();
-
-	glGetError(); // Clear the error flag
-
-	unsigned char *p = (unsigned char *)data + dst_y * stride;
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	uint32_t pack_stride = pixel_format_info_min_stride(drm_fmt, width);
-	if (pack_stride == stride && dst_x == 0) {
-		// Under these particular conditions, we can read the pixels with only
-		// one glReadPixels call
-
-		glReadPixels(src_x, src_y, width, height, fmt->gl_format, fmt->gl_type, p);
-	} else {
-		// Unfortunately GLES2 doesn't support GL_PACK_ROW_LENGTH, so we have to read
-		// the lines out row by row
-		for (size_t i = 0; i < height; ++i) {
-			uint32_t y = src_y + i;
-			glReadPixels(src_x, y, width, 1, fmt->gl_format,
-				fmt->gl_type, p + i * stride + dst_x * drm_fmt->bytes_per_block);
-		}
-	}
-
-	pop_gles2_debug(renderer);
-
-	return glGetError() == GL_NO_ERROR;
-}
-
 static int gles2_get_drm_fd(struct wlr_renderer *wlr_renderer) {
 	struct wlr_gles2_renderer *renderer =
 		gles2_get_renderer(wlr_renderer);
@@ -536,8 +452,6 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_shm_texture_formats = gles2_get_shm_texture_formats,
 	.get_dmabuf_texture_formats = gles2_get_dmabuf_texture_formats,
 	.get_render_formats = gles2_get_render_formats,
-	.preferred_read_format = gles2_preferred_read_format,
-	.read_pixels = gles2_read_pixels,
 	.get_drm_fd = gles2_get_drm_fd,
 	.get_render_buffer_caps = gles2_get_render_buffer_caps,
 	.texture_from_buffer = gles2_texture_from_buffer,

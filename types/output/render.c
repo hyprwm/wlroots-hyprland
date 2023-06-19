@@ -198,36 +198,6 @@ bool output_pick_format(struct wlr_output *output,
 	return true;
 }
 
-uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
-	struct wlr_renderer *renderer = output->renderer;
-	assert(renderer != NULL);
-
-	if (!renderer->impl->preferred_read_format || !renderer->impl->read_pixels) {
-		return DRM_FORMAT_INVALID;
-	}
-
-	if (!wlr_output_configure_primary_swapchain(output, &output->pending, &output->swapchain)) {
-		return false;
-	}
-
-	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, NULL);
-	if (buffer == NULL) {
-		return false;
-	}
-
-	if (!wlr_renderer_begin_with_buffer(renderer, buffer)) {
-		wlr_buffer_unlock(buffer);
-		return false;
-	}
-
-	uint32_t fmt = renderer->impl->preferred_read_format(renderer);
-
-	wlr_renderer_end(renderer);
-	wlr_buffer_unlock(buffer);
-
-	return fmt;
-}
-
 struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
 		struct wlr_output_state *state, int *buffer_age,
 		struct wlr_buffer_pass_options *render_options) {

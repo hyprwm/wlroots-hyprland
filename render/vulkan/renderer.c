@@ -1015,18 +1015,6 @@ static const struct wlr_drm_format_set *vulkan_get_render_formats(
 	return &renderer->dev->dmabuf_render_formats;
 }
 
-static uint32_t vulkan_preferred_read_format(
-		struct wlr_renderer *wlr_renderer) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	struct wlr_dmabuf_attributes dmabuf = {0};
-	if (!wlr_buffer_get_dmabuf(renderer->current_render_buffer->wlr_buffer,
-				&dmabuf)) {
-		wlr_log(WLR_ERROR, "vulkan_preferred_read_format: Failed to get dmabuf of current render buffer");
-		return DRM_FORMAT_INVALID;
-	}
-	return dmabuf.format;
-}
-
 static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	struct wlr_vk_device *dev = renderer->dev;
@@ -1114,18 +1102,6 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	vulkan_device_destroy(dev);
 	vulkan_instance_destroy(ini);
 	free(renderer);
-}
-
-static bool vulkan_read_pixels_legacy(struct wlr_renderer *wlr_renderer,
-		uint32_t drm_format, uint32_t stride,
-		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
-		uint32_t dst_x, uint32_t dst_y, void *data) {
-	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(wlr_renderer);
-	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
-	VkImage src_image = vk_renderer->current_render_buffer->image;
-
-	return vulkan_read_pixels(vk_renderer, src_format, src_image, drm_format,
-		stride, width, height, src_x, src_y, dst_x, dst_y, data);
 }
 
 bool vulkan_read_pixels(struct wlr_vk_renderer *vk_renderer,
@@ -1396,8 +1372,6 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_shm_texture_formats = vulkan_get_shm_texture_formats,
 	.get_dmabuf_texture_formats = vulkan_get_dmabuf_texture_formats,
 	.get_render_formats = vulkan_get_render_formats,
-	.preferred_read_format = vulkan_preferred_read_format,
-	.read_pixels = vulkan_read_pixels_legacy,
 	.destroy = vulkan_destroy,
 	.get_drm_fd = vulkan_get_drm_fd,
 	.get_render_buffer_caps = vulkan_get_render_buffer_caps,
