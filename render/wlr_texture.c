@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <drm_fourcc.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,6 +60,14 @@ bool wlr_texture_read_pixels(struct wlr_texture *texture,
 	}
 
 	return texture->impl->read_pixels(texture, options);
+}
+
+uint32_t wlr_texture_preferred_read_format(struct wlr_texture *texture) {
+	if (!texture->impl->preferred_read_format) {
+		return DRM_FORMAT_INVALID;
+	}
+
+	return texture->impl->preferred_read_format(texture);
 }
 
 struct wlr_texture *wlr_texture_from_pixels(struct wlr_renderer *renderer,

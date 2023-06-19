@@ -54,6 +54,7 @@ struct wlr_texture_impl {
 		struct wlr_buffer *buffer, const pixman_region32_t *damage);
 	bool (*read_pixels)(struct wlr_texture *texture,
 		const struct wlr_texture_read_pixels_options *options);
+	uint32_t (*preferred_read_format)(struct wlr_texture *texture);
 	void (*destroy)(struct wlr_texture *texture);
 };
 
