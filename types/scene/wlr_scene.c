@@ -816,6 +816,16 @@ void wlr_scene_buffer_set_opacity(struct wlr_scene_buffer *scene_buffer,
 	scene_node_update(&scene_buffer->node, NULL);
 }
 
+void wlr_scene_buffer_set_filter_mode(struct wlr_scene_buffer *scene_buffer,
+	    enum wlr_scale_filter_mode filter_mode) {
+	if (scene_buffer->filter_mode == filter_mode) {
+		return;
+	}
+
+	scene_buffer->filter_mode = filter_mode;
+	scene_node_update(&scene_buffer->node, NULL);
+}
+
 static struct wlr_texture *scene_buffer_get_texture(
 		struct wlr_scene_buffer *scene_buffer, struct wlr_renderer *renderer) {
 	struct wlr_client_buffer *client_buffer =
@@ -1146,6 +1156,7 @@ static void scene_node_render(struct wlr_scene_node *node, const struct render_d
 			.transform = transform,
 			.clip = &render_region,
 			.alpha = &scene_buffer->opacity,
+			.filter_mode = scene_buffer->filter_mode,
 		});
 
 		wl_signal_emit_mutable(&scene_buffer->events.output_present, data->output);

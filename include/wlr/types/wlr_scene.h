@@ -22,6 +22,7 @@
 #include <pixman.h>
 #include <time.h>
 #include <wayland-server-core.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_damage_ring.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/util/addon.h>
@@ -168,6 +169,7 @@ struct wlr_scene_buffer {
 	// private state
 
 	float opacity;
+	enum wlr_scale_filter_mode filter_mode;
 	uint64_t active_outputs;
 	struct wlr_texture *texture;
 	struct wlr_fbox src_box;
@@ -424,6 +426,12 @@ void wlr_scene_buffer_set_opacity(struct wlr_scene_buffer *scene_buffer,
 	float opacity);
 
 /**
+* Sets the filter mode to use when scaling the buffer
+*/
+void wlr_scene_buffer_set_filter_mode(struct wlr_scene_buffer *scene_buffer,
+	enum wlr_scale_filter_mode filter_mode);
+
+/**
  * Calls the buffer's frame_done signal.
  */
 void wlr_scene_buffer_send_frame_done(struct wlr_scene_buffer *scene_buffer,
@@ -455,7 +463,7 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output);
  * Render and populate given output state.
  */
 bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
-    struct wlr_output_state *state);
+	struct wlr_output_state *state);
 
 /**
  * Call wlr_surface_send_frame_done() on all surfaces in the scene rendered by
