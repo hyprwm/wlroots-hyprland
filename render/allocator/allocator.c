@@ -69,11 +69,11 @@ static int reopen_drm_node(int drm_fd, bool allow_render_node) {
 
 	free(name);
 
-	// If we're using a DRM primary node (e.g. because we're running under the
-	// DRM backend, or because we're on split render/display machine), we need
-	// to use the legacy DRM authentication mechanism to have the permission to
-	// manipulate buffers.
-	if (drmGetNodeTypeFromFd(new_fd) == DRM_NODE_PRIMARY) {
+	// If we're using a DRM primary node and we are DRM master (e.g. because
+	// we're running under the DRM backend), we need to use the legacy DRM
+	// authentication mechanism to have the permission to manipulate DRM dumb
+	// buffers.
+	if (drmIsMaster(drm_fd) && drmGetNodeTypeFromFd(new_fd) == DRM_NODE_PRIMARY) {
 		drm_magic_t magic;
 		if (drmGetMagic(new_fd, &magic) < 0) {
 			wlr_log_errno(WLR_ERROR, "drmGetMagic failed");
