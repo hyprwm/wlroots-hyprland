@@ -3,6 +3,7 @@
 #include <drm_fourcc.h>
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/render/allocator.h>
+#include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/backend.h>
@@ -194,11 +195,6 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
-	int x = frame->box.x;
-	int y = frame->box.y;
-	int width = frame->box.width;
-	int height = frame->box.height;
-
 	void *data;
 	uint32_t format;
 	size_t stride;
@@ -208,12 +204,20 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 	}
 
 	bool ok = false;
-	if (!renderer_bind_buffer(renderer, src_buffer)) {
+
+	struct wlr_texture *texture = wlr_texture_from_buffer(renderer, src_buffer);
+	if (!texture) {
 		goto out;
 	}
-	ok = wlr_renderer_read_pixels(renderer, format,
-		stride, width, height, x, y, 0, 0, data);
-	renderer_bind_buffer(renderer, NULL);
+
+	ok = wlr_texture_read_pixels(texture, &(struct wlr_texture_read_pixels_options) {
+		.data = data,
+		.format = format,
+		.stride = stride,
+		.src_box = frame->box,
+	});
+
+	wlr_texture_destroy(texture);
 
 out:
 	wlr_buffer_end_data_ptr_access(frame->buffer);
@@ -525,7 +529,25 @@ static void capture_output(struct wl_client *wl_client,
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
-	frame->shm_format = wlr_output_preferred_read_format(frame->output);
+	if (!wlr_output_configure_primary_swapchain(output, NULL, &output->swapchain)) {
+		goto error;
+	}
+
+	int buffer_age;
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, &buffer_age);
+	if (buffer == NULL) {
+		goto error;
+	}
+
+	struct wlr_texture *texture = wlr_texture_from_buffer(renderer, buffer);
+	wlr_buffer_unlock(buffer);
+	if (!texture) {
+		goto error;
+	}
+
+	frame->shm_format = wlr_texture_preferred_read_format(texture);
+	wlr_texture_destroy(texture);
+
 	if (frame->shm_format == DRM_FORMAT_INVALID) {
 		wlr_log(WLR_ERROR,
 			"Failed to capture output: no read format supported by renderer");
