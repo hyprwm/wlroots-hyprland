@@ -240,20 +240,20 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 		return false;
 	}
 
-	float mat[9];
-	wlr_matrix_identity(mat);
-	wlr_matrix_scale(mat, dst_buffer->width, dst_buffer->height);
-
 	bool ok = false;
-	if (!wlr_renderer_begin_with_buffer(renderer, dst_buffer)) {
+
+	struct wlr_render_pass *pass =
+		wlr_renderer_begin_buffer_pass(renderer, dst_buffer, NULL);
+	if (!pass) {
 		goto out;
 	}
 
-	wlr_renderer_clear(renderer, (float[]){ 0.0, 0.0, 0.0, 0.0 });
-	wlr_render_texture_with_matrix(renderer, src_tex, mat, 1.0f);
+	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options) {
+		.texture = src_tex,
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+	});
 
-	ok = true;
-	wlr_renderer_end(renderer);
+	ok = wlr_render_pass_submit(pass);
 
 out:
 	wlr_texture_destroy(src_tex);
