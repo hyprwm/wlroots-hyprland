@@ -92,9 +92,6 @@ static const struct wlr_texture_impl texture_impl = {
 	.destroy = texture_destroy,
 };
 
-struct wlr_pixman_texture *pixman_create_texture(
-		struct wlr_texture *wlr_texture, struct wlr_pixman_renderer *renderer);
-
 static void destroy_buffer(struct wlr_pixman_buffer *buffer) {
 	wl_list_remove(&buffer->link);
 	wl_list_remove(&buffer->buffer_destroy.link);
