@@ -108,12 +108,9 @@ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
 		goto error_dst;
 	}
 
-	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = { .width = dst->width, .height = dst->height },
-		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
-	});
 	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
 		.texture = tex,
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
 	});
 	if (!wlr_render_pass_submit(pass)) {
 		wlr_log(WLR_ERROR, "Failed to submit multi-GPU render pass");
