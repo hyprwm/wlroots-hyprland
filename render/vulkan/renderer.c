@@ -2388,7 +2388,7 @@ struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 	pipeline_layout->key = *key;
 
 	VkResult res;
-	VkFilter filter;
+	VkFilter filter = VK_FILTER_LINEAR;
 	switch (key->filter_mode) {
 	case WLR_SCALE_FILTER_BILINEAR:
 		filter = VK_FILTER_LINEAR;
