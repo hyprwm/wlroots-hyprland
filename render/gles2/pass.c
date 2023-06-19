@@ -121,6 +121,17 @@ static void set_tex_matrix(GLint loc, enum wl_output_transform trans,
 	glUniformMatrix3fv(loc, 1, GL_FALSE, tex_matrix);
 }
 
+static void setup_blending(enum wlr_render_blend_mode mode) {
+	switch (mode) {
+	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
+		glEnable(GL_BLEND);
+		break;
+	case WLR_RENDER_BLEND_MODE_NONE:
+		glDisable(GL_BLEND);
+		break;
+	}
+}
+
 static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		const struct wlr_render_texture_options *options) {
 	struct wlr_gles2_render_pass *pass = get_render_pass(wlr_pass);
@@ -159,12 +170,8 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 	src_fbox.height /= options->texture->height;
 
 	push_gles2_debug(renderer);
-
-	if (!texture->has_alpha && alpha == 1.0) {
-		glDisable(GL_BLEND);
-	} else {
-		glEnable(GL_BLEND);
-	}
+	setup_blending(!texture->has_alpha && alpha == 1.0 ?
+		WLR_RENDER_BLEND_MODE_NONE : options->blend_mode);
 
 	glUseProgram(shader->program);
 
@@ -202,19 +209,7 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	const struct wlr_box *box = &options->box;
 
 	push_gles2_debug(renderer);
-
-	switch (options->blend_mode) {
-	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
-		if (color->a == 1.0) {
-			glDisable(GL_BLEND);
-		} else {
-			glEnable(GL_BLEND);
-		}
-		break;
-	case WLR_RENDER_BLEND_MODE_NONE:
-		glDisable(GL_BLEND);
-		break;
-	}
+	setup_blending(color->a == 1.0 ? WLR_RENDER_BLEND_MODE_NONE : options->blend_mode);
 
 	glUseProgram(renderer->shaders.quad.program);
 

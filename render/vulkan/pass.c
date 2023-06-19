@@ -550,6 +550,8 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 				.filter_mode = options->filter_mode,
 			},
 			.texture_transform = texture->transform,
+			.blend_mode = !texture->has_alpha && alpha == 1.0 ?
+				WLR_RENDER_BLEND_MODE_NONE : options->blend_mode,
 		});
 	if (!pipe) {
 		pass->failed = true;

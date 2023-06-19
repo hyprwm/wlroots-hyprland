@@ -26,6 +26,16 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	return true;
 }
 
+static pixman_op_t get_pixman_blending(enum wlr_render_blend_mode mode) {
+	switch (mode) {
+	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
+		return PIXMAN_OP_OVER;
+	case WLR_RENDER_BLEND_MODE_NONE:
+		return PIXMAN_OP_SRC;
+	}
+	abort();
+}
+
 static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		const struct wlr_render_texture_options *options) {
 	struct wlr_pixman_render_pass *pass = get_render_pass(wlr_pass);
@@ -129,8 +139,10 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		break;
 	}
 
+	pixman_op_t op = get_pixman_blending(options->blend_mode);
+
 	pixman_image_set_clip_region32(buffer->image, (pixman_region32_t *)options->clip);
-	pixman_image_composite32(PIXMAN_OP_OVER, texture->image, mask,
+	pixman_image_composite32(op, texture->image, mask,
 		buffer->image, src_box.x, src_box.y, 0, 0, dest_x, dest_y,
 		width, height);
 	pixman_image_set_clip_region32(buffer->image, NULL);
@@ -152,16 +164,8 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	struct wlr_pixman_buffer *buffer = pass->buffer;
 	struct wlr_box box = options->box;
 
-	pixman_op_t op = 0;
-	switch (options->blend_mode) {
-	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:
-		op = options->color.a == 1 ? PIXMAN_OP_SRC : PIXMAN_OP_OVER;
-		break;
-	case WLR_RENDER_BLEND_MODE_NONE:
-		op = PIXMAN_OP_SRC;
-		break;
-	}
-	assert(op != 0);
+	pixman_op_t op = get_pixman_blending(options->color.a == 1 ?
+		WLR_RENDER_BLEND_MODE_NONE : options->blend_mode);
 
 	struct pixman_color color = {
 		.red = options->color.r * 0xFFFF,

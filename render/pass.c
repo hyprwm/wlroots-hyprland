@@ -113,10 +113,16 @@ static void legacy_add_texture(struct wlr_render_pass *wlr_pass,
 	pixman_region32_t clip;
 	get_clip_region(pass, options->clip, &clip);
 
+	float black[4] = {0};
 	int rects_len = 0;
 	const pixman_box32_t *rects = pixman_region32_rectangles(&clip, &rects_len);
 	for (int i = 0; i < rects_len; i++) {
 		scissor(pass->renderer, &rects[i]);
+
+		if (options->blend_mode == WLR_RENDER_BLEND_MODE_NONE) {
+			wlr_renderer_clear(pass->renderer, black);
+		}
+
 		wlr_render_subtexture_with_matrix(pass->renderer, texture, &src_box, matrix, alpha);
 	}
 

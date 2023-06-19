@@ -221,6 +221,8 @@ struct wlr_render_texture_options {
 	enum wl_output_transform transform;
 	/* Filtering */
 	enum wlr_scale_filter_mode filter_mode;
+	/* Blend mode */
+	enum wlr_render_blend_mode blend_mode;
 };
 
 /**
