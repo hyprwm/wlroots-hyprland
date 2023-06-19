@@ -196,6 +196,16 @@ enum wlr_render_blend_mode {
 	WLR_RENDER_BLEND_MODE_NONE,
 };
 
+/**
+ * Filter modes.
+ */
+enum wlr_scale_filter_mode {
+	/* bilinear texture filtering (default) */
+	WLR_SCALE_FILTER_BILINEAR,
+	/* nearest texture filtering */
+	WLR_SCALE_FILTER_NEAREST,
+};
+
 struct wlr_render_texture_options {
 	/* Source texture */
 	struct wlr_texture *texture;
@@ -209,6 +219,8 @@ struct wlr_render_texture_options {
 	const pixman_region32_t *clip;
 	/* Transform applied to the source texture */
 	enum wl_output_transform transform;
+	/* Filtering */
+	enum wlr_scale_filter_mode filter_mode;
 };
 
 /**

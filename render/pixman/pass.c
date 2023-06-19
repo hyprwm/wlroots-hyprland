@@ -120,6 +120,15 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		height = src_box.height;
 	}
 
+	switch (options->filter_mode) {
+	case WLR_SCALE_FILTER_BILINEAR:
+		pixman_image_set_filter(texture->image, PIXMAN_FILTER_BILINEAR, NULL, 0);
+		break;
+	case WLR_SCALE_FILTER_NEAREST:
+		pixman_image_set_filter(texture->image, PIXMAN_FILTER_NEAREST, NULL, 0);
+		break;
+	}
+
 	pixman_image_set_clip_region32(buffer->image, (pixman_region32_t *)options->clip);
 	pixman_image_composite32(PIXMAN_OP_OVER, texture->image, mask,
 		buffer->image, src_box.x, src_box.y, 0, 0, dest_x, dest_y,

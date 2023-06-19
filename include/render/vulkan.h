@@ -125,6 +125,7 @@ void vulkan_format_props_finish(struct wlr_vk_format_props *props);
 
 struct wlr_vk_pipeline_layout_key {
 	const struct wlr_vk_format *ycbcr_format;
+	enum wlr_scale_filter_mode filter_mode;
 };
 
 struct wlr_vk_pipeline_layout {

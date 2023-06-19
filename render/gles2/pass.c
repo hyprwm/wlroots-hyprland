@@ -170,7 +170,18 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(texture->target, texture->tex);
-	glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	switch (options->filter_mode) {
+	case WLR_SCALE_FILTER_BILINEAR:
+		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		break;
+	case WLR_SCALE_FILTER_NEAREST:
+		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		break;
+	}
+
 	glUniform1i(shader->tex, 0);
 	glUniform1f(shader->alpha, alpha);
 	set_proj_matrix(shader->proj, pass->projection_matrix, &dst_box);

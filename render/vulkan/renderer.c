@@ -2073,6 +2073,10 @@ static bool pipeline_layout_key_equals(
 	assert(!a->ycbcr_format || a->ycbcr_format->is_ycbcr);
 	assert(!b->ycbcr_format || b->ycbcr_format->is_ycbcr);
 
+	if (a->filter_mode != b->filter_mode) {
+		return false;
+	}
+
 	if (a->ycbcr_format != b->ycbcr_format) {
 		return false;
 	}
@@ -2384,12 +2388,21 @@ struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 	pipeline_layout->key = *key;
 
 	VkResult res;
+	VkFilter filter;
+	switch (key->filter_mode) {
+	case WLR_SCALE_FILTER_BILINEAR:
+		filter = VK_FILTER_LINEAR;
+		break;
+	case WLR_SCALE_FILTER_NEAREST:
+		filter = VK_FILTER_NEAREST;
+		break;
+	}
 
 	VkSamplerYcbcrConversionInfo conversion_info;
 	VkSamplerCreateInfo sampler_create_info = {
 		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.magFilter = VK_FILTER_LINEAR,
-		.minFilter = VK_FILTER_LINEAR,
+		.magFilter = filter,
+		.minFilter = filter,
 		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
 		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
