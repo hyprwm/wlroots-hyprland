@@ -323,9 +323,6 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 	for (size_t i = 0; i < drm->num_planes; ++i) {
 		struct wlr_drm_plane *plane = &drm->planes[i];
 		wlr_drm_format_set_finish(&plane->formats);
-#if HAVE_LIBLIFTOFF
-		liftoff_plane_destroy(plane->liftoff);
-#endif
 	}
 
 	free(drm->planes);

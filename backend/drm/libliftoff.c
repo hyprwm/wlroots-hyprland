@@ -109,6 +109,11 @@ static void finish(struct wlr_drm_backend *drm) {
 		liftoff_output_destroy(crtc->liftoff);
 	}
 
+	for (size_t i = 0; i < drm->num_planes; i++) {
+		struct wlr_drm_plane *plane = &drm->planes[i];
+		liftoff_plane_destroy(plane->liftoff);
+	}
+
 	liftoff_device_destroy(drm->liftoff);
 }
 
