@@ -12,7 +12,7 @@ bool output_pick_format(struct wlr_output *output,
 	struct wlr_drm_format *format, uint32_t fmt);
 void output_clear_back_buffer(struct wlr_output *output);
 bool output_ensure_buffer(struct wlr_output *output,
-	const struct wlr_output_state *state, bool *new_back_buffer);
+	struct wlr_output_state *state, bool *new_back_buffer);
 
 bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 	struct wlr_texture *texture, bool own_texture, float scale,

@@ -116,8 +116,7 @@ static bool output_attach_empty_back_buffer(struct wlr_output *output,
 // This function may attach a new, empty back buffer if necessary.
 // If so, the new_back_buffer out parameter will be set to true.
 bool output_ensure_buffer(struct wlr_output *output,
-		const struct wlr_output_state *state,
-		bool *new_back_buffer) {
+		struct wlr_output_state *state, bool *new_back_buffer) {
 	assert(*new_back_buffer == false);
 
 	// If we already have a buffer, we don't need to allocate a new one
@@ -164,6 +163,7 @@ bool output_ensure_buffer(struct wlr_output *output,
 	}
 
 	*new_back_buffer = true;
+	wlr_output_state_set_buffer(state, output->back_buffer);
 	return true;
 }
 
