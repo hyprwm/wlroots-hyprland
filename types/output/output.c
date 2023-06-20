@@ -688,7 +688,6 @@ bool wlr_output_test_state(struct wlr_output *output,
 	bool success = output->impl->test(output, &copy);
 	if (new_back_buffer) {
 		wlr_buffer_unlock(copy.buffer);
-		output_clear_back_buffer(output);
 	}
 	return success;
 }
@@ -722,9 +721,6 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	bool new_back_buffer = false;
 	if (!output_ensure_buffer(output, &pending, &new_back_buffer)) {
 		return false;
-	}
-	if (new_back_buffer) {
-		output_clear_back_buffer(output);
 	}
 
 	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&

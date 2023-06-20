@@ -43,15 +43,24 @@ bool wlr_output_init_render(struct wlr_output *output,
 	return true;
 }
 
-static bool output_attach_back_buffer(struct wlr_output *output,
-		const struct wlr_output_state *state, int *buffer_age) {
+void output_clear_back_buffer(struct wlr_output *output) {
+	if (output->back_buffer == NULL) {
+		return;
+	}
+
+	struct wlr_renderer *renderer = output->renderer;
+	assert(renderer != NULL);
+
+	renderer_bind_buffer(renderer, NULL);
+
+	wlr_buffer_unlock(output->back_buffer);
+	output->back_buffer = NULL;
+}
+
+bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
 	assert(output->back_buffer == NULL);
 
-	// wlr_output_configure_primary_swapchain() function will call
-	// wlr_output_test_state(), which can call us again. This is dangerous: we
-	// risk infinite recursion. However, a buffer will always be supplied in
-	// wlr_output_test_state(), which will prevent us from being called.
-	if (!wlr_output_configure_primary_swapchain(output, state,
+	if (!wlr_output_configure_primary_swapchain(output, &output->pending,
 			&output->swapchain)) {
 		return false;
 	}
@@ -74,50 +83,49 @@ static bool output_attach_back_buffer(struct wlr_output *output,
 	return true;
 }
 
-void output_clear_back_buffer(struct wlr_output *output) {
-	if (output->back_buffer == NULL) {
-		return;
-	}
-
-	struct wlr_renderer *renderer = output->renderer;
-	assert(renderer != NULL);
-
-	renderer_bind_buffer(renderer, NULL);
-
-	wlr_buffer_unlock(output->back_buffer);
-	output->back_buffer = NULL;
-}
-
-bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
-	return output_attach_back_buffer(output, &output->pending, buffer_age);
-}
-
-static bool output_attach_empty_back_buffer(struct wlr_output *output,
+static struct wlr_buffer *output_acquire_empty_buffer(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	assert(!(state->committed & WLR_OUTPUT_STATE_BUFFER));
 
-	if (!output_attach_back_buffer(output, state, NULL)) {
+	// wlr_output_configure_primary_swapchain() function will call
+	// wlr_output_test_state(), which can call us again. This is dangerous: we
+	// risk infinite recursion. However, a buffer will always be supplied in
+	// wlr_output_test_state(), which will prevent us from being called.
+	if (!wlr_output_configure_primary_swapchain(output, state,
+			&output->swapchain)) {
 		return false;
 	}
 
-	int width, height;
-	output_pending_resolution(output, state, &width, &height);
-
-	struct wlr_renderer *renderer = output->renderer;
-	if (!wlr_renderer_begin(renderer, width, height)) {
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, NULL);
+	if (buffer == NULL) {
 		return false;
 	}
-	wlr_renderer_clear(renderer, (float[]){0, 0, 0, 0});
-	wlr_renderer_end(renderer);
 
-	return true;
+	struct wlr_render_pass *pass =
+		wlr_renderer_begin_buffer_pass(output->renderer, buffer, NULL);
+	if (pass == NULL) {
+		wlr_buffer_unlock(buffer);
+		return NULL;
+	}
+
+	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+		.color = { 0, 0, 0, 0 },
+		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+	});
+
+	if (!wlr_render_pass_submit(pass)) {
+		wlr_buffer_unlock(buffer);
+		return NULL;
+	}
+
+	return buffer;
 }
 
-// This function may attach a new, empty back buffer if necessary.
+// This function may attach a new, empty buffer if necessary.
 // If so, the new_back_buffer out parameter will be set to true.
 bool output_ensure_buffer(struct wlr_output *output,
-		struct wlr_output_state *state, bool *new_back_buffer) {
-	assert(*new_back_buffer == false);
+		struct wlr_output_state *state, bool *new_buffer) {
+	assert(*new_buffer == false);
 
 	// If we already have a buffer, we don't need to allocate a new one
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
@@ -158,12 +166,14 @@ bool output_ensure_buffer(struct wlr_output *output,
 	}
 
 	wlr_log(WLR_DEBUG, "Attaching empty buffer to output for modeset");
-	if (!output_attach_empty_back_buffer(output, state)) {
+	struct wlr_buffer *buffer = output_acquire_empty_buffer(output, state);
+	if (buffer == NULL) {
 		return false;
 	}
 
-	*new_back_buffer = true;
-	wlr_output_state_set_buffer(state, output->back_buffer);
+	*new_buffer = true;
+	wlr_output_state_set_buffer(state, buffer);
+	wlr_buffer_unlock(buffer);
 	return true;
 }
 
@@ -237,7 +247,7 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
 		return DRM_FORMAT_INVALID;
 	}
 
-	if (!output_attach_back_buffer(output, &output->pending, NULL)) {
+	if (!wlr_output_attach_render(output, NULL)) {
 		return false;
 	}
 
