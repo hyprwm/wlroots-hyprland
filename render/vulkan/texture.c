@@ -288,15 +288,6 @@ struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_text
 	VkResult res;
 	VkDevice dev = texture->renderer->dev->dev;
 
-	const struct wlr_pixel_format_info *format_info =
-		drm_get_pixel_format_info(texture->format->drm);
-	if (format_info != NULL) {
-		texture->has_alpha = format_info->has_alpha;
-	} else {
-		// We don't have format info for multi-planar formats
-		assert(texture->format->is_ycbcr);
-	}
-
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -360,6 +351,22 @@ struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_text
 	return view;
 }
 
+static void texture_set_format(struct wlr_vk_texture *texture,
+		const struct wlr_vk_format *format) {
+	texture->format = format;
+	texture->transform = !format->is_ycbcr && format->is_srgb ?
+		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
+
+	const struct wlr_pixel_format_info *format_info =
+		drm_get_pixel_format_info(format->drm);
+	if (format_info != NULL) {
+		texture->has_alpha = format_info->has_alpha;
+	} else {
+		// We don't have format info for multi-planar formats
+		assert(texture->format->is_ycbcr);
+	}
+}
+
 static struct wlr_texture *vulkan_texture_from_pixels(
 		struct wlr_vk_renderer *renderer, uint32_t drm_fmt, uint32_t stride,
 		uint32_t width, uint32_t height, const void *data) {
@@ -381,7 +388,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		return NULL;
 	}
 
-	texture->format = &fmt->format;
+	texture_set_format(texture, &fmt->format);
 
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -705,9 +712,7 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		return NULL;
 	}
 
-	texture->format = &fmt->format;
-	texture->transform = !texture->format->is_ycbcr && texture->format->is_srgb ?
-		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
+	texture_set_format(texture, &fmt->format);
 
 	texture->image = vulkan_import_dmabuf(renderer, attribs,
 		texture->memories, &texture->mem_count, false);
