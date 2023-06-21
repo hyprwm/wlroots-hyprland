@@ -621,7 +621,7 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
-	if ((state->committed & WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED) &&
+	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
 			state->adaptive_sync_enabled &&
 			!drm_connector_supports_vrr(conn)) {
 		goto out;
