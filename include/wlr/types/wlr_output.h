@@ -88,10 +88,8 @@ struct wlr_output_state {
 	uint32_t render_format;
 	enum wl_output_subpixel subpixel;
 
-	// only valid if WLR_OUTPUT_STATE_BUFFER
 	struct wlr_buffer *buffer;
 
-	// only valid if WLR_OUTPUT_STATE_MODE
 	enum wlr_output_state_mode_type mode_type;
 	struct wlr_output_mode *mode;
 	struct {
@@ -99,11 +97,9 @@ struct wlr_output_state {
 		int32_t refresh; // mHz, may be zero
 	} custom_mode;
 
-	// only valid if WLR_OUTPUT_STATE_GAMMA_LUT
 	uint16_t *gamma_lut;
 	size_t gamma_lut_size;
 
-	// only valid if WLR_OUTPUT_STATE_LAYERS
 	struct wlr_output_layer_state *layers;
 	size_t layers_len;
 };
@@ -567,6 +563,10 @@ bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 	double x, double y);
 void wlr_output_cursor_destroy(struct wlr_output_cursor *cursor);
 
+/**
+ * Initialize an output state.
+ */
+void wlr_output_state_init(struct wlr_output_state *state);
 /**
  * Releases all resources associated with an output state.
  */

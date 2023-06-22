@@ -114,7 +114,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sample_state *sample = output->sample;
 	struct wlr_output *wlr_output = output->output;
 
-	struct wlr_output_state output_state = {0};
+	struct wlr_output_state output_state;
+	wlr_output_state_init(&output_state);
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
@@ -178,7 +179,8 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
-		struct wlr_output_state state = {0};
+		struct wlr_output_state state;
+		wlr_output_state_init(&state);
 		wlr_output_state_set_mode(&state, mode);
 		wlr_output_commit_state(output, &state);
 		wlr_output_state_finish(&state);

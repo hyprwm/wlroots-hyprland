@@ -319,15 +319,10 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	wlr_output_destroy_global(output);
 }
 
-static void output_state_init(struct wlr_output_state *state) {
-	memset(state, 0, sizeof(*state));
-	pixman_region32_init(&state->damage);
-}
-
 static void output_state_move(struct wlr_output_state *dst,
 		struct wlr_output_state *src) {
 	*dst = *src;
-	output_state_init(src);
+	wlr_output_state_init(src);
 }
 
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
@@ -359,7 +354,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	wl_signal_init(&output->events.description);
 	wl_signal_init(&output->events.request_state);
 	wl_signal_init(&output->events.destroy);
-	output_state_init(&output->pending);
+	wlr_output_state_init(&output->pending);
 
 	output->software_cursor_locks = env_parse_bool("WLR_NO_HARDWARE_CURSORS");
 	if (output->software_cursor_locks) {

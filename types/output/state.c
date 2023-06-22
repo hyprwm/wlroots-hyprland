@@ -3,20 +3,19 @@
 #include <wlr/util/log.h>
 #include "types/wlr_output.h"
 
+void wlr_output_state_init(struct wlr_output_state *state) {
+	*state = (struct wlr_output_state){0};
+	pixman_region32_init(&state->damage);
+}
+
 void wlr_output_state_finish(struct wlr_output_state *state) {
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		wlr_buffer_unlock(state->buffer);
-		// struct wlr_buffer is ref'counted, so the pointer may remain valid after
-		// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
-		// reads it after output_state_finish().
-		state->buffer = NULL;
-	}
-	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
-		pixman_region32_fini(&state->damage);
-	}
-	if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-		free(state->gamma_lut);
-	}
+	wlr_buffer_unlock(state->buffer);
+	// struct wlr_buffer is ref'counted, so the pointer may remain valid after
+	// wlr_buffer_unlock(). Reset the field to NULL to ensure nobody mistakenly
+	// reads it after output_state_finish().
+	state->buffer = NULL;
+	pixman_region32_fini(&state->damage);
+	free(state->gamma_lut);
 }
 
 void wlr_output_state_set_enabled(struct wlr_output_state *state,
@@ -75,23 +74,14 @@ void wlr_output_state_set_subpixel(struct wlr_output_state *state,
 
 void wlr_output_state_set_buffer(struct wlr_output_state *state,
 		struct wlr_buffer *buffer) {
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		wlr_buffer_unlock(state->buffer);
-	}
-
 	state->committed |= WLR_OUTPUT_STATE_BUFFER;
+	wlr_buffer_unlock(state->buffer);
 	state->buffer = wlr_buffer_lock(buffer);
 }
 
 void wlr_output_state_set_damage(struct wlr_output_state *state,
 		const pixman_region32_t *damage) {
-	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
-		pixman_region32_fini(&state->damage);
-	}
-
 	state->committed |= WLR_OUTPUT_STATE_DAMAGE;
-
-	pixman_region32_init(&state->damage);
 	pixman_region32_copy(&state->damage, damage);
 }
 
@@ -99,11 +89,7 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 		size_t ramp_size, const uint16_t *r, const uint16_t *g, const uint16_t *b) {
 	uint16_t *gamma_lut = NULL;
 	if (ramp_size > 0) {
-		if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-			gamma_lut = realloc(state->gamma_lut, 3 * ramp_size * sizeof(uint16_t));
-		} else {
-			gamma_lut = malloc(3 * ramp_size * sizeof(uint16_t));
-		}
+		gamma_lut = realloc(state->gamma_lut, 3 * ramp_size * sizeof(uint16_t));
 		if (gamma_lut == NULL) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			return false;
@@ -112,9 +98,7 @@ bool wlr_output_state_set_gamma_lut(struct wlr_output_state *state,
 		memcpy(gamma_lut + ramp_size, g, ramp_size * sizeof(uint16_t));
 		memcpy(gamma_lut + 2 * ramp_size, b, ramp_size * sizeof(uint16_t));
 	} else {
-		if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-			free(state->gamma_lut);
-		}
+		free(state->gamma_lut);
 	}
 
 	state->committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
@@ -136,6 +120,10 @@ bool wlr_output_state_copy(struct wlr_output_state *dst,
 	copy.committed &= ~(WLR_OUTPUT_STATE_BUFFER |
 		WLR_OUTPUT_STATE_DAMAGE |
 		WLR_OUTPUT_STATE_GAMMA_LUT);
+	copy.buffer = NULL;
+	pixman_region32_init(&copy.damage);
+	copy.gamma_lut = NULL;
+	copy.gamma_lut_size = 0;
 
 	if (src->committed & WLR_OUTPUT_STATE_BUFFER) {
 		wlr_output_state_set_buffer(&copy, src->buffer);
@@ -146,21 +134,18 @@ bool wlr_output_state_copy(struct wlr_output_state *dst,
 	}
 
 	if (src->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-		size_t gamma_buffer_size = 3 * src->gamma_lut_size * sizeof(uint16_t);
-		copy.gamma_lut = malloc(gamma_buffer_size);
-		if (!copy.gamma_lut) {
-			wlr_log_errno(WLR_ERROR, "Allocation failed");
+		const uint16_t *r = src->gamma_lut;
+		const uint16_t *g = src->gamma_lut + src->gamma_lut_size;
+		const uint16_t *b = src->gamma_lut + 2 * src->gamma_lut_size;
+		if (!wlr_output_state_set_gamma_lut(&copy, src->gamma_lut_size, r, g, b)) {
 			goto err;
 		}
-
-		copy.committed |= WLR_OUTPUT_STATE_GAMMA_LUT;
-		memcpy(copy.gamma_lut, src->gamma_lut, gamma_buffer_size);
-		copy.gamma_lut_size = src->gamma_lut_size;
 	}
 
 	wlr_output_state_finish(dst);
 	*dst = copy;
 	return true;
+
 err:
 	wlr_output_state_finish(&copy);
 	return false;

@@ -623,12 +623,11 @@ void handle_x11_configure_notify(struct wlr_x11_output *output,
 		return;
 	}
 
-	struct wlr_output_state state = {
-		.committed = WLR_OUTPUT_STATE_MODE,
-		.mode_type = WLR_OUTPUT_STATE_MODE_CUSTOM,
-		.custom_mode = { .width = ev->width, .height = ev->height },
-	};
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_custom_mode(&state, ev->width, ev->height, 0);
 	wlr_output_send_request_state(&output->wlr_output, &state);
+	wlr_output_state_finish(&state);
 }
 
 bool wlr_output_is_x11(struct wlr_output *wlr_output) {

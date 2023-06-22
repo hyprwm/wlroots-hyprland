@@ -703,12 +703,11 @@ static void xdg_toplevel_handle_configure(void *data,
 		return;
 	}
 
-	struct wlr_output_state state = {
-		.committed = WLR_OUTPUT_STATE_MODE,
-		.mode_type = WLR_OUTPUT_STATE_MODE_CUSTOM,
-		.custom_mode = { .width = width, .height = height },
-	};
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_custom_mode(&state, width, height, 0);
 	wlr_output_send_request_state(&output->wlr_output, &state);
+	wlr_output_state_finish(&state);
 }
 
 static void xdg_toplevel_handle_close(void *data,

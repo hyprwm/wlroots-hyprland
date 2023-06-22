@@ -1534,7 +1534,8 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 
 static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
 		struct wlr_scene_output *scene_output, struct wlr_output_state *state) {
-	struct wlr_output_state pending = {0};
+	struct wlr_output_state pending;
+	wlr_output_state_init(&pending);
 	if (!wlr_output_state_copy(&pending, state)) {
 		return false;
 	}
@@ -1564,19 +1565,23 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output) {
 		return true;
 	}
 
-	struct wlr_output_state state = {0};
+	bool ok = false;
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
 	if (!wlr_scene_output_build_state(scene_output, &state)) {
-		return false;
+		goto out;
 	}
 
-	bool success = wlr_output_commit_state(scene_output->output, &state);
+	ok = wlr_output_commit_state(scene_output->output, &state);
+	if (!ok) {
+		goto out;
+	}
+
+	wlr_damage_ring_rotate(&scene_output->damage_ring);
+
+out:
 	wlr_output_state_finish(&state);
-
-	if (success) {
-		wlr_damage_ring_rotate(&scene_output->damage_ring);
-	}
-
-	return success;
+	return ok;
 }
 
 bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,

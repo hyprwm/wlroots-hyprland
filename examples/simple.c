@@ -62,7 +62,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 		sample->dec = inc;
 	}
 
-	struct wlr_output_state state = {0};
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
 		.box = { .width = wlr_output->width, .height = wlr_output->height },
@@ -107,7 +108,8 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
-		struct wlr_output_state state = {0};
+		struct wlr_output_state state;
+		wlr_output_state_init(&state);
 		wlr_output_state_set_mode(&state, mode);
 		wlr_output_commit_state(sample_output->output, &state);
 		wlr_output_state_finish(&state);

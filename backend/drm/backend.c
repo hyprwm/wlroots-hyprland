@@ -121,22 +121,21 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 		struct wlr_drm_connector *conn;
 		wl_list_for_each(conn, &drm->connectors, link) {
 			struct wlr_output_mode *mode = NULL;
-			uint32_t committed = WLR_OUTPUT_STATE_ENABLED;
 			if (conn->status != DRM_MODE_DISCONNECTED && conn->output.enabled
 					&& conn->output.current_mode != NULL) {
-				committed |= WLR_OUTPUT_STATE_MODE;
 				mode = conn->output.current_mode;
 			}
-			struct wlr_output_state state = {
-				.committed = committed,
-				.allow_artifacts = true,
-				.enabled = mode != NULL,
-				.mode_type = WLR_OUTPUT_STATE_MODE_FIXED,
-				.mode = mode,
-			};
+
+			struct wlr_output_state state;
+			wlr_output_state_init(&state);
+			wlr_output_state_set_enabled(&state, mode != NULL);
+			if (mode != NULL) {
+				wlr_output_state_set_mode(&state, mode);
+			}
 			if (!drm_connector_commit_state(conn, &state)) {
 				wlr_drm_conn_log(conn, WLR_ERROR, "Failed to restore state after VT switch");
 			}
+			wlr_output_state_finish(&state);
 		}
 	} else {
 		wlr_log(WLR_INFO, "DRM fd paused");

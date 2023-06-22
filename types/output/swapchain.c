@@ -65,8 +65,9 @@ static bool test_swapchain(struct wlr_output *output,
 
 bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 		const struct wlr_output_state *state, struct wlr_swapchain **swapchain_ptr) {
-	const struct wlr_output_state empty_state = {0};
+	struct wlr_output_state empty_state;
 	if (state == NULL) {
+		wlr_output_state_init(&empty_state);
 		state = &empty_state;
 	}
 

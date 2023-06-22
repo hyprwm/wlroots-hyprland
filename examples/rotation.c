@@ -59,7 +59,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	int32_t width, height;
 	wlr_output_effective_resolution(wlr_output, &width, &height);
 
-	struct wlr_output_state output_state = {0};
+	struct wlr_output_state output_state;
+	wlr_output_state_init(&output_state);
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
@@ -122,7 +123,8 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	sample_output->x_offs = sample_output->y_offs = 0;
 	sample_output->x_vel = sample_output->y_vel = 128;
 
-	struct wlr_output_state state = {0};
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
 	wlr_output_state_set_transform(&state, sample->transform);
 
 	sample_output->output = output;
