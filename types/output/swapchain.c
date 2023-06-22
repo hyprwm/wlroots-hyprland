@@ -101,13 +101,13 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
 		if (swapchain == NULL) {
 			wlr_log(WLR_ERROR, "Failed to create modifier-less swapchain for output '%s'",
 				output->name);
-			return NULL;
+			return false;
 		}
 		wlr_log(WLR_DEBUG, "Testing modifier-less swapchain for output '%s'", output->name);
 		if (!test_swapchain(output, swapchain, state)) {
 			wlr_log(WLR_ERROR, "Swapchain for output '%s' failed test", output->name);
 			wlr_swapchain_destroy(swapchain);
-			return NULL;
+			return false;
 		}
 	}
 
