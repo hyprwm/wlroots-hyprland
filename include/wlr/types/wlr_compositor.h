@@ -230,16 +230,21 @@ typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
 	int sx, int sy, void *data);
 
 /**
- * Set the lifetime role for this surface. Returns true on success or false if
- * the role cannot be set.
+ * Set the lifetime role for this surface.
  *
- * If the role is represented by an object, role_data must be non-NULL.
- * Alternatively, if the role isn't represented by any object, role_data must
- * be NULL.
+ * If the surface already has a different role and/or has a role object set,
+ * the function fails and sends an error to the client.
+ *
+ * Returns true on success, false otherwise.
  */
-bool wlr_surface_set_role(struct wlr_surface *surface,
-	const struct wlr_surface_role *role, void *role_data,
+bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_role *role,
 	struct wl_resource *error_resource, uint32_t error_code);
+
+/**
+ * Set the role object for this surface. The surface must have a role and
+ * no already set role object.
+ */
+void wlr_surface_set_role_object(struct wlr_surface *surface, void *role_data);
 
 /**
  * Destroy the object representing the surface's role. If it doesn't exist,

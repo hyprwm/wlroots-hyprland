@@ -317,7 +317,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 		return;
 	}
 
-	if (!wlr_surface_set_role(surface, &subsurface_role, subsurface,
+	if (!wlr_surface_set_role(surface, &subsurface_role,
 			resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE)) {
 		free(subsurface);
 		return;
@@ -343,6 +343,8 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	}
 	wl_resource_set_implementation(subsurface->resource,
 		&subsurface_implementation, subsurface, subsurface_resource_destroy);
+
+	wlr_surface_set_role_object(surface, subsurface);
 
 	wl_signal_init(&subsurface->events.destroy);
 

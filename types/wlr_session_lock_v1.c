@@ -265,7 +265,7 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 		return;
 	}
 
-	if (!wlr_surface_set_role(surface, &lock_surface_role, lock_surface,
+	if (!wlr_surface_set_role(surface, &lock_surface_role,
 			lock_resource, EXT_SESSION_LOCK_V1_ERROR_ROLE)) {
 		free(lock_surface);
 		return;
@@ -273,6 +273,8 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 
 	lock_surface->resource = lock_surface_resource;
 	wl_resource_set_user_data(lock_surface_resource, lock_surface);
+
+	wlr_surface_set_role_object(surface, lock_surface);
 
 	wl_list_insert(&lock->surfaces, &lock_surface->link);
 

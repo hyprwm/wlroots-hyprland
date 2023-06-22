@@ -482,7 +482,7 @@ const struct wlr_surface_role xdg_toplevel_surface_role = {
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		uint32_t id) {
 	if (!wlr_surface_set_role(surface->surface, &xdg_toplevel_surface_role,
-			surface, surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
+			surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
 		return;
 	}
 
@@ -523,6 +523,8 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	wl_resource_set_implementation(surface->toplevel->resource,
 		&xdg_toplevel_implementation, surface->toplevel,
 		xdg_toplevel_handle_resource_destroy);
+
+	wlr_surface_set_role_object(surface->surface, surface);
 
 	surface->role = WLR_XDG_SURFACE_ROLE_TOPLEVEL;
 }

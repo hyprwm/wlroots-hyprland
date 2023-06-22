@@ -398,7 +398,7 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 		return;
 	}
 
-	if (!wlr_surface_set_role(wlr_surface, &layer_surface_role, surface,
+	if (!wlr_surface_set_role(wlr_surface, &layer_surface_role,
 			client_resource, ZWLR_LAYER_SHELL_V1_ERROR_ROLE)) {
 		free(surface);
 		return;
@@ -444,6 +444,8 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 			surface, surface->resource);
 	wl_resource_set_implementation(surface->resource,
 		&layer_surface_implementation, surface, layer_surface_resource_destroy);
+
+	wlr_surface_set_role_object(wlr_surface, surface);
 }
 
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation = {

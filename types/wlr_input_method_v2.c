@@ -191,29 +191,33 @@ static void im_get_input_popup_surface(struct wl_client *client,
 		return;
 	}
 
-	struct wl_resource *popup_resource = wl_resource_create(
-		client, &zwp_input_popup_surface_v2_interface,
-		wl_resource_get_version(resource), id);
-	if (!popup_resource) {
-		wl_client_post_no_memory(client);
-		return;
-	}
-
 	struct wlr_input_popup_surface_v2 *popup_surface =
 		calloc(1, sizeof(struct wlr_input_popup_surface_v2));
 	if (!popup_surface) {
 		wl_client_post_no_memory(client);
 		return;
 	}
-	wl_resource_set_implementation(popup_resource, &input_popup_impl,
-		popup_surface, popup_resource_destroy);
 
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 	if (!wlr_surface_set_role(surface, &input_popup_surface_v2_role,
-			popup_surface, resource, ZWP_INPUT_METHOD_V2_ERROR_ROLE)) {
+			resource, ZWP_INPUT_METHOD_V2_ERROR_ROLE)) {
 		free(popup_surface);
 		return;
 	}
+
+	struct wl_resource *popup_resource = wl_resource_create(
+		client, &zwp_input_popup_surface_v2_interface,
+		wl_resource_get_version(resource), id);
+	if (!popup_resource) {
+		free(popup_surface);
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	wl_resource_set_implementation(popup_resource, &input_popup_impl,
+		popup_surface, popup_resource_destroy);
+
+	wlr_surface_set_role_object(surface, popup_surface);
 
 	popup_surface->resource = popup_resource;
 	popup_surface->input_method = input_method;

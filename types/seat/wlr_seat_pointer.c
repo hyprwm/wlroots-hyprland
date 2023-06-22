@@ -96,7 +96,7 @@ static void pointer_set_cursor(struct wl_client *client,
 	struct wlr_surface *surface = NULL;
 	if (surface_resource != NULL) {
 		surface = wlr_surface_from_resource(surface_resource);
-		if (!wlr_surface_set_role(surface, &pointer_cursor_surface_role, NULL,
+		if (!wlr_surface_set_role(surface, &pointer_cursor_surface_role,
 				surface_resource, WL_POINTER_ERROR_ROLE)) {
 			return;
 		}

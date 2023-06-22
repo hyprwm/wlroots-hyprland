@@ -41,7 +41,7 @@ static void handle_tablet_tool_v2_set_cursor(struct wl_client *client,
 	struct wlr_surface *surface = NULL;
 	if (surface_resource != NULL) {
 		surface = wlr_surface_from_resource(surface_resource);
-		if (!wlr_surface_set_role(surface, &tablet_tool_cursor_surface_role, NULL,
+		if (!wlr_surface_set_role(surface, &tablet_tool_cursor_surface_role,
 				surface_resource, ZWP_TABLET_TOOL_V2_ERROR_ROLE)) {
 			return;
 		}

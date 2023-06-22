@@ -111,7 +111,7 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 		return;
 	}
 
-	if (!wlr_surface_set_role(surface, &xwl_surface_role, xwl_surface,
+	if (!wlr_surface_set_role(surface, &xwl_surface_role,
 			shell_resource, XWAYLAND_SHELL_V1_ERROR_ROLE)) {
 		free(xwl_surface);
 		return;
@@ -130,6 +130,8 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 	}
 	wl_resource_set_implementation(xwl_surface->resource, &xwl_surface_impl,
 		xwl_surface, xwl_surface_handle_resource_destroy);
+
+	wlr_surface_set_role_object(surface, xwl_surface);
 
 	wl_list_insert(&shell->surfaces, &xwl_surface->link);
 

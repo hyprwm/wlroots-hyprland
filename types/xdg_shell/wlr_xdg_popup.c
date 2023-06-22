@@ -387,7 +387,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	}
 
 	if (!wlr_surface_set_role(surface->surface, &xdg_popup_surface_role,
-			surface, surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
+			surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
 		return;
 	}
 
@@ -411,6 +411,8 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	wl_resource_set_implementation(surface->popup->resource,
 		&xdg_popup_implementation, surface->popup,
 		xdg_popup_handle_resource_destroy);
+
+	wlr_surface_set_role_object(surface->surface, surface);
 
 	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 

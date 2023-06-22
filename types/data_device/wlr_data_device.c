@@ -65,7 +65,7 @@ static void data_device_start_drag(struct wl_client *client,
 	struct wlr_surface *icon = NULL;
 	if (icon_resource) {
 		icon = wlr_surface_from_resource(icon_resource);
-		if (!wlr_surface_set_role(icon, &drag_icon_surface_role, NULL,
+		if (!wlr_surface_set_role(icon, &drag_icon_surface_role,
 				icon_resource, WL_DATA_DEVICE_ERROR_ROLE)) {
 			return;
 		}
@@ -101,7 +101,6 @@ static void data_device_handle_resource_destroy(struct wl_resource *resource) {
 	wl_list_remove(wl_resource_get_link(resource));
 	wl_list_init(wl_resource_get_link(resource));
 }
-
 
 static void device_resource_send_selection(struct wl_resource *device_resource) {
 	struct wlr_seat_client *seat_client =

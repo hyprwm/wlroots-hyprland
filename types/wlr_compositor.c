@@ -765,11 +765,9 @@ void wlr_surface_unmap(struct wlr_surface *surface) {
 	}
 }
 
-bool wlr_surface_set_role(struct wlr_surface *surface,
-		const struct wlr_surface_role *role, void *role_data,
+bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_role *role,
 		struct wl_resource *error_resource, uint32_t error_code) {
 	assert(role != NULL);
-	assert((role_data == NULL) == role->no_object);
 
 	if (surface->role != NULL && surface->role != role) {
 		if (error_resource != NULL) {
@@ -780,7 +778,7 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
 		}
 		return false;
 	}
-	if (surface->role_data != NULL && surface->role_data != role_data) {
+	if (surface->role_data != NULL) {
 		wl_resource_post_error(error_resource, error_code,
 			"Cannot reassign role %s to wl_surface@%" PRIu32 ", role object still exists",
 			role->name, wl_resource_get_id(surface->resource));
@@ -788,8 +786,15 @@ bool wlr_surface_set_role(struct wlr_surface *surface,
 	}
 
 	surface->role = role;
-	surface->role_data = role_data;
 	return true;
+}
+
+void wlr_surface_set_role_object(struct wlr_surface *surface, void *role_data) {
+	assert(surface->role != NULL);
+	assert(!surface->role->no_object);
+	assert(surface->role_data == NULL);
+	assert(role_data != NULL);
+	surface->role_data = role_data;
 }
 
 void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
