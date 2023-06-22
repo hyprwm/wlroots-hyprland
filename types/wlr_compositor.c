@@ -752,7 +752,8 @@ void wlr_surface_unmap(struct wlr_surface *surface) {
 	}
 	surface->mapped = false;
 	wl_signal_emit_mutable(&surface->events.unmap, NULL);
-	if (surface->role != NULL && surface->role->unmap != NULL) {
+	if (surface->role != NULL && surface->role->unmap != NULL &&
+			(surface->role_data != NULL || surface->role->no_object)) {
 		surface->role->unmap(surface);
 	}
 

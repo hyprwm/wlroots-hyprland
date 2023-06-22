@@ -87,6 +87,9 @@ struct wlr_surface_role {
 	void (*commit)(struct wlr_surface *surface);
 	/**
 	 * Called when the surface is unmapped. May be NULL.
+	 *
+	 * If the role is represented by an object, this is only called if
+	 * such object exists.
 	 */
 	void (*unmap)(struct wlr_surface *surface);
 	/**
