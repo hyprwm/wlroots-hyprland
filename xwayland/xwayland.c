@@ -75,6 +75,7 @@ void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {
 
 	wlr_xwayland_set_seat(xwayland, NULL);
 	wlr_xwayland_server_destroy(xwayland->server);
+	xwayland->server = NULL;
 	wlr_xwayland_shell_v1_destroy(xwayland->shell_v1);
 	free(xwayland);
 }
