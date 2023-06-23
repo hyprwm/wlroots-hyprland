@@ -74,7 +74,8 @@ struct wlr_cursor_output_cursor {
 };
 
 struct wlr_cursor_state {
-	struct wlr_cursor *cursor;
+	struct wlr_cursor cursor;
+
 	struct wl_list devices; // wlr_cursor_device::link
 	struct wl_list output_cursors; // wlr_cursor_output_cursor::link
 	struct wlr_output_layout *layout;
@@ -87,21 +88,14 @@ struct wlr_cursor_state {
 };
 
 struct wlr_cursor *wlr_cursor_create(void) {
-	struct wlr_cursor *cur = calloc(1, sizeof(struct wlr_cursor));
-	if (!cur) {
-		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor");
-		return NULL;
-	}
-
-	cur->state = calloc(1, sizeof(struct wlr_cursor_state));
-	if (!cur->state) {
+	struct wlr_cursor_state *state = calloc(1, sizeof(struct wlr_cursor_state));
+	if (!state) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor_state");
-		free(cur);
 		return NULL;
 	}
+	struct wlr_cursor *cur = &state->cursor;
 
-	cur->state->cursor = cur;
-	cur->state->mapped_output = NULL;
+	cur->state = state;
 
 	wl_list_init(&cur->state->devices);
 	wl_list_init(&cur->state->output_cursors);
@@ -214,7 +208,6 @@ void wlr_cursor_destroy(struct wlr_cursor *cur) {
 	}
 
 	free(cur->state);
-	free(cur);
 }
 
 static struct wlr_cursor_device *get_cursor_device(struct wlr_cursor *cur,
@@ -965,7 +958,7 @@ void wlr_cursor_detach_input_device(struct wlr_cursor *cur,
 static void handle_layout_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_cursor_state *state =
 		wl_container_of(listener, state, layout_destroy);
-	cursor_detach_output_layout(state->cursor);
+	cursor_detach_output_layout(&state->cursor);
 }
 
 static void handle_layout_output_destroy(struct wl_listener *listener,
@@ -990,7 +983,7 @@ static void layout_add(struct wlr_cursor_state *state,
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor_output_cursor");
 		return;
 	}
-	output_cursor->cursor = state->cursor;
+	output_cursor->cursor = &state->cursor;
 
 	wl_list_init(&output_cursor->surface_destroy.link);
 	wl_list_init(&output_cursor->surface_commit.link);
@@ -1022,15 +1015,15 @@ static void handle_layout_change(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, state, layout_change);
 	struct wlr_output_layout *layout = data;
 
-	if (!wlr_output_layout_contains_point(layout, NULL, state->cursor->x,
-			state->cursor->y) && !wl_list_empty(&layout->outputs)) {
+	if (!wlr_output_layout_contains_point(layout, NULL, state->cursor.x,
+			state->cursor.y) && !wl_list_empty(&layout->outputs)) {
 		// the output we were on has gone away so go to the closest boundary
 		// point (unless the layout is empty; compare warp_closest())
 		double x, y;
-		wlr_output_layout_closest_point(layout, NULL, state->cursor->x,
-			state->cursor->y, &x, &y);
+		wlr_output_layout_closest_point(layout, NULL, state->cursor.x,
+			state->cursor.y, &x, &y);
 
-		cursor_warp_unchecked(state->cursor, x, y);
+		cursor_warp_unchecked(&state->cursor, x, y);
 	}
 }
 
