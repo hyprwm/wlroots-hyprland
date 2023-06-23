@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
@@ -87,6 +88,10 @@ struct wlr_cursor_state {
 	} surface_hotspot;
 	struct wl_listener surface_commit;
 	struct wl_listener surface_destroy;
+
+	// only when using an XCursor as the cursor image
+	struct wlr_xcursor_manager *xcursor_manager;
+	char *xcursor_name;
 };
 
 struct wlr_cursor *wlr_cursor_create(void) {
@@ -215,6 +220,10 @@ static void cursor_reset_image(struct wlr_cursor *cur) {
 	wl_list_init(&cur->state->surface_destroy.link);
 	wl_list_init(&cur->state->surface_commit.link);
 	cur->state->surface = NULL;
+
+	cur->state->xcursor_manager = NULL;
+	free(cur->state->xcursor_name);
+	cur->state->xcursor_name = NULL;
 }
 
 void wlr_cursor_destroy(struct wlr_cursor *cur) {
@@ -484,6 +493,12 @@ static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *out
 
 void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
 		struct wlr_xcursor_manager *manager, const char *name) {
+	if (manager == cur->state->xcursor_manager &&
+			cur->state->xcursor_name != NULL &&
+			strcmp(name, cur->state->xcursor_name) == 0) {
+		return;
+	}
+
 	cursor_reset_image(cur);
 
 	struct wlr_cursor_output_cursor *output_cursor;
@@ -499,6 +514,9 @@ void wlr_cursor_set_xcursor(struct wlr_cursor *cur,
 		output_cursor->xcursor = xcursor;
 		output_cursor_set_xcursor_image(output_cursor, 0);
 	}
+
+	cur->state->xcursor_manager = manager;
+	cur->state->xcursor_name = strdup(name);
 }
 
 static void cursor_handle_surface_destroy(
