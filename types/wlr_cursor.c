@@ -418,26 +418,6 @@ static void cursor_output_cursor_reset_image(struct wlr_cursor_output_cursor *ou
 	output_cursor->xcursor_timer = NULL;
 }
 
-void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
-		int32_t stride, uint32_t width, uint32_t height, int32_t hotspot_x,
-		int32_t hotspot_y, float scale) {
-	if (scale <= 0) {
-		cursor_reset_image(cur);
-	}
-
-	struct wlr_cursor_output_cursor *output_cursor;
-	wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
-		float output_scale = output_cursor->output_cursor->output->scale;
-		if (scale > 0 && output_scale != scale) {
-			continue;
-		}
-
-		cursor_output_cursor_reset_image(output_cursor);
-		wlr_output_cursor_set_image(output_cursor->output_cursor, pixels,
-			stride, width, height, hotspot_x, hotspot_y);
-	}
-}
-
 static void cursor_update_outputs(struct wlr_cursor *cur);
 
 void wlr_cursor_set_buffer(struct wlr_cursor *cur, struct wlr_buffer *buffer,

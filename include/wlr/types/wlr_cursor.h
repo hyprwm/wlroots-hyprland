@@ -137,17 +137,6 @@ void wlr_cursor_move(struct wlr_cursor *cur, struct wlr_input_device *dev,
 	double delta_x, double delta_y);
 
 /**
- * Set the cursor image. stride is given in bytes. If pixels is NULL, hides the
- * cursor.
- *
- * If scale isn't zero, the image is only set on outputs having the provided
- * scale.
- */
-void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
-	int32_t stride, uint32_t width, uint32_t height, int32_t hotspot_x,
-	int32_t hotspot_y, float scale);
-
-/**
  * Set the cursor buffer.
  *
  * The buffer is used on all outputs and is scaled accordingly. The hotspot is
