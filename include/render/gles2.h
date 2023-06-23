@@ -25,7 +25,6 @@ struct wlr_gles2_pixel_format {
 	// optional field, if empty then internalformat = format
 	GLint gl_internalformat;
 	GLint gl_format, gl_type;
-	bool has_alpha;
 };
 
 struct wlr_gles2_tex_shader {

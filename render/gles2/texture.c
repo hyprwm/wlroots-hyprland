@@ -216,7 +216,7 @@ static struct wlr_texture *gles2_texture_from_pixels(
 		return NULL;
 	}
 	texture->target = GL_TEXTURE_2D;
-	texture->has_alpha = fmt->has_alpha;
+	texture->has_alpha = drm_fmt->has_alpha;
 	texture->drm_format = fmt->drm_format;
 
 	GLint internal_format = fmt->gl_internalformat;
