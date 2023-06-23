@@ -1033,6 +1033,8 @@ static void layout_add(struct wlr_cursor_state *state,
 		&output_cursor->layout_output_destroy);
 
 	wl_list_insert(&state->output_cursors, &output_cursor->link);
+
+	cursor_output_cursor_update(output_cursor);
 }
 
 static void handle_layout_add(struct wl_listener *listener, void *data) {
