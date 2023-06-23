@@ -520,7 +520,7 @@ static void output_cursor_output_handle_output_commit(
 void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
 		int32_t hotspot_x, int32_t hotspot_y) {
 	if (surface == NULL) {
-		wlr_cursor_set_image(cur, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_cursor_unset_image(cur);
 		return;
 	}
 
