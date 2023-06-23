@@ -21,6 +21,18 @@ static struct wlr_fullscreen_shell_v1 *shell_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
+static void fullscreen_shell_surface_handle_commit(struct wlr_surface *surface) {
+	if (wlr_surface_has_buffer(surface)) {
+		wlr_surface_map(surface);
+	}
+}
+
+static const struct wlr_surface_role fullscreen_shell_surface_role = {
+	.name = "zwp_fullscreen_shell_v1-surface",
+	.no_object = true,
+	.commit = fullscreen_shell_surface_handle_commit,
+};
+
 static void shell_handle_present_surface(struct wl_client *client,
 		struct wl_resource *shell_resource,
 		struct wl_resource *surface_resource, uint32_t method,
@@ -33,6 +45,11 @@ static void shell_handle_present_surface(struct wl_client *client,
 	struct wlr_output *output = NULL;
 	if (output_resource != NULL) {
 		output = wlr_output_from_resource(output_resource);
+	}
+
+	if (!wlr_surface_set_role(surface, &fullscreen_shell_surface_role,
+			shell_resource, ZWP_FULLSCREEN_SHELL_V1_ERROR_ROLE)) {
+		return;
 	}
 
 	struct wlr_fullscreen_shell_v1_present_surface_event event = {
@@ -49,6 +66,13 @@ static void shell_handle_present_surface_for_mode(struct wl_client *client,
 		struct wl_resource *surface_resource,
 		struct wl_resource *output_resource, int32_t framerate,
 		uint32_t feedback_id) {
+	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
+
+	if (!wlr_surface_set_role(surface, &fullscreen_shell_surface_role,
+			shell_resource, ZWP_FULLSCREEN_SHELL_V1_ERROR_ROLE)) {
+		return;
+	}
+
 	uint32_t version = wl_resource_get_version(shell_resource);
 	struct wl_resource *feedback_resource =
 		wl_resource_create(client, NULL, version, feedback_id);
