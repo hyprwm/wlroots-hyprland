@@ -148,6 +148,15 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 	int32_t hotspot_y, float scale);
 
 /**
+ * Set the cursor buffer.
+ *
+ * The buffer is used on all outputs and is scaled accordingly. The hotspot is
+ * expressed in logical coordinates. A NULL buffer hides the cursor.
+ */
+void wlr_cursor_set_buffer(struct wlr_cursor *cur, struct wlr_buffer *buffer,
+	int32_t hotspot_x, int32_t hotspot_y, float scale);
+
+/**
  * Hide the cursor image.
  */
 void wlr_cursor_unset_image(struct wlr_cursor *cur);

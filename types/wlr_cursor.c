@@ -81,6 +81,13 @@ struct wlr_cursor_state {
 	struct wl_listener layout_change;
 	struct wl_listener layout_destroy;
 
+	// only when using a buffer as the cursor image
+	struct wlr_buffer *buffer;
+	struct {
+		int32_t x, y;
+	} buffer_hotspot;
+	float buffer_scale;
+
 	// only when using a surface as the cursor image
 	struct wlr_surface *surface;
 	struct {
@@ -207,6 +214,9 @@ static void cursor_device_destroy(struct wlr_cursor_device *c_device) {
 }
 
 static void cursor_reset_image(struct wlr_cursor *cur) {
+	wlr_buffer_unlock(cur->state->buffer);
+	cur->state->buffer = NULL;
+
 	if (cur->state->surface != NULL) {
 		struct wlr_cursor_output_cursor *output_cursor;
 		wl_list_for_each(output_cursor, &cur->state->output_cursors, link) {
@@ -430,6 +440,27 @@ void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
 
 static void cursor_update_outputs(struct wlr_cursor *cur);
 
+void wlr_cursor_set_buffer(struct wlr_cursor *cur, struct wlr_buffer *buffer,
+		int32_t hotspot_x, int32_t hotspot_y, float scale) {
+	if (buffer == cur->state->buffer &&
+			hotspot_x == cur->state->buffer_hotspot.x &&
+			hotspot_y == cur->state->buffer_hotspot.y &&
+			scale == cur->state->buffer_scale) {
+		return;
+	}
+
+	cursor_reset_image(cur);
+
+	if (buffer != NULL) {
+		cur->state->buffer = wlr_buffer_lock(buffer);
+		cur->state->buffer_hotspot.x = hotspot_x;
+		cur->state->buffer_hotspot.y = hotspot_y;
+		cur->state->buffer_scale = scale;
+	}
+
+	cursor_update_outputs(cur);
+}
+
 void wlr_cursor_unset_image(struct wlr_cursor *cur) {
 	cursor_reset_image(cur);
 	cursor_update_outputs(cur);
@@ -489,8 +520,30 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 
 	cursor_output_cursor_reset_image(output_cursor);
 
-	struct wlr_surface *surface = cur->state->surface;
-	if (surface != NULL) {
+	if (cur->state->buffer != NULL) {
+		struct wlr_renderer *renderer = output_cursor->output_cursor->output->renderer;
+		if (!renderer) {
+			return;
+		}
+
+		struct wlr_buffer *buffer = cur->state->buffer;
+		int32_t hotspot_x = cur->state->buffer_hotspot.x;
+		int32_t hotspot_y = cur->state->buffer_hotspot.y;
+		float scale = cur->state->buffer_scale;
+
+		struct wlr_texture *texture = NULL;
+		if (buffer != NULL) {
+			texture = wlr_texture_from_buffer(renderer, buffer);
+			if (texture == NULL) {
+				return;
+			}
+		}
+
+		output_cursor_set_texture(output_cursor->output_cursor, texture, true,
+			scale, WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
+	} else if (cur->state->surface != NULL) {
+		struct wlr_surface *surface = cur->state->surface;
+
 		wl_signal_add(&output_cursor->output_cursor->output->events.commit,
 			&output_cursor->output_commit);
 		output_cursor->output_commit.notify = output_cursor_output_handle_output_commit;
