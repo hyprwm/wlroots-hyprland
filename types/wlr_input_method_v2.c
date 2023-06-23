@@ -165,9 +165,17 @@ struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surfa
 	return (struct wlr_input_popup_surface_v2 *)surface->role_data;
 }
 
+static const struct zwp_input_popup_surface_v2_interface input_popup_impl;
+
+static struct wlr_input_popup_surface_v2 *popup_surface_from_resource(struct wl_resource *resource) {
+	assert(wl_resource_instance_of(resource, &zwp_input_popup_surface_v2_interface,
+		&input_popup_impl));
+	return wl_resource_get_user_data(resource);
+}
+
 static void popup_resource_destroy(struct wl_resource *resource) {
 	struct wlr_input_popup_surface_v2 *popup_surface =
-		wl_resource_get_user_data(resource);
+		popup_surface_from_resource(resource);
 	if (popup_surface != NULL) {
 		wlr_surface_destroy_role_object(popup_surface->surface);
 	}
