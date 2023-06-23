@@ -412,7 +412,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		&xdg_popup_implementation, surface->popup,
 		xdg_popup_handle_resource_destroy);
 
-	wlr_surface_set_role_object(surface->surface, surface);
+	wlr_surface_set_role_object(surface->surface, surface->resource);
 
 	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 

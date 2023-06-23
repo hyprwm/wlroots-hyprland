@@ -167,7 +167,7 @@ struct wlr_surface {
 	 * The role object representing the role. NULL if the role isn't
 	 * represented by any object or the object was destroyed.
 	 */
-	void *role_data;
+	struct wl_resource *role_resource;
 
 	struct {
 		struct wl_signal client_commit;
@@ -247,7 +247,7 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
  * Set the role object for this surface. The surface must have a role and
  * no already set role object.
  */
-void wlr_surface_set_role_object(struct wlr_surface *surface, void *role_data);
+void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource);
 
 /**
  * Destroy the object representing the surface's role. If it doesn't exist,

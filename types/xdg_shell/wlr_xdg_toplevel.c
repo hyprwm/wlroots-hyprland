@@ -524,7 +524,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		&xdg_toplevel_implementation, surface->toplevel,
 		xdg_toplevel_handle_resource_destroy);
 
-	wlr_surface_set_role_object(surface->surface, surface);
+	wlr_surface_set_role_object(surface->surface, surface->resource);
 
 	surface->role = WLR_XDG_SURFACE_ROLE_TOPLEVEL;
 }

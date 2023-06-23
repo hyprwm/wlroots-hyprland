@@ -50,10 +50,10 @@ static const struct wlr_surface_role lock_surface_role;
 
 struct wlr_session_lock_surface_v1 *wlr_session_lock_surface_v1_try_from_wlr_surface(
 		struct wlr_surface *surface) {
-	if (surface->role != &lock_surface_role) {
+	if (surface->role != &lock_surface_role || surface->role_resource == NULL) {
 		return NULL;
 	}
-	return (struct wlr_session_lock_surface_v1 *)surface->role_data;
+	return lock_surface_from_resource(surface->role_resource);
 }
 
 uint32_t wlr_session_lock_surface_v1_configure(
@@ -274,7 +274,7 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 	lock_surface->resource = lock_surface_resource;
 	wl_resource_set_user_data(lock_surface_resource, lock_surface);
 
-	wlr_surface_set_role_object(surface, lock_surface);
+	wlr_surface_set_role_object(surface, lock_surface_resource);
 
 	wl_list_insert(&lock->surfaces, &lock_surface->link);
 

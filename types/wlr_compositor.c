@@ -37,7 +37,7 @@ static int max(int fst, int snd) {
 static void surface_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
-	if (surface->role_data != NULL) {
+	if (surface->role_resource != NULL) {
 		wl_resource_post_error(resource,
 			WL_SURFACE_ERROR_DEFUNCT_ROLE_OBJECT,
 			"surface was destroyed before its role object");
@@ -492,7 +492,7 @@ static void surface_commit_state(struct wlr_surface *surface,
 	}
 
 	if (surface->role != NULL && surface->role->commit != NULL &&
-			(surface->role_data != NULL || surface->role->no_object)) {
+			(surface->role_resource != NULL || surface->role->no_object)) {
 		surface->role->commit(surface);
 	}
 
@@ -753,7 +753,7 @@ void wlr_surface_unmap(struct wlr_surface *surface) {
 	surface->mapped = false;
 	wl_signal_emit_mutable(&surface->events.unmap, NULL);
 	if (surface->role != NULL && surface->role->unmap != NULL &&
-			(surface->role_data != NULL || surface->role->no_object)) {
+			(surface->role_resource != NULL || surface->role->no_object)) {
 		surface->role->unmap(surface);
 	}
 
@@ -779,7 +779,7 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
 		}
 		return false;
 	}
-	if (surface->role_data != NULL) {
+	if (surface->role_resource != NULL) {
 		wl_resource_post_error(error_resource, error_code,
 			"Cannot reassign role %s to wl_surface@%" PRIu32 ", role object still exists",
 			role->name, wl_resource_get_id(surface->resource));
@@ -790,23 +790,23 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
 	return true;
 }
 
-void wlr_surface_set_role_object(struct wlr_surface *surface, void *role_data) {
+void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource) {
 	assert(surface->role != NULL);
 	assert(!surface->role->no_object);
-	assert(surface->role_data == NULL);
-	assert(role_data != NULL);
-	surface->role_data = role_data;
+	assert(surface->role_resource == NULL);
+	assert(role_resource != NULL);
+	surface->role_resource = role_resource;
 }
 
 void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
-	if (surface->role_data == NULL) {
+	if (surface->role_resource == NULL) {
 		return;
 	}
 	wlr_surface_unmap(surface);
 	if (surface->role->destroy != NULL) {
 		surface->role->destroy(surface);
 	}
-	surface->role_data = NULL;
+	surface->role_resource = NULL;
 }
 
 uint32_t wlr_surface_lock_pending(struct wlr_surface *surface) {

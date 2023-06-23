@@ -40,10 +40,10 @@ static const struct wlr_surface_role layer_surface_role;
 
 struct wlr_layer_surface_v1 *wlr_layer_surface_v1_try_from_wlr_surface(
 		struct wlr_surface *surface) {
-	if (surface->role != &layer_surface_role) {
+	if (surface->role != &layer_surface_role || surface->role_resource == NULL) {
 		return NULL;
 	}
-	return (struct wlr_layer_surface_v1 *)surface->role_data;
+	return wlr_layer_surface_v1_from_resource(surface->role_resource);
 }
 
 static void layer_surface_configure_destroy(
@@ -445,7 +445,7 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	wl_resource_set_implementation(surface->resource,
 		&layer_surface_implementation, surface, layer_surface_resource_destroy);
 
-	wlr_surface_set_role_object(wlr_surface, surface);
+	wlr_surface_set_role_object(wlr_surface, surface->resource);
 }
 
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation = {

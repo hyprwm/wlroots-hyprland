@@ -293,10 +293,10 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 }
 
 struct wlr_subsurface *wlr_subsurface_try_from_wlr_surface(struct wlr_surface *surface) {
-	if (surface->role != &subsurface_role) {
+	if (surface->role != &subsurface_role || surface->role_resource == NULL) {
 		return NULL;
 	}
-	return (struct wlr_subsurface *)surface->role_data;
+	return subsurface_from_resource(surface->role_resource);
 }
 
 static void subcompositor_handle_destroy(struct wl_client *client,
@@ -344,7 +344,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	wl_resource_set_implementation(subsurface->resource,
 		&subsurface_implementation, subsurface, subsurface_resource_destroy);
 
-	wlr_surface_set_role_object(surface, subsurface);
+	wlr_surface_set_role_object(surface, subsurface->resource);
 
 	wl_signal_init(&subsurface->events.destroy);
 

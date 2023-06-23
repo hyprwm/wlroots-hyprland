@@ -38,7 +38,7 @@ static struct wlr_xwayland_surface_v1 *xwl_surface_from_resource(
 }
 
 static void xwl_surface_role_commit(struct wlr_surface *surface) {
-	struct wlr_xwayland_surface_v1 *xwl_surface = surface->role_data;
+	struct wlr_xwayland_surface_v1 *xwl_surface = xwl_surface_from_resource(surface->role_resource);
 
 	if (xwl_surface->serial != 0 && !xwl_surface->added) {
 		xwl_surface->added = true;
@@ -48,7 +48,7 @@ static void xwl_surface_role_commit(struct wlr_surface *surface) {
 }
 
 static void xwl_surface_role_destroy(struct wlr_surface *surface) {
-	struct wlr_xwayland_surface_v1 *xwl_surface = surface->role_data;
+	struct wlr_xwayland_surface_v1 *xwl_surface = xwl_surface_from_resource(surface->role_resource);
 	wl_list_remove(&xwl_surface->surface_destroy.link);
 	wl_list_remove(&xwl_surface->link);
 	wl_resource_set_user_data(xwl_surface->resource, NULL); // make inert
@@ -131,7 +131,7 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 	wl_resource_set_implementation(xwl_surface->resource, &xwl_surface_impl,
 		xwl_surface, xwl_surface_handle_resource_destroy);
 
-	wlr_surface_set_role_object(surface, xwl_surface);
+	wlr_surface_set_role_object(surface, xwl_surface->resource);
 
 	wl_list_insert(&shell->surfaces, &xwl_surface->link);
 

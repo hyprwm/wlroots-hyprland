@@ -138,12 +138,14 @@ static void popup_surface_consider_map(struct wlr_input_popup_surface_v2 *popup_
 }
 
 static void popup_surface_surface_role_commit(struct wlr_surface *surface) {
-	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
+	struct wlr_input_popup_surface_v2 *popup_surface =
+		wlr_input_popup_surface_v2_try_from_wlr_surface(surface);
 	popup_surface_consider_map(popup_surface);
 }
 
 static void popup_surface_surface_role_destroy(struct wlr_surface *surface) {
-	struct wlr_input_popup_surface_v2 *popup_surface = surface->role_data;
+	struct wlr_input_popup_surface_v2 *popup_surface =
+		wlr_input_popup_surface_v2_try_from_wlr_surface(surface);
 
 	wl_signal_emit_mutable(&popup_surface->events.destroy, NULL);
 	wl_list_remove(&popup_surface->link);
@@ -157,20 +159,20 @@ static const struct wlr_surface_role input_popup_surface_v2_role = {
 	.destroy = popup_surface_surface_role_destroy,
 };
 
-struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surface(
-		struct wlr_surface *surface) {
-	if (surface->role != &input_popup_surface_v2_role) {
-		return NULL;
-	}
-	return (struct wlr_input_popup_surface_v2 *)surface->role_data;
-}
-
 static const struct zwp_input_popup_surface_v2_interface input_popup_impl;
 
 static struct wlr_input_popup_surface_v2 *popup_surface_from_resource(struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource, &zwp_input_popup_surface_v2_interface,
 		&input_popup_impl));
 	return wl_resource_get_user_data(resource);
+}
+
+struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surface(
+		struct wlr_surface *surface) {
+	if (surface->role != &input_popup_surface_v2_role || surface->role_resource == NULL) {
+		return NULL;
+	}
+	return popup_surface_from_resource(surface->role_resource);
 }
 
 static void popup_resource_destroy(struct wl_resource *resource) {
@@ -225,7 +227,7 @@ static void im_get_input_popup_surface(struct wl_client *client,
 	wl_resource_set_implementation(popup_resource, &input_popup_impl,
 		popup_surface, popup_resource_destroy);
 
-	wlr_surface_set_role_object(surface, popup_surface);
+	wlr_surface_set_role_object(surface, popup_resource);
 
 	popup_surface->resource = popup_resource;
 	popup_surface->input_method = input_method;

@@ -11,7 +11,10 @@ struct wlr_xdg_surface *wlr_xdg_surface_try_from_wlr_surface(
 			surface->role != &xdg_popup_surface_role) {
 		return NULL;
 	}
-	return (struct wlr_xdg_surface *)surface->role_data;
+	if (surface->role_resource == NULL) {
+		return NULL;
+	}
+	return wlr_xdg_surface_from_resource(surface->role_resource);
 }
 
 static void xdg_surface_configure_destroy(
