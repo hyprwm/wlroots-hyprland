@@ -175,14 +175,6 @@ struct wlr_input_popup_surface_v2 *wlr_input_popup_surface_v2_try_from_wlr_surfa
 	return popup_surface_from_resource(surface->role_resource);
 }
 
-static void popup_resource_destroy(struct wl_resource *resource) {
-	struct wlr_input_popup_surface_v2 *popup_surface =
-		popup_surface_from_resource(resource);
-	if (popup_surface != NULL) {
-		wlr_surface_destroy_role_object(popup_surface->surface);
-	}
-}
-
 static void popup_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	wl_resource_destroy(resource);
@@ -225,7 +217,7 @@ static void im_get_input_popup_surface(struct wl_client *client,
 	}
 
 	wl_resource_set_implementation(popup_resource, &input_popup_impl,
-		popup_surface, popup_resource_destroy);
+		popup_surface, NULL);
 
 	wlr_surface_set_role_object(surface, popup_resource);
 

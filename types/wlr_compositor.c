@@ -648,6 +648,7 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 	}
 
 	wl_list_remove(&surface->renderer_destroy.link);
+	wl_list_remove(&surface->role_resource_destroy.link);
 	surface_state_finish(&surface->pending);
 	surface_state_finish(&surface->current);
 	pixman_region32_fini(&surface->buffer_damage);
@@ -713,6 +714,8 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	} else {
 		wl_list_init(&surface->renderer_destroy.link);
 	}
+
+	wl_list_init(&surface->role_resource_destroy.link);
 
 	return surface;
 }
@@ -790,12 +793,19 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
 	return true;
 }
 
+static void surface_handle_role_resource_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_surface *surface = wl_container_of(listener, surface, role_resource_destroy);
+	wlr_surface_destroy_role_object(surface);
+}
+
 void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource) {
 	assert(surface->role != NULL);
 	assert(!surface->role->no_object);
 	assert(surface->role_resource == NULL);
 	assert(role_resource != NULL);
 	surface->role_resource = role_resource;
+	surface->role_resource_destroy.notify = surface_handle_role_resource_destroy;
+	wl_resource_add_destroy_listener(role_resource, &surface->role_resource_destroy);
 }
 
 void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
@@ -807,6 +817,8 @@ void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
 		surface->role->destroy(surface);
 	}
 	surface->role_resource = NULL;
+	wl_list_remove(&surface->role_resource_destroy.link);
+	wl_list_init(&surface->role_resource_destroy.link);
 }
 
 uint32_t wlr_surface_lock_pending(struct wlr_surface *surface) {

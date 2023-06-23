@@ -91,14 +91,6 @@ static void xwl_surface_handle_surface_destroy(struct wl_listener *listener,
 	wlr_surface_destroy_role_object(xwl_surface->surface);
 }
 
-static void xwl_surface_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_xwayland_surface_v1 *xwl_surface =
-		xwl_surface_from_resource(resource);
-	if (xwl_surface != NULL) {
-		wlr_surface_destroy_role_object(xwl_surface->surface);
-	}
-}
-
 static void shell_handle_get_xwayland_surface(struct wl_client *client,
 		struct wl_resource *shell_resource, uint32_t id,
 		struct wl_resource *surface_resource) {
@@ -129,7 +121,7 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 		return;
 	}
 	wl_resource_set_implementation(xwl_surface->resource, &xwl_surface_impl,
-		xwl_surface, xwl_surface_handle_resource_destroy);
+		xwl_surface, NULL);
 
 	wlr_surface_set_role_object(surface, xwl_surface->resource);
 

@@ -37,13 +37,6 @@ static struct wlr_subsurface *subsurface_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
-static void subsurface_resource_destroy(struct wl_resource *resource) {
-	struct wlr_subsurface *subsurface = subsurface_from_resource(resource);
-	if (subsurface != NULL) {
-		wlr_surface_destroy_role_object(subsurface->surface);
-	}
-}
-
 static void subsurface_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	wl_resource_destroy(resource);
@@ -342,7 +335,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 		return;
 	}
 	wl_resource_set_implementation(subsurface->resource,
-		&subsurface_implementation, subsurface, subsurface_resource_destroy);
+		&subsurface_implementation, subsurface, NULL);
 
 	wlr_surface_set_role_object(surface, subsurface->resource);
 

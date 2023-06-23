@@ -198,14 +198,6 @@ static void lock_surface_handle_output_destroy(struct wl_listener *listener,
 	wlr_surface_destroy_role_object(lock_surface->surface);
 }
 
-static void lock_surface_resource_destroy(struct wl_resource *resource) {
-	struct wlr_session_lock_surface_v1 *lock_surface =
-		lock_surface_from_resource(resource);
-	if (lock_surface != NULL) {
-		wlr_surface_destroy_role_object(lock_surface->surface);
-	}
-}
-
 static void lock_handle_get_lock_surface(struct wl_client *client,
 		struct wl_resource *lock_resource, uint32_t id,
 		struct wl_resource *surface_resource,
@@ -226,8 +218,7 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 	// Leave the lock surface resource inert for now, we will set the
 	// user data at the end of this function if everything is successful.
 	wl_resource_set_implementation(lock_surface_resource,
-		&lock_surface_implementation, NULL,
-		lock_surface_resource_destroy);
+		&lock_surface_implementation, NULL, NULL);
 
 	struct wlr_session_lock_v1 *lock = lock_from_resource(lock_resource);
 	if (lock == NULL) {

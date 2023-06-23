@@ -199,6 +199,7 @@ struct wlr_surface {
 	// private state
 
 	struct wl_listener renderer_destroy;
+	struct wl_listener role_resource_destroy;
 
 	struct {
 		int32_t scale;
@@ -246,6 +247,8 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
 /**
  * Set the role object for this surface. The surface must have a role and
  * no already set role object.
+ *
+ * wlr_surface_destroy_role_object() is called when the resource is destroyed.
  */
 void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource);
 

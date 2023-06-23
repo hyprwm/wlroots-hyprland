@@ -264,14 +264,6 @@ static const struct zwlr_layer_surface_v1_interface layer_surface_implementation
 	.set_layer = layer_surface_set_layer,
 };
 
-static void layer_surface_resource_destroy(struct wl_resource *resource) {
-	struct wlr_layer_surface_v1 *surface =
-		wlr_layer_surface_v1_from_resource(resource);
-	if (surface != NULL) {
-		wlr_surface_destroy_role_object(surface->surface);
-	}
-}
-
 uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 		uint32_t width, uint32_t height) {
 	struct wl_display *display =
@@ -443,7 +435,7 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	wlr_log(WLR_DEBUG, "new layer_surface %p (res %p)",
 			surface, surface->resource);
 	wl_resource_set_implementation(surface->resource,
-		&layer_surface_implementation, surface, layer_surface_resource_destroy);
+		&layer_surface_implementation, surface, NULL);
 
 	wlr_surface_set_role_object(wlr_surface, surface->resource);
 }
