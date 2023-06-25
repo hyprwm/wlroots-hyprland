@@ -72,6 +72,7 @@ static void destroy_buffer(struct wlr_gles2_buffer *buffer) {
 
 	glDeleteFramebuffers(1, &buffer->fbo);
 	glDeleteRenderbuffers(1, &buffer->rbo);
+	glDeleteTextures(1, &buffer->tex);
 
 	pop_gles2_debug(buffer->renderer);
 
@@ -131,7 +132,7 @@ GLuint gles2_buffer_get_fbo(struct wlr_gles2_buffer *buffer) {
 	return buffer->fbo;
 }
 
-static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *renderer,
+struct wlr_gles2_buffer *gles2_buffer_get_or_create(struct wlr_gles2_renderer *renderer,
 		struct wlr_buffer *wlr_buffer) {
 	struct wlr_addon *addon =
 		wlr_addon_find(&wlr_buffer->addons, renderer, &buffer_addon_impl);
@@ -202,7 +203,7 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 		return false;
 	}
 
-	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
+	struct wlr_gles2_buffer *buffer = gles2_buffer_get_or_create(renderer, wlr_buffer);
 	if (buffer == NULL) {
 		return false;
 	}
@@ -442,7 +443,7 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 		clock_gettime(CLOCK_MONOTONIC, &timer->cpu_start);
 	}
 
-	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
+	struct wlr_gles2_buffer *buffer = gles2_buffer_get_or_create(renderer, wlr_buffer);
 	if (!buffer) {
 		return NULL;
 	}
