@@ -106,33 +106,6 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	return true;
 }
 
-static bool gles2_texture_invalidate(struct wlr_gles2_texture *texture) {
-	if (!texture->buffer) {
-		return false;
-	}
-	if (texture->target == GL_TEXTURE_EXTERNAL_OES) {
-		// External changes are immediately made visible by the GL implementation
-		return true;
-	}
-
-	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(texture->renderer->egl);
-
-	push_gles2_debug(texture->renderer);
-
-	glBindTexture(texture->target, texture->tex);
-	texture->renderer->procs.glEGLImageTargetTexture2DOES(texture->target,
-		texture->buffer->image);
-	glBindTexture(texture->target, 0);
-
-	pop_gles2_debug(texture->renderer);
-
-	wlr_egl_restore_context(&prev_ctx);
-
-	return true;
-}
-
 void gles2_texture_destroy(struct wlr_gles2_texture *texture) {
 	wl_list_remove(&texture->link);
 	if (texture->buffer != NULL) {
@@ -265,6 +238,7 @@ static struct wlr_texture *gles2_texture_from_dmabuf(
 	const struct wlr_pixel_format_info *drm_fmt =
 		drm_get_pixel_format_info(attribs->format);
 
+	texture->target = buffer->external_only ? GL_TEXTURE_EXTERNAL_OES : GL_TEXTURE_2D;
 	texture->buffer = buffer;
 	texture->drm_format = DRM_FORMAT_INVALID; // texture can't be written anyways
 	texture->has_alpha = drm_fmt ? drm_fmt->has_alpha : true;
@@ -272,28 +246,29 @@ static struct wlr_texture *gles2_texture_from_dmabuf(
 	struct wlr_egl_context prev_ctx;
 	wlr_egl_save_context(&prev_ctx);
 	wlr_egl_make_current(renderer->egl);
+	push_gles2_debug(texture->renderer);
 
-	texture->target = buffer->external_only ? GL_TEXTURE_EXTERNAL_OES : GL_TEXTURE_2D;
-
-	if (buffer->tex) {
-		texture->tex = buffer->tex;
-		gles2_texture_invalidate(texture);
+	bool invalid;
+	if (!buffer->tex) {
+		glGenTextures(1, &buffer->tex);
+		invalid = true;
 	} else {
-		push_gles2_debug(renderer);
+		// External changes are immediately made visible by the GL implementation
+		invalid = !buffer->external_only;
+	}
 
-		glGenTextures(1, &texture->tex);
-		glBindTexture(texture->target, texture->tex);
+	if (invalid) {
+		glBindTexture(texture->target, buffer->tex);
 		glTexParameteri(texture->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(texture->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		renderer->procs.glEGLImageTargetTexture2DOES(texture->target, buffer->image);
 		glBindTexture(texture->target, 0);
-
-		pop_gles2_debug(renderer);
-		buffer->tex = texture->tex;
 	}
 
+	pop_gles2_debug(texture->renderer);
 	wlr_egl_restore_context(&prev_ctx);
 
+	texture->tex = buffer->tex;
 	wlr_buffer_lock(texture->buffer->buffer);
 	return &texture->wlr_texture;
 }
