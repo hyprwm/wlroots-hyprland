@@ -931,8 +931,6 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
 		conn->cursor_y -= hotspot_y - conn->cursor_hotspot_y;
 		conn->cursor_hotspot_x = hotspot_x;
 		conn->cursor_hotspot_y = hotspot_y;
-
-		wlr_output_update_needs_frame(output);
 	}
 
 	conn->cursor_enabled = false;
