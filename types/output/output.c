@@ -224,44 +224,6 @@ void wlr_output_set_custom_mode(struct wlr_output *output, int32_t width,
 	wlr_output_state_set_custom_mode(&output->pending, width, height, refresh);
 }
 
-static void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
-		int32_t height, int32_t refresh) {
-	if (output->width == width && output->height == height &&
-			output->refresh == refresh) {
-		return;
-	}
-
-	output->width = width;
-	output->height = height;
-	output_update_matrix(output);
-
-	output->refresh = refresh;
-
-	if (output->swapchain != NULL &&
-			(output->swapchain->width != output->width ||
-			output->swapchain->height != output->height)) {
-		wlr_swapchain_destroy(output->swapchain);
-		output->swapchain = NULL;
-	}
-
-	struct wl_resource *resource;
-	wl_resource_for_each(resource, &output->resources) {
-		send_current_mode(resource);
-	}
-	wlr_output_schedule_done(output);
-}
-
-static void wlr_output_update_mode(struct wlr_output *output,
-		struct wlr_output_mode *mode) {
-	output->current_mode = mode;
-	if (mode != NULL) {
-		wlr_output_update_custom_mode(output, mode->width, mode->height,
-			mode->refresh);
-	} else {
-		wlr_output_update_custom_mode(output, 0, 0, 0);
-	}
-}
-
 void wlr_output_set_transform(struct wlr_output *output,
 		enum wl_output_transform transform) {
 	wlr_output_state_set_transform(&output->pending, transform);
@@ -399,16 +361,44 @@ static void output_apply_state(struct wlr_output *output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		int width = 0, height = 0, refresh = 0;
 		switch (state->mode_type) {
-		case WLR_OUTPUT_STATE_MODE_FIXED:
-			wlr_output_update_mode(output, state->mode);
+		case WLR_OUTPUT_STATE_MODE_FIXED:;
+			struct wlr_output_mode *mode = state->mode;
+			output->current_mode = mode;
+			if (mode != NULL) {
+				width = mode->width;
+				height = mode->height;
+				refresh = mode->refresh;
+			}
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			wlr_output_update_custom_mode(output,
-				state->custom_mode.width,
-				state->custom_mode.height,
-				state->custom_mode.refresh);
+			width = state->custom_mode.width;
+			height = state->custom_mode.height;
+			refresh = state->custom_mode.refresh;
 			break;
+		}
+
+		if (output->width != width || output->height != height ||
+				output->refresh != refresh) {
+			output->width = width;
+			output->height = height;
+			output_update_matrix(output);
+
+			output->refresh = refresh;
+
+			if (output->swapchain != NULL &&
+					(output->swapchain->width != output->width ||
+					output->swapchain->height != output->height)) {
+				wlr_swapchain_destroy(output->swapchain);
+				output->swapchain = NULL;
+			}
+
+			struct wl_resource *resource;
+			wl_resource_for_each(resource, &output->resources) {
+				send_current_mode(resource);
+			}
+			wlr_output_schedule_done(output);
 		}
 	}
 }
