@@ -817,7 +817,7 @@ void wlr_scene_buffer_set_opacity(struct wlr_scene_buffer *scene_buffer,
 }
 
 void wlr_scene_buffer_set_filter_mode(struct wlr_scene_buffer *scene_buffer,
-	    enum wlr_scale_filter_mode filter_mode) {
+		enum wlr_scale_filter_mode filter_mode) {
 	if (scene_buffer->filter_mode == filter_mode) {
 		return;
 	}
@@ -1089,7 +1089,6 @@ struct wlr_scene_node *wlr_scene_node_at(struct wlr_scene_node *node,
 	return NULL;
 }
 
-
 static void scene_node_render(struct wlr_scene_node *node, const struct render_data *data) {
 	int x, y;
 	wlr_scene_node_coords(node, &x, &y);
@@ -1113,6 +1112,12 @@ static void scene_node_render(struct wlr_scene_node *node, const struct render_d
 	};
 	scene_node_get_size(node, &dst_box.width, &dst_box.height);
 	scale_box(&dst_box, data->scale);
+
+	pixman_region32_t opaque;
+	pixman_region32_init(&opaque);
+	scene_node_opaque_region(node, x, y, &opaque);
+	scale_output_damage(&opaque, data->scale);
+	pixman_region32_subtract(&opaque, &render_region, &opaque);
 
 	transform_output_box(&dst_box, data);
 	transform_output_damage(&render_region, data);
@@ -1157,12 +1162,15 @@ static void scene_node_render(struct wlr_scene_node *node, const struct render_d
 			.clip = &render_region,
 			.alpha = &scene_buffer->opacity,
 			.filter_mode = scene_buffer->filter_mode,
+			.blend_mode = pixman_region32_not_empty(&opaque) ?
+				WLR_RENDER_BLEND_MODE_PREMULTIPLIED : WLR_RENDER_BLEND_MODE_NONE,
 		});
 
 		wl_signal_emit_mutable(&scene_buffer->events.output_present, data->output);
 		break;
 	}
 
+	pixman_region32_fini(&opaque);
 	pixman_region32_fini(&render_region);
 }
 
