@@ -1368,21 +1368,22 @@ static drmModeModeInfo *connector_get_current_mode(struct wlr_drm_connector *wlr
 static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		const drmModeConnector *drm_conn) {
 	struct wlr_drm_backend *drm = wlr_conn->backend;
+	struct wlr_output *output = &wlr_conn->output;
 
 	wlr_log(WLR_DEBUG, "Current CRTC: %d",
 		wlr_conn->crtc ? (int)wlr_conn->crtc->id : -1);
 
-	wlr_output_init(&wlr_conn->output, &drm->backend, &output_impl,
+	wlr_output_init(output, &drm->backend, &output_impl,
 		drm->display, NULL);
 
-	wlr_output_set_name(&wlr_conn->output, wlr_conn->name);
+	wlr_output_set_name(output, wlr_conn->name);
 
-	wlr_conn->output.phys_width = drm_conn->mmWidth;
-	wlr_conn->output.phys_height = drm_conn->mmHeight;
+	output->phys_width = drm_conn->mmWidth;
+	output->phys_height = drm_conn->mmHeight;
 	wlr_log(WLR_INFO, "Physical size: %"PRId32"x%"PRId32,
-		wlr_conn->output.phys_width, wlr_conn->output.phys_height);
+		output->phys_width, output->phys_height);
 	if (drm_conn->subpixel < sizeof(subpixel_map) / sizeof(subpixel_map[0])) {
-		wlr_conn->output.subpixel = subpixel_map[drm_conn->subpixel];
+		output->subpixel = subpixel_map[drm_conn->subpixel];
 	} else {
 		wlr_log(WLR_ERROR, "Unknown subpixel value: %d", (int)drm_conn->subpixel);
 	}
@@ -1397,7 +1398,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		if (non_desktop == 1) {
 			wlr_log(WLR_INFO, "Non-desktop connector");
 		}
-		wlr_conn->output.non_desktop = non_desktop;
+		output->non_desktop = non_desktop;
 	}
 
 	memset(wlr_conn->max_bpc_bounds, 0, sizeof(wlr_conn->max_bpc_bounds));
@@ -1424,7 +1425,6 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		subconnector = NULL;
 	}
 
-	struct wlr_output *output = &wlr_conn->output;
 	char description[128];
 	snprintf(description, sizeof(description), "%s %s%s%s (%s%s%s)",
 		output->make, output->model,
@@ -1460,7 +1460,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 				current_modeinfo, sizeof(*current_modeinfo)) == 0) {
 			// Update width, height, refresh, transform_matrix and current_mode
 			// of this connector's output.
-			wlr_output_update_mode(&wlr_conn->output, &mode->wlr_mode);
+			wlr_output_update_mode(output, &mode->wlr_mode);
 
 			uint64_t mode_id = 0;
 			get_drm_prop(drm->fd, wlr_conn->crtc->id,
@@ -1474,7 +1474,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 			(float)mode->wlr_mode.refresh / 1000,
 			mode->wlr_mode.preferred ? "(preferred)" : "");
 
-		wl_list_insert(wlr_conn->output.modes.prev, &mode->wlr_mode.link);
+		wl_list_insert(output->modes.prev, &mode->wlr_mode.link);
 	}
 
 	free(current_modeinfo);
