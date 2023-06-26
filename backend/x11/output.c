@@ -601,12 +601,9 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 
 	wlr_x11_output_set_title(wlr_output, NULL);
 
-	xcb_map_window(x11->xcb, output->win);
 	xcb_flush(x11->xcb);
 
 	wl_list_insert(&x11->outputs, &output->link);
-
-	wlr_output_update_enabled(wlr_output, true);
 
 	wlr_pointer_init(&output->pointer, &x11_pointer_impl, "x11-pointer");
 	output->pointer.output_name = strdup(wlr_output->name);
@@ -618,9 +615,6 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	wl_signal_emit_mutable(&x11->backend.events.new_output, wlr_output);
 	wl_signal_emit_mutable(&x11->backend.events.new_input, &output->pointer.base);
 	wl_signal_emit_mutable(&x11->backend.events.new_input, &output->touch.base);
-
-	// Start the rendering loop by requesting the compositor to render a frame
-	wlr_output_schedule_frame(wlr_output);
 
 	return wlr_output;
 }
