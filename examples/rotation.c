@@ -123,10 +123,6 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	sample_output->x_offs = sample_output->y_offs = 0;
 	sample_output->x_vel = sample_output->y_vel = 128;
 
-	struct wlr_output_state state;
-	wlr_output_state_init(&state);
-	wlr_output_state_set_transform(&state, sample->transform);
-
 	sample_output->output = output;
 	sample_output->sample = sample;
 	wl_signal_add(&output->events.frame, &sample_output->frame);
@@ -135,11 +131,14 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	sample_output->destroy.notify = output_remove_notify;
 	wl_list_insert(&sample->outputs, &sample_output->link);
 
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_transform(&state, sample->transform);
+	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
 		wlr_output_state_set_mode(&state, mode);
 	}
-
 	wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 }

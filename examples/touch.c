@@ -183,14 +183,15 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wl_signal_add(&output->events.destroy, &sample_output->destroy);
 	sample_output->destroy.notify = output_remove_notify;
 
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
 	if (mode != NULL) {
-		struct wlr_output_state state;
-		wlr_output_state_init(&state);
 		wlr_output_state_set_mode(&state, mode);
-		wlr_output_commit_state(output, &state);
-		wlr_output_state_finish(&state);
 	}
+	wlr_output_commit_state(output, &state);
+	wlr_output_state_finish(&state);
 }
 
 static void keyboard_key_notify(struct wl_listener *listener, void *data) {
