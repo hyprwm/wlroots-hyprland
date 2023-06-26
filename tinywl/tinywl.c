@@ -596,6 +596,11 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 	 * and our renderer. Must be done once, before commiting the output */
 	wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
+	/* The output may be disabled, switch it on. */
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_enabled(&state, true);
+
 	/* Some backends don't have modes. DRM+KMS does, and we need to set a mode
 	 * before we can use the output. The mode is a tuple of (width, height,
 	 * refresh rate), and each monitor supports only a specific set of modes. We
@@ -603,16 +608,12 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 	 * would let the user configure it. */
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 	if (mode != NULL) {
-		struct wlr_output_state state;
-		wlr_output_state_init(&state);
 		wlr_output_state_set_mode(&state, mode);
-		wlr_output_state_set_enabled(&state, true);
-		if (!wlr_output_commit_state(wlr_output, &state)) {
-			wlr_output_state_finish(&state);
-			return;
-		}
-		wlr_output_state_finish(&state);
 	}
+
+	/* Atomically applies the new output state. */
+	wlr_output_commit_state(wlr_output, &state);
+	wlr_output_state_finish(&state);
 
 	/* Allocates and configures our state for this output */
 	struct tinywl_output *output =
