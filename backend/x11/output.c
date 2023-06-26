@@ -26,6 +26,7 @@
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL |
 	WLR_OUTPUT_STATE_BUFFER |
+	WLR_OUTPUT_STATE_ENABLED |
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
@@ -348,6 +349,14 @@ static bool output_commit(struct wlr_output *wlr_output,
 
 	if (!output_test(wlr_output, state)) {
 		return false;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		if (state->enabled) {
+			xcb_map_window(x11->xcb, output->win);
+		} else {
+			xcb_unmap_window(x11->xcb, output->win);
+		}
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
