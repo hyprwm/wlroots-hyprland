@@ -224,18 +224,7 @@ void wlr_output_set_custom_mode(struct wlr_output *output, int32_t width,
 	wlr_output_state_set_custom_mode(&output->pending, width, height, refresh);
 }
 
-void wlr_output_update_mode(struct wlr_output *output,
-		struct wlr_output_mode *mode) {
-	output->current_mode = mode;
-	if (mode != NULL) {
-		wlr_output_update_custom_mode(output, mode->width, mode->height,
-			mode->refresh);
-	} else {
-		wlr_output_update_custom_mode(output, 0, 0, 0);
-	}
-}
-
-void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
+static void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
 		int32_t height, int32_t refresh) {
 	if (output->width == width && output->height == height &&
 			output->refresh == refresh) {
@@ -260,6 +249,17 @@ void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
 		send_current_mode(resource);
 	}
 	wlr_output_schedule_done(output);
+}
+
+static void wlr_output_update_mode(struct wlr_output *output,
+		struct wlr_output_mode *mode) {
+	output->current_mode = mode;
+	if (mode != NULL) {
+		wlr_output_update_custom_mode(output, mode->width, mode->height,
+			mode->refresh);
+	} else {
+		wlr_output_update_custom_mode(output, 0, 0, 0);
+	}
 }
 
 void wlr_output_set_transform(struct wlr_output *output,

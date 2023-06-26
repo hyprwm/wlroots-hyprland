@@ -104,22 +104,6 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	const struct wlr_output_impl *impl, struct wl_display *display,
 	const struct wlr_output_state *state);
 /**
- * Update the current output mode.
- *
- * The backend must call this function when the mode is updated to notify
- * compositors about the change.
- */
-void wlr_output_update_mode(struct wlr_output *output,
-	struct wlr_output_mode *mode);
-/**
- * Update the current output custom mode.
- *
- * The backend must call this function when the mode is updated to notify
- * compositors about the change.
- */
-void wlr_output_update_custom_mode(struct wlr_output *output, int32_t width,
-	int32_t height, int32_t refresh);
-/**
  * Update the current output status.
  *
  * The backend must call this function when the status is updated to notify
