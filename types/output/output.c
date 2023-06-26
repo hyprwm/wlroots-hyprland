@@ -314,18 +314,6 @@ static void output_apply_state(struct wlr_output *output,
 	bool geometry_updated = state->committed &
 		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM |
 		WLR_OUTPUT_STATE_SUBPIXEL);
-	if (geometry_updated || scale_updated) {
-		struct wl_resource *resource;
-		wl_resource_for_each(resource, &output->resources) {
-			if (geometry_updated) {
-				send_geometry(resource);
-			}
-			if (scale_updated) {
-				send_scale(resource);
-			}
-		}
-		wlr_output_schedule_done(output);
-	}
 
 	// Destroy the swapchains when an output is disabled
 	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
@@ -360,6 +348,7 @@ static void output_apply_state(struct wlr_output *output,
 		wlr_swapchain_set_buffer_submitted(output->swapchain, state->buffer);
 	}
 
+	bool mode_updated = false;
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		int width = 0, height = 0, refresh = 0;
 		switch (state->mode_type) {
@@ -394,12 +383,24 @@ static void output_apply_state(struct wlr_output *output,
 				output->swapchain = NULL;
 			}
 
-			struct wl_resource *resource;
-			wl_resource_for_each(resource, &output->resources) {
+			mode_updated = true;
+		}
+	}
+
+	if (geometry_updated || scale_updated || mode_updated) {
+		struct wl_resource *resource;
+		wl_resource_for_each(resource, &output->resources) {
+			if (mode_updated) {
 				send_current_mode(resource);
 			}
-			wlr_output_schedule_done(output);
+			if (geometry_updated) {
+				send_geometry(resource);
+			}
+			if (scale_updated) {
+				send_scale(resource);
+			}
 		}
+		wlr_output_schedule_done(output);
 	}
 }
 
