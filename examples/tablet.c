@@ -107,12 +107,6 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	float pad_height = sample->height_mm * scale;
 	float left = width / 2.0f - pad_width / 2.0f;
 	float top = height / 2.0f - pad_height / 2.0f;
-	const struct wlr_box box = {
-		.x = left, .y = top,
-		.width = pad_width, .height = pad_height,
-	};
-	wlr_render_rect(sample->renderer, &box, sample->pad_color,
-		wlr_output->transform_matrix);
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
 		.box = {
 			.x = left,
