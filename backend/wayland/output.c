@@ -30,6 +30,7 @@
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL |
 	WLR_OUTPUT_STATE_BUFFER |
+	WLR_OUTPUT_STATE_ENABLED |
 	WLR_OUTPUT_STATE_MODE |
 	WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED;
 
@@ -489,6 +490,11 @@ static bool output_commit(struct wlr_output *wlr_output,
 
 	if (!output_test(wlr_output, state)) {
 		return false;
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
+		wl_surface_attach(output->surface, NULL, 0, 0);
+		wl_surface_commit(output->surface);
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
