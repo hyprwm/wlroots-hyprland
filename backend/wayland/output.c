@@ -804,7 +804,6 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 	wl_display_roundtrip(output->backend->remote_display);
 
 	wl_list_insert(&backend->outputs, &output->link);
-	wlr_output_update_enabled(wlr_output, true);
 
 	wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
 
@@ -820,9 +819,6 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 		xdg_activation_v1_activate(backend->activation_v1,
 				backend->activation_token, output->surface);
 	}
-
-	// Start the rendering loop by requesting the compositor to render a frame
-	wlr_output_schedule_frame(wlr_output);
 
 	return wlr_output;
 
