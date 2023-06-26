@@ -566,11 +566,6 @@ static bool output_commit(struct wlr_output *wlr_output,
 
 	wl_display_flush(output->backend->remote_display);
 
-	if (state->committed & WLR_OUTPUT_STATE_MODE) {
-		wlr_output_update_custom_mode(wlr_output,
-			state->custom_mode.width, state->custom_mode.height, 0);
-	}
-
 	return true;
 }
 

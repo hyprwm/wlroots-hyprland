@@ -814,6 +814,20 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		wlr_swapchain_set_buffer_submitted(output->swapchain, pending.buffer);
 	}
 
+	if (pending.committed & WLR_OUTPUT_STATE_MODE) {
+		switch (pending.mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			wlr_output_update_mode(output, pending.mode);
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			wlr_output_update_custom_mode(output,
+				pending.custom_mode.width,
+				pending.custom_mode.height,
+				pending.custom_mode.refresh);
+			break;
+		}
+	}
+
 	struct wlr_output_event_commit event = {
 		.output = output,
 		.committed = pending.committed,

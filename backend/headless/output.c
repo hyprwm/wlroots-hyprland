@@ -27,7 +27,6 @@ static bool output_set_custom_mode(struct wlr_headless_output *output,
 
 	output->frame_delay = 1000000 / refresh;
 
-	wlr_output_update_custom_mode(&output->wlr_output, width, height, refresh);
 	return true;
 }
 

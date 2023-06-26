@@ -74,8 +74,6 @@ static bool output_set_custom_mode(struct wlr_output *wlr_output,
 		return false;
 	}
 
-	wlr_output_update_custom_mode(&output->wlr_output, width, height, 0);
-
 	// Move the pointer to its new location
 	update_x11_pointer_position(output, output->x11->time);
 
