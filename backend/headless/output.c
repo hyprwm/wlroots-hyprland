@@ -76,9 +76,9 @@ static bool output_commit(struct wlr_output *wlr_output,
 			.presented = true,
 		};
 		wlr_output_send_present(wlr_output, &present_event);
-	}
 
-	wl_event_source_timer_update(output->frame_timer, output->frame_delay);
+		wl_event_source_timer_update(output->frame_timer, output->frame_delay);
+	}
 
 	return true;
 }
