@@ -270,6 +270,10 @@ static bool output_test(struct wlr_output *wlr_output,
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
 		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
+
+		if (state->custom_mode.refresh != 0) {
+			return false;
+		}
 	}
 
 	if ((state->committed & WLR_OUTPUT_STATE_BUFFER) &&
