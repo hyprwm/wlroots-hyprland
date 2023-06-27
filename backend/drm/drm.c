@@ -763,16 +763,17 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		conn->crtc = NULL;
 	}
 	if (pending.base->committed & WLR_OUTPUT_STATE_MODE) {
-		struct wlr_output_mode *mode = NULL;
 		switch (pending.base->mode_type) {
 		case WLR_OUTPUT_STATE_MODE_FIXED:
-			mode = pending.base->mode;
+			wlr_output_update_mode(&conn->output, pending.base->mode);
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			mode = wlr_drm_connector_add_mode(&conn->output, &pending.mode);
+			wlr_output_update_custom_mode(&conn->output,
+				pending.base->custom_mode.width,
+				pending.base->custom_mode.height,
+				pending.base->custom_mode.refresh);
 			break;
 		}
-		wlr_output_update_mode(&conn->output, mode);
 	}
 	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
 		conn->pending_page_flip_crtc = conn->crtc->id;
