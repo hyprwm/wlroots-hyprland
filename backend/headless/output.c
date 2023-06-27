@@ -141,8 +141,6 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	wl_list_insert(&backend->outputs, &output->link);
 
 	if (backend->started) {
-		wl_event_source_timer_update(output->frame_timer, output->frame_delay);
-		wlr_output_update_enabled(wlr_output, true);
 		wl_signal_emit_mutable(&backend->backend.events.new_output, wlr_output);
 	}
 
