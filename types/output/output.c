@@ -182,10 +182,6 @@ struct wlr_output *wlr_output_from_resource(struct wl_resource *resource) {
 	return wl_resource_get_user_data(resource);
 }
 
-void wlr_output_update_enabled(struct wlr_output *output, bool enabled) {
-	output->enabled = enabled;
-}
-
 static void output_update_matrix(struct wlr_output *output) {
 	wlr_matrix_identity(output->transform_matrix);
 	if (output->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
@@ -298,7 +294,7 @@ static void output_apply_state(struct wlr_output *output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
-		wlr_output_update_enabled(output, state->enabled);
+		output->enabled = state->enabled;
 	}
 
 	bool scale_updated = state->committed & WLR_OUTPUT_STATE_SCALE;

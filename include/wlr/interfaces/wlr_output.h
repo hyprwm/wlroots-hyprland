@@ -104,13 +104,6 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	const struct wlr_output_impl *impl, struct wl_display *display,
 	const struct wlr_output_state *state);
 /**
- * Update the current output status.
- *
- * The backend must call this function when the status is updated to notify
- * compositors about the change.
- */
-void wlr_output_update_enabled(struct wlr_output *output, bool enabled);
-/**
  * Notify compositors that they need to submit a new frame in order to apply
  * output changes.
  */
