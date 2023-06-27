@@ -764,11 +764,15 @@ static struct wlr_wl_output *output_create(struct wlr_wl_backend *backend,
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_wl_output");
 		return NULL;
 	}
-	wlr_output_init(&output->wlr_output, &backend->backend, &output_impl,
-		backend->local_display, NULL);
 	struct wlr_output *wlr_output = &output->wlr_output;
 
-	wlr_output_update_custom_mode(wlr_output, 1280, 720, 0);
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_custom_mode(&state, 1280, 720, 0);
+
+	wlr_output_init(wlr_output, &backend->backend, &output_impl,
+		backend->local_display, &state);
+	wlr_output_state_finish(&state);
 
 	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 
