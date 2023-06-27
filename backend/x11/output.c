@@ -539,9 +539,13 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	pixman_region32_init(&output->exposed);
 
 	struct wlr_output *wlr_output = &output->wlr_output;
-	wlr_output_init(wlr_output, &x11->backend, &output_impl, x11->wl_display, NULL);
 
-	wlr_output_update_custom_mode(wlr_output, 1024, 768, 0);
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_custom_mode(&state, 1024, 768, 0);
+
+	wlr_output_init(wlr_output, &x11->backend, &output_impl, x11->wl_display, &state);
+	wlr_output_state_finish(&state);
 
 	size_t output_num = ++last_output_num;
 
