@@ -519,15 +519,26 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		float scale = cur->state->buffer_scale;
 
 		struct wlr_texture *texture = NULL;
+		struct wlr_fbox src_box = {0};
+		int dst_width = 0, dst_height = 0;
 		if (buffer != NULL) {
 			texture = wlr_texture_from_buffer(renderer, buffer);
 			if (texture == NULL) {
 				return;
 			}
+
+			src_box = (struct wlr_fbox){
+				.width = texture->width,
+				.height = texture->height,
+			};
+
+			dst_width = texture->width / scale;
+			dst_height = texture->height / scale;
 		}
 
 		output_cursor_set_texture(output_cursor->output_cursor, texture, true,
-			scale, WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
+			&src_box, dst_width, dst_height, WL_OUTPUT_TRANSFORM_NORMAL,
+			hotspot_x, hotspot_y);
 	} else if (cur->state->surface != NULL) {
 		struct wlr_surface *surface = cur->state->surface;
 
@@ -539,8 +550,13 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		int32_t hotspot_x = cur->state->surface_hotspot.x;
 		int32_t hotspot_y = cur->state->surface_hotspot.y;
 
+		struct wlr_fbox src_box;
+		wlr_surface_get_buffer_source_box(surface, &src_box);
+		int dst_width = surface->current.width;
+		int dst_height = surface->current.height;
+
 		output_cursor_set_texture(output_cursor->output_cursor, texture, false,
-			surface->current.scale, surface->current.transform,
+			&src_box, dst_width, dst_height, surface->current.transform,
 			hotspot_x, hotspot_y);
 
 		struct wlr_output *output = output_cursor->output_cursor->output;

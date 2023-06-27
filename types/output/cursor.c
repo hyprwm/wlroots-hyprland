@@ -195,6 +195,7 @@ void wlr_output_add_software_cursors_to_render_pass(struct wlr_output *output,
 
 		wlr_render_pass_add_texture(render_pass, &(struct wlr_render_texture_options) {
 			.texture = texture,
+			.src_box = cursor->src_box,
 			.dst_box = box,
 			.clip = &cursor_damage,
 			.transform = output->transform,
@@ -272,8 +273,8 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	struct wlr_renderer *renderer = output->renderer;
 	assert(allocator != NULL && renderer != NULL);
 
-	int width = texture->width * output->scale / cursor->scale;
-	int height = texture->height * output->scale / cursor->scale;
+	int width = cursor->width;
+	int height = cursor->height;
 	if (output->impl->get_cursor_size) {
 		// Apply hardware limitations on buffer size
 		output->impl->get_cursor_size(cursor->output, &width, &height);
@@ -311,10 +312,9 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	}
 
 	struct wlr_box dst_box = {
-		.width = texture->width * output->scale / cursor->scale,
-		.height = texture->height * output->scale / cursor->scale,
+		.width = cursor->width,
+		.height = cursor->height,
 	};
-
 	wlr_box_transform(&dst_box, &dst_box, wlr_output_transform_invert(output->transform),
 		buffer->width, buffer->height);
 
@@ -333,6 +333,7 @@ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor)
 	});
 	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
 		.texture = texture,
+		.src_box = cursor->src_box,
 		.dst_box = dst_box,
 		.transform = transform,
 	});
@@ -398,37 +399,43 @@ bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 	}
 
 	struct wlr_texture *texture = NULL;
+	struct wlr_fbox src_box = {0};
+	int dst_width = 0, dst_height = 0;
 	if (buffer != NULL) {
 		texture = wlr_texture_from_buffer(renderer, buffer);
 		if (texture == NULL) {
 			return false;
 		}
+
+		src_box = (struct wlr_fbox){
+			.width = texture->width,
+			.height = texture->height,
+		};
+
+		dst_width = texture->width / cursor->output->scale;
+		dst_height = texture->height / cursor->output->scale;
 	}
 
 	hotspot_x /= cursor->output->scale;
 	hotspot_y /= cursor->output->scale;
 
-	return output_cursor_set_texture(cursor, texture, true, cursor->output->scale,
-		WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
+	return output_cursor_set_texture(cursor, texture, true, &src_box,
+		dst_width, dst_height, WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
 }
 
 bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
-		struct wlr_texture *texture, bool own_texture, float scale,
-		enum wl_output_transform transform, int32_t hotspot_x, int32_t hotspot_y) {
+		struct wlr_texture *texture, bool own_texture, const struct wlr_fbox *src_box,
+		int dst_width, int dst_height, enum wl_output_transform transform,
+		int32_t hotspot_x, int32_t hotspot_y) {
 	struct wlr_output *output = cursor->output;
 
 	output_cursor_reset(cursor);
 
 	cursor->enabled = texture != NULL;
 	if (texture != NULL) {
-		struct wlr_box box = {
-			.width = texture->width / scale,
-			.height = texture->height / scale,
-		};
-		wlr_box_transform(&box, &box, wlr_output_transform_invert(transform), 0, 0);
-		cursor->width = (int)roundf(box.width * output->scale);
-		cursor->height = (int)roundf(box.height * output->scale);
-		cursor->scale = scale;
+		cursor->width = (int)roundf(dst_width * output->scale);
+		cursor->height = (int)roundf(dst_height * output->scale);
+		cursor->src_box = *src_box;
 		cursor->transform = transform;
 	} else {
 		cursor->width = 0;
