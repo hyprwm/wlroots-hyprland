@@ -7,13 +7,21 @@ upfront and discuss your plans.
 Note: rules are made to be broken. Adjust or ignore any/all of these as you see
 fit, but be prepared to justify it to your peers.
 
+## Forking
+
+New GitLab accounts may not have the permission to fork repositories. You will
+need to [file a user verification request] to get this permission. See the
+[freedesktop wiki] for more details.
+
+The fork must be marked as public to allow CI to run.
+
 ## Merge Requests
 
 If you already have your own merge request habits, feel free to use them. If you
 don't, however, allow me to make a suggestion: feature branches pulled from
 upstream. Try this:
 
-1. Fork wlroots (make the fork public to allow the CI to run)
+1. Fork wlroots
 2. `git clone git@gitlab.freedesktop.org:<username>/wlroots.git && cd wlroots`
 3. `git remote add upstream https://gitlab.freedesktop.org/wlroots/wlroots.git`
 
@@ -422,6 +430,8 @@ static void subsurface_handle_surface_destroy(struct wl_listener *listener,
 ```
 
 [#wlroots on Libera Chat]: https://web.libera.chat/gamja/?channels=#wlroots
+[file a user verification request]: https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/new?issuable_template=User%20verification
+[freedesktop wiki]: https://gitlab.freedesktop.org/freedesktop/freedesktop/-/wikis/home
 [linear, "recipe" style]: https://www.bitsnbites.eu/git-history-work-log-vs-recipe/
 [git-rebase.io]: https://git-rebase.io/
 [reference issues]: https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically
