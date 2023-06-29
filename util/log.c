@@ -72,8 +72,9 @@ static wlr_log_func_t log_callback = log_stderr;
 static void log_wl(const char *fmt, va_list args) {
 	static char wlr_fmt[1024];
 	int n = snprintf(wlr_fmt, sizeof(wlr_fmt), "[wayland] %s", fmt);
-	if (n > 0 && wlr_fmt[n - 1] == '\n') {
-		wlr_fmt[n - 1] = '\0';
+	size_t len = strlen(wlr_fmt);
+	if (n > 0 && wlr_fmt[len - 1] == '\n') {
+		wlr_fmt[len - 1] = '\0';
 	}
 	_wlr_vlog(WLR_INFO, wlr_fmt, args);
 }
