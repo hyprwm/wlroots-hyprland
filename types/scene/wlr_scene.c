@@ -1089,11 +1089,14 @@ struct wlr_scene_node *wlr_scene_node_at(struct wlr_scene_node *node,
 	return NULL;
 }
 
-static void scene_node_render(struct wlr_scene_node *node, const struct render_data *data) {
+struct render_list_entry {
+	struct wlr_scene_node *node;
+	bool sent_dmabuf_feedback;
 	int x, y;
-	wlr_scene_node_coords(node, &x, &y);
-	x -= data->logical.x;
-	y -= data->logical.y;
+};
+
+static void scene_entry_render(struct render_list_entry *entry, const struct render_data *data) {
+	struct wlr_scene_node *node = entry->node;
 
 	pixman_region32_t render_region;
 	pixman_region32_init(&render_region);
@@ -1107,15 +1110,15 @@ static void scene_node_render(struct wlr_scene_node *node, const struct render_d
 	}
 
 	struct wlr_box dst_box = {
-		.x = x,
-		.y = y,
+		.x = entry->x - data->logical.x,
+		.y = entry->y - data->logical.y,
 	};
 	scene_node_get_size(node, &dst_box.width, &dst_box.height);
 	scale_box(&dst_box, data->scale);
 
 	pixman_region32_t opaque;
 	pixman_region32_init(&opaque);
-	scene_node_opaque_region(node, x, y, &opaque);
+	scene_node_opaque_region(node, dst_box.x, dst_box.y, &opaque);
 	scale_output_damage(&opaque, data->scale);
 	pixman_region32_subtract(&opaque, &render_region, &opaque);
 
@@ -1394,11 +1397,6 @@ struct render_list_constructor_data {
 	bool calculate_visibility;
 };
 
-struct render_list_entry {
-	struct wlr_scene_node *node;
-	bool sent_dmabuf_feedback;
-};
-
 static bool construct_render_list_iterator(struct wlr_scene_node *node,
 		int lx, int ly, void *_data) {
 	struct render_list_constructor_data *data = _data;
@@ -1438,6 +1436,8 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
 
 	*entry = (struct render_list_entry){
 		.node = node,
+		.x = lx,
+		.y = ly,
 	};
 
 	return false;
@@ -1801,7 +1801,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 
 	for (int i = list_len - 1; i >= 0; i--) {
 		struct render_list_entry *entry = &list_data[i];
-		scene_node_render(entry->node, &render_data);
+		scene_entry_render(entry, &render_data);
 
 		if (entry->node->type == WLR_SCENE_NODE_BUFFER) {
 			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(entry->node);
