@@ -1396,6 +1396,7 @@ struct render_list_constructor_data {
 
 struct render_list_entry {
 	struct wlr_scene_node *node;
+	bool sent_dmabuf_feedback;
 };
 
 static bool construct_render_list_iterator(struct wlr_scene_node *node,
@@ -1442,7 +1443,7 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
 	return false;
 }
 
-static void get_frame_damage(struct wlr_scene_output *scene_output, pixman_region32_t *frame_damage) {
+static void get_frame_damage(const struct wlr_scene_output *scene_output, pixman_region32_t *frame_damage) {
 	struct wlr_output *output = scene_output->output;
 
 	int tr_width, tr_height;
@@ -1488,10 +1489,10 @@ static void scene_buffer_send_dmabuf_feedback(const struct wlr_scene *scene,
 	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
 }
 
-static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *buffer,
+static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 		struct wlr_output_state *state, const struct render_data *data) {
-	const struct wlr_scene_output *scene_output = data->output;
-	struct wlr_scene_node *node = &buffer->node;
+	struct wlr_scene_output *scene_output = data->output;
+	struct wlr_scene_node *node = entry->node;
 
 	if (!scene_output->scene->direct_scanout) {
 		return false;
@@ -1519,6 +1520,8 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 		return false;
 	}
 
+	struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
+
 	struct wlr_fbox default_box = {0};
 	if (buffer->transform & WL_OUTPUT_TRANSFORM_90) {
 		default_box.width = buffer->buffer->height;
@@ -1545,11 +1548,16 @@ static bool scene_buffer_can_consider_direct_scanout(struct wlr_scene_buffer *bu
 		return false;
 	}
 
-	return true;
-}
+	if (buffer->primary_output == scene_output) {
+		struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+			.main_renderer = scene_output->output->renderer,
+			.scanout_primary_output = scene_output->output,
+		};
 
-static bool scene_buffer_try_direct_scanout(struct wlr_scene_buffer *buffer,
-		struct wlr_scene_output *scene_output, struct wlr_output_state *state) {
+		scene_buffer_send_dmabuf_feedback(scene_output->scene, buffer, &options);
+		entry->sent_dmabuf_feedback = true;
+	}
+
 	struct wlr_output_state pending;
 	wlr_output_state_init(&pending);
 	if (!wlr_output_state_copy(&pending, state)) {
@@ -1660,32 +1668,8 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	struct render_list_entry *list_data = list_con.render_list->data;
 	int list_len = list_con.render_list->size / sizeof(*list_data);
 
-	bool sent_direct_scanout_feedback = false;
-
-	// if there is only one thing to render let's see if that thing can be
-	// directly scanned out
-	bool scanout = false;
-	if (list_len == 1) {
-		struct render_list_entry *entry = &list_data[0];
-
-		if (entry->node->type == WLR_SCENE_NODE_BUFFER) {
-			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(entry->node);
-
-			if (scene_buffer_can_consider_direct_scanout(buffer, state, &render_data)) {
-				if (buffer->primary_output == scene_output) {
-					struct wlr_linux_dmabuf_feedback_v1_init_options options = {
-						.main_renderer = output->renderer,
-						.scanout_primary_output = output,
-					};
-
-					scene_buffer_send_dmabuf_feedback(scene_output->scene, buffer, &options);
-					sent_direct_scanout_feedback = true;
-				}
-
-				scanout = scene_buffer_try_direct_scanout(buffer, scene_output, state);
-			}
-		}
-	}
+	bool scanout = list_len == 1 &&
+		scene_entry_try_direct_scanout(&list_data[0], state, &render_data);
 
 	if (scene_output->prev_scanout != scanout) {
 		scene_output->prev_scanout = scanout;
@@ -1822,7 +1806,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		if (entry->node->type == WLR_SCENE_NODE_BUFFER) {
 			struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(entry->node);
 
-			if (buffer->primary_output == scene_output && !sent_direct_scanout_feedback) {
+			if (buffer->primary_output == scene_output && !entry->sent_dmabuf_feedback) {
 				struct wlr_linux_dmabuf_feedback_v1_init_options options = {
 					.main_renderer = output->renderer,
 					.scanout_primary_output = NULL,
