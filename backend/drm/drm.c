@@ -1096,7 +1096,7 @@ uint32_t wlr_drm_connector_get_id(struct wlr_output *output) {
 enum wl_output_transform wlr_drm_connector_get_panel_orientation(
 		struct wlr_output *output) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
-	if (conn->props.panel_orientation) {
+	if (!conn->props.panel_orientation) {
 		return WL_OUTPUT_TRANSFORM_NORMAL;
 	}
 
