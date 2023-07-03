@@ -551,12 +551,6 @@ bool wlr_output_is_direct_scanout_allowed(struct wlr_output *output);
 
 
 struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output);
-/**
- * Sets the cursor image. The image must be already scaled for the output.
- */
-bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
-	const uint8_t *pixels, int32_t stride, uint32_t width, uint32_t height,
-	int32_t hotspot_x, int32_t hotspot_y);
 bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 	struct wlr_buffer *buffer, int32_t hotspot_x, int32_t hotspot_y);
 bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,

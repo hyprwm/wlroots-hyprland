@@ -390,25 +390,6 @@ static bool output_cursor_attempt_hardware(struct wlr_output_cursor *cursor) {
 	return ok;
 }
 
-bool wlr_output_cursor_set_image(struct wlr_output_cursor *cursor,
-		const uint8_t *pixels, int32_t stride, uint32_t width, uint32_t height,
-		int32_t hotspot_x, int32_t hotspot_y) {
-	struct wlr_buffer *buffer = NULL;
-
-	if (pixels) {
-		struct wlr_readonly_data_buffer *ro_buffer = readonly_data_buffer_create(
-			DRM_FORMAT_ARGB8888, stride, width, height, pixels);
-		if (ro_buffer == NULL) {
-			return false;
-		}
-		buffer = &ro_buffer->base;
-	}
-	bool ok = wlr_output_cursor_set_buffer(cursor, buffer, hotspot_x, hotspot_y);
-
-	wlr_buffer_drop(buffer);
-	return ok;
-}
-
 bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 		struct wlr_buffer *buffer, int32_t hotspot_x, int32_t hotspot_y) {
 	struct wlr_renderer *renderer = cursor->output->renderer;
