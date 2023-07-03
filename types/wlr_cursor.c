@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
+#include <drm_fourcc.h>
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
@@ -15,6 +16,7 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
+#include "types/wlr_buffer.h"
 #include "types/wlr_output.h"
 
 struct wlr_cursor_device {
@@ -458,9 +460,14 @@ static int handle_xcursor_timer(void *data) {
 static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *output_cursor, size_t i) {
 	struct wlr_xcursor_image *image = output_cursor->xcursor->images[i];
 
-	wlr_output_cursor_set_image(output_cursor->output_cursor,
-		image->buffer, 4 * image->width, image->width, image->height,
-		image->hotspot_x, image->hotspot_y);
+	struct wlr_readonly_data_buffer *ro_buffer = readonly_data_buffer_create(
+		DRM_FORMAT_ARGB8888, 4 * image->width, image->width, image->height, image->buffer);
+	if (ro_buffer == NULL) {
+		return;
+	}
+	wlr_output_cursor_set_buffer(output_cursor->output_cursor, &ro_buffer->base, image->hotspot_x, image->hotspot_y);
+	wlr_buffer_drop(&ro_buffer->base);
+
 	output_cursor->xcursor_index = i;
 
 	if (output_cursor->xcursor->image_count == 1 || image->delay == 0) {
