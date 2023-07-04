@@ -1445,19 +1445,14 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
 	return false;
 }
 
-static void get_frame_damage(const struct wlr_scene_output *scene_output, pixman_region32_t *frame_damage) {
-	struct wlr_output *output = scene_output->output;
-
-	int tr_width, tr_height;
-	wlr_output_transformed_resolution(output, &tr_width, &tr_height);
-
-	enum wl_output_transform transform =
-		wlr_output_transform_invert(output->transform);
-
-	pixman_region32_init(frame_damage);
-	wlr_region_transform(frame_damage,
-		&scene_output->damage_ring.current,
-		transform, tr_width, tr_height);
+static void output_state_apply_damage(const struct render_data *data,
+		struct wlr_output_state *state) {
+	pixman_region32_t frame_damage;
+	pixman_region32_init(&frame_damage);
+	pixman_region32_copy(&frame_damage, &data->output->damage_ring.current);
+	transform_output_damage(&frame_damage, data);
+	wlr_output_state_set_damage(state, &frame_damage);
+	pixman_region32_fini(&frame_damage);
 }
 
 static void scene_buffer_send_dmabuf_feedback(const struct wlr_scene *scene,
@@ -1567,11 +1562,7 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 	}
 
 	wlr_output_state_set_buffer(&pending, buffer->buffer);
-
-	pixman_region32_t frame_damage;
-	get_frame_damage(scene_output, &frame_damage);
-	wlr_output_state_set_damage(&pending, &frame_damage);
-	pixman_region32_fini(&frame_damage);
+	output_state_apply_damage(data, &pending);
 
 	if (!wlr_output_test_state(scene_output->output, &pending)) {
 		wlr_output_state_finish(&pending);
@@ -1877,11 +1868,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 
 	wlr_output_state_set_buffer(state, buffer);
 	wlr_buffer_unlock(buffer);
-
-	pixman_region32_t frame_damage;
-	get_frame_damage(scene_output, &frame_damage);
-	wlr_output_state_set_damage(state, &frame_damage);
-	pixman_region32_fini(&frame_damage);
+	output_state_apply_damage(&render_data, state);
 
 	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_HIGHLIGHT &&
 			!wl_list_empty(&scene_output->damage_highlight_regions)) {
