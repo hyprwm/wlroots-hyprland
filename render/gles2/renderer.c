@@ -397,14 +397,14 @@ static void gles2_destroy(struct wlr_renderer *wlr_renderer) {
 
 	wlr_egl_make_current(renderer->egl);
 
-	struct wlr_gles2_buffer *buffer, *buffer_tmp;
-	wl_list_for_each_safe(buffer, buffer_tmp, &renderer->buffers, link) {
-		destroy_buffer(buffer);
-	}
-
 	struct wlr_gles2_texture *tex, *tex_tmp;
 	wl_list_for_each_safe(tex, tex_tmp, &renderer->textures, link) {
 		gles2_texture_destroy(tex);
+	}
+
+	struct wlr_gles2_buffer *buffer, *buffer_tmp;
+	wl_list_for_each_safe(buffer, buffer_tmp, &renderer->buffers, link) {
+		destroy_buffer(buffer);
 	}
 
 	push_gles2_debug(renderer);
