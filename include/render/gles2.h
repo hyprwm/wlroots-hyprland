@@ -125,8 +125,6 @@ struct wlr_gles2_texture {
 	bool owns_tex;
 	GLuint tex;
 
-	EGLImageKHR image;
-
 	bool has_alpha;
 
 	// Only affects target == GL_TEXTURE_2D

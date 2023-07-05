@@ -32,7 +32,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
 
-	if (texture->target != GL_TEXTURE_2D || texture->image != EGL_NO_IMAGE_KHR) {
+	if (texture->target != GL_TEXTURE_2D || texture->buffer) {
 		return false;
 	}
 
@@ -107,7 +107,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 }
 
 static bool gles2_texture_invalidate(struct wlr_gles2_texture *texture) {
-	if (texture->image == EGL_NO_IMAGE_KHR) {
+	if (!texture->buffer) {
 		return false;
 	}
 	if (texture->target == GL_TEXTURE_EXTERNAL_OES) {
@@ -123,7 +123,7 @@ static bool gles2_texture_invalidate(struct wlr_gles2_texture *texture) {
 
 	glBindTexture(texture->target, texture->tex);
 	texture->renderer->procs.glEGLImageTargetTexture2DOES(texture->target,
-		texture->image);
+		texture->buffer->image);
 	glBindTexture(texture->target, 0);
 
 	pop_gles2_debug(texture->renderer);
@@ -299,7 +299,6 @@ static struct wlr_texture *gles2_texture_from_dmabuf(
 	texture->buffer = buffer;
 	texture->drm_format = DRM_FORMAT_INVALID; // texture can't be written anyways
 	texture->has_alpha = drm_fmt ? drm_fmt->has_alpha : true;
-	texture->image = buffer->image;
 
 	struct wlr_egl_context prev_ctx;
 	wlr_egl_save_context(&prev_ctx);
