@@ -15,6 +15,13 @@ static void destroy_resource(struct wl_client *client,
 static const struct xwayland_shell_v1_interface shell_impl;
 static const struct xwayland_surface_v1_interface xwl_surface_impl;
 
+static void xwl_surface_destroy(struct wlr_xwayland_surface_v1 *xwl_surface) {
+	wl_list_remove(&xwl_surface->surface_destroy.link);
+	wl_list_remove(&xwl_surface->link);
+	wl_resource_set_user_data(xwl_surface->resource, NULL); // make inert
+	free(xwl_surface);
+}
+
 /**
  * Get a struct wlr_xwayland_shell_v1 from a resource.
  */
@@ -39,6 +46,9 @@ static struct wlr_xwayland_surface_v1 *xwl_surface_from_resource(
 
 static void xwl_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_xwayland_surface_v1 *xwl_surface = xwl_surface_from_resource(surface->role_resource);
+	if (xwl_surface == NULL) {
+		return;
+	}
 
 	if (xwl_surface->serial != 0 && !xwl_surface->added) {
 		xwl_surface->added = true;
@@ -49,10 +59,11 @@ static void xwl_surface_role_commit(struct wlr_surface *surface) {
 
 static void xwl_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_xwayland_surface_v1 *xwl_surface = xwl_surface_from_resource(surface->role_resource);
-	wl_list_remove(&xwl_surface->surface_destroy.link);
-	wl_list_remove(&xwl_surface->link);
-	wl_resource_set_user_data(xwl_surface->resource, NULL); // make inert
-	free(xwl_surface);
+	if (xwl_surface == NULL) {
+		return;
+	}
+
+	xwl_surface_destroy(xwl_surface);
 }
 
 static const struct wlr_surface_role xwl_surface_role = {
@@ -88,7 +99,7 @@ static void xwl_surface_handle_surface_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_xwayland_surface_v1 *xwl_surface =
 		wl_container_of(listener, xwl_surface, surface_destroy);
-	wlr_surface_destroy_role_object(xwl_surface->surface);
+	xwl_surface_destroy(xwl_surface);
 }
 
 static void shell_handle_get_xwayland_surface(struct wl_client *client,
@@ -195,7 +206,7 @@ void wlr_xwayland_shell_v1_destroy(struct wlr_xwayland_shell_v1 *shell) {
 
 	struct wlr_xwayland_surface_v1 *xwl_surface, *tmp;
 	wl_list_for_each_safe(xwl_surface, tmp, &shell->surfaces, link) {
-		wlr_surface_destroy_role_object(xwl_surface->surface);
+		xwl_surface_destroy(xwl_surface);
 	}
 
 	wl_list_remove(&shell->display_destroy.link);
