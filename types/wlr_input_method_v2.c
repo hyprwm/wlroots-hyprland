@@ -19,6 +19,13 @@
 static const struct zwp_input_method_v2_interface input_method_impl;
 static const struct zwp_input_method_keyboard_grab_v2_interface keyboard_grab_impl;
 
+static void popup_surface_destroy(struct wlr_input_popup_surface_v2 *popup_surface) {
+	wl_signal_emit_mutable(&popup_surface->events.destroy, NULL);
+	wl_list_remove(&popup_surface->link);
+	wl_resource_set_user_data(popup_surface->resource, NULL);
+	free(popup_surface);
+}
+
 static struct wlr_input_method_v2 *input_method_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
@@ -38,7 +45,7 @@ static void input_method_destroy(struct wlr_input_method_v2 *input_method) {
 	struct wlr_input_popup_surface_v2 *popup_surface, *tmp;
 	wl_list_for_each_safe(
 			popup_surface, tmp, &input_method->popup_surfaces, link) {
-		wlr_surface_destroy_role_object(popup_surface->surface);
+		popup_surface_destroy(popup_surface);
 	}
 	wl_signal_emit_mutable(&input_method->events.destroy, input_method);
 	wl_list_remove(wl_resource_get_link(input_method->resource));
@@ -140,17 +147,21 @@ static void popup_surface_consider_map(struct wlr_input_popup_surface_v2 *popup_
 static void popup_surface_surface_role_commit(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface =
 		wlr_input_popup_surface_v2_try_from_wlr_surface(surface);
+	if (popup_surface == NULL) {
+		return;
+	}
+
 	popup_surface_consider_map(popup_surface);
 }
 
 static void popup_surface_surface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_input_popup_surface_v2 *popup_surface =
 		wlr_input_popup_surface_v2_try_from_wlr_surface(surface);
+	if (popup_surface == NULL) {
+		return;
+	}
 
-	wl_signal_emit_mutable(&popup_surface->events.destroy, NULL);
-	wl_list_remove(&popup_surface->link);
-	wl_resource_set_user_data(popup_surface->resource, NULL);
-	free(popup_surface);
+	popup_surface_destroy(popup_surface);
 }
 
 static const struct wlr_surface_role input_popup_surface_v2_role = {
