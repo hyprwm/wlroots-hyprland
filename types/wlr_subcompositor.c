@@ -24,6 +24,22 @@ static bool subsurface_is_synchronized(struct wlr_subsurface *subsurface) {
 
 static const struct wl_subsurface_interface subsurface_implementation;
 
+static void subsurface_destroy(struct wlr_subsurface *subsurface) {
+	if (subsurface->has_cache) {
+		wlr_surface_unlock_cached(subsurface->surface, subsurface->cached_seq);
+	}
+
+	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
+
+	wl_list_remove(&subsurface->surface_client_commit.link);
+	wl_list_remove(&subsurface->current.link);
+	wl_list_remove(&subsurface->pending.link);
+	wl_list_remove(&subsurface->parent_destroy.link);
+
+	wl_resource_set_user_data(subsurface->resource, NULL);
+	free(subsurface);
+}
+
 /**
  * Get a wlr_subsurface from a wl_subsurface resource.
  *
@@ -184,29 +200,20 @@ void subsurface_consider_map(struct wlr_subsurface *subsurface) {
 
 static void subsurface_role_commit(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
-	assert(subsurface != NULL);
+	if (subsurface == NULL) {
+		return;
+	}
 
 	subsurface_consider_map(subsurface);
 }
 
 static void subsurface_role_destroy(struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface = wlr_subsurface_try_from_wlr_surface(surface);
-	assert(subsurface != NULL);
-
-	if (subsurface->has_cache) {
-		wlr_surface_unlock_cached(subsurface->surface,
-			subsurface->cached_seq);
+	if (subsurface == NULL) {
+		return;
 	}
 
-	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
-
-	wl_list_remove(&subsurface->surface_client_commit.link);
-	wl_list_remove(&subsurface->current.link);
-	wl_list_remove(&subsurface->pending.link);
-	wl_list_remove(&subsurface->parent_destroy.link);
-
-	wl_resource_set_user_data(subsurface->resource, NULL);
-	free(subsurface);
+	subsurface_destroy(subsurface);
 }
 
 const struct wlr_surface_role subsurface_role = {
@@ -221,7 +228,7 @@ static void subsurface_handle_parent_destroy(struct wl_listener *listener,
 		wl_container_of(listener, subsurface, parent_destroy);
 	// Once the parent is destroyed, the client has no way to use the
 	// wl_subsurface object anymore, so we can destroy it.
-	wlr_surface_destroy_role_object(subsurface->surface);
+	subsurface_destroy(subsurface);
 }
 
 static void subsurface_handle_surface_client_commit(
