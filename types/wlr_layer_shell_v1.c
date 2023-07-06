@@ -22,6 +22,13 @@ static void resource_handle_destroy(struct wl_client *client,
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation;
 static const struct zwlr_layer_surface_v1_interface layer_surface_implementation;
 
+static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
+	wl_signal_emit_mutable(&surface->events.destroy, surface);
+	wl_resource_set_user_data(surface->resource, NULL);
+	free(surface->namespace);
+	free(surface);
+}
+
 static struct wlr_layer_shell_v1 *layer_shell_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource, &zwlr_layer_shell_v1_interface,
@@ -286,13 +293,15 @@ uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 
 void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
 	zwlr_layer_surface_v1_send_closed(surface->resource);
-	wlr_surface_destroy_role_object(surface->surface);
+	layer_surface_destroy(surface);
 }
 
 static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+	if (surface == NULL) {
+		return;
+	}
 
 	const uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
@@ -340,7 +349,9 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 static void layer_surface_role_unmap(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+	if (surface == NULL) {
+		return;
+	}
 
 	surface->configured = false;
 
@@ -358,12 +369,11 @@ static void layer_surface_role_unmap(struct wlr_surface *wlr_surface) {
 static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+	if (surface == NULL) {
+		return;
+	}
 
-	wl_signal_emit_mutable(&surface->events.destroy, surface);
-	wl_resource_set_user_data(surface->resource, NULL);
-	free(surface->namespace);
-	free(surface);
+	layer_surface_destroy(surface);
 }
 
 static const struct wlr_surface_role layer_surface_role = {
