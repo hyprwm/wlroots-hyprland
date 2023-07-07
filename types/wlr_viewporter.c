@@ -11,7 +11,8 @@ struct wlr_viewport {
 	struct wl_resource *resource;
 	struct wlr_surface *surface;
 
-	struct wl_listener surface_destroy;
+	struct wlr_addon addon;
+
 	struct wl_listener surface_commit;
 };
 
@@ -108,21 +109,25 @@ static void viewport_destroy(struct wlr_viewport *viewport) {
 	pending->viewport.has_dst = false;
 	pending->committed |= WLR_SURFACE_STATE_VIEWPORT;
 
+	wlr_addon_finish(&viewport->addon);
+
 	wl_resource_set_user_data(viewport->resource, NULL);
-	wl_list_remove(&viewport->surface_destroy.link);
 	wl_list_remove(&viewport->surface_commit.link);
 	free(viewport);
 }
 
-static void viewport_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_viewport *viewport = viewport_from_resource(resource);
+static void surface_addon_destroy(struct wlr_addon *addon) {
+	struct wlr_viewport *viewport = wl_container_of(addon, viewport, addon);
 	viewport_destroy(viewport);
 }
 
-static void viewport_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_viewport *viewport =
-		wl_container_of(listener, viewport, surface_destroy);
+static const struct wlr_addon_interface surface_addon_impl = {
+	.name = "wlr_viewport",
+	.destroy = surface_addon_destroy,
+};
+
+static void viewport_handle_resource_destroy(struct wl_resource *resource) {
+	struct wlr_viewport *viewport = viewport_from_resource(resource);
 	viewport_destroy(viewport);
 }
 
@@ -163,6 +168,12 @@ static void viewporter_handle_get_viewport(struct wl_client *client,
 		struct wl_resource *surface_resource) {
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 
+	if (wlr_addon_find(&surface->addons, NULL, &surface_addon_impl) != NULL) {
+		wl_resource_post_error(resource, WP_VIEWPORTER_ERROR_VIEWPORT_EXISTS,
+			"wp_viewport for this surface already exists");
+		return;
+	}
+
 	struct wlr_viewport *viewport = calloc(1, sizeof(*viewport));
 	if (viewport == NULL) {
 		wl_client_post_no_memory(client);
@@ -182,8 +193,7 @@ static void viewporter_handle_get_viewport(struct wl_client *client,
 
 	viewport->surface = surface;
 
-	viewport->surface_destroy.notify = viewport_handle_surface_destroy;
-	wl_signal_add(&surface->events.destroy, &viewport->surface_destroy);
+	wlr_addon_init(&viewport->addon, &surface->addons, NULL, &surface_addon_impl);
 
 	viewport->surface_commit.notify = viewport_handle_surface_commit;
 	wl_signal_add(&surface->events.commit, &viewport->surface_commit);
