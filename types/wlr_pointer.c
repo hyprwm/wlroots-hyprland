@@ -15,10 +15,11 @@ struct wlr_pointer *wlr_pointer_from_input_device(
 
 void wlr_pointer_init(struct wlr_pointer *pointer,
 		const struct wlr_pointer_impl *impl, const char *name) {
-	memset(pointer, 0, sizeof(*pointer));
+	*pointer = (struct wlr_pointer){
+		.impl = impl,
+	};
 	wlr_input_device_init(&pointer->base, WLR_INPUT_DEVICE_POINTER, name);
 
-	pointer->impl = impl;
 	wl_signal_init(&pointer->events.motion);
 	wl_signal_init(&pointer->events.motion_absolute);
 	wl_signal_init(&pointer->events.button);

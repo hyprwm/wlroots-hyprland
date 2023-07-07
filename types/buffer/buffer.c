@@ -11,10 +11,11 @@ void wlr_buffer_init(struct wlr_buffer *buffer,
 		assert(impl->begin_data_ptr_access && impl->end_data_ptr_access);
 	}
 
-	memset(buffer, 0, sizeof(*buffer));
-	buffer->impl = impl;
-	buffer->width = width;
-	buffer->height = height;
+	*buffer = (struct wlr_buffer){
+		.impl = impl,
+		.width = width,
+		.height = height,
+	};
 	wl_signal_init(&buffer->events.destroy);
 	wl_signal_init(&buffer->events.release);
 	wlr_addon_set_init(&buffer->addons);

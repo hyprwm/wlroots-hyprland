@@ -86,8 +86,9 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 }
 
 void wlr_drm_format_init(struct wlr_drm_format *fmt, uint32_t format) {
-	memset(fmt, 0, sizeof(*fmt));
-	fmt->format = format;
+	*fmt = (struct wlr_drm_format){
+		.format = format,
+	};
 }
 
 bool wlr_drm_format_has(const struct wlr_drm_format *fmt, uint64_t modifier) {

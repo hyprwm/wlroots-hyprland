@@ -249,13 +249,14 @@ void wlr_presentation_feedback_destroy(
 
 void wlr_presentation_event_from_output(struct wlr_presentation_event *event,
 		const struct wlr_output_event_present *output_event) {
-	memset(event, 0, sizeof(*event));
-	event->output = output_event->output;
-	event->tv_sec = (uint64_t)output_event->when->tv_sec;
-	event->tv_nsec = (uint32_t)output_event->when->tv_nsec;
-	event->refresh = (uint32_t)output_event->refresh;
-	event->seq = (uint64_t)output_event->seq;
-	event->flags = output_event->flags;
+	*event = (struct wlr_presentation_event){
+		.output = output_event->output,
+		.tv_sec = (uint64_t)output_event->when->tv_sec,
+		.tv_nsec = (uint32_t)output_event->when->tv_nsec,
+		.refresh = (uint32_t)output_event->refresh,
+		.seq = (uint64_t)output_event->seq,
+		.flags = output_event->flags,
+	};
 }
 
 static void feedback_unset_output(struct wlr_presentation_feedback *feedback) {

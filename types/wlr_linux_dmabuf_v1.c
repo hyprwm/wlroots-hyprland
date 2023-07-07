@@ -1025,7 +1025,7 @@ struct wlr_linux_dmabuf_feedback_v1_tranche *wlr_linux_dmabuf_feedback_add_tranc
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;
 	}
-	memset(tranche, 0, sizeof(*tranche));
+	*tranche = (struct wlr_linux_dmabuf_feedback_v1_tranche){0};
 	return tranche;
 }
 
@@ -1053,7 +1053,7 @@ bool wlr_linux_dmabuf_feedback_v1_init_with_options(struct wlr_linux_dmabuf_feed
 	assert(options->scanout_primary_output == NULL ||
 		options->output_layer_feedback_event == NULL);
 
-	memset(feedback, 0, sizeof(*feedback));
+	*feedback = (struct wlr_linux_dmabuf_feedback_v1){0};
 
 	int renderer_drm_fd = wlr_renderer_get_drm_fd(options->main_renderer);
 	if (renderer_drm_fd < 0) {

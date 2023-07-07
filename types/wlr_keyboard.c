@@ -121,20 +121,20 @@ void wlr_keyboard_notify_key(struct wlr_keyboard *keyboard,
 
 void wlr_keyboard_init(struct wlr_keyboard *kb,
 		const struct wlr_keyboard_impl *impl, const char *name) {
-	memset(kb, 0, sizeof(*kb));
+	*kb = (struct wlr_keyboard){
+		.impl = impl,
+		.keymap_fd = -1,
+
+		// Sane defaults
+		.repeat_info.rate = 25,
+		.repeat_info.delay = 600,
+	};
 	wlr_input_device_init(&kb->base, WLR_INPUT_DEVICE_KEYBOARD, name);
 
-	kb->impl = impl;
 	wl_signal_init(&kb->events.key);
 	wl_signal_init(&kb->events.modifiers);
 	wl_signal_init(&kb->events.keymap);
 	wl_signal_init(&kb->events.repeat_info);
-
-	kb->keymap_fd = -1;
-
-	// Sane defaults
-	kb->repeat_info.rate = 25;
-	kb->repeat_info.delay = 600;
 }
 
 static void keyboard_unset_keymap(struct wlr_keyboard *kb) {

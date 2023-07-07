@@ -373,8 +373,9 @@ struct wlr_texture *gles2_texture_from_buffer(struct wlr_renderer *wlr_renderer,
 void wlr_gles2_texture_get_attribs(struct wlr_texture *wlr_texture,
 		struct wlr_gles2_texture_attribs *attribs) {
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
-	memset(attribs, 0, sizeof(*attribs));
-	attribs->target = texture->target;
-	attribs->tex = texture->tex;
-	attribs->has_alpha = texture->has_alpha;
+	*attribs = (struct wlr_gles2_texture_attribs){
+		.target = texture->target,
+		.tex = texture->tex,
+		.has_alpha = texture->has_alpha,
+	};
 }

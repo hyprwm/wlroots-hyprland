@@ -302,7 +302,7 @@ static void get_mapping(struct wlr_cursor *cur,
 		struct wlr_input_device *dev, struct wlr_box *box) {
 	assert(cur->state->layout);
 
-	memset(box, 0, sizeof(*box));
+	*box = (struct wlr_box){0};
 
 	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 	if (c_device) {
@@ -1146,7 +1146,7 @@ void wlr_cursor_map_input_to_output(struct wlr_cursor *cur,
 
 void wlr_cursor_map_to_region(struct wlr_cursor *cur,
 		const struct wlr_box *box) {
-	memset(&cur->state->mapped_box, 0, sizeof(cur->state->mapped_box));
+	cur->state->mapped_box = (struct wlr_box){0};
 
 	if (box) {
 		if (wlr_box_empty(box)) {
@@ -1159,7 +1159,7 @@ void wlr_cursor_map_to_region(struct wlr_cursor *cur,
 
 void wlr_cursor_map_input_to_region(struct wlr_cursor *cur,
 		struct wlr_input_device *dev, const struct wlr_box *box) {
-	memset(&cur->state->mapped_box, 0, sizeof(cur->state->mapped_box));
+	cur->state->mapped_box = (struct wlr_box){0};
 
 	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 	if (!c_device) {

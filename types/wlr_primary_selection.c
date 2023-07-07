@@ -7,10 +7,11 @@ void wlr_primary_selection_source_init(
 		struct wlr_primary_selection_source *source,
 		const struct wlr_primary_selection_source_impl *impl) {
 	assert(impl->send);
-	memset(source, 0, sizeof(*source));
+	*source = (struct wlr_primary_selection_source){
+		.impl = impl,
+	};
 	wl_array_init(&source->mime_types);
 	wl_signal_init(&source->events.destroy);
-	source->impl = impl;
 }
 
 void wlr_primary_selection_source_destroy(

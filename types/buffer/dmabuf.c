@@ -57,7 +57,7 @@ bool dmabuf_buffer_drop(struct wlr_dmabuf_buffer *buffer) {
 		if (!wlr_dmabuf_attributes_copy(&saved_dmabuf, &buffer->dmabuf)) {
 			wlr_log(WLR_ERROR, "Failed to save DMA-BUF");
 			ok = false;
-			memset(&buffer->dmabuf, 0, sizeof(buffer->dmabuf));
+			buffer->dmabuf = (struct wlr_dmabuf_attributes){0};
 		} else {
 			buffer->dmabuf = saved_dmabuf;
 			buffer->saved = true;

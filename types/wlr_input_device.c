@@ -6,11 +6,10 @@
 
 void wlr_input_device_init(struct wlr_input_device *dev,
 		enum wlr_input_device_type type, const char *name) {
-	memset(dev, 0, sizeof(*dev));
-	dev->type = type;
-	dev->name = strdup(name);
-	dev->vendor = 0;
-	dev->product = 0;
+	*dev = (struct wlr_input_device){
+		.type = type,
+		.name = strdup(name),
+	};
 
 	wl_signal_init(&dev->events.destroy);
 }

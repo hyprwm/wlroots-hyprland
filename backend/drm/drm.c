@@ -445,11 +445,12 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		struct wlr_drm_connector *conn,
 		const struct wlr_output_state *base) {
-	memset(state, 0, sizeof(*state));
-	state->base = base;
-	state->modeset = base->allow_artifacts;
-	state->active = (base->committed & WLR_OUTPUT_STATE_ENABLED) ?
-		base->enabled : conn->output.enabled;
+	*state = (struct wlr_drm_connector_state){
+		.base = base,
+		.modeset = base->allow_artifacts,
+		.active = (base->committed & WLR_OUTPUT_STATE_ENABLED) ?
+			base->enabled : conn->output.enabled,
+	};
 
 	if (base->committed & WLR_OUTPUT_STATE_MODE) {
 		switch (base->mode_type) {
@@ -1028,7 +1029,7 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 		free(mode);
 	}
 
-	memset(&conn->output, 0, sizeof(struct wlr_output));
+	conn->output = (struct wlr_output){0};
 }
 
 static const struct wlr_drm_format_set *drm_connector_get_cursor_formats(

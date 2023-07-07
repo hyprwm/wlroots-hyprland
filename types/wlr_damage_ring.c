@@ -8,10 +8,10 @@
 #define WLR_DAMAGE_RING_MAX_RECTS 20
 
 void wlr_damage_ring_init(struct wlr_damage_ring *ring) {
-	memset(ring, 0, sizeof(*ring));
-
-	ring->width = INT_MAX;
-	ring->height = INT_MAX;
+	*ring = (struct wlr_damage_ring){
+		.width = INT_MAX,
+		.height = INT_MAX,
+	};
 
 	pixman_region32_init(&ring->current);
 	for (size_t i = 0; i < WLR_DAMAGE_RING_PREVIOUS_LEN; ++i) {

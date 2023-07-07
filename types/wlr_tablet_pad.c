@@ -16,10 +16,11 @@ struct wlr_tablet_pad *wlr_tablet_pad_from_input_device(
 
 void wlr_tablet_pad_init(struct wlr_tablet_pad *pad,
 		const struct wlr_tablet_pad_impl *impl, const char *name) {
-	memset(pad, 0, sizeof(*pad));
+	*pad = (struct wlr_tablet_pad){
+		.impl = impl,
+	};
 	wlr_input_device_init(&pad->base, WLR_INPUT_DEVICE_TABLET_PAD, name);
 
-	pad->impl = impl;
 	wl_signal_init(&pad->events.button);
 	wl_signal_init(&pad->events.ring);
 	wl_signal_init(&pad->events.strip);

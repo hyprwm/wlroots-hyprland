@@ -14,11 +14,12 @@ void wlr_data_source_init(struct wlr_data_source *source,
 		const struct wlr_data_source_impl *impl) {
 	assert(impl->send);
 
-	memset(source, 0, sizeof(*source));
-	source->impl = impl;
+	*source = (struct wlr_data_source){
+		.impl = impl,
+		.actions = -1,
+	};
 	wl_array_init(&source->mime_types);
 	wl_signal_init(&source->events.destroy);
-	source->actions = -1;
 }
 
 void wlr_data_source_send(struct wlr_data_source *source, const char *mime_type,

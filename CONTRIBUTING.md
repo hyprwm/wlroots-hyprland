@@ -197,8 +197,8 @@ Functions that are responsible for constructing objects should take one of the
 two following forms:
 
 * `init`: for functions which accept a pointer to a pre-allocated object (e.g.
-a member of a struct) and initialize it. Such functions must call `memset()`
-to zero out the memory before initializing it to avoid leaving unset fields.
+a member of a struct) and initialize it. Such functions must zero out the
+memory before initializing it to avoid leaving unset fields.
 * `create`: for functions which allocate the memory for an object, initialize
 it, and return a pointer. Such functions should allocate the memory with
 `calloc()` to avoid leaving unset fields.

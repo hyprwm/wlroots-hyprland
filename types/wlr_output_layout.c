@@ -339,7 +339,7 @@ void wlr_output_layout_closest_point(struct wlr_output_layout *layout,
 
 void wlr_output_layout_get_box(struct wlr_output_layout *layout,
 		struct wlr_output *reference, struct wlr_box *dest_box) {
-	memset(dest_box, 0, sizeof(*dest_box));
+	*dest_box = (struct wlr_box){0};
 
 	struct wlr_output_layout_output *l_output;
 	if (reference) {

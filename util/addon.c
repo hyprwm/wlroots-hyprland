@@ -6,7 +6,7 @@
 #include <wlr/util/log.h>
 
 void wlr_addon_set_init(struct wlr_addon_set *set) {
-	memset(set, 0, sizeof(*set));
+	*set = (struct wlr_addon_set){0};
 	wl_list_init(&set->addons);
 }
 
@@ -26,7 +26,10 @@ void wlr_addon_set_finish(struct wlr_addon_set *set) {
 void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
 		const void *owner, const struct wlr_addon_interface *impl) {
 	assert(impl);
-	memset(addon, 0, sizeof(*addon));
+	*addon = (struct wlr_addon){
+		.impl = impl,
+		.owner = owner,
+	};
 	struct wlr_addon *iter;
 	wl_list_for_each(iter, &set->addons, link) {
 		if (iter->owner == addon->owner && iter->impl == addon->impl) {
@@ -34,8 +37,6 @@ void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
 		}
 	}
 	wl_list_insert(&set->addons, &addon->link);
-	addon->owner = owner;
-	addon->impl = impl;
 }
 
 void wlr_addon_finish(struct wlr_addon *addon) {

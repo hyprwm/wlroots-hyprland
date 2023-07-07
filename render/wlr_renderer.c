@@ -44,8 +44,9 @@ void wlr_renderer_init(struct wlr_renderer *renderer,
 	assert(impl->get_shm_texture_formats);
 	assert(impl->get_render_buffer_caps);
 
-	memset(renderer, 0, sizeof(*renderer));
-	renderer->impl = impl;
+	*renderer = (struct wlr_renderer){
+		.impl = impl,
+	};
 
 	wl_signal_init(&renderer->events.destroy);
 	wl_signal_init(&renderer->events.lost);

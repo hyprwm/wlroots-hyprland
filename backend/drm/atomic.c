@@ -50,7 +50,7 @@ struct atomic {
 };
 
 static void atomic_begin(struct atomic *atom) {
-	memset(atom, 0, sizeof(*atom));
+	*atom = (struct atomic){0};
 
 	atom->req = drmModeAtomicAlloc();
 	if (!atom->req) {

@@ -10,11 +10,12 @@ void wlr_texture_init(struct wlr_texture *texture, struct wlr_renderer *renderer
 		const struct wlr_texture_impl *impl, uint32_t width, uint32_t height) {
 	assert(renderer);
 
-	memset(texture, 0, sizeof(*texture));
-	texture->renderer = renderer;
-	texture->impl = impl;
-	texture->width = width;
-	texture->height = height;
+	*texture = (struct wlr_texture){
+		.renderer = renderer,
+		.impl = impl,
+		.width = width,
+		.height = height,
+	};
 }
 
 void wlr_texture_destroy(struct wlr_texture *texture) {

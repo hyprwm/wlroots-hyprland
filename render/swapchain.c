@@ -42,7 +42,7 @@ static void slot_reset(struct wlr_swapchain_slot *slot) {
 		wl_list_remove(&slot->release.link);
 	}
 	wlr_buffer_drop(slot->buffer);
-	memset(slot, 0, sizeof(*slot));
+	*slot = (struct wlr_swapchain_slot){0};
 }
 
 void wlr_swapchain_destroy(struct wlr_swapchain *swapchain) {

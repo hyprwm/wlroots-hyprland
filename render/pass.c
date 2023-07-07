@@ -15,8 +15,9 @@ struct wlr_render_pass_legacy {
 void wlr_render_pass_init(struct wlr_render_pass *render_pass,
 		const struct wlr_render_pass_impl *impl) {
 	assert(impl->submit && impl->add_texture && impl->add_rect);
-	memset(render_pass, 0, sizeof(*render_pass));
-	render_pass->impl = impl;
+	*render_pass = (struct wlr_render_pass){
+		.impl = impl,
+	};
 }
 
 bool wlr_render_pass_submit(struct wlr_render_pass *render_pass) {

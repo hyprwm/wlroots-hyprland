@@ -55,7 +55,7 @@ static void finish_drm_surface(struct wlr_drm_surface *surf) {
 
 	wlr_swapchain_destroy(surf->swapchain);
 
-	memset(surf, 0, sizeof(*surf));
+	*surf = (struct wlr_drm_surface){0};
 }
 
 bool init_drm_surface(struct wlr_drm_surface *surf,

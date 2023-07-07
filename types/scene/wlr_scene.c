@@ -57,10 +57,11 @@ struct wlr_scene *scene_node_get_root(struct wlr_scene_node *node) {
 
 static void scene_node_init(struct wlr_scene_node *node,
 		enum wlr_scene_node_type type, struct wlr_scene_tree *parent) {
-	memset(node, 0, sizeof(*node));
-	node->type = type;
-	node->parent = parent;
-	node->enabled = true;
+	*node = (struct wlr_scene_node){
+		.type = type,
+		.parent = parent,
+		.enabled = true,
+	};
 
 	wl_list_init(&node->link);
 
@@ -141,7 +142,7 @@ void wlr_scene_node_destroy(struct wlr_scene_node *node) {
 
 static void scene_tree_init(struct wlr_scene_tree *tree,
 		struct wlr_scene_tree *parent) {
-	memset(tree, 0, sizeof(*tree));
+	*tree = (struct wlr_scene_tree){0};
 	scene_node_init(&tree->node, WLR_SCENE_NODE_TREE, parent);
 	wl_list_init(&tree->children);
 }
@@ -386,8 +387,8 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	}
 
 	if (old_primary_output != scene_buffer->primary_output) {
-		memset(&scene_buffer->prev_feedback_options, 0,
-			sizeof(scene_buffer->prev_feedback_options));
+		scene_buffer->prev_feedback_options =
+			(struct wlr_linux_dmabuf_feedback_v1_init_options){0};
 	}
 
 	uint64_t old_active = scene_buffer->active_outputs;

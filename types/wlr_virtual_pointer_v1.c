@@ -113,7 +113,7 @@ static void virtual_pointer_frame(struct wl_client *client,
 			/* Deliver pending axis event */
 			wl_signal_emit_mutable(&pointer->pointer.events.axis,
 					&pointer->axis_event[i]);
-			memset(&pointer->axis_event[i], 0, sizeof(pointer->axis_event[i]));
+			pointer->axis_event[i] = (struct wlr_pointer_axis_event){0};
 			pointer->axis_valid[i] = false;
 		}
 	}

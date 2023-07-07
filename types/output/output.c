@@ -332,15 +332,17 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 		assert(impl->set_cursor && impl->move_cursor);
 	}
 
-	memset(output, 0, sizeof(*output));
-	output->backend = backend;
-	output->impl = impl;
-	output->display = display;
+	*output = (struct wlr_output){
+		.backend = backend,
+		.impl = impl,
+		.display = display,
+		.render_format = DRM_FORMAT_XRGB8888,
+		.transform = WL_OUTPUT_TRANSFORM_NORMAL,
+		.scale = 1,
+		.commit_seq = 0,
+	};
+
 	wl_list_init(&output->modes);
-	output->render_format = DRM_FORMAT_XRGB8888;
-	output->transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	output->scale = 1;
-	output->commit_seq = 0;
 	wl_list_init(&output->cursors);
 	wl_list_init(&output->layers);
 	wl_list_init(&output->resources);
