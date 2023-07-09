@@ -75,10 +75,9 @@ enum wlr_xwayland_icccm_input_model {
  * An Xwayland user interface component. It has an absolute position in
  * layout-local coordinates.
  *
- * When a surface is ready to be displayed, the `map` event is emitted. When a
- * surface should no longer be displayed, the `unmap` event is emitted. The
- * `unmap` event is guaranteed to be emitted before the `destroy` event if the
- * view is destroyed when mapped.
+ * The inner struct wlr_surface is valid once the associate event is emitted.
+ * Compositors can set up e.g. map and unmap listeners at this point. The
+ * struct wlr_surface becomes invalid when the dissociate event is emitted.
  */
 struct wlr_xwayland_surface {
 	xcb_window_t window_id;
