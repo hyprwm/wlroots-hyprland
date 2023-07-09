@@ -34,8 +34,8 @@ struct wlr_xwayland {
 
 	struct {
 		struct wl_signal ready;
-		struct wl_signal new_surface;
-		struct wl_signal remove_startup_info;
+		struct wl_signal new_surface; // struct wlr_xwayland_surface
+		struct wl_signal remove_startup_info; // struct wlr_xwayland_remove_startup_info_event
 	} events;
 
 	/**
@@ -141,10 +141,10 @@ struct wlr_xwayland_surface {
 
 	struct {
 		struct wl_signal destroy;
-		struct wl_signal request_configure;
+		struct wl_signal request_configure; // struct wlr_xwayland_surface_configure_event
 		struct wl_signal request_move;
-		struct wl_signal request_resize;
-		struct wl_signal request_minimize;
+		struct wl_signal request_resize; // struct wlr_xwayland_resize_event
+		struct wl_signal request_minimize; // struct wlr_xwayland_minimize_event
 		struct wl_signal request_maximize;
 		struct wl_signal request_fullscreen;
 		struct wl_signal request_activate;
