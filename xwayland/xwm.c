@@ -1243,13 +1243,11 @@ static void xwm_handle_net_wm_moveresize_message(struct wlr_xwm *xwm,
 	// TODO: we should probably add input or seat info to this but we would just
 	// be guessing
 	struct wlr_xwayland_resize_event resize_event;
-	struct wlr_xwayland_move_event move_event;
 
 	int detail = ev->data.data32[2];
 	switch (detail) {
 	case _NET_WM_MOVERESIZE_MOVE:
-		move_event.surface = xsurface;
-		wl_signal_emit_mutable(&xsurface->events.request_move, &move_event);
+		wl_signal_emit_mutable(&xsurface->events.request_move, NULL);
 		break;
 	case _NET_WM_MOVERESIZE_SIZE_TOPLEFT:
 	case _NET_WM_MOVERESIZE_SIZE_TOP:
