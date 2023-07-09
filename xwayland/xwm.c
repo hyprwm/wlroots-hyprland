@@ -1240,10 +1240,6 @@ static void xwm_handle_net_wm_moveresize_message(struct wlr_xwm *xwm,
 		return;
 	}
 
-	// TODO: we should probably add input or seat info to this but we would just
-	// be guessing
-	struct wlr_xwayland_resize_event resize_event;
-
 	int detail = ev->data.data32[2];
 	switch (detail) {
 	case _NET_WM_MOVERESIZE_MOVE:
@@ -1256,9 +1252,11 @@ static void xwm_handle_net_wm_moveresize_message(struct wlr_xwm *xwm,
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT:
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOM:
 	case _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT:
-	case _NET_WM_MOVERESIZE_SIZE_LEFT:
-		resize_event.surface = xsurface;
-		resize_event.edges = net_wm_edges_to_wlr(detail);
+	case _NET_WM_MOVERESIZE_SIZE_LEFT:;
+		struct wlr_xwayland_resize_event resize_event = {
+			.surface = xsurface,
+			.edges = net_wm_edges_to_wlr(detail),
+		};
 		wl_signal_emit_mutable(&xsurface->events.request_resize, &resize_event);
 		break;
 	case _NET_WM_MOVERESIZE_CANCEL:
