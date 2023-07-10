@@ -177,7 +177,7 @@ struct wlr_buffer_pass_options {
  * render pass.
  */
 struct wlr_render_pass *wlr_renderer_begin_buffer_pass(struct wlr_renderer *renderer,
-	struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options);
+	struct wlr_buffer *buffer, const struct wlr_buffer_pass_options *options);
 
 /**
  * Submit the render pass.

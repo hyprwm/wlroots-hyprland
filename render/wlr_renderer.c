@@ -415,7 +415,7 @@ int wlr_renderer_get_drm_fd(struct wlr_renderer *r) {
 }
 
 struct wlr_render_pass *wlr_renderer_begin_buffer_pass(struct wlr_renderer *renderer,
-		struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options) {
+		struct wlr_buffer *buffer, const struct wlr_buffer_pass_options *options) {
 	if (!renderer->impl->begin_buffer_pass) {
 		return begin_legacy_buffer_render_pass(renderer, buffer);
 	}

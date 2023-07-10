@@ -552,7 +552,7 @@ static void gles2_destroy(struct wlr_renderer *wlr_renderer) {
 }
 
 static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
-		struct wlr_buffer *wlr_buffer, struct wlr_buffer_pass_options *options) {
+		struct wlr_buffer *wlr_buffer, const struct wlr_buffer_pass_options *options) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 	if (!wlr_egl_make_current(renderer->egl)) {
 		return NULL;

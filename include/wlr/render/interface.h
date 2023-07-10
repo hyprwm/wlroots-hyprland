@@ -49,7 +49,7 @@ struct wlr_renderer_impl {
 	struct wlr_texture *(*texture_from_buffer)(struct wlr_renderer *renderer,
 		struct wlr_buffer *buffer);
 	struct wlr_render_pass *(*begin_buffer_pass)(struct wlr_renderer *renderer,
-		struct wlr_buffer *buffer, struct wlr_buffer_pass_options *options);
+		struct wlr_buffer *buffer, const struct wlr_buffer_pass_options *options);
 	struct wlr_render_timer *(*render_timer_create)(struct wlr_renderer *renderer);
 };
 
