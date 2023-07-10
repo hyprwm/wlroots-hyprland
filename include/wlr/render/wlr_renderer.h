@@ -167,6 +167,7 @@ struct wlr_render_pass;
 struct wlr_render_timer;
 
 struct wlr_buffer_pass_options {
+	/* Timer to measure the duration of the render pass */
 	struct wlr_render_timer *timer;
 };
 
