@@ -6,6 +6,7 @@ libpng = dependency('libpng', required: false, disabler: true)
 egl = dependency('egl', required: false, disabler: true)
 glesv2 = dependency('glesv2', required: false, disabler: true)
 gbm = dependency('gbm', required: false, disabler: true)
+cairo = dependency('cairo', required: false, disabler: true)
 # These versions correspond to ffmpeg 4.0
 libavutil = dependency('libavutil', version: '>=56.14.100', required: false, disabler: true)
 libavcodec = dependency('libavcodec', version: '>=58.18.100', required: false, disabler: true)
@@ -56,6 +57,10 @@ compositors = {
 		'proto': [
 			'xdg-shell',
 		],
+	},
+	'cairo-buffer': {
+		'src': 'cairo-buffer.c',
+		'dep': cairo,
 	},
 }
 
@@ -199,7 +204,7 @@ foreach name, info : compositors
 	executable(
 		name,
 		[info.get('src'), extra_src],
-		dependencies: [wlroots, libdrm],
+		dependencies: [wlroots, libdrm, info.get('dep', [])],
 		build_by_default: get_option('examples'),
 	)
 endforeach
