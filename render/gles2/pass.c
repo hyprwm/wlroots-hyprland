@@ -22,6 +22,8 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	struct wlr_gles2_renderer *renderer = pass->buffer->renderer;
 	struct wlr_gles2_render_timer *timer = pass->timer;
 
+	push_gles2_debug(renderer);
+
 	if (timer) {
 		// clear disjoint flag
 		GLint64 disjoint;
@@ -33,10 +35,12 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 		// get end-of-CPU-work time in CPU time domain
 		clock_gettime(CLOCK_MONOTONIC, &timer->cpu_end);
 	}
-	push_gles2_debug(renderer);
+
 	glFlush();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	pop_gles2_debug(renderer);
+
 	wlr_buffer_unlock(pass->buffer->buffer);
 	free(pass);
 
