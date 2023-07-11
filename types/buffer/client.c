@@ -7,11 +7,12 @@
 
 static const struct wlr_buffer_impl client_buffer_impl;
 
-struct wlr_client_buffer *wlr_client_buffer_get(struct wlr_buffer *buffer) {
-	if (buffer->impl != &client_buffer_impl) {
+struct wlr_client_buffer *wlr_client_buffer_get(struct wlr_buffer *wlr_buffer) {
+	if (wlr_buffer->impl != &client_buffer_impl) {
 		return NULL;
 	}
-	return (struct wlr_client_buffer *)buffer;
+	struct wlr_client_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
+	return buffer;
 }
 
 static struct wlr_client_buffer *client_buffer_from_buffer(

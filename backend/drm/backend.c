@@ -16,7 +16,8 @@
 struct wlr_drm_backend *get_drm_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
 	assert(wlr_backend_is_drm(wlr_backend));
-	return (struct wlr_drm_backend *)wlr_backend;
+	struct wlr_drm_backend *backend = wl_container_of(wlr_backend, backend, backend);
+	return backend;
 }
 
 static bool backend_start(struct wlr_backend *backend) {

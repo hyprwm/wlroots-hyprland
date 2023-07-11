@@ -90,9 +90,10 @@ struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_from_buffer_resource(
 static const struct wlr_buffer_impl buffer_impl;
 
 static struct wlr_dmabuf_v1_buffer *dmabuf_v1_buffer_from_buffer(
-		struct wlr_buffer *buffer) {
-	assert(buffer->impl == &buffer_impl);
-	return (struct wlr_dmabuf_v1_buffer *)buffer;
+		struct wlr_buffer *wlr_buffer) {
+	assert(wlr_buffer->impl == &buffer_impl);
+	struct wlr_dmabuf_v1_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
+	return buffer;
 }
 
 static void buffer_destroy(struct wlr_buffer *wlr_buffer) {

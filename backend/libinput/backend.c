@@ -11,7 +11,8 @@
 static struct wlr_libinput_backend *get_libinput_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
 	assert(wlr_backend_is_libinput(wlr_backend));
-	return (struct wlr_libinput_backend *)wlr_backend;
+	struct wlr_libinput_backend *backend = wl_container_of(wlr_backend, backend, backend);
+	return backend;
 }
 
 static int libinput_open_restricted(const char *path,

@@ -8,9 +8,10 @@
 static const struct wlr_buffer_impl readonly_data_buffer_impl;
 
 static struct wlr_readonly_data_buffer *readonly_data_buffer_from_buffer(
-		struct wlr_buffer *buffer) {
-	assert(buffer->impl == &readonly_data_buffer_impl);
-	return (struct wlr_readonly_data_buffer *)buffer;
+		struct wlr_buffer *wlr_buffer) {
+	assert(wlr_buffer->impl == &readonly_data_buffer_impl);
+	struct wlr_readonly_data_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
+	return buffer;
 }
 
 static void readonly_data_buffer_destroy(struct wlr_buffer *wlr_buffer) {

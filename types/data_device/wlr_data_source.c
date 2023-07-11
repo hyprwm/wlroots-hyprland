@@ -91,7 +91,8 @@ static void client_data_source_accept(struct wlr_data_source *wlr_source,
 static struct wlr_client_data_source *client_data_source_from_wlr_data_source(
 		struct wlr_data_source *wlr_source) {
 	assert(wlr_source->impl->accept == client_data_source_accept);
-	return (struct wlr_client_data_source *)wlr_source;
+	struct wlr_client_data_source *source = wl_container_of(wlr_source, source, source);
+	return source;
 }
 
 static void client_data_source_accept(struct wlr_data_source *wlr_source,

@@ -331,7 +331,8 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 static struct wlr_drm_connector *get_drm_connector_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_drm(wlr_output));
-	return (struct wlr_drm_connector *)wlr_output;
+	struct wlr_drm_connector *conn = wl_container_of(wlr_output, conn, output);
+	return conn;
 }
 
 static void layer_handle_addon_destroy(struct wlr_addon *addon) {

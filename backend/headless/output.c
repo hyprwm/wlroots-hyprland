@@ -17,7 +17,8 @@ static size_t last_output_num = 0;
 static struct wlr_headless_output *headless_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_headless(wlr_output));
-	return (struct wlr_headless_output *)wlr_output;
+	struct wlr_headless_output *output = wl_container_of(wlr_output, output, wlr_output);
+	return output;
 }
 
 static bool output_set_custom_mode(struct wlr_headless_output *output,

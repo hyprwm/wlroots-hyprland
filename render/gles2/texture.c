@@ -25,7 +25,8 @@ bool wlr_texture_is_gles2(struct wlr_texture *wlr_texture) {
 struct wlr_gles2_texture *gles2_get_texture(
 		struct wlr_texture *wlr_texture) {
 	assert(wlr_texture_is_gles2(wlr_texture));
-	return (struct wlr_gles2_texture *)wlr_texture;
+	struct wlr_gles2_texture *texture = wl_container_of(wlr_texture, texture, wlr_texture);
+	return texture;
 }
 
 static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,

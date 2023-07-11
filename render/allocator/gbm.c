@@ -17,9 +17,10 @@
 static const struct wlr_buffer_impl buffer_impl;
 
 static struct wlr_gbm_buffer *get_gbm_buffer_from_buffer(
-		struct wlr_buffer *buffer) {
-	assert(buffer->impl == &buffer_impl);
-	return (struct wlr_gbm_buffer *)buffer;
+		struct wlr_buffer *wlr_buffer) {
+	assert(wlr_buffer->impl == &buffer_impl);
+	struct wlr_gbm_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
+	return buffer;
 }
 
 static bool export_gbm_bo(struct gbm_bo *bo,
@@ -179,9 +180,10 @@ static const struct wlr_buffer_impl buffer_impl = {
 static const struct wlr_allocator_interface allocator_impl;
 
 static struct wlr_gbm_allocator *get_gbm_alloc_from_alloc(
-		struct wlr_allocator *alloc) {
-	assert(alloc->impl == &allocator_impl);
-	return (struct wlr_gbm_allocator *)alloc;
+		struct wlr_allocator *wlr_alloc) {
+	assert(wlr_alloc->impl == &allocator_impl);
+	struct wlr_gbm_allocator *alloc = wl_container_of(wlr_alloc, alloc, base);
+	return alloc;
 }
 
 struct wlr_allocator *wlr_gbm_allocator_create(int fd) {

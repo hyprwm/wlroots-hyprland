@@ -257,7 +257,8 @@ bool data_source_is_xwayland(
 static struct x11_data_source *data_source_from_wlr_data_source(
 		struct wlr_data_source *wlr_source) {
 	assert(data_source_is_xwayland(wlr_source));
-	return (struct x11_data_source *)wlr_source;
+	struct x11_data_source *source = wl_container_of(wlr_source, source, base);
+	return source;
 }
 
 static void data_source_send(struct wlr_data_source *wlr_source,
@@ -299,8 +300,7 @@ bool primary_selection_source_is_xwayland(
 static void primary_selection_source_send(
 		struct wlr_primary_selection_source *wlr_source,
 		const char *mime_type, int fd) {
-	struct x11_primary_selection_source *source =
-		(struct x11_primary_selection_source *)wlr_source;
+	struct x11_primary_selection_source *source = wl_container_of(wlr_source, source, base);
 	struct wlr_xwm_selection *selection = source->selection;
 
 	source_send(selection, &wlr_source->mime_types, &source->mime_types_atoms,
@@ -309,8 +309,7 @@ static void primary_selection_source_send(
 
 static void primary_selection_source_destroy(
 		struct wlr_primary_selection_source *wlr_source) {
-	struct x11_primary_selection_source *source =
-		(struct x11_primary_selection_source *)wlr_source;
+	struct x11_primary_selection_source *source = wl_container_of(wlr_source, source, base);
 	wl_array_release(&source->mime_types_atoms);
 	free(source);
 }

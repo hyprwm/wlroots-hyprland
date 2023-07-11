@@ -21,7 +21,8 @@ struct subbackend_state {
 static struct wlr_multi_backend *multi_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
 	assert(wlr_backend_is_multi(wlr_backend));
-	return (struct wlr_multi_backend *)wlr_backend;
+	struct wlr_multi_backend *backend = wl_container_of(wlr_backend, backend, backend);
+	return backend;
 }
 
 static bool multi_backend_start(struct wlr_backend *wlr_backend) {

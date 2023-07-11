@@ -54,7 +54,8 @@ static void parse_xcb_setup(struct wlr_output *output,
 static struct wlr_x11_output *get_x11_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_x11(wlr_output));
-	return (struct wlr_x11_output *)wlr_output;
+	struct wlr_x11_output *output = wl_container_of(wlr_output, output, wlr_output);
+	return output;
 }
 
 static bool output_set_custom_mode(struct wlr_output *wlr_output,

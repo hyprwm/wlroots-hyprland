@@ -52,7 +52,8 @@ bool wlr_renderer_is_vk(struct wlr_renderer *wlr_renderer) {
 
 struct wlr_vk_renderer *vulkan_get_renderer(struct wlr_renderer *wlr_renderer) {
 	assert(wlr_renderer_is_vk(wlr_renderer));
-	return (struct wlr_vk_renderer *)wlr_renderer;
+	struct wlr_vk_renderer *renderer = wl_container_of(wlr_renderer, renderer, wlr_renderer);
+	return renderer;
 }
 
 static struct wlr_vk_render_format_setup *find_or_create_render_setup(

@@ -25,7 +25,8 @@ static const struct wlr_buffer_impl buffer_impl;
 static struct wlr_drm_dumb_buffer *drm_dumb_buffer_from_buffer(
 		struct wlr_buffer *wlr_buf) {
 	assert(wlr_buf->impl == &buffer_impl);
-	return (struct wlr_drm_dumb_buffer *)wlr_buf;
+	struct wlr_drm_dumb_buffer *buf = wl_container_of(wlr_buf, buf, base);
+	return buf;
 }
 
 static struct wlr_drm_dumb_buffer *create_buffer(
@@ -163,7 +164,8 @@ static const struct wlr_allocator_interface allocator_impl;
 static struct wlr_drm_dumb_allocator *drm_dumb_alloc_from_alloc(
 		struct wlr_allocator *wlr_alloc) {
 	assert(wlr_alloc->impl == &allocator_impl);
-	return (struct wlr_drm_dumb_allocator *)wlr_alloc;
+	struct wlr_drm_dumb_allocator *alloc = wl_container_of(wlr_alloc, alloc, base);
+	return alloc;
 }
 
 static struct wlr_buffer *allocator_create_buffer(

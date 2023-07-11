@@ -39,7 +39,8 @@ static size_t last_output_num = 0;
 static struct wlr_wl_output *get_wl_output_from_output(
 		struct wlr_output *wlr_output) {
 	assert(wlr_output_is_wl(wlr_output));
-	return (struct wlr_wl_output *)wlr_output;
+	struct wlr_wl_output *output = wl_container_of(wlr_output, output, wlr_output);
+	return output;
 }
 
 static void surface_frame_callback(void *data, struct wl_callback *cb,

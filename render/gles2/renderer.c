@@ -45,7 +45,8 @@ bool wlr_renderer_is_gles2(struct wlr_renderer *wlr_renderer) {
 struct wlr_gles2_renderer *gles2_get_renderer(
 		struct wlr_renderer *wlr_renderer) {
 	assert(wlr_renderer_is_gles2(wlr_renderer));
-	return (struct wlr_gles2_renderer *)wlr_renderer;
+	struct wlr_gles2_renderer *renderer = wl_container_of(wlr_renderer, renderer, wlr_renderer);
+	return renderer;
 }
 
 static struct wlr_gles2_renderer *gles2_get_renderer_in_context(
@@ -634,7 +635,7 @@ static int gles2_get_render_time(struct wlr_render_timer *wlr_timer) {
 }
 
 static void gles2_render_timer_destroy(struct wlr_render_timer *wlr_timer) {
-	struct wlr_gles2_render_timer *timer = (struct wlr_gles2_render_timer *)wlr_timer;
+	struct wlr_gles2_render_timer *timer = wl_container_of(wlr_timer, timer, base);
 	struct wlr_gles2_renderer *renderer = timer->renderer;
 
 	struct wlr_egl_context prev_ctx;

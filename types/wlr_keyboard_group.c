@@ -64,7 +64,8 @@ struct wlr_keyboard_group *wlr_keyboard_group_from_wlr_keyboard(
 	if (keyboard->impl != &impl) {
 		return NULL;
 	}
-	return (struct wlr_keyboard_group *)keyboard;
+	struct wlr_keyboard_group *group = wl_container_of(keyboard, group, keyboard);
+	return group;
 }
 
 static bool process_key(struct keyboard_group_device *group_device,

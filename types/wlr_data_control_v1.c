@@ -120,7 +120,8 @@ static const struct wlr_data_source_impl client_source_impl;
 static struct client_data_source *
 		client_data_source_from_source(struct wlr_data_source *wlr_source) {
 	assert(wlr_source->impl == &client_source_impl);
-	return (struct client_data_source *)wlr_source;
+	struct client_data_source *source = wl_container_of(wlr_source, source, source);
+	return source;
 }
 
 static void client_source_send(struct wlr_data_source *wlr_source,
@@ -166,7 +167,8 @@ static struct client_primary_selection_source *
 		client_primary_selection_source_from_source(
 			struct wlr_primary_selection_source *wlr_source) {
 	assert(wlr_source->impl == &client_primary_selection_source_impl);
-	return (struct client_primary_selection_source *)wlr_source;
+	struct client_primary_selection_source *source = wl_container_of(wlr_source, source, source);
+	return source;
 }
 
 static void client_primary_selection_source_send(

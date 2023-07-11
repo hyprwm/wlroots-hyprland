@@ -46,9 +46,10 @@ struct wlr_wl_linux_dmabuf_v1_table_entry {
 	uint64_t modifier;
 };
 
-struct wlr_wl_backend *get_wl_backend_from_backend(struct wlr_backend *backend) {
-	assert(wlr_backend_is_wl(backend));
-	return (struct wlr_wl_backend *)backend;
+struct wlr_wl_backend *get_wl_backend_from_backend(struct wlr_backend *wlr_backend) {
+	assert(wlr_backend_is_wl(wlr_backend));
+	struct wlr_wl_backend *backend = wl_container_of(wlr_backend, backend, backend);
+	return backend;
 }
 
 static int dispatch_events(int fd, uint32_t mask, void *data) {

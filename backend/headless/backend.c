@@ -7,7 +7,8 @@
 struct wlr_headless_backend *headless_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
 	assert(wlr_backend_is_headless(wlr_backend));
-	return (struct wlr_headless_backend *)wlr_backend;
+	struct wlr_headless_backend *backend = wl_container_of(wlr_backend, backend, backend);
+	return backend;
 }
 
 static bool backend_start(struct wlr_backend *wlr_backend) {

@@ -20,7 +20,8 @@ bool wlr_renderer_is_pixman(struct wlr_renderer *wlr_renderer) {
 static struct wlr_pixman_renderer *get_renderer(
 		struct wlr_renderer *wlr_renderer) {
 	assert(wlr_renderer_is_pixman(wlr_renderer));
-	return (struct wlr_pixman_renderer *)wlr_renderer;
+	struct wlr_pixman_renderer *renderer = wl_container_of(wlr_renderer, renderer, wlr_renderer);
+	return renderer;
 }
 
 bool begin_pixman_data_ptr_access(struct wlr_buffer *wlr_buffer, pixman_image_t **image_ptr,
@@ -76,7 +77,8 @@ bool wlr_texture_is_pixman(struct wlr_texture *texture) {
 static struct wlr_pixman_texture *get_texture(
 		struct wlr_texture *wlr_texture) {
 	assert(wlr_texture_is_pixman(wlr_texture));
-	return (struct wlr_pixman_texture *)wlr_texture;
+	struct wlr_pixman_texture *texture = wl_container_of(wlr_texture, texture, wlr_texture);
+	return texture;
 }
 
 static void texture_destroy(struct wlr_texture *wlr_texture) {

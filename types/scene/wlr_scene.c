@@ -52,7 +52,8 @@ struct wlr_scene *scene_node_get_root(struct wlr_scene_node *node) {
 	while (tree->node.parent != NULL) {
 		tree = tree->node.parent;
 	}
-	return (struct wlr_scene *)tree;
+	struct wlr_scene *scene = wl_container_of(tree, scene, tree);
+	return scene;
 }
 
 static void scene_node_init(struct wlr_scene_node *node,

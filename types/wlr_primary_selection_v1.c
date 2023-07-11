@@ -103,14 +103,14 @@ struct client_data_source {
 static void client_source_send(
 		struct wlr_primary_selection_source *wlr_source,
 		const char *mime_type, int fd) {
-	struct client_data_source *source = (struct client_data_source *)wlr_source;
+	struct client_data_source *source = wl_container_of(wlr_source, source, source);
 	zwp_primary_selection_source_v1_send_send(source->resource, mime_type, fd);
 	close(fd);
 }
 
 static void client_source_destroy(
 		struct wlr_primary_selection_source *wlr_source) {
-	struct client_data_source *source = (struct client_data_source *)wlr_source;
+	struct client_data_source *source = wl_container_of(wlr_source, source, source);
 	zwp_primary_selection_source_v1_send_cancelled(source->resource);
 	// Make the source resource inert
 	wl_resource_set_user_data(source->resource, NULL);
