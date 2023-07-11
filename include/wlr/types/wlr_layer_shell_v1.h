@@ -83,7 +83,7 @@ struct wlr_layer_surface_v1 {
 
 	char *namespace;
 
-	bool added, configured;
+	bool configured;
 	struct wl_list configure_list;
 
 	struct wlr_layer_surface_v1_state current, pending;

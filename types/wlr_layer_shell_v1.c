@@ -368,14 +368,6 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	surface->current = surface->pending;
 	surface->pending.committed = 0;
 
-	if (!surface->added) {
-		surface->added = true;
-		wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
-		// Return early here as the compositor may have closed this layer surface
-		// in response to the new_surface event.
-		return;
-	}
-
 	if (wlr_surface_has_buffer(wlr_surface)) {
 		wlr_surface_map(wlr_surface);
 	}
@@ -461,6 +453,8 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 		&layer_surface_implementation, surface, NULL);
 
 	wlr_surface_set_role_object(wlr_surface, surface->resource);
+
+	wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
 }
 
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation = {
