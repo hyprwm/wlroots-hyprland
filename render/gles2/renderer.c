@@ -595,7 +595,7 @@ static struct wlr_render_timer *gles2_render_timer_create(struct wlr_renderer *w
 	renderer->procs.glGenQueriesEXT(1, &timer->id);
 	wlr_egl_restore_context(&prev_ctx);
 
-	return (struct wlr_render_timer *)timer;
+	return &timer->base;
 }
 
 static int gles2_get_render_time(struct wlr_render_timer *wlr_timer) {
