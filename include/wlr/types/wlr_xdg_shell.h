@@ -25,13 +25,7 @@ struct wlr_xdg_shell {
 	struct wl_listener display_destroy;
 
 	struct {
-		/**
-		 * The `new_surface` event signals that a client has requested to
-		 * create a new shell surface. At this point, the surface is ready to
-		 * be configured but is not mapped or ready receive input events. The
-		 * surface will be ready to be managed on the `map` event.
-		 */
-		struct wl_signal new_surface;
+		struct wl_signal new_surface; // struct wlr_xdg_surface
 		struct wl_signal destroy;
 	} events;
 
@@ -231,11 +225,6 @@ struct wlr_xdg_surface_state {
  * An xdg-surface is a user interface element requiring management by the
  * compositor. An xdg-surface alone isn't useful, a role should be assigned to
  * it in order to map it.
- *
- * When a surface has a role and is ready to be displayed, the `map` event is
- * emitted. When a surface should no longer be displayed, the `unmap` event is
- * emitted. The `unmap` event is guaranteed to be emitted before the `destroy`
- * event if the view is destroyed when mapped.
  */
 struct wlr_xdg_surface {
 	struct wlr_xdg_client *client;
