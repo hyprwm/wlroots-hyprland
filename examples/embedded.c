@@ -1,4 +1,6 @@
 #define _POSIX_C_SOURCE 200112L
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,6 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
 
-#include "egl_common.h"
 #include "xdg-shell-client-protocol.h"
 
 static struct wl_display *remote_display = NULL;
@@ -31,8 +32,12 @@ static struct wlr_scene_output *scene_output = NULL;
 static struct wl_listener new_surface = {0};
 static struct wl_listener output_frame = {0};
 
-int width = 500;
-int height = 500;
+static EGLDisplay egl_display;
+static EGLConfig egl_config;
+static EGLContext egl_context;
+
+static int width = 500;
+static int height = 500;
 
 static void draw_main_surface(void);
 
@@ -120,6 +125,29 @@ static void handle_new_surface(struct wl_listener *listener, void *data) {
 	wlr_scene_surface_create(&scene->tree, wlr_surface);
 }
 
+static void init_egl(struct wl_display *display) {
+	egl_display = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_KHR, display, NULL);
+	eglInitialize(egl_display, NULL, NULL);
+
+	EGLint matched = 0;
+	const EGLint config_attribs[] = {
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
+		EGL_ALPHA_SIZE, 8,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_NONE,
+	};
+	eglChooseConfig(egl_display, config_attribs, &egl_config, 1, &matched);
+
+	const EGLint context_attribs[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE,
+	};
+	egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
+}
+
 int main(int argc, char *argv[]) {
 	wlr_log_init(WLR_DEBUG, NULL);
 
@@ -128,7 +156,7 @@ int main(int argc, char *argv[]) {
 	wl_registry_add_listener(registry, &registry_listener, NULL);
 	wl_display_roundtrip(remote_display);
 
-	egl_init(remote_display);
+	init_egl(remote_display);
 
 	struct wl_display *local_display = wl_display_create();
 	struct wlr_backend *backend = wlr_wl_backend_create(local_display, remote_display);
@@ -152,7 +180,7 @@ int main(int argc, char *argv[]) {
 	xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
 
 	egl_window = wl_egl_window_create(main_surface, width, height);
-	egl_surface = eglCreatePlatformWindowSurfaceEXT(egl_display,
+	egl_surface = eglCreatePlatformWindowSurface(egl_display,
 		egl_config, egl_window, NULL);
 
 	struct wl_surface *child_surface = wl_compositor_create_surface(compositor);
