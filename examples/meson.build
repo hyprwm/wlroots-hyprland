@@ -12,7 +12,7 @@ libavutil = dependency('libavutil', version: '>=56.14.100', required: false, dis
 libavcodec = dependency('libavcodec', version: '>=58.18.100', required: false, disabler: true)
 libavformat = dependency('libavformat', version: '>=58.12.100', required: false, disabler: true)
 # Only needed for drm_fourcc.h
-libdrm = dependency('libdrm').partial_dependency(compile_args: true, includes: true)
+libdrm_header = dependency('libdrm').partial_dependency(compile_args: true, includes: true)
 
 # epoll is a separate library in FreeBSD
 if host_machine.system() == 'freebsd'
@@ -199,7 +199,7 @@ foreach name, info : compositors
 	executable(
 		name,
 		[info.get('src'), extra_src],
-		dependencies: [wlroots, libdrm, info.get('dep', [])],
+		dependencies: [wlroots, libdrm_header, info.get('dep', [])],
 		build_by_default: get_option('examples'),
 	)
 endforeach
