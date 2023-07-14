@@ -614,7 +614,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 	wl_signal_init(&scene_buffer->events.outputs_update);
 	wl_signal_init(&scene_buffer->events.output_enter);
 	wl_signal_init(&scene_buffer->events.output_leave);
-	wl_signal_init(&scene_buffer->events.output_present);
+	wl_signal_init(&scene_buffer->events.output_sample);
 	wl_signal_init(&scene_buffer->events.frame_done);
 	pixman_region32_init(&scene_buffer->opaque_region);
 	scene_buffer->opacity = 1;
@@ -1171,7 +1171,7 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
 				WLR_RENDER_BLEND_MODE_PREMULTIPLIED : WLR_RENDER_BLEND_MODE_NONE,
 		});
 
-		wl_signal_emit_mutable(&scene_buffer->events.output_present, data->output);
+		wl_signal_emit_mutable(&scene_buffer->events.output_sample, data->output);
 		break;
 	}
 
@@ -1572,7 +1572,7 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 	wlr_output_state_copy(state, &pending);
 	wlr_output_state_finish(&pending);
 
-	wl_signal_emit_mutable(&buffer->events.output_present, scene_output);
+	wl_signal_emit_mutable(&buffer->events.output_sample, scene_output);
 	return true;
 }
 

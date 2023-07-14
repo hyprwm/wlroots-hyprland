@@ -36,10 +36,10 @@ static void handle_scene_buffer_output_leave(
 	wlr_surface_send_leave(surface->surface, output->output);
 }
 
-static void handle_scene_buffer_output_present(
+static void handle_scene_buffer_output_sample(
 		struct wl_listener *listener, void *data) {
 	struct wlr_scene_surface *surface =
-		wl_container_of(listener, surface, output_present);
+		wl_container_of(listener, surface, output_sample);
 	struct wlr_scene_output *scene_output = data;
 
 	if (surface->buffer->primary_output == scene_output) {
@@ -157,7 +157,7 @@ static void surface_addon_destroy(struct wlr_addon *addon) {
 	wl_list_remove(&surface->outputs_update.link);
 	wl_list_remove(&surface->output_enter.link);
 	wl_list_remove(&surface->output_leave.link);
-	wl_list_remove(&surface->output_present.link);
+	wl_list_remove(&surface->output_sample.link);
 	wl_list_remove(&surface->frame_done.link);
 	wl_list_remove(&surface->surface_destroy.link);
 	wl_list_remove(&surface->surface_commit.link);
@@ -208,8 +208,8 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent
 	surface->output_leave.notify = handle_scene_buffer_output_leave;
 	wl_signal_add(&scene_buffer->events.output_leave, &surface->output_leave);
 
-	surface->output_present.notify = handle_scene_buffer_output_present;
-	wl_signal_add(&scene_buffer->events.output_present, &surface->output_present);
+	surface->output_sample.notify = handle_scene_buffer_output_sample;
+	wl_signal_add(&scene_buffer->events.output_sample, &surface->output_sample);
 
 	surface->frame_done.notify = handle_scene_buffer_frame_done;
 	wl_signal_add(&scene_buffer->events.frame_done, &surface->frame_done);
