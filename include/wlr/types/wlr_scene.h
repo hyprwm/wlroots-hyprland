@@ -140,6 +140,11 @@ struct wlr_scene_outputs_update_event {
 	size_t size;
 };
 
+struct wlr_scene_output_sample_event {
+	struct wlr_scene_output *output;
+	bool direct_scanout;
+};
+
 /** A scene-graph node displaying a buffer */
 struct wlr_scene_buffer {
 	struct wlr_scene_node node;
@@ -151,7 +156,7 @@ struct wlr_scene_buffer {
 		struct wl_signal outputs_update; // struct wlr_scene_outputs_update_event
 		struct wl_signal output_enter; // struct wlr_scene_output
 		struct wl_signal output_leave; // struct wlr_scene_output
-		struct wl_signal output_sample; // struct wlr_scene_output
+		struct wl_signal output_sample; // struct wlr_scene_output_sample_event
 		struct wl_signal frame_done; // struct timespec
 	} events;
 

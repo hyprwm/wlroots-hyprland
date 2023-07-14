@@ -40,7 +40,8 @@ static void handle_scene_buffer_output_sample(
 		struct wl_listener *listener, void *data) {
 	struct wlr_scene_surface *surface =
 		wl_container_of(listener, surface, output_sample);
-	struct wlr_scene_output *scene_output = data;
+	const struct wlr_scene_output_sample_event *event = data;
+	struct wlr_scene_output *scene_output = event->output;
 
 	if (surface->buffer->primary_output == scene_output) {
 		struct wlr_scene *root = scene_node_get_root(&surface->buffer->node);

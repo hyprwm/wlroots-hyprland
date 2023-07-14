@@ -1171,7 +1171,11 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
 				WLR_RENDER_BLEND_MODE_PREMULTIPLIED : WLR_RENDER_BLEND_MODE_NONE,
 		});
 
-		wl_signal_emit_mutable(&scene_buffer->events.output_sample, data->output);
+		struct wlr_scene_output_sample_event sample_event = {
+			.output = data->output,
+			.direct_scanout = false,
+		};
+		wl_signal_emit_mutable(&scene_buffer->events.output_sample, &sample_event);
 		break;
 	}
 
@@ -1572,7 +1576,11 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 	wlr_output_state_copy(state, &pending);
 	wlr_output_state_finish(&pending);
 
-	wl_signal_emit_mutable(&buffer->events.output_sample, scene_output);
+	struct wlr_scene_output_sample_event sample_event = {
+		.output = scene_output,
+		.direct_scanout = true,
+	};
+	wl_signal_emit_mutable(&buffer->events.output_sample, &sample_event);
 	return true;
 }
 
