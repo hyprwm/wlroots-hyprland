@@ -738,8 +738,8 @@ void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buff
 		pixman_region32_fini(&cull_region);
 
 		pixman_region32_translate(&output_damage,
-			(lx - scene_output->x) * output_scale,
-			(ly - scene_output->y) * output_scale);
+			(int)round((lx - scene_output->x) * output_scale),
+			(int)round((ly - scene_output->y) * output_scale));
 		if (wlr_damage_ring_add(&scene_output->damage_ring, &output_damage)) {
 			wlr_output_schedule_frame(scene_output->output);
 		}
