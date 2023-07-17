@@ -444,13 +444,6 @@ struct wlr_seat_client *wlr_seat_client_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
-bool wlr_seat_validate_grab_serial(struct wlr_seat *seat, uint32_t serial) {
-	// TODO
-	//return serial == seat->pointer_state.grab_serial ||
-	//	serial == seat->touch_state.grab_serial;
-	return true;
-}
-
 uint32_t wlr_seat_client_next_serial(struct wlr_seat_client *client) {
 	uint32_t serial = wl_display_next_serial(wl_client_get_display(client->client));
 	struct wlr_serial_ringset *set = &client->serials;
