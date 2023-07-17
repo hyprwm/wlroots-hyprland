@@ -3,6 +3,9 @@
 
 #include <wayland-server-core.h>
 
+struct wlr_output;
+struct wlr_output_state;
+
 struct wlr_gamma_control_manager_v1 {
 	struct wl_global *global;
 	struct wl_list controls; // wlr_gamma_control_v1.link
