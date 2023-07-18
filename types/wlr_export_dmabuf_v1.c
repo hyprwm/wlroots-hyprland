@@ -4,7 +4,6 @@
 #include <wlr/interfaces/wlr_output.h>
 #include <wlr/render/dmabuf.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
-#include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include "wlr-export-dmabuf-unstable-v1-protocol.h"
 
@@ -160,7 +159,10 @@ static void manager_handle_capture_output(struct wl_client *client,
 	wl_signal_add(&output->events.destroy, &frame->output_destroy);
 	frame->output_destroy.notify = frame_output_handle_destroy;
 
-	wlr_output_schedule_frame(output);
+	// Request a frame because we can't assume that the current front buffer is still usable. It may
+	// have been released already, and we shouldn't lock it here because compositors want to render
+	// into the least damaged buffer.
+	wlr_output_update_needs_frame(output);
 }
 
 static void manager_handle_destroy(struct wl_client *client,

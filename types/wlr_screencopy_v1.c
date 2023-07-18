@@ -1,10 +1,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <drm_fourcc.h>
+#include <wlr/interfaces/wlr_output.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
-#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/backend.h>
 #include <wlr/util/box.h>
@@ -416,8 +416,10 @@ static void frame_handle_copy(struct wl_client *wl_client,
 	wl_signal_add(&output->events.destroy, &frame->output_enable);
 	frame->output_enable.notify = frame_handle_output_enable;
 
-	// Schedule a buffer commit
-	wlr_output_schedule_frame(output);
+	// Request a frame because we can't assume that the current front buffer is still usable. It may
+	// have been released already, and we shouldn't lock it here because compositors want to render
+	// into the least damaged buffer.
+	wlr_output_update_needs_frame(output);
 
 	wlr_output_lock_attach_render(output, true);
 	if (frame->overlay_cursor) {
