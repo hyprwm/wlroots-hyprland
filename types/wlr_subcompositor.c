@@ -289,8 +289,6 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 
 	if (!subsurface->added) {
 		subsurface->added = true;
-		wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface,
-			subsurface);
 		subsurface_consider_map(subsurface);
 	}
 }
@@ -364,6 +362,8 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	wl_list_init(&subsurface->current.link);
 	wl_list_insert(parent->pending.subsurfaces_above.prev,
 		&subsurface->pending.link);
+
+	wl_signal_emit_mutable(&subsurface->parent->events.new_subsurface, subsurface);
 }
 
 static const struct wl_subcompositor_interface subcompositor_impl = {
