@@ -127,6 +127,7 @@ static bool output_test(struct wlr_output *wlr_output,
 	assert(wlr_output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED);
 	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
 		if (!state->adaptive_sync_enabled) {
+			wlr_log(WLR_DEBUG, "Disabling adaptive sync is not supported");
 			return false;
 		}
 	}
@@ -135,6 +136,7 @@ static bool output_test(struct wlr_output *wlr_output,
 		assert(state->mode_type == WLR_OUTPUT_STATE_MODE_CUSTOM);
 
 		if (state->custom_mode.refresh != 0) {
+			wlr_log(WLR_DEBUG, "Refresh rates are not supported");
 			return false;
 		}
 	}
