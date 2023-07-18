@@ -195,7 +195,8 @@ static const struct wl_subsurface_interface subsurface_implementation = {
 const struct wlr_surface_role subsurface_role;
 
 void subsurface_consider_map(struct wlr_subsurface *subsurface) {
-	if (subsurface->parent->mapped && wlr_surface_has_buffer(subsurface->surface)) {
+	if (subsurface->added && subsurface->parent->mapped &&
+			wlr_surface_has_buffer(subsurface->surface)) {
 		wlr_surface_map(subsurface->surface);
 	}
 }
