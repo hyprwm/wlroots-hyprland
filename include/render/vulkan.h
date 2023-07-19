@@ -90,6 +90,8 @@ struct wlr_vk_format {
 	bool is_ycbcr;
 };
 
+extern const VkImageUsageFlags vulkan_render_usage, vulkan_shm_tex_usage, vulkan_dma_tex_usage;
+
 // Returns all known format mappings.
 // Might not be supported for gpu/usecase.
 const struct wlr_vk_format *vulkan_get_format_list(size_t *len);

@@ -230,13 +230,13 @@ const struct wlr_vk_format *vulkan_get_format_from_drm(uint32_t drm_format) {
 	return NULL;
 }
 
-static const VkImageUsageFlags render_usage =
+const VkImageUsageFlags vulkan_render_usage =
 	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 	VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-static const VkImageUsageFlags shm_tex_usage =
+const VkImageUsageFlags vulkan_shm_tex_usage =
 	VK_IMAGE_USAGE_SAMPLED_BIT |
 	VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-static const VkImageUsageFlags dma_tex_usage =
+const VkImageUsageFlags vulkan_dma_tex_usage =
 	VK_IMAGE_USAGE_SAMPLED_BIT;
 
 static const VkFormatFeatureFlags render_features =
@@ -357,7 +357,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		if ((m.drmFormatModifierTilingFeatures & render_features) == render_features &&
 				!props->format.is_ycbcr) {
 			struct wlr_vk_format_modifier_props p = {0};
-			if (query_modifier_usage_support(dev, props->format.vk, render_usage, &m, &p, &errmsg)) {
+			if (query_modifier_usage_support(dev, props->format.vk, vulkan_render_usage, &m, &p, &errmsg)) {
 				props->dmabuf.render_mods[props->dmabuf.render_mod_count++] = p;
 				wlr_drm_format_set_add(&dev->dmabuf_render_formats,
 					props->format.drm, m.drmFormatModifier);
@@ -380,7 +380,7 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		}
 		if ((m.drmFormatModifierTilingFeatures & features) == features) {
 			struct wlr_vk_format_modifier_props p = {0};
-			if (query_modifier_usage_support(dev, props->format.vk, dma_tex_usage, &m, &p, &errmsg)) {
+			if (query_modifier_usage_support(dev, props->format.vk, vulkan_dma_tex_usage, &m, &p, &errmsg)) {
 				props->dmabuf.texture_mods[props->dmabuf.texture_mod_count++] = p;
 				wlr_drm_format_set_add(&dev->dmabuf_texture_formats,
 					props->format.drm, m.drmFormatModifier);
@@ -445,7 +445,7 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 			.type = VK_IMAGE_TYPE_2D,
 			.format = format->vk,
 			.tiling = VK_IMAGE_TILING_OPTIMAL,
-			.usage = shm_tex_usage,
+			.usage = vulkan_shm_tex_usage,
 		};
 		VkImageFormatProperties2 ifmtp = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,

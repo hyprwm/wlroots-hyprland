@@ -402,7 +402,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 		.extent = (VkExtent3D) { width, height, 1 },
 		.tiling = VK_IMAGE_TILING_OPTIMAL,
-		.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		.usage = vulkan_shm_tex_usage,
 	};
 
 	res = vkCreateImage(dev, &img_info, NULL, &texture->image);
@@ -546,9 +546,7 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 		.extent = (VkExtent3D) { attribs->width, attribs->height, 1 },
-		.usage = for_render ?
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT :
-			VK_IMAGE_USAGE_SAMPLED_BIT,
+		.usage = for_render ? vulkan_render_usage : vulkan_dma_tex_usage,
 	};
 	if (disjoint) {
 		img_info.flags = VK_IMAGE_CREATE_DISJOINT_BIT;
