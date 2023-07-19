@@ -76,6 +76,7 @@ struct wlr_render_pass_impl {
 	bool (*submit)(struct wlr_render_pass *pass);
 	void (*add_texture)(struct wlr_render_pass *pass,
 		const struct wlr_render_texture_options *options);
+	/* Implementers are also guaranteed that options->box is nonempty */
 	void (*add_rect)(struct wlr_render_pass *pass,
 		const struct wlr_render_rect_options *options);
 };

@@ -40,6 +40,9 @@ void wlr_render_pass_add_texture(struct wlr_render_pass *render_pass,
 
 void wlr_render_pass_add_rect(struct wlr_render_pass *render_pass,
 		const struct wlr_render_rect_options *options) {
+	if (wlr_box_empty(&options->box)) {
+		return;
+	}
 	render_pass->impl->add_rect(render_pass, options);
 }
 
