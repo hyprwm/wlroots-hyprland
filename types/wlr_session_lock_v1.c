@@ -189,6 +189,7 @@ static void lock_surface_role_destroy(struct wlr_surface *surface) {
 	if (lock_surface == NULL) {
 		return;
 	}
+	lock_surface_destroy(lock_surface);
 }
 
 static const struct wlr_surface_role lock_surface_role = {
