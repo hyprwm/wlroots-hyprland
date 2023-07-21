@@ -30,7 +30,7 @@ struct wlr_idle_inhibit_manager_v1 {
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_inhibitor;
+		struct wl_signal new_inhibitor; // struct wlr_idle_inhibitor_v1
 		struct wl_signal destroy;
 	} events;
 
