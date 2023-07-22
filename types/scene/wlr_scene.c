@@ -764,7 +764,17 @@ void wlr_scene_buffer_set_opaque_region(struct wlr_scene_buffer *scene_buffer,
 	}
 
 	pixman_region32_copy(&scene_buffer->opaque_region, region);
-	scene_node_update(&scene_buffer->node, NULL);
+
+	int x, y;
+	if (!wlr_scene_node_coords(&scene_buffer->node, &x, &y)) {
+		return;
+	}
+
+	pixman_region32_t update_region;
+	pixman_region32_init(&update_region);
+	scene_node_bounds(&scene_buffer->node, x, y, &update_region);
+	scene_update_region(scene_node_get_root(&scene_buffer->node), &update_region);
+	pixman_region32_fini(&update_region);
 }
 
 void wlr_scene_buffer_set_source_box(struct wlr_scene_buffer *scene_buffer,
