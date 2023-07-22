@@ -232,6 +232,9 @@ static bool scene_nodes_in_box(struct wlr_scene_node *node, struct wlr_box *box,
 
 static void scene_node_opaque_region(struct wlr_scene_node *node, int x, int y,
 		pixman_region32_t *opaque) {
+	int width, height;
+	scene_node_get_size(node, &width, &height);
+
 	if (node->type == WLR_SCENE_NODE_RECT) {
 		struct wlr_scene_rect *scene_rect = wlr_scene_rect_from_node(node);
 		if (scene_rect->color[3] != 1) {
@@ -250,13 +253,12 @@ static void scene_node_opaque_region(struct wlr_scene_node *node, int x, int y,
 
 		if (!buffer_is_opaque(scene_buffer->buffer)) {
 			pixman_region32_copy(opaque, &scene_buffer->opaque_region);
+			pixman_region32_intersect_rect(opaque, opaque, 0, 0, width, height);
 			pixman_region32_translate(opaque, x, y);
 			return;
 		}
 	}
 
-	int width, height;
-	scene_node_get_size(node, &width, &height);
 	pixman_region32_fini(opaque);
 	pixman_region32_init_rect(opaque, x, y, width, height);
 }
