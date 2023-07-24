@@ -358,6 +358,7 @@ static void output_apply_state(struct wlr_output *output,
 			}
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			output->current_mode = NULL;
 			width = state->custom_mode.width;
 			height = state->custom_mode.height;
 			refresh = state->custom_mode.refresh;
