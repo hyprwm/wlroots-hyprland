@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "types/wlr_xdg_shell.h"
 
-#define WM_BASE_VERSION 5
+#define WM_BASE_VERSION 6
 
 static const struct xdg_wm_base_interface xdg_shell_impl;
 

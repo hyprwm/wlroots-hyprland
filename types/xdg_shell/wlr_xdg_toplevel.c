@@ -14,6 +14,7 @@ void handle_xdg_toplevel_ack_configure(
 	toplevel->pending.resizing = configure->resizing;
 	toplevel->pending.activated = configure->activated;
 	toplevel->pending.tiled = configure->tiled;
+	toplevel->pending.suspended = configure->suspended;
 
 	toplevel->pending.width = configure->width;
 	toplevel->pending.height = configure->height;
@@ -98,6 +99,11 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 		} else if (!configure->maximized) {
 			states[nstates++] = XDG_TOPLEVEL_STATE_MAXIMIZED;
 		}
+	}
+
+	if (configure->suspended &&
+			version >= XDG_TOPLEVEL_STATE_SUSPENDED_SINCE_VERSION) {
+		states[nstates++] = XDG_TOPLEVEL_STATE_SUSPENDED;
 	}
 	assert(nstates <= sizeof(states) / sizeof(states[0]));
 
@@ -615,5 +621,13 @@ uint32_t wlr_xdg_toplevel_set_wm_capabilities(struct wlr_xdg_toplevel *toplevel,
 		XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION);
 	toplevel->scheduled.fields |= WLR_XDG_TOPLEVEL_CONFIGURE_WM_CAPABILITIES;
 	toplevel->scheduled.wm_capabilities = caps;
+	return wlr_xdg_surface_schedule_configure(toplevel->base);
+}
+
+uint32_t wlr_xdg_toplevel_set_suspended(struct wlr_xdg_toplevel *toplevel,
+		bool suspended) {
+	assert(toplevel->base->client->shell->version >=
+		XDG_TOPLEVEL_STATE_SUSPENDED_SINCE_VERSION);
+	toplevel->scheduled.suspended = suspended;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);
 }

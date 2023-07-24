@@ -127,7 +127,7 @@ enum wlr_xdg_surface_role {
 };
 
 struct wlr_xdg_toplevel_state {
-	bool maximized, fullscreen, resizing, activated;
+	bool maximized, fullscreen, resizing, activated, suspended;
 	uint32_t tiled; // enum wlr_edges
 	int32_t width, height;
 	int32_t max_width, max_height;
@@ -148,7 +148,7 @@ enum wlr_xdg_toplevel_configure_field {
 
 struct wlr_xdg_toplevel_configure {
 	uint32_t fields; // enum wlr_xdg_toplevel_configure_field
-	bool maximized, fullscreen, resizing, activated;
+	bool maximized, fullscreen, resizing, activated, suspended;
 	uint32_t tiled; // enum wlr_edges
 	int32_t width, height;
 	struct {
@@ -382,6 +382,13 @@ uint32_t wlr_xdg_toplevel_set_bounds(struct wlr_xdg_toplevel *toplevel,
  */
 uint32_t wlr_xdg_toplevel_set_wm_capabilities(struct wlr_xdg_toplevel *toplevel,
 		uint32_t caps);
+
+/**
+ * Request that this toplevel consider itself suspended or not
+ * suspended. Returns the associated configure serial.
+ */
+uint32_t wlr_xdg_toplevel_set_suspended(struct wlr_xdg_toplevel *toplevel,
+		bool suspended);
 
 /**
  * Request that this toplevel closes.
