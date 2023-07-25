@@ -394,9 +394,7 @@ static bool output_cursor_attempt_hardware(struct wlr_output_cursor *cursor) {
 bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 		struct wlr_buffer *buffer, int32_t hotspot_x, int32_t hotspot_y) {
 	struct wlr_renderer *renderer = cursor->output->renderer;
-	if (!renderer) {
-		return false;
-	}
+	assert(renderer != NULL);
 
 	struct wlr_texture *texture = NULL;
 	struct wlr_fbox src_box = {0};

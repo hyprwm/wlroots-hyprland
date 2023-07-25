@@ -509,9 +509,7 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 
 	if (cur->state->buffer != NULL) {
 		struct wlr_renderer *renderer = output_cursor->output_cursor->output->renderer;
-		if (!renderer) {
-			return;
-		}
+		assert(renderer != NULL);
 
 		struct wlr_buffer *buffer = cur->state->buffer;
 		int32_t hotspot_x = cur->state->buffer_hotspot.x;
