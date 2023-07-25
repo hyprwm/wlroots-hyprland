@@ -159,6 +159,7 @@ static void output_cursor_destroy(struct wlr_cursor_output_cursor *output_cursor
 	cursor_output_cursor_reset_image(output_cursor);
 	wl_list_remove(&output_cursor->layout_output_destroy.link);
 	wl_list_remove(&output_cursor->link);
+	wl_list_remove(&output_cursor->output_commit.link);
 	wlr_output_cursor_destroy(output_cursor->output_cursor);
 	free(output_cursor);
 }
@@ -409,9 +410,6 @@ void wlr_cursor_move(struct wlr_cursor *cur, struct wlr_input_device *dev,
 }
 
 static void cursor_output_cursor_reset_image(struct wlr_cursor_output_cursor *output_cursor) {
-	wl_list_remove(&output_cursor->output_commit.link);
-	wl_list_init(&output_cursor->output_commit.link);
-
 	output_cursor->xcursor = NULL;
 	output_cursor->xcursor_index = 0;
 	if (output_cursor->xcursor_timer != NULL) {
@@ -488,20 +486,6 @@ static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *out
 	wl_event_source_timer_update(output_cursor->xcursor_timer, image->delay);
 }
 
-static void output_cursor_output_handle_output_commit(
-		struct wl_listener *listener, void *data) {
-	struct wlr_cursor_output_cursor *output_cursor =
-		wl_container_of(listener, output_cursor, output_commit);
-	const struct wlr_output_event_commit *event = data;
-	struct wlr_surface *surface = output_cursor->cursor->state->surface;
-	assert(surface != NULL);
-
-	if (output_cursor->output_cursor->visible &&
-			(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
-		wlr_surface_send_frame_done(surface, event->when);
-	}
-}
-
 static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_cursor) {
 	struct wlr_cursor *cur = output_cursor->cursor;
 
@@ -540,10 +524,6 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 	} else if (cur->state->surface != NULL) {
 		struct wlr_surface *surface = cur->state->surface;
 
-		wl_signal_add(&output_cursor->output_cursor->output->events.commit,
-			&output_cursor->output_commit);
-		output_cursor->output_commit.notify = output_cursor_output_handle_output_commit;
-
 		struct wlr_texture *texture = wlr_surface_get_texture(surface);
 		int32_t hotspot_x = cur->state->surface_hotspot.x;
 		int32_t hotspot_y = cur->state->surface_hotspot.y;
@@ -578,6 +558,23 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		output_cursor_set_xcursor_image(output_cursor, 0);
 	} else {
 		wlr_output_cursor_set_buffer(output_cursor->output_cursor, NULL, 0, 0);
+	}
+}
+
+static void output_cursor_output_handle_output_commit(
+		struct wl_listener *listener, void *data) {
+	struct wlr_cursor_output_cursor *output_cursor =
+		wl_container_of(listener, output_cursor, output_commit);
+	const struct wlr_output_event_commit *event = data;
+
+	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+		cursor_output_cursor_update(output_cursor);
+	}
+
+	struct wlr_surface *surface = output_cursor->cursor->state->surface;
+	if (surface && output_cursor->output_cursor->visible &&
+			(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
+		wlr_surface_send_frame_done(surface, event->when);
 	}
 }
 
@@ -1076,8 +1073,6 @@ static void layout_add(struct wlr_cursor_state *state,
 	}
 	output_cursor->cursor = &state->cursor;
 
-	wl_list_init(&output_cursor->output_commit.link);
-
 	output_cursor->output_cursor = wlr_output_cursor_create(l_output->output);
 	if (output_cursor->output_cursor == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create wlr_output_cursor");
@@ -1090,6 +1085,10 @@ static void layout_add(struct wlr_cursor_state *state,
 		&output_cursor->layout_output_destroy);
 
 	wl_list_insert(&state->output_cursors, &output_cursor->link);
+
+	wl_signal_add(&output_cursor->output_cursor->output->events.commit,
+		&output_cursor->output_commit);
+	output_cursor->output_commit.notify = output_cursor_output_handle_output_commit;
 
 	cursor_output_cursor_update(output_cursor);
 }
