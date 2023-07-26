@@ -485,7 +485,7 @@ void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,
 	struct wlr_surface *parent = popup->parent;
 	struct wlr_xdg_surface *xdg_surface;
 	while ((xdg_surface = wlr_xdg_surface_try_from_wlr_surface(parent))) {
-		if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
+		if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP && xdg_surface->popup != NULL) {
 			popup_sx += xdg_surface->popup->current.geometry.x;
 			popup_sy += xdg_surface->popup->current.geometry.y;
 			parent = xdg_surface->popup->parent;

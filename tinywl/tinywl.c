@@ -122,7 +122,9 @@ static void focus_view(struct tinywl_view *view, struct wlr_surface *surface) {
 		struct wlr_xdg_surface *previous =
 			wlr_xdg_surface_try_from_wlr_surface(seat->keyboard_state.focused_surface);
 		assert(previous != NULL && previous->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
-		wlr_xdg_toplevel_set_activated(previous->toplevel, false);
+		if (previous->toplevel != NULL) {
+			wlr_xdg_toplevel_set_activated(previous->toplevel, false);
+		}
 	}
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 	/* Move the view to the front */

@@ -59,8 +59,10 @@ static void scene_xdg_surface_update_position(
 
 	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
 		struct wlr_xdg_popup *popup = xdg_surface->popup;
-		wlr_scene_node_set_position(&scene_xdg_surface->tree->node,
-			popup->current.geometry.x, popup->current.geometry.y);
+		if (popup != NULL) {
+			wlr_scene_node_set_position(&scene_xdg_surface->tree->node,
+				popup->current.geometry.x, popup->current.geometry.y);
+		}
 	}
 }
 

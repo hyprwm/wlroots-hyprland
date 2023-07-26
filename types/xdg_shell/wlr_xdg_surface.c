@@ -37,10 +37,14 @@ static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		reset_xdg_toplevel(surface->toplevel);
+	 	if (surface->toplevel != NULL) {
+			reset_xdg_toplevel(surface->toplevel);
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		reset_xdg_popup(surface->popup);
+	 	if (surface->popup != NULL) {
+			reset_xdg_popup(surface->popup);
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
 		break;
@@ -100,12 +104,16 @@ static void xdg_surface_handle_ack_configure(struct wl_client *client,
 		assert(0 && "not reached");
 		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		handle_xdg_toplevel_ack_configure(surface->toplevel,
-			configure->toplevel_configure);
+		if (surface->toplevel != NULL) {
+			handle_xdg_toplevel_ack_configure(surface->toplevel,
+				configure->toplevel_configure);
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		handle_xdg_popup_ack_configure(surface->popup,
-			configure->popup_configure);
+		if (surface->popup != NULL) {
+			handle_xdg_popup_ack_configure(surface->popup,
+				configure->popup_configure);
+		}
 		break;
 	}
 
@@ -137,12 +145,16 @@ static void surface_send_configure(void *user_data) {
 		assert(0 && "not reached");
 		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		configure->toplevel_configure =
-			send_xdg_toplevel_configure(surface->toplevel);
+	 	if (surface->toplevel != NULL) {
+			configure->toplevel_configure =
+				send_xdg_toplevel_configure(surface->toplevel);
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		configure->popup_configure =
-			send_xdg_popup_configure(surface->popup);
+		if (surface->popup != NULL) {
+			configure->popup_configure =
+				send_xdg_popup_configure(surface->popup);
+		}
 		break;
 	}
 
@@ -288,10 +300,14 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		// inert toplevel or popup
 		return;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		handle_xdg_toplevel_committed(surface->toplevel);
+		if (surface->toplevel != NULL) {
+			handle_xdg_toplevel_committed(surface->toplevel);
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		handle_xdg_popup_committed(surface->popup);
+		if (surface->popup != NULL) {
+			handle_xdg_popup_committed(surface->popup);
+		}
 		break;
 	}
 
@@ -391,12 +407,16 @@ void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		destroy_xdg_toplevel(surface->toplevel);
-		surface->toplevel = NULL;
+		if (surface->toplevel != NULL) {
+			destroy_xdg_toplevel(surface->toplevel);
+			surface->toplevel = NULL;
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		destroy_xdg_popup(surface->popup);
-		surface->popup = NULL;
+		if (surface->popup != NULL) {
+			destroy_xdg_popup(surface->popup);
+			surface->popup = NULL;
+		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
 		// This space is intentionally left blank
