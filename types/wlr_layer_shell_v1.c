@@ -23,6 +23,8 @@ static const struct zwlr_layer_shell_v1_interface layer_shell_implementation;
 static const struct zwlr_layer_surface_v1_interface layer_surface_implementation;
 
 static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
+	wlr_surface_unmap(surface->surface);
+
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
 	wl_resource_set_user_data(surface->resource, NULL);
 	free(surface->namespace);

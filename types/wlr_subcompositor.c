@@ -29,6 +29,8 @@ static void subsurface_destroy(struct wlr_subsurface *subsurface) {
 		wlr_surface_unlock_cached(subsurface->surface, subsurface->cached_seq);
 	}
 
+	wlr_surface_unmap(subsurface->surface);
+
 	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
 
 	wl_list_remove(&subsurface->surface_client_commit.link);

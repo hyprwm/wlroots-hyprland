@@ -23,6 +23,8 @@ static const struct ext_session_lock_v1_interface lock_implementation;
 static const struct ext_session_lock_surface_v1_interface lock_surface_implementation;
 
 static void lock_surface_destroy(struct wlr_session_lock_surface_v1 *lock_surface) {
+	wlr_surface_unmap(lock_surface->surface);
+
 	wl_signal_emit_mutable(&lock_surface->events.destroy, NULL);
 
 	wl_list_remove(&lock_surface->link);
