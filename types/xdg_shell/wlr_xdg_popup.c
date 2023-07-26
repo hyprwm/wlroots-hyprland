@@ -191,7 +191,7 @@ static void destroy_xdg_popup_grab(struct wlr_xdg_popup_grab *xdg_grab) {
 
 	struct wlr_xdg_popup *popup, *tmp;
 	wl_list_for_each_safe(popup, tmp, &xdg_grab->popups, grab_link) {
-		wlr_surface_destroy_role_object(popup->base->surface);
+		wlr_xdg_popup_destroy(popup);
 	}
 
 	wl_list_remove(&xdg_grab->link);
@@ -275,7 +275,7 @@ static void xdg_popup_handle_grab(struct wl_client *client,
 	struct wlr_seat_client *seat_client =
 		wlr_seat_client_from_resource(seat_resource);
 	if (seat_client == NULL) {
-		wlr_surface_destroy_role_object(popup->base->surface);
+		wlr_xdg_popup_destroy(popup);
 		return;
 	}
 	if (popup->sent_initial_configure) {
