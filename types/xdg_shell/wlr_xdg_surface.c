@@ -326,14 +326,13 @@ void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	free(surface);
 }
 
-struct wlr_xdg_surface *create_xdg_surface(
-		struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
+void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 		uint32_t id) {
 	struct wlr_xdg_surface *surface =
 		calloc(1, sizeof(struct wlr_xdg_surface));
 	if (surface == NULL) {
 		wl_client_post_no_memory(client->client);
-		return NULL;
+		return;
 	}
 
 	surface->client = client;
@@ -345,7 +344,7 @@ struct wlr_xdg_surface *create_xdg_surface(
 	if (surface->resource == NULL) {
 		free(surface);
 		wl_client_post_no_memory(client->client);
-		return NULL;
+		return;
 	}
 
 	if (wlr_surface_has_buffer(surface->surface)) {
@@ -354,7 +353,7 @@ struct wlr_xdg_surface *create_xdg_surface(
 		wl_resource_post_error(client->resource,
 			XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER,
 			"xdg_surface must not have a buffer at creation");
-		return NULL;
+		return;
 	}
 
 	wl_list_init(&surface->configure_list);
@@ -376,8 +375,6 @@ struct wlr_xdg_surface *create_xdg_surface(
 		&xdg_surface_implementation, surface,
 		xdg_surface_handle_resource_destroy);
 	wl_list_insert(&client->surfaces, &surface->link);
-
-	return surface;
 }
 
 void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {

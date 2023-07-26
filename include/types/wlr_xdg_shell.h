@@ -8,8 +8,7 @@
 extern const struct wlr_surface_role xdg_toplevel_surface_role;
 extern const struct wlr_surface_role xdg_popup_surface_role;
 
-struct wlr_xdg_surface *create_xdg_surface(
-	struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
+void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 	uint32_t id);
 void destroy_xdg_surface(struct wlr_xdg_surface *surface);
 void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface);
