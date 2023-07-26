@@ -46,8 +46,6 @@ struct wlr_xwayland_surface_v1 {
 	struct wl_list link;
 	struct wlr_xwayland_shell_v1 *shell;
 	bool added;
-
-	struct wl_listener surface_destroy;
 };
 
 /**

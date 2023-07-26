@@ -16,7 +16,6 @@ static const struct xwayland_shell_v1_interface shell_impl;
 static const struct xwayland_surface_v1_interface xwl_surface_impl;
 
 static void xwl_surface_destroy(struct wlr_xwayland_surface_v1 *xwl_surface) {
-	wl_list_remove(&xwl_surface->surface_destroy.link);
 	wl_list_remove(&xwl_surface->link);
 	wl_resource_set_user_data(xwl_surface->resource, NULL); // make inert
 	free(xwl_surface);
@@ -95,13 +94,6 @@ static const struct xwayland_surface_v1_interface xwl_surface_impl = {
 	.set_serial = xwl_surface_handle_set_serial,
 };
 
-static void xwl_surface_handle_surface_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_xwayland_surface_v1 *xwl_surface =
-		wl_container_of(listener, xwl_surface, surface_destroy);
-	xwl_surface_destroy(xwl_surface);
-}
-
 static void shell_handle_get_xwayland_surface(struct wl_client *client,
 		struct wl_resource *shell_resource, uint32_t id,
 		struct wl_resource *surface_resource) {
@@ -134,12 +126,9 @@ static void shell_handle_get_xwayland_surface(struct wl_client *client,
 	wl_resource_set_implementation(xwl_surface->resource, &xwl_surface_impl,
 		xwl_surface, NULL);
 
-	wlr_surface_set_role_object(surface, xwl_surface->resource);
-
 	wl_list_insert(&shell->surfaces, &xwl_surface->link);
 
-	xwl_surface->surface_destroy.notify = xwl_surface_handle_surface_destroy;
-	wl_signal_add(&surface->events.destroy, &xwl_surface->surface_destroy);
+	wlr_surface_set_role_object(surface, xwl_surface->resource);
 }
 
 static const struct xwayland_shell_v1_interface shell_impl = {
