@@ -361,13 +361,6 @@ static void xdg_popup_handle_resource_destroy(struct wl_resource *resource) {
 	wlr_xdg_popup_destroy(popup);
 }
 
-const struct wlr_surface_role xdg_popup_surface_role = {
-	.name = "xdg_popup",
-	.commit = xdg_surface_role_commit,
-	.unmap = xdg_surface_role_unmap,
-	.destroy = xdg_surface_role_destroy,
-};
-
 void create_xdg_popup(struct wlr_xdg_surface *surface,
 		struct wlr_xdg_surface *parent,
 		struct wlr_xdg_positioner *positioner, uint32_t id) {
@@ -379,15 +372,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		return;
 	}
 
-	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-		wl_resource_post_error(surface->resource,
-			XDG_SURFACE_ERROR_ALREADY_CONSTRUCTED,
-			"xdg-surface has already been constructed");
-		return;
-	}
-
-	if (!wlr_surface_set_role(surface->surface, &xdg_popup_surface_role,
-			surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
+	if (!set_xdg_surface_role(surface, WLR_XDG_SURFACE_ROLE_POPUP)) {
 		return;
 	}
 
@@ -412,8 +397,6 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		&xdg_popup_implementation, surface->popup,
 		xdg_popup_handle_resource_destroy);
 
-	wlr_surface_set_role_object(surface->surface, surface->resource);
-
 	surface->role = WLR_XDG_SURFACE_ROLE_POPUP;
 
 	wlr_xdg_positioner_rules_get_geometry(
@@ -429,6 +412,8 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	} else {
 		wl_list_init(&surface->popup->link);
 	}
+
+	set_xdg_surface_role_object(surface, surface->popup->resource);
 }
 
 void reset_xdg_popup(struct wlr_xdg_popup *popup) {
@@ -460,6 +445,17 @@ void reset_xdg_popup(struct wlr_xdg_popup *popup) {
 }
 
 void destroy_xdg_popup(struct wlr_xdg_popup *popup) {
+	wlr_surface_unmap(popup->base->surface);
+	reset_xdg_popup(popup);
+
+	// TODO: improve events
+	if (popup->base->added) {
+		wl_signal_emit_mutable(&popup->base->events.destroy, NULL);
+		popup->base->added = false;
+	}
+
+	popup->base->popup = NULL;
+
 	wl_list_remove(&popup->link);
 	wl_resource_set_user_data(popup->resource, NULL);
 	free(popup);
@@ -476,8 +472,7 @@ void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup) {
 	}
 
 	xdg_popup_send_popup_done(popup->resource);
-	wl_resource_set_user_data(popup->resource, NULL);
-	destroy_xdg_surface_role_object(popup->base);
+	destroy_xdg_popup(popup);
 }
 
 void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,

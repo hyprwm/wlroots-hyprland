@@ -469,33 +469,9 @@ static const struct xdg_toplevel_interface xdg_toplevel_implementation = {
 	.set_minimized = xdg_toplevel_handle_set_minimized,
 };
 
-static void xdg_toplevel_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_xdg_toplevel *toplevel =
-		wlr_xdg_toplevel_from_resource(resource);
-	if (toplevel == NULL) {
-		return;
-	}
-	destroy_xdg_surface_role_object(toplevel->base);
-}
-
-const struct wlr_surface_role xdg_toplevel_surface_role = {
-	.name = "xdg_toplevel",
-	.commit = xdg_surface_role_commit,
-	.unmap = xdg_surface_role_unmap,
-	.destroy = xdg_surface_role_destroy,
-};
-
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		uint32_t id) {
-	if (!wlr_surface_set_role(surface->surface, &xdg_toplevel_surface_role,
-			surface->resource, XDG_WM_BASE_ERROR_ROLE)) {
-		return;
-	}
-
-	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
-		wl_resource_post_error(surface->resource,
-			XDG_SURFACE_ERROR_ALREADY_CONSTRUCTED,
-			"xdg-surface has already been constructed");
+	if (!set_xdg_surface_role(surface, WLR_XDG_SURFACE_ROLE_TOPLEVEL)) {
 		return;
 	}
 
@@ -527,12 +503,9 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		return;
 	}
 	wl_resource_set_implementation(surface->toplevel->resource,
-		&xdg_toplevel_implementation, surface->toplevel,
-		xdg_toplevel_handle_resource_destroy);
+		&xdg_toplevel_implementation, surface->toplevel, NULL);
 
-	wlr_surface_set_role_object(surface->surface, surface->resource);
-
-	surface->role = WLR_XDG_SURFACE_ROLE_TOPLEVEL;
+	set_xdg_surface_role_object(surface, surface->toplevel->resource);
 }
 
 void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
@@ -557,6 +530,17 @@ void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 }
 
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
+	wlr_surface_unmap(toplevel->base->surface);
+
+	reset_xdg_toplevel(toplevel);
+
+	// TODO: improve events
+	if (toplevel->base->added) {
+		wl_signal_emit_mutable(&toplevel->base->events.destroy, NULL);
+		toplevel->base->added = false;
+	}
+
+	toplevel->base->toplevel = NULL;
 	wl_resource_set_user_data(toplevel->resource, NULL);
 	free(toplevel);
 }

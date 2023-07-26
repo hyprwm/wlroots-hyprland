@@ -5,18 +5,6 @@
 #include <wlr/util/log.h>
 #include "types/wlr_xdg_shell.h"
 
-struct wlr_xdg_surface *wlr_xdg_surface_try_from_wlr_surface(
-		struct wlr_surface *surface) {
-	if (surface->role != &xdg_toplevel_surface_role &&
-			surface->role != &xdg_popup_surface_role) {
-		return NULL;
-	}
-	if (surface->role_resource == NULL) {
-		return NULL;
-	}
-	return wlr_xdg_surface_from_resource(surface->role_resource);
-}
-
 static void xdg_surface_configure_destroy(
 		struct wlr_xdg_surface_configure *configure) {
 	if (configure == NULL) {
@@ -27,7 +15,16 @@ static void xdg_surface_configure_destroy(
 	free(configure);
 }
 
+// An xdg_surface implementation is reset, when:
+// 1) a surface is unmapped due to a commit with NULL buffer, or
+// 2) the xdg_surface role object is destroyed, or
+// 3) wlr_xdg_surface is destroyed
+// An xdg_surface role object implementation is reset, when:
+// 1) a surface is unmapped due to a commit with NULL buffer, or
+// 2) the xdg_surface role object implementation is destroyed
+
 static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
+	surface->client_mapped = false;
 	surface->configured = false;
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
@@ -35,6 +32,18 @@ static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 		wlr_xdg_popup_destroy(popup);
 	}
 
+	struct wlr_xdg_surface_configure *configure, *tmp;
+	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
+		xdg_surface_configure_destroy(configure);
+	}
+
+	if (surface->configure_idle) {
+		wl_event_source_remove(surface->configure_idle);
+		surface->configure_idle = NULL;
+	}
+}
+
+static void reset_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 	 	if (surface->toplevel != NULL) {
@@ -48,16 +57,6 @@ static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
 		break;
-	}
-
-	struct wlr_xdg_surface_configure *configure, *tmp;
-	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
-		xdg_surface_configure_destroy(configure);
-	}
-
-	if (surface->configure_idle) {
-		wl_event_source_remove(surface->configure_idle);
-		surface->configure_idle = NULL;
 	}
 }
 
@@ -241,7 +240,7 @@ static void xdg_surface_handle_destroy(struct wl_client *client,
 		return;
 	}
 
-	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE) {
+	if (surface->role_resource != NULL) {
 		wl_resource_post_error(resource,
 			XDG_SURFACE_ERROR_DEFUNCT_ROLE_OBJECT,
 			"surface was destroyed before its role object");
@@ -259,54 +258,48 @@ static const struct xdg_surface_interface xdg_surface_implementation = {
 	.set_window_geometry = xdg_surface_handle_set_window_geometry,
 };
 
-static void xdg_surface_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_xdg_surface *surface =
-		wlr_xdg_surface_from_resource(resource);
-	if (surface != NULL) {
-		wlr_surface_destroy_role_object(surface->surface);
-	}
-}
+static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
+	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
+	assert(surface != NULL);
 
-static void xdg_surface_handle_surface_commit(struct wl_listener *listener,
-		void *data) {
-	struct wlr_xdg_surface *surface =
-		wl_container_of(listener, surface, surface_commit);
-
-	if (wlr_surface_has_buffer(surface->surface) && !surface->configured) {
+	if (wlr_surface_has_buffer(wlr_surface) && !surface->configured) {
 		wl_resource_post_error(surface->resource,
 			XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER,
 			"xdg_surface has never been configured");
 		return;
 	}
 
-	// surface->role might be NONE for inert popups
-	// So we check surface->surface->role
-	if (surface->surface->role == NULL) {
+	if (surface->role_resource == NULL) {
 		wl_resource_post_error(surface->resource,
 			XDG_SURFACE_ERROR_NOT_CONSTRUCTED,
-			"xdg_surface must have a role");
+			"xdg_surface must have a role object");
 		return;
 	}
-}
 
-void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
-	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+	if (surface->client_mapped && !wlr_surface_has_buffer(wlr_surface)) {
+		// This commit has unmapped the surface
+		reset_xdg_surface_role_object(surface);
+		reset_xdg_surface(surface);
+	}
 
 	surface->current = surface->pending;
 
 	switch (surface->role) {
 	case WLR_XDG_SURFACE_ROLE_NONE:
-		// inert toplevel or popup
+		assert(0 && "not reached");
 		return;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 		if (surface->toplevel != NULL) {
 			handle_xdg_toplevel_committed(surface->toplevel);
+		} else {
+			return;
 		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
 		if (surface->popup != NULL) {
 			handle_xdg_popup_committed(surface->popup);
+		} else {
+			return;
 		}
 		break;
 	}
@@ -317,33 +310,43 @@ void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 			surface);
 	}
 
-	if (surface->configured && wlr_surface_has_buffer(wlr_surface)) {
+	if (wlr_surface_has_buffer(wlr_surface)) {
+		surface->client_mapped = true;
 		wlr_surface_map(wlr_surface);
 	}
 }
 
-void xdg_surface_role_unmap(struct wlr_surface *wlr_surface) {
+static void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+	if (surface == NULL) {
+		// This is the only time xdg_surface can be inert
+		return;
+	}
 
-	reset_xdg_surface(surface);
+	destroy_xdg_surface(surface);
 }
 
-void xdg_surface_role_destroy(struct wlr_surface *wlr_surface) {
-	struct wlr_xdg_surface *surface = wlr_xdg_surface_try_from_wlr_surface(wlr_surface);
-	assert(surface != NULL);
+static struct wlr_surface_role xdg_surface_role = {
+	.name = "xdg_surface",
+	.commit = xdg_surface_role_commit,
+	.destroy = xdg_surface_role_destroy,
+};
 
-	destroy_xdg_surface_role_object(surface);
-
-	wl_list_remove(&surface->link);
-	wl_list_remove(&surface->surface_commit.link);
-
-	wl_resource_set_user_data(surface->resource, NULL);
-	free(surface);
+struct wlr_xdg_surface *wlr_xdg_surface_try_from_wlr_surface(
+		struct wlr_surface *surface) {
+	if (surface->role != &xdg_surface_role || surface->role_resource == NULL) {
+		return NULL;
+	}
+	return wlr_xdg_surface_from_resource(surface->role_resource);
 }
 
 void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 		uint32_t id) {
+	if (!wlr_surface_set_role(wlr_surface, &xdg_surface_role, client->resource,
+			XDG_WM_BASE_ERROR_ROLE)) {
+		return;
+	}
+
 	struct wlr_xdg_surface *surface =
 		calloc(1, sizeof(struct wlr_xdg_surface));
 	if (surface == NULL) {
@@ -381,49 +384,91 @@ void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_s
 	wl_signal_init(&surface->events.configure);
 	wl_signal_init(&surface->events.ack_configure);
 
-	wl_signal_add(&surface->surface->events.commit,
-		&surface->surface_commit);
-	surface->surface_commit.notify = xdg_surface_handle_surface_commit;
-
 	wlr_log(WLR_DEBUG, "new xdg_surface %p (res %p)", surface,
 		surface->resource);
 	wl_resource_set_implementation(surface->resource,
-		&xdg_surface_implementation, surface,
-		xdg_surface_handle_resource_destroy);
+		&xdg_surface_implementation, surface, NULL);
 	wl_list_insert(&client->surfaces, &surface->link);
+
+	wlr_surface_set_role_object(wlr_surface, surface->resource);
 }
 
-void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
-	if (surface->surface->mapped) {
-		wlr_surface_unmap(surface->surface);
-	} else {
-		reset_xdg_surface(surface);
+bool set_xdg_surface_role(struct wlr_xdg_surface *surface, enum wlr_xdg_surface_role role) {
+	assert(role != WLR_XDG_SURFACE_ROLE_NONE);
+
+	static const char *role_names[] = {
+		[WLR_XDG_SURFACE_ROLE_TOPLEVEL] = "xdg_toplevel",
+		[WLR_XDG_SURFACE_ROLE_POPUP] = "xdg_popup",
+	};
+
+	if (surface->role != WLR_XDG_SURFACE_ROLE_NONE && surface->role != role) {
+		wl_resource_post_error(surface->client->resource, XDG_WM_BASE_ERROR_ROLE,
+			"Cannot assign role %s to xdg_surface@%" PRIu32 ", already has role %s",
+			role_names[role], wl_resource_get_id(surface->resource),
+			role_names[surface->role]);
+		return false;
+	}
+	if (surface->role_resource != NULL) {
+		wl_resource_post_error(surface->client->resource, XDG_WM_BASE_ERROR_ROLE,
+			"Cannot reassign role %s to xdg_surface@%" PRIu32 ", role object still exists",
+			role_names[role], wl_resource_get_id(surface->resource));
+		return false;
 	}
 
-	if (surface->added) {
-		wl_signal_emit_mutable(&surface->events.destroy, NULL);
-		surface->added = false;
+	surface->role = role;
+	return true;
+}
+
+static void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface) {
+	if (surface->role_resource == NULL) {
+		return;
 	}
 
 	switch (surface->role) {
+	case WLR_XDG_SURFACE_ROLE_NONE:
+		assert(0 && "not reached");
+		break;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 		if (surface->toplevel != NULL) {
 			destroy_xdg_toplevel(surface->toplevel);
-			surface->toplevel = NULL;
 		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
 		if (surface->popup != NULL) {
 			destroy_xdg_popup(surface->popup);
-			surface->popup = NULL;
 		}
-		break;
-	case WLR_XDG_SURFACE_ROLE_NONE:
-		// This space is intentionally left blank
 		break;
 	}
 
-	surface->role = WLR_XDG_SURFACE_ROLE_NONE;
+	surface->role_resource = NULL;
+	wl_list_remove(&surface->role_resource_destroy.link);
+	wl_list_init(&surface->role_resource_destroy.link);
+}
+
+static void xdg_surface_handle_role_resource_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_surface *surface = wl_container_of(listener, surface, role_resource_destroy);
+	destroy_xdg_surface_role_object(surface);
+	reset_xdg_surface(surface);
+}
+
+void set_xdg_surface_role_object(struct wlr_xdg_surface *surface,
+		struct wl_resource *role_resource) {
+	assert(surface->role != WLR_XDG_SURFACE_ROLE_NONE);
+	assert(surface->role_resource == NULL);
+	assert(role_resource != NULL);
+	surface->role_resource = role_resource;
+	surface->role_resource_destroy.notify = xdg_surface_handle_role_resource_destroy;
+	wl_resource_add_destroy_listener(role_resource, &surface->role_resource_destroy);
+}
+
+void destroy_xdg_surface(struct wlr_xdg_surface *surface) {
+	destroy_xdg_surface_role_object(surface);
+	reset_xdg_surface(surface);
+
+	wl_list_remove(&surface->link);
+
+	wl_resource_set_user_data(surface->resource, NULL);
+	free(surface);
 }
 
 struct wlr_xdg_surface *wlr_xdg_surface_from_resource(

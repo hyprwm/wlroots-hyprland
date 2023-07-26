@@ -5,16 +5,13 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include "xdg-shell-protocol.h"
 
-extern const struct wlr_surface_role xdg_toplevel_surface_role;
-extern const struct wlr_surface_role xdg_popup_surface_role;
-
 void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_surface,
 	uint32_t id);
 void destroy_xdg_surface(struct wlr_xdg_surface *surface);
-void destroy_xdg_surface_role_object(struct wlr_xdg_surface *surface);
-void xdg_surface_role_commit(struct wlr_surface *wlr_surface);
-void xdg_surface_role_unmap(struct wlr_surface *wlr_surface);
-void xdg_surface_role_destroy(struct wlr_surface *wlr_surface);
+
+bool set_xdg_surface_role(struct wlr_xdg_surface *surface, enum wlr_xdg_surface_role role);
+void set_xdg_surface_role_object(struct wlr_xdg_surface *surface,
+	struct wl_resource *role_resource);
 
 void create_xdg_positioner(struct wlr_xdg_client *client, uint32_t id);
 

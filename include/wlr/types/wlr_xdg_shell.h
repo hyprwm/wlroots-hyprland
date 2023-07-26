@@ -231,8 +231,18 @@ struct wlr_xdg_surface {
 	struct wl_resource *resource;
 	struct wlr_surface *surface;
 	struct wl_list link; // wlr_xdg_client.surfaces
-	enum wlr_xdg_surface_role role;
 
+	/**
+	 * The lifetime-bound role of the xdg_surface. WLR_XDG_SURFACE_ROLE_NONE
+	 * if the role was never set.
+	 */
+	enum wlr_xdg_surface_role role;
+	/**
+	 * The role object representing the role. NULL if the object was destroyed.
+	 */
+	struct wl_resource *role_resource;
+
+	// NULL if the role resource is inert
 	union {
 		struct wlr_xdg_toplevel *toplevel;
 		struct wlr_xdg_popup *popup;
@@ -247,8 +257,6 @@ struct wlr_xdg_surface {
 
 	struct wlr_xdg_surface_state current, pending;
 
-	struct wl_listener surface_commit;
-
 	struct {
 		struct wl_signal destroy;
 		struct wl_signal ping_timeout;
@@ -260,6 +268,11 @@ struct wlr_xdg_surface {
 	} events;
 
 	void *data;
+
+	// private state
+
+	bool client_mapped;
+	struct wl_listener role_resource_destroy;
 };
 
 struct wlr_xdg_toplevel_move_event {

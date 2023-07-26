@@ -67,7 +67,7 @@ static void xdg_client_handle_resource_destroy(struct wl_resource *resource) {
 
 	struct wlr_xdg_surface *surface, *tmp = NULL;
 	wl_list_for_each_safe(surface, tmp, &client->surfaces, link) {
-		wlr_surface_destroy_role_object(surface->surface);
+		destroy_xdg_surface(surface);
 	}
 
 	if (client->ping_timer != NULL) {
