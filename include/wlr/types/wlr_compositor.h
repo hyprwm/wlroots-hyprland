@@ -156,6 +156,9 @@ struct wlr_surface {
 
 	struct wl_list cached; // wlr_surface_state.cached_link
 
+	/**
+	 * Whether the surface is ready to be displayed.
+	 */
 	bool mapped;
 
 	/**
