@@ -162,20 +162,20 @@ struct wlr_output {
 		struct wl_signal frame;
 		// Emitted when software cursors or backend-specific logic damage the
 		// output
-		struct wl_signal damage; // wlr_output_event_damage
+		struct wl_signal damage; // struct wlr_output_event_damage
 		// Emitted when a new frame needs to be committed (because of
 		// backend-specific logic)
 		struct wl_signal needs_frame;
 		// Emitted right before commit
-		struct wl_signal precommit; // wlr_output_event_precommit
+		struct wl_signal precommit; // struct wlr_output_event_precommit
 		// Emitted right after commit
-		struct wl_signal commit; // wlr_output_event_commit
+		struct wl_signal commit; // struct wlr_output_event_commit
 		// Emitted right after the buffer has been presented to the user
-		struct wl_signal present; // wlr_output_event_present
+		struct wl_signal present; // struct wlr_output_event_present
 		// Emitted after a client bound the wl_output global
-		struct wl_signal bind; // wlr_output_event_bind
+		struct wl_signal bind; // struct wlr_output_event_bind
 		struct wl_signal description;
-		struct wl_signal request_state;
+		struct wl_signal request_state; // struct wlr_output_state
 		struct wl_signal destroy;
 	} events;
 
