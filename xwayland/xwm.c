@@ -177,7 +177,6 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 	wl_signal_init(&surface->events.set_role);
 	wl_signal_init(&surface->events.set_title);
 	wl_signal_init(&surface->events.set_parent);
-	wl_signal_init(&surface->events.set_pid);
 	wl_signal_init(&surface->events.set_startup_id);
 	wl_signal_init(&surface->events.set_window_type);
 	wl_signal_init(&surface->events.set_hints);
@@ -627,7 +626,6 @@ static void read_surface_client_id(struct wlr_xwm *xwm,
 		return;
 	}
 	xsurface->pid = *pid;
-	wl_signal_emit_mutable(&xsurface->events.set_pid, NULL);
 	free(reply);
 }
 
