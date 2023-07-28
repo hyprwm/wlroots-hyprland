@@ -595,14 +595,8 @@ static void read_surface_parent(struct wlr_xwm *xwm,
 }
 
 static void read_surface_client_id(struct wlr_xwm *xwm,
-		struct wlr_xwayland_surface *xsurface) {
-	xcb_res_client_id_spec_t spec = {
-		.client = xsurface->window_id,
-		.mask = XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID
-	};
-
-	xcb_res_query_client_ids_cookie_t cookie = xcb_res_query_client_ids(
-		xwm->xcb_conn, 1, &spec);
+		struct wlr_xwayland_surface *xsurface,
+		xcb_res_query_client_ids_cookie_t cookie) {
 	xcb_res_query_client_ids_reply_t *reply = xcb_res_query_client_ids_reply(
 		xwm->xcb_conn, cookie,  NULL);
 	if (reply == NULL) {
@@ -940,6 +934,15 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 			props[i], XCB_ATOM_ANY, 0, 2048);
 	}
 
+	xcb_res_query_client_ids_cookie_t client_id_cookie;
+	if (xwm->xres) {
+		xcb_res_client_id_spec_t spec = {
+			.client = xsurface->window_id,
+			.mask = XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID
+		};
+		client_id_cookie = xcb_res_query_client_ids(xwm->xcb_conn, 1, &spec);
+	}
+
 	for (size_t i = 0; i < sizeof(props) / sizeof(props[0]); i++) {
 		xcb_get_property_reply_t *reply =
 			xcb_get_property_reply(xwm->xcb_conn, cookies[i], NULL);
@@ -952,7 +955,7 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 	}
 
 	if (xwm->xres) {
-		read_surface_client_id(xwm, xsurface);
+		read_surface_client_id(xwm, xsurface, client_id_cookie);
 	}
 
 	wl_signal_emit_mutable(&xsurface->events.associate, NULL);
