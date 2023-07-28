@@ -834,15 +834,8 @@ char *xwm_get_atom_name(struct wlr_xwm *xwm, xcb_atom_t atom) {
 }
 
 static void read_surface_property(struct wlr_xwm *xwm,
-		struct wlr_xwayland_surface *xsurface, xcb_atom_t property) {
-	xcb_get_property_cookie_t cookie = xcb_get_property(xwm->xcb_conn, 0,
-		xsurface->window_id, property, XCB_ATOM_ANY, 0, 2048);
-	xcb_get_property_reply_t *reply = xcb_get_property_reply(xwm->xcb_conn,
-		cookie, NULL);
-	if (reply == NULL) {
-		return;
-	}
-
+		struct wlr_xwayland_surface *xsurface, xcb_atom_t property,
+		xcb_get_property_reply_t *reply) {
 	if (property == XCB_ATOM_WM_CLASS) {
 		read_surface_class(xwm, xsurface, reply);
 	} else if (property == XCB_ATOM_WM_NAME ||
@@ -876,8 +869,6 @@ static void read_surface_property(struct wlr_xwm *xwm,
 			property, prop_name ? prop_name : "(null)", xsurface->window_id);
 		free(prop_name);
 	}
-
-	free(reply);
 }
 
 static void xwayland_surface_handle_commit(struct wl_listener *listener, void *data) {
@@ -942,9 +933,24 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 		xwm->atoms[NET_WM_WINDOW_TYPE],
 		xwm->atoms[NET_WM_NAME],
 	};
-	for (size_t i = 0; i < sizeof(props)/sizeof(xcb_atom_t); i++) {
-		read_surface_property(xwm, xsurface, props[i]);
+
+	xcb_get_property_cookie_t cookies[sizeof(props) / sizeof(props[0])] = {0};
+	for (size_t i = 0; i < sizeof(props) / sizeof(props[0]); i++) {
+		cookies[i] = xcb_get_property(xwm->xcb_conn, 0, xsurface->window_id,
+			props[i], XCB_ATOM_ANY, 0, 2048);
 	}
+
+	for (size_t i = 0; i < sizeof(props) / sizeof(props[0]); i++) {
+		xcb_get_property_reply_t *reply =
+			xcb_get_property_reply(xwm->xcb_conn, cookies[i], NULL);
+		if (reply == NULL) {
+			wlr_log(WLR_ERROR, "Failed to get window property");
+			return;
+		}
+		read_surface_property(xwm, xsurface, props[i], reply);
+		free(reply);
+	}
+
 	if (xwm->xres) {
 		read_surface_client_id(xwm, xsurface);
 	}
@@ -1139,7 +1145,16 @@ static void xwm_handle_property_notify(struct wlr_xwm *xwm,
 		return;
 	}
 
-	read_surface_property(xwm, xsurface, ev->atom);
+	xcb_get_property_cookie_t cookie =
+		xcb_get_property(xwm->xcb_conn, 0, xsurface->window_id, ev->atom, XCB_ATOM_ANY, 0, 2048);
+	xcb_get_property_reply_t *reply =
+		xcb_get_property_reply(xwm->xcb_conn, cookie, NULL);
+	if (reply == NULL) {
+		wlr_log(WLR_ERROR, "Failed to get window property");
+		return;
+	}
+
+	read_surface_property(xwm, xsurface, ev->atom, reply);
 }
 
 static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
