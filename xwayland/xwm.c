@@ -873,7 +873,7 @@ static void read_surface_property(struct wlr_xwm *xwm,
 		read_surface_role(xwm, xsurface, reply);
 	} else if (property == xwm->atoms[NET_STARTUP_ID]) {
 		read_surface_startup_id(xwm, xsurface, reply);
-	} else {
+	} else if (wlr_log_get_verbosity() >= WLR_DEBUG) {
 		char *prop_name = xwm_get_atom_name(xwm, property);
 		wlr_log(WLR_DEBUG, "unhandled X11 property %" PRIu32 " (%s) for window %" PRIu32,
 			property, prop_name ? prop_name : "(null)", xsurface->window_id);
@@ -1327,7 +1327,7 @@ static void xwm_handle_net_wm_state_message(struct wlr_xwm *xwm,
 			changed = update_state(action, &xsurface->maximized_horz);
 		} else if (property == xwm->atoms[NET_WM_STATE_HIDDEN]) {
 			changed = update_state(action, &xsurface->minimized);
-		} else if (property != XCB_ATOM_NONE) {
+		} else if (property != XCB_ATOM_NONE && wlr_log_get_verbosity() >= WLR_DEBUG) {
 			char *prop_name = xwm_get_atom_name(xwm, property);
 			wlr_log(WLR_DEBUG, "Unhandled NET_WM_STATE property change "
 				"%"PRIu32" (%s)", property, prop_name ? prop_name : "(null)");
@@ -1391,7 +1391,7 @@ static void xwm_handle_wm_protocols_message(struct wlr_xwm *xwm,
 
 		wl_event_source_timer_update(surface->ping_timer, 0);
 		surface->pinging = false;
-	} else {
+	} else if (wlr_log_get_verbosity() >= WLR_DEBUG) {
 		char *type_name = xwm_get_atom_name(xwm, type);
 		wlr_log(WLR_DEBUG, "unhandled WM_PROTOCOLS client message %" PRIu32 " (%s)",
 			type, type_name ? type_name : "(null)");
@@ -1520,7 +1520,8 @@ static void xwm_handle_client_message(struct wlr_xwm *xwm,
 		xwm_handle_net_startup_info_message(xwm, ev);
 	} else if (ev->type == xwm->atoms[WM_CHANGE_STATE]) {
 		xwm_handle_wm_change_state_message(xwm, ev);
-	} else if (!xwm_handle_selection_client_message(xwm, ev)) {
+	} else if (!xwm_handle_selection_client_message(xwm, ev) &&
+			wlr_log_get_verbosity() >= WLR_DEBUG) {
 		char *type_name = xwm_get_atom_name(xwm, ev->type);
 		wlr_log(WLR_DEBUG, "unhandled x11 client message %" PRIu32 " (%s)", ev->type,
 			type_name ? type_name : "(null)");
