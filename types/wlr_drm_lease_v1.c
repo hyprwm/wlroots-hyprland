@@ -712,7 +712,7 @@ struct wlr_drm_lease_v1_manager *wlr_drm_lease_v1_manager_create(
 	}
 
 	if (wl_list_empty(&manager->devices)) {
-		wlr_log(WLR_ERROR, "No DRM backend supplied, failed to create "
+		wlr_log(WLR_DEBUG, "No DRM backend supplied, failed to create "
 				"wlr_drm_lease_v1_manager");
 		free(manager);
 		return NULL;
