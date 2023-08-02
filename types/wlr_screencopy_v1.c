@@ -227,10 +227,9 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
-	// TODO: add support for copying regions with DMA-BUFs
-	if (frame->box.x != 0 || frame->box.y != 0 ||
-			src_buffer->width != frame->box.width ||
-			src_buffer->height != frame->box.height) {
+	if (frame->box.x < 0 || frame->box.y < 0 ||
+			frame->box.x + frame->box.width > src_buffer->width ||
+			frame->box.y + frame->box.height > src_buffer->height) {
 		return false;
 	}
 
@@ -251,6 +250,12 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options) {
 		.texture = src_tex,
 		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+		.src_box = (struct wlr_fbox){
+			.x = frame->box.x,
+			.y = frame->box.y,
+			.width = frame->box.width,
+			.height = frame->box.height,
+		},
 	});
 
 	ok = wlr_render_pass_submit(pass);
