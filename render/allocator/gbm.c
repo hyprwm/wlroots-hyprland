@@ -79,7 +79,7 @@ static bool export_gbm_bo(struct gbm_bo *bo,
 		attribs.stride[i] = gbm_bo_get_stride_for_plane(bo, i);
 	}
 
-	memcpy(out, &attribs, sizeof(attribs));
+	*out = attribs;
 	return true;
 
 error_fd:
@@ -168,7 +168,7 @@ static bool buffer_get_dmabuf(struct wlr_buffer *wlr_buffer,
 		struct wlr_dmabuf_attributes *attribs) {
 	struct wlr_gbm_buffer *buffer =
 		get_gbm_buffer_from_buffer(wlr_buffer);
-	memcpy(attribs, &buffer->dmabuf, sizeof(buffer->dmabuf));
+	*attribs = buffer->dmabuf;
 	return true;
 }
 

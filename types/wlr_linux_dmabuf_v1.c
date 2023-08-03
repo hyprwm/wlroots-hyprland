@@ -111,7 +111,7 @@ static bool buffer_get_dmabuf(struct wlr_buffer *wlr_buffer,
 		struct wlr_dmabuf_attributes *attribs) {
 	struct wlr_dmabuf_v1_buffer *buffer =
 		dmabuf_v1_buffer_from_buffer(wlr_buffer);
-	memcpy(attribs, &buffer->attributes, sizeof(buffer->attributes));
+	*attribs = buffer->attributes;
 	return true;
 }
 

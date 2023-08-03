@@ -31,7 +31,7 @@ static void buffer_destroy(struct wlr_buffer *wlr_buffer) {
 static bool buffer_get_shm(struct wlr_buffer *wlr_buffer,
 		struct wlr_shm_attributes *shm) {
 	struct wlr_shm_buffer *buffer = shm_buffer_from_buffer(wlr_buffer);
-	memcpy(shm, &buffer->shm, sizeof(*shm));
+	*shm = buffer->shm;
 	return true;
 }
 

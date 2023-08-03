@@ -129,7 +129,7 @@ static void drm_dumb_buffer_end_data_ptr_access(struct wlr_buffer *wlr_buffer) {
 static bool buffer_get_dmabuf(struct wlr_buffer *wlr_buffer,
 		struct wlr_dmabuf_attributes *attribs) {
 	struct wlr_drm_dumb_buffer *buf = drm_dumb_buffer_from_buffer(wlr_buffer);
-	memcpy(attribs, &buf->dmabuf, sizeof(buf->dmabuf));
+	*attribs = buf->dmabuf;
 	return true;
 }
 

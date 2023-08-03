@@ -330,7 +330,7 @@ static void surface_state_move(struct wlr_surface_state *state,
 		pixman_region32_copy(&state->input, &next->input);
 	}
 	if (next->committed & WLR_SURFACE_STATE_VIEWPORT) {
-		memcpy(&state->viewport, &next->viewport, sizeof(state->viewport));
+		state->viewport = next->viewport;
 	}
 	if (next->committed & WLR_SURFACE_STATE_FRAME_CALLBACK_LIST) {
 		wl_list_insert_list(&state->frame_callback_list,
