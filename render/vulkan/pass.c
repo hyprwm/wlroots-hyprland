@@ -108,10 +108,16 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 			VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->output_pipe_layout,
 			0, 1, &render_buffer->blend_descriptor_set, 0, NULL);
 
-		vkCmdSetScissor(render_cb->vk, 0, 1, &(VkRect2D){
-			.extent = { width, height },
-		});
-		vkCmdDraw(render_cb->vk, 4, 1, 0, 0);
+		const pixman_region32_t *clip = rect_union_evaluate(&pass->updated_region);
+		int clip_rects_len;
+		const pixman_box32_t *clip_rects = pixman_region32_rectangles(
+			clip, &clip_rects_len);
+		for (int i = 0; i < clip_rects_len; i++) {
+			VkRect2D rect;
+			convert_pixman_box_to_vk_rect(&clip_rects[i], &rect);
+			vkCmdSetScissor(render_cb->vk, 0, 1, &rect);
+			vkCmdDraw(render_cb->vk, 4, 1, 0, 0);
+		}
 	}
 
 	vkCmdEndRenderPass(render_cb->vk);
@@ -388,6 +394,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	}
 
 	wlr_buffer_unlock(render_buffer->wlr_buffer);
+	rect_union_finish(&pass->updated_region);
 	free(pass);
 	return true;
 
@@ -396,6 +403,7 @@ error:
 	vulkan_reset_command_buffer(stage_cb);
 	vulkan_reset_command_buffer(render_cb);
 	wlr_buffer_unlock(render_buffer->wlr_buffer);
+	rect_union_finish(&pass->updated_region);
 	free(pass);
 
 	if (device_lost) {
@@ -403,6 +411,21 @@ error:
 	}
 
 	return false;
+}
+
+static void render_pass_mark_box_updated(struct wlr_vk_render_pass *pass,
+		const struct wlr_box *box) {
+	if (!pass->render_buffer->blend_image) {
+		return;
+	}
+
+	pixman_box32_t pixman_box = {
+		.x1 = box->x,
+		.x2 = box->x + box->width,
+		.y1 = box->y,
+		.y2 = box->y + box->height,
+	};
+	rect_union_add(&pass->updated_region, pixman_box);
 }
 
 static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
@@ -427,6 +450,20 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 
 	int clip_rects_len;
 	const pixman_box32_t *clip_rects = pixman_region32_rectangles(&clip, &clip_rects_len);
+	// Record regions possibly updated for use in second subpass
+	for (int i = 0; i < clip_rects_len; i++) {
+		struct wlr_box clip_box = {
+			.x = clip_rects[i].x1,
+			.y = clip_rects[i].y1,
+			.width = clip_rects[i].x2 - clip_rects[i].x1,
+			.height = clip_rects[i].y2 - clip_rects[i].y1,
+		};
+		struct wlr_box intersection;
+		if (!wlr_box_intersection(&intersection, &options->box, &clip_box)) {
+			continue;
+		}
+		render_pass_mark_box_updated(pass, &intersection);
+	}
 
 	struct wlr_box box;
 	wlr_render_rect_options_get_box(options, pass->render_buffer->wlr_buffer, &box);
@@ -590,6 +627,18 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
 		convert_pixman_box_to_vk_rect(&clip_rects[i], &rect);
 		vkCmdSetScissor(cb, 0, 1, &rect);
 		vkCmdDraw(cb, 4, 1, 0, 0);
+
+		struct wlr_box clip_box = {
+			.x = clip_rects[i].x1,
+			.y = clip_rects[i].y1,
+			.width = clip_rects[i].x2 - clip_rects[i].x1,
+			.height = clip_rects[i].y2 - clip_rects[i].y1,
+		};
+		struct wlr_box intersection;
+		if (!wlr_box_intersection(&intersection, &dst_box, &clip_box)) {
+			continue;
+		}
+		render_pass_mark_box_updated(pass, &intersection);
 	}
 
 	texture->last_used_cb = pass->command_buffer;
@@ -609,6 +658,8 @@ struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *rend
 	}
 	wlr_render_pass_init(&pass->base, &render_pass_impl);
 	pass->renderer = renderer;
+
+	rect_union_init(&pass->updated_region);
 
 	struct wlr_vk_command_buffer *cb = vulkan_acquire_command_buffer(renderer);
 	if (cb == NULL) {

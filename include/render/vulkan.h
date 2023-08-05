@@ -10,6 +10,7 @@
 #include <wlr/render/drm_format_set.h>
 #include <wlr/render/interface.h>
 #include <wlr/util/addon.h>
+#include "util/rect_union.h"
 
 struct wlr_vk_descriptor_pool;
 struct wlr_vk_texture;
@@ -334,6 +335,7 @@ struct wlr_vk_render_pass {
 	struct wlr_vk_renderer *renderer;
 	struct wlr_vk_render_buffer *render_buffer;
 	struct wlr_vk_command_buffer *command_buffer;
+	struct rect_union updated_region;
 	VkPipeline bound_pipeline;
 	float projection[9];
 	bool failed;
