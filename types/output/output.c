@@ -652,14 +652,6 @@ static uint32_t output_compare_state(struct wlr_output *output,
 static bool output_basic_test(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		// Modesets will block for the previous frame to complete. Regular
-		// page-flips are non-blocking and require the compositor to wait.
-		if (output->frame_pending &&
-				!(state->committed & (WLR_OUTPUT_STATE_ENABLED | WLR_OUTPUT_STATE_MODE))) {
-			wlr_log(WLR_DEBUG, "Tried to commit a buffer while a frame is pending");
-			return false;
-		}
-
 		// If the size doesn't match, reject buffer (scaling is not
 		// supported)
 		int pending_width, pending_height;
