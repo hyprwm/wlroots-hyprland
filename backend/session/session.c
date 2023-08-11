@@ -39,7 +39,7 @@ static int libseat_event(int fd, uint32_t mask, void *data) {
 	struct wlr_session *session = data;
 	if (libseat_dispatch(session->seat_handle, 0) == -1) {
 		wlr_log_errno(WLR_ERROR, "Failed to dispatch libseat");
-		wl_display_terminate(session->display);
+		wlr_session_destroy(session);
 	}
 	return 1;
 }
@@ -71,7 +71,8 @@ static void log_libseat(enum libseat_log_level level,
 	_wlr_vlog(importance, wlr_fmt, args);
 }
 
-static int libseat_session_init(struct wlr_session *session, struct wl_display *disp) {
+static int libseat_session_init(struct wlr_session *session,
+		struct wl_event_loop *event_loop) {
 	libseat_set_log_handler(log_libseat);
 	libseat_set_log_level(LIBSEAT_LOG_LEVEL_INFO);
 
@@ -91,7 +92,6 @@ static int libseat_session_init(struct wlr_session *session, struct wl_display *
 	}
 	snprintf(session->seat, sizeof(session->seat), "%s", seat_name);
 
-	struct wl_event_loop *event_loop = wl_display_get_event_loop(disp);
 	session->libseat_event = wl_event_loop_add_fd(event_loop, libseat_get_fd(session->seat_handle),
 		WL_EVENT_READABLE, libseat_event, session);
 	if (session->libseat_event == NULL) {
@@ -226,25 +226,26 @@ out:
 	return 1;
 }
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
+static void handle_event_loop_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_session *session =
-		wl_container_of(listener, session, display_destroy);
+		wl_container_of(listener, session, event_loop_destroy);
 	wlr_session_destroy(session);
 }
 
-struct wlr_session *wlr_session_create(struct wl_display *disp) {
+struct wlr_session *wlr_session_create(struct wl_event_loop *event_loop) {
 	struct wlr_session *session = calloc(1, sizeof(*session));
 	if (!session) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;
 	}
 
+	session->event_loop = event_loop;
 	wl_signal_init(&session->events.active);
 	wl_signal_init(&session->events.add_drm_card);
 	wl_signal_init(&session->events.destroy);
 	wl_list_init(&session->devices);
 
-	if (libseat_session_init(session, disp) == -1) {
+	if (libseat_session_init(session, event_loop) == -1) {
 		wlr_log(WLR_ERROR, "Failed to load session backend");
 		goto error_open;
 	}
@@ -264,7 +265,6 @@ struct wlr_session *wlr_session_create(struct wl_display *disp) {
 	udev_monitor_filter_add_match_subsystem_devtype(session->mon, "drm", NULL);
 	udev_monitor_enable_receiving(session->mon);
 
-	struct wl_event_loop *event_loop = wl_display_get_event_loop(disp);
 	int fd = udev_monitor_get_fd(session->mon);
 
 	session->udev_event = wl_event_loop_add_fd(event_loop, fd,
@@ -274,10 +274,8 @@ struct wlr_session *wlr_session_create(struct wl_display *disp) {
 		goto error_mon;
 	}
 
-	session->display = disp;
-
-	session->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(disp, &session->display_destroy);
+	session->event_loop_destroy.notify = handle_event_loop_destroy;
+	wl_event_loop_add_destroy_listener(event_loop, &session->event_loop_destroy);
 
 	return session;
 
@@ -298,7 +296,7 @@ void wlr_session_destroy(struct wlr_session *session) {
 	}
 
 	wl_signal_emit_mutable(&session->events.destroy, session);
-	wl_list_remove(&session->display_destroy.link);
+	wl_list_remove(&session->event_loop_destroy.link);
 
 	wl_event_source_remove(session->udev_event);
 	udev_monitor_unref(session->mon);
@@ -472,10 +470,8 @@ ssize_t wlr_session_find_gpus(struct wlr_session *session,
 
 		int64_t started_at = get_current_time_msec();
 		int64_t timeout = WAIT_GPU_TIMEOUT;
-		struct wl_event_loop *event_loop =
-			wl_display_get_event_loop(session->display);
 		while (!handler.added) {
-			int ret = wl_event_loop_dispatch(event_loop, (int)timeout);
+			int ret = wl_event_loop_dispatch(session->event_loop, (int)timeout);
 			if (ret < 0) {
 				wlr_log_errno(WLR_ERROR, "Failed to wait for DRM card device: "
 					"wl_event_loop_dispatch failed");

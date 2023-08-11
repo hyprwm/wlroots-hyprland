@@ -26,7 +26,7 @@ static void handle_add_drm_card(struct wl_listener *listener, void *data) {
 
 	wlr_log(WLR_DEBUG, "Creating DRM backend for %s after hotplug", event->path);
 	struct wlr_backend *child_drm = wlr_drm_backend_create(
-		backend_monitor->session->display, backend_monitor->session,
+		backend_monitor->display, backend_monitor->session,
 		dev, backend_monitor->primary_drm);
 	if (!child_drm) {
 		wlr_log(WLR_ERROR, "Failed to create DRM backend after hotplug");
@@ -64,9 +64,8 @@ static void handle_multi_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_drm_backend_monitor *drm_backend_monitor_create(
-		struct wlr_backend *multi,
-		struct wlr_backend *primary_drm,
-		struct wlr_session *session) {
+		struct wlr_backend *multi, struct wlr_backend *primary_drm,
+		struct wlr_session *session, struct wl_display *display) {
 	struct wlr_drm_backend_monitor *monitor = calloc(1, sizeof(*monitor));
 	if (!monitor) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
@@ -76,6 +75,7 @@ struct wlr_drm_backend_monitor *drm_backend_monitor_create(
 	monitor->multi = multi;
 	monitor->primary_drm = primary_drm;
 	monitor->session = session;
+	monitor->display = display;
 
 	monitor->session_add_drm_card.notify = handle_add_drm_card;
 	wl_signal_add(&session->events.add_drm_card, &monitor->session_add_drm_card);
