@@ -473,8 +473,7 @@ static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *out
 	}
 
 	if (output_cursor->xcursor_timer == NULL) {
-		struct wl_event_loop *event_loop =
-			wl_display_get_event_loop(output_cursor->output_cursor->output->display);
+		struct wl_event_loop *event_loop = output_cursor->output_cursor->output->event_loop;
 		output_cursor->xcursor_timer =
 			wl_event_loop_add_timer(event_loop, handle_xcursor_timer, output_cursor);
 		if (output_cursor->xcursor_timer == NULL) {

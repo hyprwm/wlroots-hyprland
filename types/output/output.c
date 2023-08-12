@@ -185,9 +185,8 @@ void wlr_output_schedule_done(struct wlr_output *output) {
 		return; // Already scheduled
 	}
 
-	struct wl_event_loop *ev = wl_display_get_event_loop(output->display);
-	output->idle_done =
-		wl_event_loop_add_idle(ev, schedule_done_handle_idle_timer, output);
+	output->idle_done = wl_event_loop_add_idle(output->event_loop,
+		schedule_done_handle_idle_timer, output);
 }
 
 struct wlr_output *wlr_output_from_resource(struct wl_resource *resource) {
@@ -405,7 +404,7 @@ static void output_apply_state(struct wlr_output *output,
 }
 
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
-		const struct wlr_output_impl *impl, struct wl_display *display,
+		const struct wlr_output_impl *impl, struct wl_event_loop *event_loop,
 		const struct wlr_output_state *state) {
 	assert(impl->commit);
 	if (impl->set_cursor || impl->move_cursor) {
@@ -415,7 +414,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	*output = (struct wlr_output){
 		.backend = backend,
 		.impl = impl,
-		.display = display,
+		.event_loop = event_loop,
 		.render_format = DRM_FORMAT_XRGB8888,
 		.transform = WL_OUTPUT_TRANSFORM_NORMAL,
 		.scale = 1,
@@ -907,9 +906,8 @@ void wlr_output_schedule_frame(struct wlr_output *output) {
 
 	// We're using an idle timer here in case a buffer swap happens right after
 	// this function is called
-	struct wl_event_loop *ev = wl_display_get_event_loop(output->display);
-	output->idle_frame =
-		wl_event_loop_add_idle(ev, schedule_frame_handle_idle_timer, output);
+	output->idle_frame = wl_event_loop_add_idle(output->event_loop,
+		schedule_frame_handle_idle_timer, output);
 }
 
 void wlr_output_send_present(struct wlr_output *output,
@@ -966,8 +964,8 @@ void output_defer_present(struct wlr_output *output, struct wlr_output_event_pre
 	deferred->output_destroy.notify = deferred_present_event_handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &deferred->output_destroy);
 
-	struct wl_event_loop *ev = wl_display_get_event_loop(output->display);
-	deferred->idle_source = wl_event_loop_add_idle(ev, deferred_present_event_handle_idle, deferred);
+	deferred->idle_source = wl_event_loop_add_idle(output->event_loop,
+		deferred_present_event_handle_idle, deferred);
 }
 
 void wlr_output_send_request_state(struct wlr_output *output,

@@ -549,7 +549,8 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	wlr_output_state_init(&state);
 	wlr_output_state_set_custom_mode(&state, 1024, 768, 0);
 
-	wlr_output_init(wlr_output, &x11->backend, &output_impl, x11->wl_display, &state);
+	wlr_output_init(wlr_output, &x11->backend, &output_impl,
+		wl_display_get_event_loop(x11->wl_display), &state);
 	wlr_output_state_finish(&state);
 
 	size_t output_num = ++last_output_num;

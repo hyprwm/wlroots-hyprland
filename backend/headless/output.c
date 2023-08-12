@@ -119,7 +119,8 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	wlr_output_state_init(&state);
 	wlr_output_state_set_custom_mode(&state, width, height, 0);
 
-	wlr_output_init(wlr_output, &backend->backend, &output_impl, backend->display, &state);
+	wlr_output_init(wlr_output, &backend->backend, &output_impl,
+		wl_display_get_event_loop(backend->display), &state);
 	wlr_output_state_finish(&state);
 
 	output_update_refresh(output, 0);

@@ -775,7 +775,7 @@ static struct wlr_wl_output *output_create(struct wlr_wl_backend *backend,
 	wlr_output_state_set_custom_mode(&state, 1280, 720, 0);
 
 	wlr_output_init(wlr_output, &backend->backend, &output_impl,
-		backend->local_display, &state);
+		wl_display_get_event_loop(backend->local_display), &state);
 	wlr_output_state_finish(&state);
 
 	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
