@@ -128,15 +128,26 @@ static void output_bind(struct wl_client *wl_client, void *data,
 	wl_signal_emit_mutable(&output->events.bind, &evt);
 }
 
+static void handle_display_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_output *output = wl_container_of(listener, output, display_destroy);
+	wlr_output_destroy_global(output);
+}
+
 void wlr_output_create_global(struct wlr_output *output, struct wl_display *display) {
 	if (output->global != NULL) {
 		return;
 	}
+
 	output->global = wl_global_create(display,
 		&wl_output_interface, OUTPUT_VERSION, output, output_bind);
 	if (output->global == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate wl_output global");
+		return;
 	}
+
+	wl_list_remove(&output->display_destroy.link);
+	output->display_destroy.notify = handle_display_destroy;
+	wl_display_add_destroy_listener(display, &output->display_destroy);
 }
 
 void wlr_output_destroy_global(struct wlr_output *output) {
@@ -151,6 +162,9 @@ void wlr_output_destroy_global(struct wlr_output *output) {
 		wl_list_remove(wl_resource_get_link(resource));
 		wl_list_init(wl_resource_get_link(resource));
 	}
+
+	wl_list_remove(&output->display_destroy.link);
+	wl_list_init(&output->display_destroy.link);
 
 	wlr_global_destroy_safe(output->global);
 	output->global = NULL;
@@ -269,12 +283,6 @@ void wlr_output_set_description(struct wlr_output *output, const char *desc) {
 	wlr_output_schedule_done(output);
 
 	wl_signal_emit_mutable(&output->events.description, output);
-}
-
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_output *output =
-		wl_container_of(listener, output, display_destroy);
-	wlr_output_destroy_global(output);
 }
 
 static void output_state_move(struct wlr_output_state *dst,
@@ -436,9 +444,7 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	}
 
 	wlr_addon_set_init(&output->addons);
-
-	output->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(display, &output->display_destroy);
+	wl_list_init(&output->display_destroy.link);
 
 	if (state) {
 		output_apply_state(output, state);
