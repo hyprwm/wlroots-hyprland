@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 		.display = display,
 	};
 
-	state.layout = wlr_output_layout_create();
+	state.layout = wlr_output_layout_create(display);
 	clock_gettime(CLOCK_MONOTONIC, &state.ts_last);
 
 	struct wlr_backend *wlr = wlr_backend_autocreate(display, NULL);
@@ -303,5 +303,4 @@ int main(int argc, char *argv[]) {
 	wlr_texture_destroy(state.cat_texture);
 
 	wl_display_destroy(state.display);
-	wlr_output_layout_destroy(state.layout);
 }

@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 
 	wlr_compositor_create(server.wl_display, 5, server.renderer);
 
-	server.output_layout = wlr_output_layout_create();
+	server.output_layout = wlr_output_layout_create(server.wl_display);
 
 	wl_list_init(&server.outputs);
 	server.new_output.notify = server_handle_new_output;

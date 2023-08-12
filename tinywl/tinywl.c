@@ -891,7 +891,7 @@ int main(int argc, char *argv[]) {
 
 	/* Creates an output layout, which a wlroots utility for working with an
 	 * arrangement of screens in a physical layout. */
-	server.output_layout = wlr_output_layout_create();
+	server.output_layout = wlr_output_layout_create(server.wl_display);
 
 	/* Configure a listener to be notified when new outputs are available on the
 	 * backend. */
@@ -1007,7 +1007,6 @@ int main(int argc, char *argv[]) {
 	wl_display_destroy_clients(server.wl_display);
 	wlr_scene_node_destroy(&server.scene->tree.node);
 	wlr_xcursor_manager_destroy(server.cursor_mgr);
-	wlr_output_layout_destroy(server.output_layout);
 	wl_display_destroy(server.wl_display);
 	return 0;
 }

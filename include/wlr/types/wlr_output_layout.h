@@ -26,6 +26,7 @@ struct wlr_box;
  */
 struct wlr_output_layout {
 	struct wl_list outputs;
+	struct wl_display *display;
 
 	struct {
 		struct wl_signal add; // struct wlr_output_layout_output
@@ -34,6 +35,10 @@ struct wlr_output_layout {
 	} events;
 
 	void *data;
+
+	// private state
+
+	struct wl_listener display_destroy;
 };
 
 struct wlr_output_layout_output {
@@ -57,7 +62,7 @@ struct wlr_output_layout_output {
 	struct wl_listener commit;
 };
 
-struct wlr_output_layout *wlr_output_layout_create(void);
+struct wlr_output_layout *wlr_output_layout_create(struct wl_display *display);
 
 void wlr_output_layout_destroy(struct wlr_output_layout *layout);
 
