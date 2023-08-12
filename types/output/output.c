@@ -128,11 +128,11 @@ static void output_bind(struct wl_client *wl_client, void *data,
 	wl_signal_emit_mutable(&output->events.bind, &evt);
 }
 
-void wlr_output_create_global(struct wlr_output *output) {
+void wlr_output_create_global(struct wlr_output *output, struct wl_display *display) {
 	if (output->global != NULL) {
 		return;
 	}
-	output->global = wl_global_create(output->display,
+	output->global = wl_global_create(display,
 		&wl_output_interface, OUTPUT_VERSION, output, output_bind);
 	if (output->global == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate wl_output global");

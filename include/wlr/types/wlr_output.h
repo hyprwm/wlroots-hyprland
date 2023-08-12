@@ -279,7 +279,7 @@ struct wlr_surface;
  * wlr_output_commit().
  */
 void wlr_output_enable(struct wlr_output *output, bool enable);
-void wlr_output_create_global(struct wlr_output *output);
+void wlr_output_create_global(struct wlr_output *output, struct wl_display *display);
 void wlr_output_destroy_global(struct wlr_output *output);
 /**
  * Initialize the output's rendering subsystem with the provided allocator and

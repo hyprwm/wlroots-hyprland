@@ -115,10 +115,11 @@ static void output_layout_reconfigure(struct wlr_output_layout *layout) {
 	wl_signal_emit_mutable(&layout->events.change, layout);
 }
 
-static void output_update_global(struct wlr_output *output) {
+static void output_update_global(struct wlr_output_layout *layout,
+		struct wlr_output *output) {
 	// Don't expose the output if it doesn't have a current mode
 	if (wl_list_empty(&output->modes) || output->current_mode != NULL) {
-		wlr_output_create_global(output);
+		wlr_output_create_global(output, layout->display);
 	} else {
 		wlr_output_destroy_global(output);
 	}
@@ -133,7 +134,7 @@ static void handle_output_commit(struct wl_listener *listener, void *data) {
 			WLR_OUTPUT_STATE_TRANSFORM |
 			WLR_OUTPUT_STATE_MODE)) {
 		output_layout_reconfigure(l_output->layout);
-		output_update_global(l_output->output);
+		output_update_global(l_output->layout, l_output->output);
 	}
 }
 
@@ -193,7 +194,7 @@ static struct wlr_output_layout_output *output_layout_add(struct wlr_output_layo
 	l_output->auto_configured = auto_configured;
 
 	output_layout_reconfigure(layout);
-	output_update_global(output);
+	output_update_global(layout, output);
 
 	if (is_new) {
 		wl_signal_emit_mutable(&layout->events.add, l_output);

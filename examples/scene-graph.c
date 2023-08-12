@@ -90,7 +90,7 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 	wlr_output_commit_state(wlr_output, &state);
 	wlr_output_state_finish(&state);
 
-	wlr_output_create_global(wlr_output);
+	wlr_output_create_global(wlr_output, server->display);
 }
 
 static void surface_handle_commit(struct wl_listener *listener, void *data) {

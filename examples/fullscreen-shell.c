@@ -163,7 +163,7 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 	wl_list_insert(&server->outputs, &output->link);
 
 	wlr_output_layout_add_auto(server->output_layout, wlr_output);
-	wlr_output_create_global(wlr_output);
+	wlr_output_create_global(wlr_output, server->wl_display);
 
 	struct wlr_output_state state;
 	wlr_output_state_init(&state);
