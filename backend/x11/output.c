@@ -22,6 +22,7 @@
 
 #include "backend/x11.h"
 #include "util/time.h"
+#include "types/wlr_output.h"
 
 static const uint32_t SUPPORTED_OUTPUT_STATE =
 	WLR_OUTPUT_STATE_BACKEND_OPTIONAL |
@@ -375,6 +376,10 @@ static bool output_commit(struct wlr_output *wlr_output,
 		if (!output_commit_buffer(output, state)) {
 			return false;
 		}
+	} else if (output_pending_enabled(wlr_output, state)) {
+		uint32_t serial = output->wlr_output.commit_seq;
+		uint64_t target_msc = output->last_msc ? output->last_msc + 1 : 0;
+		xcb_present_notify_msc(x11->xcb, output->win, serial, target_msc, 0, 0);
 	}
 
 	xcb_flush(x11->xcb);

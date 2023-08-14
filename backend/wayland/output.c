@@ -19,6 +19,7 @@
 #include "backend/wayland.h"
 #include "render/pixel_format.h"
 #include "render/wlr_renderer.h"
+#include "types/wlr_output.h"
 
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
@@ -555,7 +556,7 @@ static bool output_commit(struct wlr_output *wlr_output,
 		return false;
 	}
 
-	if (state->committed & (WLR_OUTPUT_STATE_BUFFER | WLR_OUTPUT_STATE_LAYERS)) {
+	if (output_pending_enabled(wlr_output, state)) {
 		if (output->frame_callback != NULL) {
 			wl_callback_destroy(output->frame_callback);
 		}

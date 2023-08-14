@@ -319,7 +319,7 @@ static void output_apply_state(struct wlr_output *output,
 		output->cursor_swapchain = NULL;
 	}
 
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (output_pending_enabled(output, state)) {
 		output->frame_pending = true;
 		output->needs_frame = false;
 	}
@@ -590,6 +590,14 @@ void output_pending_resolution(struct wlr_output *output,
 		*width = output->width;
 		*height = output->height;
 	}
+}
+
+bool output_pending_enabled(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		return state->enabled;
+	}
+	return output->enabled;
 }
 
 /**

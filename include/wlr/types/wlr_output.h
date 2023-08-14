@@ -170,7 +170,8 @@ struct wlr_output {
 		struct wl_signal precommit; // struct wlr_output_event_precommit
 		// Emitted right after commit
 		struct wl_signal commit; // struct wlr_output_event_commit
-		// Emitted right after the buffer has been presented to the user
+		// Emitted right after a commit has been presented to the user for
+		// enabled outputs
 		struct wl_signal present; // struct wlr_output_event_present
 		// Emitted after a client bound the wl_output global
 		struct wl_signal bind; // struct wlr_output_event_bind
