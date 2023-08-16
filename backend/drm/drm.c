@@ -1373,8 +1373,59 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 	wlr_log(WLR_DEBUG, "Current CRTC: %d",
 		wlr_conn->crtc ? (int)wlr_conn->crtc->id : -1);
 
-	wlr_output_init(output, &drm->backend, &output_impl,
-		drm->display, NULL);
+	// keep track of all the modes ourselves first. We must only fill out
+	// the modes list after wlr_output_init()
+	struct wl_list modes;
+	wl_list_init(&modes);
+
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+	wlr_output_state_set_enabled(&state, wlr_conn->crtc != NULL);
+
+	drmModeModeInfo *current_modeinfo = connector_get_current_mode(wlr_conn);
+
+	wlr_log(WLR_INFO, "Detected modes:");
+
+	for (int i = 0; i < drm_conn->count_modes; ++i) {
+		if (drm_conn->modes[i].flags & DRM_MODE_FLAG_INTERLACE) {
+			continue;
+		}
+
+		struct wlr_drm_mode *mode = drm_mode_create(&drm_conn->modes[i]);
+		if (!mode) {
+			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			wlr_output_state_finish(&state);
+			return false;
+		}
+
+		// If this is the current mode set on the conn's crtc,
+		// then set it as the conn's output current mode.
+		if (current_modeinfo != NULL && memcmp(&mode->drm_mode,
+				current_modeinfo, sizeof(*current_modeinfo)) == 0) {
+			wlr_output_state_set_mode(&state, &mode->wlr_mode);
+
+			uint64_t mode_id = 0;
+			get_drm_prop(drm->fd, wlr_conn->crtc->id,
+				wlr_conn->crtc->props.mode_id, &mode_id);
+
+			wlr_conn->crtc->mode_id = mode_id;
+		}
+
+		wlr_log(WLR_INFO, "  %"PRId32"x%"PRId32" @ %.3f Hz %s",
+			mode->wlr_mode.width, mode->wlr_mode.height,
+			(float)mode->wlr_mode.refresh / 1000,
+			mode->wlr_mode.preferred ? "(preferred)" : "");
+
+		wl_list_insert(modes.prev, &mode->wlr_mode.link);
+	}
+
+	free(current_modeinfo);
+
+	wlr_output_init(output, &drm->backend, &output_impl, drm->display, &state);
+	wlr_output_state_finish(&state);
+
+	// fill out the modes
+	wl_list_insert_list(&output->modes, &modes);
 
 	wlr_output_set_name(output, wlr_conn->name);
 
@@ -1436,51 +1487,6 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 	wlr_output_set_description(output, description);
 
 	free(subconnector);
-
-	// Before iterating on the conn's modes, get the current KMS mode
-	// in use from the connector's CRTC.
-	drmModeModeInfo *current_modeinfo = connector_get_current_mode(wlr_conn);
-
-	wlr_log(WLR_INFO, "Detected modes:");
-
-	for (int i = 0; i < drm_conn->count_modes; ++i) {
-		if (drm_conn->modes[i].flags & DRM_MODE_FLAG_INTERLACE) {
-			continue;
-		}
-
-		struct wlr_drm_mode *mode = drm_mode_create(&drm_conn->modes[i]);
-		if (!mode) {
-			wlr_log_errno(WLR_ERROR, "Allocation failed");
-			return false;
-		}
-
-		// If this is the current mode set on the conn's crtc,
-		// then set it as the conn's output current mode.
-		if (current_modeinfo != NULL && memcmp(&mode->drm_mode,
-				current_modeinfo, sizeof(*current_modeinfo)) == 0) {
-			// Update width, height, refresh, transform_matrix and current_mode
-			// of this connector's output.
-			wlr_output_update_mode(output, &mode->wlr_mode);
-
-			uint64_t mode_id = 0;
-			get_drm_prop(drm->fd, wlr_conn->crtc->id,
-				wlr_conn->crtc->props.mode_id, &mode_id);
-
-			wlr_conn->crtc->mode_id = mode_id;
-		}
-
-		wlr_log(WLR_INFO, "  %"PRId32"x%"PRId32" @ %.3f Hz %s",
-			mode->wlr_mode.width, mode->wlr_mode.height,
-			(float)mode->wlr_mode.refresh / 1000,
-			mode->wlr_mode.preferred ? "(preferred)" : "");
-
-		wl_list_insert(output->modes.prev, &mode->wlr_mode.link);
-	}
-
-	free(current_modeinfo);
-
-	wlr_output_update_enabled(&wlr_conn->output, wlr_conn->crtc != NULL);
-
 	wlr_conn->status = DRM_MODE_CONNECTED;
 	return true;
 }
