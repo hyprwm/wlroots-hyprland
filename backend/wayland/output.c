@@ -765,7 +765,7 @@ static struct wlr_wl_output *output_create(struct wlr_wl_backend *backend,
 		return NULL;
 	}
 	wlr_output_init(&output->wlr_output, &backend->backend, &output_impl,
-		backend->local_display);
+		backend->local_display, NULL);
 	struct wlr_output *wlr_output = &output->wlr_output;
 
 	wlr_output_update_custom_mode(wlr_output, 1280, 720, 0);

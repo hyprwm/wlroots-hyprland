@@ -121,7 +121,7 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	}
 	output->backend = backend;
 	wlr_output_init(&output->wlr_output, &backend->backend, &output_impl,
-		backend->display);
+		backend->display, NULL);
 	struct wlr_output *wlr_output = &output->wlr_output;
 
 	output_set_custom_mode(output, width, height, 0);

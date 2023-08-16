@@ -1373,7 +1373,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		wlr_conn->crtc ? (int)wlr_conn->crtc->id : -1);
 
 	wlr_output_init(&wlr_conn->output, &drm->backend, &output_impl,
-		drm->display);
+		drm->display, NULL);
 
 	wlr_output_set_name(&wlr_conn->output, wlr_conn->name);
 

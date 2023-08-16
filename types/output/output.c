@@ -414,7 +414,8 @@ static void output_apply_state(struct wlr_output *output,
 }
 
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
-		const struct wlr_output_impl *impl, struct wl_display *display) {
+		const struct wlr_output_impl *impl, struct wl_display *display,
+		const struct wlr_output_state *state) {
 	assert(impl->commit);
 	if (impl->set_cursor || impl->move_cursor) {
 		assert(impl->set_cursor && impl->move_cursor);
@@ -455,6 +456,10 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 
 	output->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &output->display_destroy);
+
+	if (state) {
+		output_apply_state(output, state);
+	}
 }
 
 void wlr_output_destroy(struct wlr_output *output) {
