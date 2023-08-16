@@ -325,6 +325,94 @@ static void output_state_move(struct wlr_output_state *dst,
 	wlr_output_state_init(src);
 }
 
+static void output_apply_state(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
+		output->render_format = state->render_format;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_SUBPIXEL) {
+		output->subpixel = state->subpixel;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
+		wlr_output_update_enabled(output, state->enabled);
+	}
+
+	bool scale_updated = state->committed & WLR_OUTPUT_STATE_SCALE;
+	if (scale_updated) {
+		output->scale = state->scale;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
+		output->transform = state->transform;
+		output_update_matrix(output);
+	}
+
+	bool geometry_updated = state->committed &
+		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM |
+		WLR_OUTPUT_STATE_SUBPIXEL);
+	if (geometry_updated || scale_updated) {
+		struct wl_resource *resource;
+		wl_resource_for_each(resource, &output->resources) {
+			if (geometry_updated) {
+				send_geometry(resource);
+			}
+			if (scale_updated) {
+				send_scale(resource);
+			}
+		}
+		wlr_output_schedule_done(output);
+	}
+
+	// Destroy the swapchains when an output is disabled
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && !state->enabled) {
+		wlr_swapchain_destroy(output->swapchain);
+		output->swapchain = NULL;
+		wlr_swapchain_destroy(output->cursor_swapchain);
+		output->cursor_swapchain = NULL;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		output->frame_pending = true;
+		output->needs_frame = false;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		for (size_t i = 0; i < state->layers_len; i++) {
+			struct wlr_output_layer_state *layer_state = &state->layers[i];
+			struct wlr_output_layer *layer = layer_state->layer;
+
+			// Commit layer ordering
+			wl_list_remove(&layer->link);
+			wl_list_insert(output->layers.prev, &layer->link);
+
+			// Commit layer state
+			layer->src_box = layer_state->src_box;
+			layer->dst_box = layer_state->dst_box;
+		}
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_BUFFER) &&
+			output->swapchain != NULL) {
+		wlr_swapchain_set_buffer_submitted(output->swapchain, state->buffer);
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_MODE) {
+		switch (state->mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			wlr_output_update_mode(output, state->mode);
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			wlr_output_update_custom_mode(output,
+				state->custom_mode.width,
+				state->custom_mode.height,
+				state->custom_mode.refresh);
+			break;
+		}
+	}
+}
+
 void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 		const struct wlr_output_impl *impl, struct wl_display *display) {
 	assert(impl->commit);
@@ -743,92 +831,8 @@ bool wlr_output_commit_state(struct wlr_output *output,
 		return false;
 	}
 
-	if (pending.committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
-		output->render_format = pending.render_format;
-	}
-
-	if (pending.committed & WLR_OUTPUT_STATE_SUBPIXEL) {
-		output->subpixel = pending.subpixel;
-	}
-
 	output->commit_seq++;
-
-	if (pending.committed & WLR_OUTPUT_STATE_ENABLED) {
-		wlr_output_update_enabled(output, pending.enabled);
-	}
-
-	bool scale_updated = pending.committed & WLR_OUTPUT_STATE_SCALE;
-	if (scale_updated) {
-		output->scale = pending.scale;
-	}
-
-	if (pending.committed & WLR_OUTPUT_STATE_TRANSFORM) {
-		output->transform = pending.transform;
-		output_update_matrix(output);
-	}
-
-	bool geometry_updated = pending.committed &
-		(WLR_OUTPUT_STATE_MODE | WLR_OUTPUT_STATE_TRANSFORM |
-		WLR_OUTPUT_STATE_SUBPIXEL);
-	if (geometry_updated || scale_updated) {
-		struct wl_resource *resource;
-		wl_resource_for_each(resource, &output->resources) {
-			if (geometry_updated) {
-				send_geometry(resource);
-			}
-			if (scale_updated) {
-				send_scale(resource);
-			}
-		}
-		wlr_output_schedule_done(output);
-	}
-
-	// Destroy the swapchains when an output is disabled
-	if ((pending.committed & WLR_OUTPUT_STATE_ENABLED) && !pending.enabled) {
-		wlr_swapchain_destroy(output->swapchain);
-		output->swapchain = NULL;
-		wlr_swapchain_destroy(output->cursor_swapchain);
-		output->cursor_swapchain = NULL;
-	}
-
-	if (pending.committed & WLR_OUTPUT_STATE_BUFFER) {
-		output->frame_pending = true;
-		output->needs_frame = false;
-	}
-
-	if (pending.committed & WLR_OUTPUT_STATE_LAYERS) {
-		for (size_t i = 0; i < pending.layers_len; i++) {
-			struct wlr_output_layer_state *layer_state = &pending.layers[i];
-			struct wlr_output_layer *layer = layer_state->layer;
-
-			// Commit layer ordering
-			wl_list_remove(&layer->link);
-			wl_list_insert(output->layers.prev, &layer->link);
-
-			// Commit layer state
-			layer->src_box = layer_state->src_box;
-			layer->dst_box = layer_state->dst_box;
-		}
-	}
-
-	if ((pending.committed & WLR_OUTPUT_STATE_BUFFER) &&
-			output->swapchain != NULL) {
-		wlr_swapchain_set_buffer_submitted(output->swapchain, pending.buffer);
-	}
-
-	if (pending.committed & WLR_OUTPUT_STATE_MODE) {
-		switch (pending.mode_type) {
-		case WLR_OUTPUT_STATE_MODE_FIXED:
-			wlr_output_update_mode(output, pending.mode);
-			break;
-		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			wlr_output_update_custom_mode(output,
-				pending.custom_mode.width,
-				pending.custom_mode.height,
-				pending.custom_mode.refresh);
-			break;
-		}
-	}
+	output_apply_state(output, &pending);
 
 	struct wlr_output_event_commit event = {
 		.output = output,
