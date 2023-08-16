@@ -718,6 +718,7 @@ static void xdg_surface_handle_configure(void *data,
 	struct wlr_wl_output *output = data;
 	assert(output && output->xdg_surface == xdg_surface);
 
+	output->configured = true;
 	xdg_surface_ack_configure(xdg_surface, serial);
 
 	// nothing else?
@@ -868,7 +869,14 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 			&xdg_toplevel_listener, output);
 	wl_surface_commit(output->surface);
 
-	wl_display_roundtrip(output->backend->remote_display);
+	struct wl_event_loop *event_loop = wl_display_get_event_loop(backend->local_display);
+	while (!output->configured) {
+		int ret = wl_event_loop_dispatch(event_loop, -1);
+		if (ret < 0) {
+			wlr_log(WLR_ERROR, "wl_event_loop_dispatch() failed");
+			goto error;
+		}
+	}
 
 	output_start(output);
 
