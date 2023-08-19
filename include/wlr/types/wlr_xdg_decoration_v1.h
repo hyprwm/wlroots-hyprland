@@ -36,7 +36,7 @@ struct wlr_xdg_toplevel_decoration_v1_state {
 
 struct wlr_xdg_toplevel_decoration_v1 {
 	struct wl_resource *resource;
-	struct wlr_xdg_surface *surface;
+	struct wlr_xdg_toplevel * toplevel;
 	struct wlr_xdg_decoration_manager_v1 *manager;
 	struct wl_list link; // wlr_xdg_decoration_manager_v1.link
 

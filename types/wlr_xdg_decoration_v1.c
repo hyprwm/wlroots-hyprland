@@ -54,7 +54,7 @@ uint32_t wlr_xdg_toplevel_decoration_v1_set_mode(
 		enum wlr_xdg_toplevel_decoration_v1_mode mode) {
 	assert(mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE);
 	decoration->scheduled_mode = mode;
-	return wlr_xdg_surface_schedule_configure(decoration->surface);
+	return wlr_xdg_surface_schedule_configure(decoration->toplevel->base);
 }
 
 static void toplevel_decoration_handle_resource_destroy(
@@ -150,7 +150,7 @@ static void toplevel_decoration_handle_surface_commit(
 
 	decoration->current = decoration->pending;
 
-	if (decoration->surface->added && !decoration->added) {
+	if (decoration->toplevel->base->added && !decoration->added) {
 		decoration->added = true;
 		wl_signal_emit_mutable(&manager->events.new_toplevel_decoration,
 			decoration);
@@ -189,7 +189,7 @@ static void decoration_manager_handle_get_toplevel_decoration(
 
 	struct wlr_xdg_toplevel_decoration_v1 *existing;
 	wl_list_for_each(existing, &manager->decorations, link) {
-		if (existing->surface == toplevel->base) {
+		if (existing->toplevel == toplevel) {
 			wl_resource_post_error(manager_resource,
 				ZXDG_TOPLEVEL_DECORATION_V1_ERROR_ALREADY_CONSTRUCTED,
 				"xdg_toplevel already has a decoration object");
@@ -204,7 +204,7 @@ static void decoration_manager_handle_get_toplevel_decoration(
 		return;
 	}
 	decoration->manager = manager;
-	decoration->surface = toplevel->base;
+	decoration->toplevel = toplevel;
 
 	uint32_t version = wl_resource_get_version(manager_resource);
 	decoration->resource = wl_resource_create(client,
