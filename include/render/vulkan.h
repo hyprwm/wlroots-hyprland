@@ -252,8 +252,6 @@ struct wlr_vk_renderer {
 	VkSemaphore timeline_semaphore;
 	uint64_t timeline_point;
 
-	struct wlr_vk_render_buffer *current_render_buffer;
-
 	size_t last_pool_size;
 	struct wl_list descriptor_pools; // wlr_vk_descriptor_pool.link
 	struct wl_list render_format_setups; // wlr_vk_render_format_setup.link

@@ -562,8 +562,6 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
 	wl_list_remove(&buffer->link);
 	wlr_addon_finish(&buffer->addon);
 
-	assert(buffer->renderer->current_render_buffer != buffer);
-
 	VkDevice dev = buffer->renderer->dev->dev;
 
 	// TODO: asynchronously wait for the command buffers using this render
@@ -846,39 +844,6 @@ static struct wlr_vk_render_buffer *get_render_buffer(
 	return buffer;
 }
 
-static bool vulkan_bind_buffer(struct wlr_renderer *wlr_renderer,
-		struct wlr_buffer *wlr_buffer) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-
-	if (renderer->current_render_buffer) {
-		wlr_buffer_unlock(renderer->current_render_buffer->wlr_buffer);
-		renderer->current_render_buffer = NULL;
-	}
-
-	if (!wlr_buffer) {
-		return true;
-	}
-
-	struct wlr_vk_render_buffer *buffer = get_render_buffer(renderer, wlr_buffer);
-	if (!buffer) {
-		buffer = create_render_buffer(renderer, wlr_buffer);
-		if (!buffer) {
-			return false;
-		}
-	}
-
-	wlr_buffer_lock(wlr_buffer);
-	renderer->current_render_buffer = buffer;
-	return true;
-}
-
-static bool vulkan_begin(struct wlr_renderer *wlr_renderer,
-		uint32_t width, uint32_t height) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	assert(renderer->current_render_buffer);
-	return true;
-}
-
 bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture) {
 	struct wlr_vk_renderer *renderer = texture->renderer;
 	VkResult res;
@@ -991,11 +956,6 @@ bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
 	return true;
 }
 
-static void vulkan_end(struct wlr_renderer *wlr_renderer) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	assert(renderer->current_render_buffer);
-}
-
 static const uint32_t *vulkan_get_shm_texture_formats(
 		struct wlr_renderer *wlr_renderer, size_t *len) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
@@ -1022,8 +982,6 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 		free(renderer);
 		return;
 	}
-
-	assert(!renderer->current_render_buffer);
 
 	VkResult res = vkDeviceWaitIdle(renderer->dev->dev);
 	if (res != VK_SUCCESS) {
@@ -1366,9 +1324,6 @@ static struct wlr_render_pass *vulkan_begin_buffer_pass(struct wlr_renderer *wlr
 }
 
 static const struct wlr_renderer_impl renderer_impl = {
-	.bind_buffer = vulkan_bind_buffer,
-	.begin = vulkan_begin,
-	.end = vulkan_end,
 	.get_shm_texture_formats = vulkan_get_shm_texture_formats,
 	.get_dmabuf_texture_formats = vulkan_get_dmabuf_texture_formats,
 	.get_render_formats = vulkan_get_render_formats,
@@ -2302,12 +2257,4 @@ VkDevice wlr_vk_renderer_get_device(struct wlr_renderer *renderer) {
 uint32_t wlr_vk_renderer_get_queue_family(struct wlr_renderer *renderer) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
 	return vk_renderer->dev->queue_family;
-}
-
-void wlr_vk_renderer_get_current_image_attribs(struct wlr_renderer *renderer,
-		struct wlr_vk_image_attribs *attribs) {
-	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(renderer);
-	attribs->image = vk_renderer->current_render_buffer->image;
-	attribs->format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
-	attribs->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }

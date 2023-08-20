@@ -24,8 +24,6 @@ VkInstance wlr_vk_renderer_get_instance(struct wlr_renderer *renderer);
 VkPhysicalDevice wlr_vk_renderer_get_physical_device(struct wlr_renderer *renderer);
 VkDevice wlr_vk_renderer_get_device(struct wlr_renderer *renderer);
 uint32_t wlr_vk_renderer_get_queue_family(struct wlr_renderer *renderer);
-void wlr_vk_renderer_get_current_image_attribs(struct wlr_renderer *renderer,
-	struct wlr_vk_image_attribs *attribs);
 
 bool wlr_renderer_is_vk(struct wlr_renderer *wlr_renderer);
 bool wlr_texture_is_vk(struct wlr_texture *texture);

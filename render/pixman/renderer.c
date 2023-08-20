@@ -193,27 +193,6 @@ error_buffer:
 	return NULL;
 }
 
-static bool pixman_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
-		uint32_t height) {
-	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
-	renderer->width = width;
-	renderer->height = height;
-
-	struct wlr_pixman_buffer *buffer = renderer->current_buffer;
-	assert(buffer != NULL);
-
-	return begin_pixman_data_ptr_access(buffer->buffer, &buffer->image,
-		WLR_BUFFER_DATA_PTR_ACCESS_READ | WLR_BUFFER_DATA_PTR_ACCESS_WRITE);
-}
-
-static void pixman_end(struct wlr_renderer *wlr_renderer) {
-	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
-
-	assert(renderer->current_buffer != NULL);
-
-	wlr_buffer_end_data_ptr_access(renderer->current_buffer->buffer);
-}
-
 static const uint32_t *pixman_get_shm_texture_formats(
 		struct wlr_renderer *wlr_renderer, size_t *len) {
 	return get_pixman_drm_formats(len);
@@ -290,33 +269,6 @@ static struct wlr_texture *pixman_texture_from_buffer(
 	return &texture->wlr_texture;
 }
 
-static bool pixman_bind_buffer(struct wlr_renderer *wlr_renderer,
-		struct wlr_buffer *wlr_buffer) {
-	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
-
-	if (renderer->current_buffer != NULL) {
-		wlr_buffer_unlock(renderer->current_buffer->buffer);
-		renderer->current_buffer = NULL;
-	}
-
-	if (wlr_buffer == NULL) {
-		return true;
-	}
-
-	struct wlr_pixman_buffer *buffer = get_buffer(renderer, wlr_buffer);
-	if (buffer == NULL) {
-		buffer = create_buffer(renderer, wlr_buffer);
-	}
-	if (buffer == NULL) {
-		return false;
-	}
-
-	wlr_buffer_lock(wlr_buffer);
-	renderer->current_buffer = buffer;
-
-	return true;
-}
-
 static void pixman_destroy(struct wlr_renderer *wlr_renderer) {
 	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
 
@@ -359,12 +311,9 @@ static struct wlr_render_pass *pixman_begin_buffer_pass(struct wlr_renderer *wlr
 }
 
 static const struct wlr_renderer_impl renderer_impl = {
-	.begin = pixman_begin,
-	.end = pixman_end,
 	.get_shm_texture_formats = pixman_get_shm_texture_formats,
 	.get_render_formats = pixman_get_render_formats,
 	.texture_from_buffer = pixman_texture_from_buffer,
-	.bind_buffer = pixman_bind_buffer,
 	.destroy = pixman_destroy,
 	.get_render_buffer_caps = pixman_get_render_buffer_caps,
 	.begin_buffer_pass = pixman_begin_buffer_pass,
@@ -397,11 +346,4 @@ struct wlr_renderer *wlr_pixman_renderer_create(void) {
 pixman_image_t *wlr_pixman_texture_get_image(struct wlr_texture *wlr_texture) {
 	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
 	return texture->image;
-}
-
-pixman_image_t *wlr_pixman_renderer_get_current_image(
-		struct wlr_renderer *wlr_renderer) {
-	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
-	assert(renderer->current_buffer);
-	return renderer->current_buffer->image;
 }

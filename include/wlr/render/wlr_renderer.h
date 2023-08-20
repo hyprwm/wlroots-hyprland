@@ -39,8 +39,6 @@ struct wlr_renderer {
 	// private state
 
 	const struct wlr_renderer_impl *impl;
-
-	bool rendering;
 };
 
 /**
@@ -50,18 +48,6 @@ struct wlr_renderer {
  * platform, environment, etc.
  */
 struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend);
-
-/**
- * Start a render pass on the provided struct wlr_buffer.
- *
- * Compositors must call wlr_renderer_end() when they are done.
- */
-bool wlr_renderer_begin_with_buffer(struct wlr_renderer *r,
-	struct wlr_buffer *buffer);
-/**
- * End a render pass.
- */
-void wlr_renderer_end(struct wlr_renderer *r);
 
 /**
  * Get the shared-memory formats supporting import usage. Buffers allocated

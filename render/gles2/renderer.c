@@ -42,14 +42,6 @@ struct wlr_gles2_renderer *gles2_get_renderer(
 	return renderer;
 }
 
-static struct wlr_gles2_renderer *gles2_get_renderer_in_context(
-		struct wlr_renderer *wlr_renderer) {
-	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
-	assert(wlr_egl_is_current(renderer->egl));
-	assert(renderer->current_buffer != NULL);
-	return renderer;
-}
-
 bool wlr_render_timer_is_gles2(struct wlr_render_timer *timer) {
 	return timer->impl == &render_timer_impl;
 }
@@ -173,101 +165,6 @@ struct wlr_gles2_buffer *gles2_buffer_get_or_create(struct wlr_gles2_renderer *r
 error_buffer:
 	free(buffer);
 	return NULL;
-}
-
-static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
-		struct wlr_buffer *wlr_buffer) {
-	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
-
-	if (renderer->current_buffer != NULL) {
-		assert(wlr_egl_is_current(renderer->egl));
-
-		push_gles2_debug(renderer);
-		glFlush();
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		pop_gles2_debug(renderer);
-
-		wlr_buffer_unlock(renderer->current_buffer->buffer);
-		renderer->current_buffer = NULL;
-	}
-
-	if (wlr_buffer == NULL) {
-		wlr_egl_unset_current(renderer->egl);
-		return true;
-	}
-
-	wlr_egl_make_current(renderer->egl);
-
-	GLint fbo = gles2_buffer_get_fbo(renderer->current_buffer);
-	if (!fbo) {
-		return false;
-	}
-
-	struct wlr_gles2_buffer *buffer = gles2_buffer_get_or_create(renderer, wlr_buffer);
-	if (buffer == NULL) {
-		return false;
-	}
-
-	wlr_buffer_lock(wlr_buffer);
-	renderer->current_buffer = buffer;
-
-	push_gles2_debug(renderer);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	pop_gles2_debug(renderer);
-
-	return true;
-}
-
-static const char *reset_status_str(GLenum status) {
-	switch (status) {
-	case GL_GUILTY_CONTEXT_RESET_KHR:
-		return "guilty";
-	case GL_INNOCENT_CONTEXT_RESET_KHR:
-		return "innocent";
-	case GL_UNKNOWN_CONTEXT_RESET_KHR:
-		return "unknown";
-	default:
-		return "<invalid>";
-	}
-}
-
-static bool gles2_begin(struct wlr_renderer *wlr_renderer, uint32_t width,
-		uint32_t height) {
-	struct wlr_gles2_renderer *renderer =
-		gles2_get_renderer_in_context(wlr_renderer);
-
-	push_gles2_debug(renderer);
-
-	if (renderer->procs.glGetGraphicsResetStatusKHR) {
-		GLenum status = renderer->procs.glGetGraphicsResetStatusKHR();
-		if (status != GL_NO_ERROR) {
-			wlr_log(WLR_ERROR, "GPU reset (%s)", reset_status_str(status));
-			wl_signal_emit_mutable(&wlr_renderer->events.lost, NULL);
-			return false;
-		}
-	}
-
-	glViewport(0, 0, width, height);
-	renderer->viewport_width = width;
-	renderer->viewport_height = height;
-
-	// refresh projection matrix
-	matrix_projection(renderer->projection, width, height,
-		WL_OUTPUT_TRANSFORM_FLIPPED_180);
-
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-	// XXX: maybe we should save output projection and remove some of the need
-	// for users to sling matricies themselves
-
-	pop_gles2_debug(renderer);
-
-	return true;
-}
-
-static void gles2_end(struct wlr_renderer *wlr_renderer) {
-	gles2_get_renderer_in_context(wlr_renderer);
-	// no-op
 }
 
 static const uint32_t *gles2_get_shm_texture_formats(
@@ -446,9 +343,6 @@ static void gles2_render_timer_destroy(struct wlr_render_timer *wlr_timer) {
 
 static const struct wlr_renderer_impl renderer_impl = {
 	.destroy = gles2_destroy,
-	.bind_buffer = gles2_bind_buffer,
-	.begin = gles2_begin,
-	.end = gles2_end,
 	.get_shm_texture_formats = gles2_get_shm_texture_formats,
 	.get_dmabuf_texture_formats = gles2_get_dmabuf_texture_formats,
 	.get_render_formats = gles2_get_render_formats,
@@ -798,10 +692,4 @@ bool wlr_gles2_renderer_check_ext(struct wlr_renderer *wlr_renderer,
 		const char *ext) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 	return check_gl_ext(renderer->exts_str, ext);
-}
-
-GLuint wlr_gles2_renderer_get_current_fbo(struct wlr_renderer *wlr_renderer) {
-	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
-	assert(renderer->current_buffer);
-	return gles2_buffer_get_fbo(renderer->current_buffer);
 }

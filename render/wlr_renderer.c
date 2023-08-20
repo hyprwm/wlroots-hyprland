@@ -49,8 +49,6 @@ void wlr_renderer_destroy(struct wlr_renderer *r) {
 		return;
 	}
 
-	assert(!r->rendering);
-
 	wl_signal_emit_mutable(&r->events.destroy, r);
 
 	if (r->impl && r->impl->destroy) {
@@ -58,41 +56,6 @@ void wlr_renderer_destroy(struct wlr_renderer *r) {
 	} else {
 		free(r);
 	}
-}
-
-bool renderer_bind_buffer(struct wlr_renderer *r, struct wlr_buffer *buffer) {
-	assert(!r->rendering);
-	if (!r->impl->bind_buffer) {
-		return false;
-	}
-	return r->impl->bind_buffer(r, buffer);
-}
-
-bool wlr_renderer_begin_with_buffer(struct wlr_renderer *r,
-		struct wlr_buffer *buffer) {
-	assert(!r->rendering);
-
-	if (!renderer_bind_buffer(r, buffer)) {
-		return false;
-	}
-	if (!r->impl->begin(r, buffer->width, buffer->height)) {
-		renderer_bind_buffer(r, NULL);
-		return false;
-	}
-
-	r->rendering = true;
-	return true;
-}
-
-void wlr_renderer_end(struct wlr_renderer *r) {
-	assert(r->rendering);
-
-	if (r->impl->end) {
-		r->impl->end(r);
-	}
-
-	r->rendering = false;
-	renderer_bind_buffer(r, NULL);
 }
 
 const uint32_t *wlr_renderer_get_shm_texture_formats(struct wlr_renderer *r,
