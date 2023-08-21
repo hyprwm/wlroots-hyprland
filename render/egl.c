@@ -568,11 +568,6 @@ struct wlr_egl *wlr_egl_create_with_drm_fd(int drm_fd) {
 
 error:
 	wlr_log(WLR_ERROR, "Failed to initialize EGL context");
-	if (egl->display) {
-		eglMakeCurrent(egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
-			EGL_NO_CONTEXT);
-		eglTerminate(egl->display);
-	}
 	free(egl);
 	eglReleaseThread();
 	return NULL;
