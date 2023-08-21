@@ -251,17 +251,10 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
  * Set the role object for this surface. The surface must have a role and
  * no already set role object.
  *
- * wlr_surface_destroy_role_object() is called when the resource is destroyed.
+ * When the resource is destroyed, the surface is unmapped,
+ * wlr_surface_role.destroy is called and the role object is unset.
  */
 void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource);
-
-/**
- * Destroy the object representing the surface's role. If it doesn't exist,
- * this function is no-op.
- *
- * This doesn't reset the surface role itself.
- */
-void wlr_surface_destroy_role_object(struct wlr_surface *surface);
 
 /**
  * Map the surface. If the surface is already mapped, this is no-op.

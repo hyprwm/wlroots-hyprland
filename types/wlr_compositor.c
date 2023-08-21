@@ -626,6 +626,7 @@ static void surface_state_destroy_cached(struct wlr_surface_state *state) {
 }
 
 static void surface_output_destroy(struct wlr_surface_output *surface_output);
+static void surface_destroy_role_object(struct wlr_surface *surface);
 
 static void surface_handle_resource_destroy(struct wl_resource *resource) {
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
@@ -636,7 +637,7 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 		surface_output_destroy(surface_output);
 	}
 
-	wlr_surface_destroy_role_object(surface);
+	surface_destroy_role_object(surface);
 
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
 
@@ -795,7 +796,7 @@ bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_
 
 static void surface_handle_role_resource_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_surface *surface = wl_container_of(listener, surface, role_resource_destroy);
-	wlr_surface_destroy_role_object(surface);
+	surface_destroy_role_object(surface);
 }
 
 void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource *role_resource) {
@@ -808,7 +809,7 @@ void wlr_surface_set_role_object(struct wlr_surface *surface, struct wl_resource
 	wl_resource_add_destroy_listener(role_resource, &surface->role_resource_destroy);
 }
 
-void wlr_surface_destroy_role_object(struct wlr_surface *surface) {
+static void surface_destroy_role_object(struct wlr_surface *surface) {
 	if (surface->role_resource == NULL) {
 		return;
 	}
