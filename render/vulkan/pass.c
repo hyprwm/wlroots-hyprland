@@ -69,6 +69,7 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 	struct wlr_vk_render_buffer *render_buffer = pass->render_buffer;
 	struct wlr_vk_command_buffer *stage_cb = NULL;
 	VkSemaphoreSubmitInfoKHR *render_wait = NULL;
+	bool device_lost = false;
 
 	if (pass->failed) {
 		goto error;
@@ -364,11 +365,9 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 
 	VkSubmitInfo2KHR submit_info[] = { stage_submit, render_submit };
 	VkResult res = renderer->dev->api.vkQueueSubmit2KHR(renderer->dev->queue, 2, submit_info, VK_NULL_HANDLE);
-	if (res == VK_ERROR_DEVICE_LOST) {
-		wlr_log(WLR_ERROR, "vkQueueSubmit failed with VK_ERROR_DEVICE_LOST");
-		wl_signal_emit_mutable(&renderer->wlr_renderer.events.lost, NULL);
-		goto error;
-	} else if (res != VK_SUCCESS) {
+
+	if (res != VK_SUCCESS) {
+		device_lost = res == VK_ERROR_DEVICE_LOST;
 		wlr_vk_error("vkQueueSubmit", res);
 		goto error;
 	}
@@ -398,6 +397,11 @@ error:
 	vulkan_reset_command_buffer(render_cb);
 	wlr_buffer_unlock(render_buffer->wlr_buffer);
 	free(pass);
+
+	if (device_lost) {
+		wl_signal_emit_mutable(&renderer->wlr_renderer.events.lost, NULL);
+	}
+
 	return false;
 }
 
