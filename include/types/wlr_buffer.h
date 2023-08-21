@@ -59,4 +59,19 @@ bool dmabuf_buffer_drop(struct wlr_dmabuf_buffer *buffer);
  */
 bool buffer_is_opaque(struct wlr_buffer *buffer);
 
+/**
+ * Creates a struct wlr_client_buffer from a given struct wlr_buffer by creating
+ * a texture from it, and copying its struct wl_resource.
+ */
+struct wlr_client_buffer *wlr_client_buffer_create(struct wlr_buffer *buffer,
+	struct wlr_renderer *renderer);
+/**
+ * Try to update the buffer's content.
+ *
+ * Fails if there's more than one reference to the buffer or if the texture
+ * isn't mutable.
+ */
+bool wlr_client_buffer_apply_damage(struct wlr_client_buffer *client_buffer,
+	struct wlr_buffer *next, const pixman_region32_t *damage);
+
 #endif
