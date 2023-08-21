@@ -21,15 +21,13 @@ static struct wlr_headless_output *headless_output_from_output(
 	return output;
 }
 
-static bool output_set_custom_mode(struct wlr_headless_output *output,
-		int32_t width, int32_t height, int32_t refresh) {
+static void output_update_refresh(struct wlr_headless_output *output,
+		int32_t refresh) {
 	if (refresh <= 0) {
 		refresh = HEADLESS_DEFAULT_REFRESH;
 	}
 
 	output->frame_delay = 1000000 / refresh;
-
-	return true;
 }
 
 static bool output_test(struct wlr_output *wlr_output,
@@ -64,12 +62,7 @@ static bool output_commit(struct wlr_output *wlr_output,
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_MODE) {
-		if (!output_set_custom_mode(output,
-				state->custom_mode.width,
-				state->custom_mode.height,
-				state->custom_mode.refresh)) {
-			return false;
-		}
+		output_update_refresh(output, state->custom_mode.refresh);
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
@@ -128,6 +121,8 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 
 	wlr_output_init(wlr_output, &backend->backend, &output_impl, backend->display, &state);
 	wlr_output_state_finish(&state);
+
+	output_update_refresh(output, 0);
 
 	size_t output_num = ++last_output_num;
 
