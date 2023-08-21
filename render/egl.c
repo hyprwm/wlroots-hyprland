@@ -388,7 +388,9 @@ static bool egl_init(struct wlr_egl *egl, EGLenum platform,
 	}
 
 	if (!egl_init_display(egl, display)) {
-		eglTerminate(display);
+		if (egl->exts.KHR_display_reference) {
+			eglTerminate(display);
+		}
 		return false;
 	}
 
@@ -613,9 +615,12 @@ void wlr_egl_destroy(struct wlr_egl *egl) {
 	wlr_drm_format_set_finish(&egl->dmabuf_texture_formats);
 
 	eglMakeCurrent(egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
 	eglDestroyContext(egl->display, egl->context);
-	eglTerminate(egl->display);
+
+	if (egl->exts.KHR_display_reference) {
+		eglTerminate(egl->display);
+	}
+
 	eglReleaseThread();
 
 	if (egl->gbm_device) {
