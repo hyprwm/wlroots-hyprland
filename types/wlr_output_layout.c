@@ -165,7 +165,7 @@ static struct wlr_output_layout_output *output_layout_output_create(
 	return l_output;
 }
 
-static bool output_layout_add(struct wlr_output_layout *layout,
+static struct wlr_output_layout_output *output_layout_add(struct wlr_output_layout *layout,
 		struct wlr_output *output, int lx, int ly,
 		bool auto_configured) {
 	struct wlr_output_layout_output *l_output =
@@ -174,7 +174,7 @@ static bool output_layout_add(struct wlr_output_layout *layout,
 	if (is_new) {
 		l_output = output_layout_output_create(layout, output);
 		if (l_output == NULL) {
-			return false;
+			return NULL;
 		}
 	}
 
@@ -189,15 +189,15 @@ static bool output_layout_add(struct wlr_output_layout *layout,
 		wl_signal_emit_mutable(&layout->events.add, l_output);
 	}
 
-	return true;
+	return l_output;
 }
 
-bool wlr_output_layout_add(struct wlr_output_layout *layout,
+struct wlr_output_layout_output *wlr_output_layout_add(struct wlr_output_layout *layout,
 		struct wlr_output *output, int lx, int ly) {
 	return output_layout_add(layout, output, lx, ly, false);
 }
 
-bool wlr_output_layout_add_auto(struct wlr_output_layout *layout,
+struct wlr_output_layout_output *wlr_output_layout_add_auto(struct wlr_output_layout *layout,
 		struct wlr_output *output) {
 	return output_layout_add(layout, output, 0, 0, true);
 }

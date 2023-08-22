@@ -82,7 +82,7 @@ struct wlr_output *wlr_output_layout_output_at(
  *
  * Returns true on success, false on a memory allocation error.
  */
-bool wlr_output_layout_add(struct wlr_output_layout *layout,
+struct wlr_output_layout_output *wlr_output_layout_add(struct wlr_output_layout *layout,
 	struct wlr_output *output, int lx, int ly);
 
 /**
@@ -94,7 +94,7 @@ bool wlr_output_layout_add(struct wlr_output_layout *layout,
  *
  * Returns true on success, false on a memory allocation error.
  */
-bool wlr_output_layout_add_auto(struct wlr_output_layout *layout,
+struct wlr_output_layout_output *wlr_output_layout_add_auto(struct wlr_output_layout *layout,
 	struct wlr_output *output);
 
 /**
