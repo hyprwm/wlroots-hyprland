@@ -39,6 +39,7 @@ struct tinywl_server {
 	struct wlr_renderer *renderer;
 	struct wlr_allocator *allocator;
 	struct wlr_scene *scene;
+	struct wlr_scene_output_layout *scene_layout;
 
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener new_xdg_surface;
@@ -646,7 +647,10 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 	 * display, which Wayland clients can see to find out information about the
 	 * output (such as DPI, scale factor, manufacturer, etc).
 	 */
-	wlr_output_layout_add_auto(server->output_layout, wlr_output);
+	struct wlr_output_layout_output *l_output = wlr_output_layout_add_auto(server->output_layout,
+		wlr_output);
+	struct wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, wlr_output);
+	wlr_scene_output_layout_add_output(server->scene_layout, l_output, scene_output);
 }
 
 static void xdg_toplevel_map(struct wl_listener *listener, void *data) {
@@ -906,7 +910,7 @@ int main(int argc, char *argv[]) {
 	 * necessary.
 	 */
 	server.scene = wlr_scene_create();
-	wlr_scene_attach_output_layout(server.scene, server.output_layout);
+	server.scene_layout = wlr_scene_attach_output_layout(server.scene, server.output_layout);
 
 	/* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
 	 * used for application windows. For more detail on shells, refer to my
