@@ -366,12 +366,8 @@ static bool has_render_node(struct wlr_backend *backend) {
 static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int drm_fd) {
 	const char *renderer_options[] = {
 		"auto",
-#if WLR_HAS_GLES2_RENDERER
 		"gles2",
-#endif
-#if WLR_HAS_VULKAN_RENDERER
 		"vulkan",
-#endif
 		"pixman",
 		NULL
 	};
@@ -381,14 +377,16 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
 	struct wlr_renderer *renderer = NULL;
 
 	bool own_drm_fd = false;
-	(void)open_preferred_drm_fd;
 
-#if WLR_HAS_GLES2_RENDERER
-	if (is_auto || strcmp(renderer_name, "gles2") == 0) {
+	if ((is_auto && WLR_HAS_GLES2_RENDERER) || strcmp(renderer_name, "gles2") == 0) {
 		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
 			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
 		} else {
+#if WLR_HAS_GLES2_RENDERER
 			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
+#else
+			wlr_log(WLR_ERROR, "Cannot create GLES renderer: disabled at compile-time");
+#endif
 			if (renderer) {
 				goto out;
 			} else {
@@ -396,14 +394,16 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
 			}
 		}
 	}
-#endif
 
-#if WLR_HAS_VULKAN_RENDERER
 	if (strcmp(renderer_name, "vulkan") == 0) {
 		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
 			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
 		} else {
+#if WLR_HAS_VULKAN_RENDERER
 			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
+#else
+			wlr_log(WLR_ERROR, "Cannot create Vulkan renderer: disabled at compile-time");
+#endif
 			if (renderer) {
 				goto out;
 			} else {
@@ -411,7 +411,6 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
 			}
 		}
 	}
-#endif
 
 	if ((is_auto && !has_render_node(backend)) || strcmp(renderer_name, "pixman") == 0) {
 		renderer = wlr_pixman_renderer_create();
