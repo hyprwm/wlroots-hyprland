@@ -100,10 +100,10 @@ struct wlr_allocator *allocator_autocreate_with_drm_fd(
 
 	struct wlr_allocator *alloc = NULL;
 
-#if WLR_HAS_GBM_ALLOCATOR
 	uint32_t gbm_caps = WLR_BUFFER_CAP_DMABUF;
 	if ((backend_caps & gbm_caps) && (renderer_caps & gbm_caps)
 			&& drm_fd >= 0) {
+#if WLR_HAS_GBM_ALLOCATOR
 		wlr_log(WLR_DEBUG, "Trying to create gbm allocator");
 		int gbm_fd = reopen_drm_node(drm_fd, true);
 		if (gbm_fd < 0) {
@@ -114,8 +114,10 @@ struct wlr_allocator *allocator_autocreate_with_drm_fd(
 		}
 		close(gbm_fd);
 		wlr_log(WLR_DEBUG, "Failed to create gbm allocator");
-	}
+#else
+		wlr_log(WLR_DEBUG, "Skipping gbm allocator: disabled at compile-time");
 #endif
+	}
 
 	uint32_t shm_caps = WLR_BUFFER_CAP_SHM | WLR_BUFFER_CAP_DATA_PTR;
 	if ((backend_caps & shm_caps) && (renderer_caps & shm_caps)) {
