@@ -17,7 +17,7 @@ struct wlr_xdg_decoration_manager_v1 {
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_toplevel_decoration; // struct wlr_xdg_toplevel_decoration *
+		struct wl_signal new_toplevel_decoration; // struct wlr_xdg_toplevel_decoration
 		struct wl_signal destroy;
 	} events;
 

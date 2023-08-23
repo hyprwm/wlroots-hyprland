@@ -21,7 +21,7 @@ struct wlr_virtual_pointer_manager_v1 {
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_virtual_pointer; // struct wlr_virtual_pointer_v1_new_pointer_event *
+		struct wl_signal new_virtual_pointer; // struct wlr_virtual_pointer_v1_new_pointer_event
 		struct wl_signal destroy;
 	} events;
 };

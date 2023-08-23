@@ -17,7 +17,7 @@ struct wlr_session_lock_manager_v1 {
 	struct wl_global *global;
 
 	struct {
-		struct wl_signal new_lock; // struct wlr_session_lock_v1 *
+		struct wl_signal new_lock; // struct wlr_session_lock_v1
 		struct wl_signal destroy;
 	} events;
 
@@ -34,7 +34,7 @@ struct wlr_session_lock_v1 {
 	struct wl_list surfaces; // struct wlr_session_lock_surface_v1.link
 
 	struct {
-		struct wl_signal new_surface; // struct wlr_session_lock_surface_v1 *
+		struct wl_signal new_surface; // struct wlr_session_lock_surface_v1
 		struct wl_signal unlock;
 		struct wl_signal destroy;
 	} events;

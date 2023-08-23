@@ -19,7 +19,7 @@ struct wlr_virtual_keyboard_manager_v1 {
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal new_virtual_keyboard; // struct wlr_virtual_keyboard_v1 *
+		struct wl_signal new_virtual_keyboard; // struct wlr_virtual_keyboard_v1
 		struct wl_signal destroy;
 	} events;
 };

@@ -51,10 +51,10 @@ struct wlr_input_method_v2 {
 	struct wl_listener seat_client_destroy;
 
 	struct {
-		struct wl_signal commit; // struct wlr_input_method_v2 *
-		struct wl_signal new_popup_surface; // struct wlr_input_popup_surface_v2 *
-		struct wl_signal grab_keyboard; // struct wlr_input_method_keyboard_grab_v2 *
-		struct wl_signal destroy; // struct wlr_input_method_v2 *
+		struct wl_signal commit; // struct wlr_input_method_v2
+		struct wl_signal new_popup_surface; // struct wlr_input_popup_surface_v2
+		struct wl_signal grab_keyboard; // struct wlr_input_method_keyboard_grab_v2
+		struct wl_signal destroy; // struct wlr_input_method_v2
 	} events;
 };
 
@@ -82,7 +82,7 @@ struct wlr_input_method_keyboard_grab_v2 {
 	struct wl_listener keyboard_destroy;
 
 	struct {
-		struct wl_signal destroy; // struct wlr_input_method_keyboard_grab_v2 *
+		struct wl_signal destroy; // struct wlr_input_method_keyboard_grab_v2
 	} events;
 };
 
@@ -93,8 +93,8 @@ struct wlr_input_method_manager_v2 {
 	struct wl_listener display_destroy;
 
 	struct {
-		struct wl_signal input_method; // struct wlr_input_method_v2 *
-		struct wl_signal destroy; // struct wlr_input_method_manager_v2 *
+		struct wl_signal input_method; // struct wlr_input_method_v2
+		struct wl_signal destroy; // struct wlr_input_method_manager_v2
 	} events;
 };
 

@@ -33,10 +33,9 @@ struct wlr_layer_shell_v1 {
 	struct wl_listener display_destroy;
 
 	struct {
-		// struct wlr_layer_surface_v1 *
 		// Note: the output may be NULL. In this case, it is your
 		// responsibility to assign an output before returning.
-		struct wl_signal new_surface;
+		struct wl_signal new_surface; // struct wlr_layer_surface_v1
 		struct wl_signal destroy;
 	} events;
 
