@@ -245,77 +245,6 @@ bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
 	return true;
 }
 
-static void log_creation_failure(bool is_auto, const char *msg) {
-	wlr_log(is_auto ? WLR_DEBUG : WLR_ERROR, "%s%s", msg, is_auto ? ". Skipping!" : "");
-}
-
-struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
-	const char *renderer_options[] = {
-		"auto",
-#if WLR_HAS_GLES2_RENDERER
-		"gles2",
-#endif
-#if WLR_HAS_VULKAN_RENDERER
-		"vulkan",
-#endif
-		"pixman",
-		NULL
-	};
-
-	const char *renderer_name = renderer_options[env_parse_switch("WLR_RENDERER", renderer_options)];
-	bool is_auto = strcmp(renderer_name, "auto") == 0;
-	struct wlr_renderer *renderer = NULL;
-
-#if WLR_HAS_GLES2_RENDERER
-	if (is_auto || strcmp(renderer_name, "gles2") == 0) {
-		if (drm_fd < 0) {
-			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
-		} else {
-			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
-			if (renderer) {
-				return renderer;
-			} else {
-				log_creation_failure(is_auto, "Failed to create a GLES2 renderer");
-			}
-		}
-	}
-#endif
-
-#if WLR_HAS_VULKAN_RENDERER
-	if (strcmp(renderer_name, "vulkan") == 0) {
-		if (drm_fd < 0) {
-			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
-		} else {
-			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
-			if (renderer) {
-				return renderer;
-			} else {
-				log_creation_failure(is_auto, "Failed to create a Vulkan renderer");
-			}
-		}
-	}
-#endif
-
-	bool has_render_node = false;
-	if (is_auto && drm_fd >= 0) {
-		char *render_node = drmGetRenderDeviceNameFromFd(drm_fd);
-		has_render_node = render_node != NULL;
-		free(render_node);
-	}
-
-	if ((is_auto && !has_render_node) || strcmp(renderer_name, "pixman") == 0) {
-		renderer = wlr_pixman_renderer_create();
-		if (renderer) {
-			return renderer;
-		} else {
-			log_creation_failure(is_auto, "Failed to create a pixman renderer");
-		}
-	}
-
-	wlr_log(WLR_ERROR, "Could not initialize renderer");
-	return NULL;
-}
-
 static int open_drm_render_node(void) {
 	uint32_t flags = 0;
 	int devices_len = drmGetDevices2(flags, NULL, 0);
@@ -362,9 +291,11 @@ out:
 	return fd;
 }
 
-struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend) {
-	int drm_fd = -1;
-	int render_drm_fd = -1;
+static bool open_preferred_drm_fd(struct wlr_backend *backend, int *drm_fd_ptr,
+		bool *own_drm_fd) {
+	if (*drm_fd_ptr >= 0) {
+		return true;
+	}
 
 	// Allow the user to override the render node
 	const char *render_name = getenv("WLR_RENDER_DRM_DEVICE");
@@ -372,39 +303,132 @@ struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend) {
 		wlr_log(WLR_INFO,
 			"Opening DRM render node '%s' from WLR_RENDER_DRM_DEVICE",
 			render_name);
-		render_drm_fd = open(render_name, O_RDWR | O_CLOEXEC);
-		if (render_drm_fd < 0) {
+		int drm_fd = open(render_name, O_RDWR | O_CLOEXEC);
+		if (drm_fd < 0) {
 			wlr_log_errno(WLR_ERROR, "Failed to open '%s'", render_name);
-			return NULL;
+			return false;
 		}
-		if (drmGetNodeTypeFromFd(render_drm_fd) != DRM_NODE_RENDER) {
+		if (drmGetNodeTypeFromFd(drm_fd) != DRM_NODE_RENDER) {
 			wlr_log(WLR_ERROR, "'%s' is not a DRM render node", render_name);
-			close(render_drm_fd);
-			return NULL;
+			close(drm_fd);
+			return false;
 		}
-		drm_fd = render_drm_fd;
+		*drm_fd_ptr = drm_fd;
+		*own_drm_fd = true;
+		return true;
 	}
 
-	if (drm_fd < 0) {
-		drm_fd = wlr_backend_get_drm_fd(backend);
+	// Prefer the backend's DRM node, if any
+	int backend_drm_fd = wlr_backend_get_drm_fd(backend);
+	if (backend_drm_fd >= 0) {
+		*drm_fd_ptr = backend_drm_fd;
+		*own_drm_fd = false;
+		return true;
 	}
 
 	// If the backend hasn't picked a DRM FD, but accepts DMA-BUFs, pick an
 	// arbitrary render node
 	uint32_t backend_caps = backend_get_buffer_caps(backend);
-	if (drm_fd < 0 && (backend_caps & WLR_BUFFER_CAP_DMABUF) != 0) {
-		render_drm_fd = open_drm_render_node();
-		drm_fd = render_drm_fd;
+	if (backend_caps & WLR_BUFFER_CAP_DMABUF) {
+		int drm_fd = open_drm_render_node();
+		if (drm_fd < 0) {
+			return false;
+		}
+		*drm_fd_ptr = drm_fd;
+		*own_drm_fd = true;
+		return true;
 	}
 
-	// Note, drm_fd may be negative if unavailable
-	struct wlr_renderer *renderer = renderer_autocreate_with_drm_fd(drm_fd);
+	return false;
+}
 
-	if (render_drm_fd >= 0) {
-		close(render_drm_fd);
+static void log_creation_failure(bool is_auto, const char *msg) {
+	wlr_log(is_auto ? WLR_DEBUG : WLR_ERROR, "%s%s", msg, is_auto ? ". Skipping!" : "");
+}
+
+static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int drm_fd) {
+	const char *renderer_options[] = {
+		"auto",
+#if WLR_HAS_GLES2_RENDERER
+		"gles2",
+#endif
+#if WLR_HAS_VULKAN_RENDERER
+		"vulkan",
+#endif
+		"pixman",
+		NULL
+	};
+
+	const char *renderer_name = renderer_options[env_parse_switch("WLR_RENDERER", renderer_options)];
+	bool is_auto = strcmp(renderer_name, "auto") == 0;
+	struct wlr_renderer *renderer = NULL;
+
+	bool own_drm_fd = false;
+	(void)open_preferred_drm_fd;
+
+#if WLR_HAS_GLES2_RENDERER
+	if (is_auto || strcmp(renderer_name, "gles2") == 0) {
+		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
+			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
+		} else {
+			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
+			if (renderer) {
+				goto out;
+			} else {
+				log_creation_failure(is_auto, "Failed to create a GLES2 renderer");
+			}
+		}
+	}
+#endif
+
+#if WLR_HAS_VULKAN_RENDERER
+	if (strcmp(renderer_name, "vulkan") == 0) {
+		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
+			log_creation_failure(is_auto, "Cannot create Vulkan renderer: no DRM FD available");
+		} else {
+			renderer = wlr_vk_renderer_create_with_drm_fd(drm_fd);
+			if (renderer) {
+				goto out;
+			} else {
+				log_creation_failure(is_auto, "Failed to create a Vulkan renderer");
+			}
+		}
+	}
+#endif
+
+	bool has_render_node = false;
+	int backend_drm_fd = wlr_backend_get_drm_fd(backend);
+	if (is_auto && backend_drm_fd >= 0) {
+		char *render_node = drmGetRenderDeviceNameFromFd(backend_drm_fd);
+		has_render_node = render_node != NULL;
+		free(render_node);
 	}
 
+	if ((is_auto && !has_render_node) || strcmp(renderer_name, "pixman") == 0) {
+		renderer = wlr_pixman_renderer_create();
+		if (renderer) {
+			goto out;
+		} else {
+			log_creation_failure(is_auto, "Failed to create a pixman renderer");
+		}
+	}
+
+out:
+	if (renderer == NULL) {
+		wlr_log(WLR_ERROR, "Could not initialize renderer");
+	}
+	if (own_drm_fd && drm_fd >= 0) {
+		close(drm_fd);
+	}
 	return renderer;
+}
+
+struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
+	return renderer_autocreate(NULL, drm_fd);
+}
+
+struct wlr_renderer *wlr_renderer_autocreate(struct wlr_backend *backend) {
+	return renderer_autocreate(backend, -1);
 }
 
 int wlr_renderer_get_drm_fd(struct wlr_renderer *r) {
