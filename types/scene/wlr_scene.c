@@ -1553,8 +1553,7 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 		return false;
 	}
 
-	struct wlr_box node_box;
-	wlr_scene_node_coords(node, &node_box.x, &node_box.y);
+	struct wlr_box node_box = { .x = entry->x, .y = entry->y };
 	scene_node_get_size(node, &node_box.width, &node_box.height);
 
 	if (!wlr_box_equal(&data->logical, &node_box)) {
@@ -1807,9 +1806,6 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		for (int i = list_len - 1; i >= 0; i--) {
 			struct render_list_entry *entry = &list_data[i];
 
-			int x, y;
-			wlr_scene_node_coords(entry->node, &x, &y);
-
 			// We must only cull opaque regions that are visible by the node.
 			// The node's visibility will have the knowledge of a black rect
 			// that may have been omitted from the render list via the black
@@ -1817,7 +1813,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 			// rendering in that black rect region, consider the node's visibility.
 			pixman_region32_t opaque;
 			pixman_region32_init(&opaque);
-			scene_node_opaque_region(entry->node, x, y, &opaque);
+			scene_node_opaque_region(entry->node, entry->x, entry->y, &opaque);
 			pixman_region32_intersect(&opaque, &opaque, &entry->node->visible);
 
 			pixman_region32_translate(&opaque, -scene_output->x, -scene_output->y);
