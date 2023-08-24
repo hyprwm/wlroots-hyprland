@@ -57,7 +57,7 @@ static void frame_output_handle_commit(struct wl_listener *listener,
 		wl_container_of(listener, frame, output_commit);
 	struct wlr_output_event_commit *event = data;
 
-	if (!(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
+	if (!(event->state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 		return;
 	}
 
@@ -65,7 +65,7 @@ static void frame_output_handle_commit(struct wl_listener *listener,
 	wl_list_init(&frame->output_commit.link);
 
 	struct wlr_dmabuf_attributes attribs = {0};
-	if (!wlr_buffer_get_dmabuf(event->buffer, &attribs)) {
+	if (!wlr_buffer_get_dmabuf(event->state->buffer, &attribs)) {
 		zwlr_export_dmabuf_frame_v1_send_cancel(frame->resource,
 			ZWLR_EXPORT_DMABUF_FRAME_V1_CANCEL_REASON_TEMPORARY);
 		frame_destroy(frame);

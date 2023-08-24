@@ -566,13 +566,13 @@ static void output_cursor_output_handle_output_commit(
 		wl_container_of(listener, output_cursor, output_commit);
 	const struct wlr_output_event_commit *event = data;
 
-	if (event->committed & WLR_OUTPUT_STATE_SCALE) {
+	if (event->state->committed & WLR_OUTPUT_STATE_SCALE) {
 		cursor_output_cursor_update(output_cursor);
 	}
 
 	struct wlr_surface *surface = output_cursor->cursor->state->surface;
 	if (surface && output_cursor->output_cursor->visible &&
-			(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
+			(event->state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 		wlr_surface_send_frame_done(surface, event->when);
 	}
 }

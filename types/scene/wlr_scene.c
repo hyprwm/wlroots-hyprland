@@ -1265,8 +1265,9 @@ static void scene_output_handle_commit(struct wl_listener *listener, void *data)
 	struct wlr_scene_output *scene_output = wl_container_of(listener,
 		scene_output, output_commit);
 	struct wlr_output_event_commit *event = data;
+	const struct wlr_output_state *state = event->state;
 
-	if (event->committed & (WLR_OUTPUT_STATE_MODE |
+	if (state->committed & (WLR_OUTPUT_STATE_MODE |
 			WLR_OUTPUT_STATE_TRANSFORM |
 			WLR_OUTPUT_STATE_SCALE |
 			WLR_OUTPUT_STATE_ENABLED)) {

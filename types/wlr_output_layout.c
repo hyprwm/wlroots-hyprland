@@ -118,7 +118,8 @@ static void handle_output_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, l_output, commit);
 	struct wlr_output_event_commit *event = data;
 
-	if (event->committed & (WLR_OUTPUT_STATE_SCALE | WLR_OUTPUT_STATE_TRANSFORM |
+	if (event->state->committed & (WLR_OUTPUT_STATE_SCALE |
+			WLR_OUTPUT_STATE_TRANSFORM |
 			WLR_OUTPUT_STATE_MODE)) {
 		output_layout_reconfigure(l_output->layout);
 		output_update_global(l_output->output);

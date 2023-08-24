@@ -272,10 +272,9 @@ static void frame_handle_output_commit(struct wl_listener *listener,
 	struct wlr_output_event_commit *event = data;
 	struct wlr_output *output = frame->output;
 	struct wlr_renderer *renderer = output->renderer;
-	struct wlr_buffer *buffer = event->buffer;
 	assert(renderer);
 
-	if (!(event->committed & WLR_OUTPUT_STATE_BUFFER)) {
+	if (!(event->state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 		return;
 	}
 
@@ -297,10 +296,10 @@ static void frame_handle_output_commit(struct wl_listener *listener,
 	bool ok;
 	switch (frame->buffer_cap) {
 	case WLR_BUFFER_CAP_DMABUF:
-		ok = frame_dma_copy(frame, buffer);
+		ok = frame_dma_copy(frame, event->state->buffer);
 		break;
 	case WLR_BUFFER_CAP_DATA_PTR:
-		ok = frame_shm_copy(frame, buffer);
+		ok = frame_shm_copy(frame, event->state->buffer);
 		break;
 	default:
 		abort(); // unreachable

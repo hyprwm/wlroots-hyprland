@@ -62,7 +62,7 @@ static void output_power_handle_output_commit(struct wl_listener *listener,
 	struct wlr_output_power_v1 *output_power =
 		wl_container_of(listener, output_power, output_commit_listener);
 	struct wlr_output_event_commit *event = data;
-	if (event->committed & WLR_OUTPUT_STATE_ENABLED) {
+	if (event->state->committed & WLR_OUTPUT_STATE_ENABLED) {
 		output_power_v1_send_mode(output_power);
 	}
 }
