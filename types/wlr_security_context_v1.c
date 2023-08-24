@@ -207,6 +207,12 @@ static void security_context_handle_commit(struct wl_client *client,
 	}
 
 	wl_resource_set_user_data(resource, NULL);
+
+	struct wlr_security_context_v1_commit_event event = {
+		.state = &security_context->state,
+		.parent_client = client,
+	};
+	wl_signal_emit_mutable(&security_context->manager->events.commit, &event);
 }
 
 static void security_context_handle_set_sandbox_engine(struct wl_client *client,
@@ -379,6 +385,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, manager, display_destroy);
 	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	assert(wl_list_empty(&manager->events.destroy.listener_list));
+	assert(wl_list_empty(&manager->events.commit.listener_list));
 
 	struct wlr_security_context_v1 *security_context, *tmp;
 	wl_list_for_each_safe(security_context, tmp, &manager->contexts, link) {
@@ -407,6 +414,7 @@ struct wlr_security_context_manager_v1 *wlr_security_context_manager_v1_create(
 
 	wl_list_init(&manager->contexts);
 	wl_signal_init(&manager->events.destroy);
+	wl_signal_init(&manager->events.commit);
 
 	manager->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &manager->display_destroy);

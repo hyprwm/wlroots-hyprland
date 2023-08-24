@@ -23,6 +23,7 @@ struct wlr_security_context_manager_v1 {
 
 	struct {
 		struct wl_signal destroy;
+		struct wl_signal commit; // struct wlr_security_context_v1_commit_event
 	} events;
 
 	void *data;
@@ -38,6 +39,12 @@ struct wlr_security_context_v1_state {
 	char *sandbox_engine; // may be NULL
 	char *app_id; // may be NULL
 	char *instance_id; // may be NULL
+};
+
+struct wlr_security_context_v1_commit_event {
+	const struct wlr_security_context_v1_state *state;
+	// Client which created the security context
+	struct wl_client *parent_client;
 };
 
 struct wlr_security_context_manager_v1 *wlr_security_context_manager_v1_create(
