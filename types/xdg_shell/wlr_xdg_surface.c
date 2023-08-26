@@ -183,12 +183,10 @@ static void xdg_surface_handle_get_popup(struct wl_client *client,
 		struct wl_resource *positioner_resource) {
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_from_resource(resource);
+	assert(xdg_surface != NULL);
 	struct wlr_xdg_surface *parent = NULL;
 	if (parent_resource != NULL) {
 		parent = wlr_xdg_surface_from_resource(parent_resource);
-	}
-	if (xdg_surface == NULL) {
-		return; // TODO: create an inert xdg_popup
 	}
 	struct wlr_xdg_positioner *positioner =
 		wlr_xdg_positioner_from_resource(positioner_resource);
@@ -199,9 +197,7 @@ static void xdg_surface_handle_get_toplevel(struct wl_client *client,
 		struct wl_resource *resource, uint32_t id) {
 	struct wlr_xdg_surface *xdg_surface =
 		wlr_xdg_surface_from_resource(resource);
-	if (xdg_surface == NULL) {
-		return; // TODO: create an inert xdg_toplevel
-	}
+	assert(xdg_surface != NULL);
 	create_xdg_toplevel(xdg_surface, id);
 }
 
@@ -209,9 +205,7 @@ static void xdg_surface_handle_set_window_geometry(struct wl_client *client,
 		struct wl_resource *resource, int32_t x, int32_t y, int32_t width,
 		int32_t height) {
 	struct wlr_xdg_surface *surface = wlr_xdg_surface_from_resource(resource);
-	if (surface == NULL) {
-		return;
-	}
+	assert(surface != NULL);
 
 	if (surface->role == WLR_XDG_SURFACE_ROLE_NONE) {
 		wl_resource_post_error(surface->resource,
