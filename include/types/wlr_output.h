@@ -21,4 +21,6 @@ bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 	int dst_width, int dst_height, enum wl_output_transform transform,
 	int32_t hotspot_x, int32_t hotspot_y);
 
+void output_defer_present(struct wlr_output *output, struct wlr_output_event_present event);
+
 #endif

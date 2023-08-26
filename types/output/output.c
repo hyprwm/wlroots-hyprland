@@ -927,6 +927,46 @@ void wlr_output_send_present(struct wlr_output *output,
 	wl_signal_emit_mutable(&output->events.present, event);
 }
 
+struct deferred_present_event {
+	struct wlr_output *output;
+	struct wl_event_source *idle_source;
+	struct wlr_output_event_present event;
+	struct wl_listener output_destroy;
+};
+
+static void deferred_present_event_destroy(struct deferred_present_event *deferred) {
+	wl_list_remove(&deferred->output_destroy.link);
+	free(deferred);
+}
+
+static void deferred_present_event_handle_idle(void *data) {
+	struct deferred_present_event *deferred = data;
+	wlr_output_send_present(deferred->output, &deferred->event);
+	deferred_present_event_destroy(deferred);
+}
+
+static void deferred_present_event_handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct deferred_present_event *deferred = wl_container_of(listener, deferred, output_destroy);
+	wl_event_source_remove(deferred->idle_source);
+	deferred_present_event_destroy(deferred);
+}
+
+void output_defer_present(struct wlr_output *output, struct wlr_output_event_present event) {
+	struct deferred_present_event *deferred = calloc(1, sizeof(struct wlr_output_event_present));
+	if (!deferred) {
+		return;
+	}
+	*deferred = (struct deferred_present_event){
+		.output = output,
+		.event = event,
+	};
+	deferred->output_destroy.notify = deferred_present_event_handle_output_destroy;
+	wl_signal_add(&output->events.destroy, &deferred->output_destroy);
+
+	struct wl_event_loop *ev = wl_display_get_event_loop(output->display);
+	deferred->idle_source = wl_event_loop_add_idle(ev, deferred_present_event_handle_idle, deferred);
+}
+
 void wlr_output_send_request_state(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	uint32_t unchanged = output_compare_state(output, state);
