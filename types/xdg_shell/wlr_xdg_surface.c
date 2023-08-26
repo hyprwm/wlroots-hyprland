@@ -25,6 +25,7 @@ static void xdg_surface_configure_destroy(
 
 static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
 	surface->client_mapped = false;
+	surface->initialized = false;
 	surface->configured = false;
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
@@ -166,6 +167,11 @@ uint32_t wlr_xdg_surface_schedule_configure(struct wlr_xdg_surface *surface) {
 	struct wl_display *display = wl_client_get_display(surface->client->client);
 	struct wl_event_loop *loop = wl_display_get_event_loop(display);
 
+	if (!surface->initialized) {
+		wlr_log(WLR_ERROR, "A configure is scheduled for an uninitialized xdg_surface %p",
+			surface);
+	}
+
 	if (surface->configure_idle == NULL) {
 		surface->scheduled_serial = wl_display_next_serial(display);
 		surface->configure_idle = wl_event_loop_add_idle(loop,
@@ -270,10 +276,15 @@ static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		return;
 	}
 
+	surface->initial_commit = !surface->initialized;
+
 	if (surface->client_mapped && !wlr_surface_has_buffer(wlr_surface)) {
+		assert(!surface->initial_commit);
 		// This commit has unmapped the surface
 		reset_xdg_surface_role_object(surface);
 		reset_xdg_surface(surface);
+	} else {
+		surface->initialized = true;
 	}
 
 	surface->current = surface->pending;

@@ -245,13 +245,12 @@ void handle_xdg_popup_committed(struct wlr_xdg_popup *popup) {
 		return;
 	}
 
-	if (!popup->sent_initial_configure) {
+	popup->current = popup->pending;
+
+	if (popup->base->initial_commit && !popup->sent_initial_configure) {
 		wlr_xdg_surface_schedule_configure(popup->base);
 		popup->sent_initial_configure = true;
-		return;
 	}
-
-	popup->current = popup->pending;
 }
 
 static const struct xdg_popup_interface xdg_popup_implementation;
