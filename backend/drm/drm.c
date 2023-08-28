@@ -453,25 +453,31 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 			base->enabled : conn->output.enabled,
 	};
 
+	struct wlr_output_mode *mode = conn->output.current_mode;
+	int32_t width = conn->output.width;
+	int32_t height = conn->output.height;
+	int32_t refresh = conn->output.refresh;
+
 	if (base->committed & WLR_OUTPUT_STATE_MODE) {
 		switch (base->mode_type) {
 		case WLR_OUTPUT_STATE_MODE_FIXED:;
-			struct wlr_drm_mode *mode =
-				wl_container_of(base->mode, mode, wlr_mode);
-			state->mode = mode->drm_mode;
+			mode = base->mode;
 			break;
 		case WLR_OUTPUT_STATE_MODE_CUSTOM:
-			generate_cvt_mode(&state->mode, base->custom_mode.width,
-				base->custom_mode.height,
-				(float)base->custom_mode.refresh / 1000);
-			state->mode.type = DRM_MODE_TYPE_USERDEF;
+			mode = NULL;
+			width = base->custom_mode.width;
+			height = base->custom_mode.height;
+			refresh = base->custom_mode.refresh;
 			break;
 		}
-	} else if (state->active) {
-		struct wlr_drm_mode *mode =
-			wl_container_of(conn->output.current_mode, mode, wlr_mode);
-		assert(mode != NULL);
-		state->mode = mode->drm_mode;
+	}
+
+	if (mode) {
+		struct wlr_drm_mode *drm_mode = wl_container_of(mode, drm_mode, wlr_mode);
+		state->mode = drm_mode->drm_mode;
+	} else {
+		generate_cvt_mode(&state->mode, width, height, (float)refresh / 1000);
+		state->mode.type = DRM_MODE_TYPE_USERDEF;
 	}
 
 	if (conn->crtc != NULL) {
