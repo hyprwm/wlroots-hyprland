@@ -428,11 +428,14 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	int clip_rects_len;
 	const pixman_box32_t *clip_rects = pixman_region32_rectangles(&clip, &clip_rects_len);
 
+	struct wlr_box box;
+	wlr_render_rect_options_get_box(options, pass->render_buffer->wlr_buffer, &box);
+
 	switch (options->blend_mode) {
 	case WLR_RENDER_BLEND_MODE_PREMULTIPLIED:;
 		float proj[9], matrix[9];
 		wlr_matrix_identity(proj);
-		wlr_matrix_project_box(matrix, &options->box, WL_OUTPUT_TRANSFORM_NORMAL, 0, proj);
+		wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0, proj);
 		wlr_matrix_multiply(matrix, pass->projection, matrix);
 
 		struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
@@ -479,8 +482,8 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 		};
 		VkClearRect clear_rect = {
 			.rect = {
-				.offset = { options->box.x, options->box.y },
-				.extent = { options->box.width, options->box.height },
+				.offset = { box.x, box.y },
+				.extent = { box.width, box.height },
 			},
 			.layerCount = 1,
 		};

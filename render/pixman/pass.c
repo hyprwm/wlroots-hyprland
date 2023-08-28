@@ -162,7 +162,8 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 		const struct wlr_render_rect_options *options) {
 	struct wlr_pixman_render_pass *pass = get_render_pass(wlr_pass);
 	struct wlr_pixman_buffer *buffer = pass->buffer;
-	struct wlr_box box = options->box;
+	struct wlr_box box;
+	wlr_render_rect_options_get_box(options, pass->buffer->buffer, &box);
 
 	pixman_op_t op = get_pixman_blending(options->color.a == 1 ?
 		WLR_RENDER_BLEND_MODE_NONE : options->blend_mode);
