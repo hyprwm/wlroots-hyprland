@@ -74,6 +74,20 @@ float wlr_render_texture_options_get_alpha(const struct wlr_render_texture_optio
 	return *options->alpha;
 }
 
+void wlr_render_rect_options_get_box(const struct wlr_render_rect_options *options,
+		const struct wlr_buffer *buffer, struct wlr_box *box) {
+	if (wlr_box_empty(&options->box)) {
+		*box = (struct wlr_box){
+			.width = buffer->width,
+			.height = buffer->height,
+		};
+
+		return;
+	}
+
+	*box = options->box;
+}
+
 static const struct wlr_render_pass_impl legacy_impl;
 
 static struct wlr_render_pass_legacy *legacy_pass_from_pass(struct wlr_render_pass *pass) {
