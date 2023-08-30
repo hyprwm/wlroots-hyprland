@@ -424,6 +424,8 @@ out:
 }
 
 struct wlr_renderer *renderer_autocreate_with_drm_fd(int drm_fd) {
+	assert(drm_fd >= 0);
+
 	return renderer_autocreate(NULL, drm_fd);
 }
 
