@@ -307,6 +307,13 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 		return;
 	}
 
+	if (wlr_surface_has_buffer(surface->surface) && !surface->configured) {
+		wl_resource_post_error(surface->resource,
+			ZWLR_LAYER_SHELL_V1_ERROR_ALREADY_CONSTRUCTED,
+			"layer_surface has never been configured");
+		return;
+	}
+
 	const uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	if (surface->pending.desired_width == 0 &&
@@ -330,13 +337,6 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	surface->current = surface->pending;
 	surface->pending.committed = 0;
 
-	if (wlr_surface_has_buffer(surface->surface) && !surface->configured) {
-		wl_resource_post_error(surface->resource,
-			ZWLR_LAYER_SHELL_V1_ERROR_ALREADY_CONSTRUCTED,
-			"layer_surface has never been configured");
-		return;
-	}
-
 	if (!surface->added) {
 		surface->added = true;
 		wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
@@ -345,7 +345,7 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 		return;
 	}
 
-	if (surface->configured && wlr_surface_has_buffer(wlr_surface)) {
+	if (wlr_surface_has_buffer(wlr_surface)) {
 		wlr_surface_map(wlr_surface);
 	}
 }
