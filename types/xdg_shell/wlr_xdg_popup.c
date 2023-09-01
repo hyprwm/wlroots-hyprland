@@ -376,6 +376,12 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 		return;
 	}
 
+	if (parent != NULL && parent->role == WLR_XDG_SURFACE_ROLE_NONE) {
+		wl_resource_post_error(surface->client->resource, XDG_WM_BASE_ERROR_INVALID_POPUP_PARENT,
+			"a popup parent must have a role");
+		return;
+	}
+
 	assert(surface->popup == NULL);
 	surface->popup = calloc(1, sizeof(struct wlr_xdg_popup));
 	if (!surface->popup) {
