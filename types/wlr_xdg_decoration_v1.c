@@ -63,7 +63,7 @@ static void toplevel_decoration_handle_resource_destroy(
 		toplevel_decoration_from_resource(resource);
 	wl_signal_emit_mutable(&decoration->events.destroy, decoration);
 	wl_list_remove(&decoration->surface_commit.link);
-	wl_list_remove(&decoration->surface_destroy.link);
+	wl_list_remove(&decoration->toplevel_destroy.link);
 	wl_list_remove(&decoration->surface_configure.link);
 	wl_list_remove(&decoration->surface_ack_configure.link);
 	struct wlr_xdg_toplevel_decoration_v1_configure *configure, *tmp;
@@ -74,10 +74,10 @@ static void toplevel_decoration_handle_resource_destroy(
 	free(decoration);
 }
 
-static void toplevel_decoration_handle_surface_destroy(
+static void toplevel_decoration_handle_toplevel_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_decoration_v1 *decoration =
-		wl_container_of(listener, decoration, surface_destroy);
+		wl_container_of(listener, decoration, toplevel_destroy);
 
 	wl_resource_post_error(decoration->resource,
 		ZXDG_TOPLEVEL_DECORATION_V1_ERROR_ORPHANED,
@@ -145,15 +145,8 @@ static void toplevel_decoration_handle_surface_commit(
 		struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_decoration_v1 *decoration =
 		wl_container_of(listener, decoration, surface_commit);
-	struct wlr_xdg_decoration_manager_v1 *manager = decoration->manager;
 
 	decoration->current = decoration->pending;
-
-	if (decoration->toplevel->base->added && !decoration->added) {
-		decoration->added = true;
-		wl_signal_emit_mutable(&manager->events.new_toplevel_decoration,
-			decoration);
-	}
 }
 
 static const struct zxdg_decoration_manager_v1_interface decoration_manager_impl;
@@ -223,30 +216,18 @@ static void decoration_manager_handle_get_toplevel_decoration(
 	wl_signal_init(&decoration->events.destroy);
 	wl_signal_init(&decoration->events.request_mode);
 
-	wl_signal_add(&toplevel->base->events.destroy,
-		&decoration->surface_destroy);
-	decoration->surface_destroy.notify =
-		toplevel_decoration_handle_surface_destroy;
-	wl_signal_add(&toplevel->base->events.configure,
-		&decoration->surface_configure);
-	decoration->surface_configure.notify =
-		toplevel_decoration_handle_surface_configure;
-	wl_signal_add(&toplevel->base->events.ack_configure,
-		&decoration->surface_ack_configure);
-	decoration->surface_ack_configure.notify =
-		toplevel_decoration_handle_surface_ack_configure;
-	wl_signal_add(&toplevel->base->surface->events.commit,
-		&decoration->surface_commit);
-	decoration->surface_commit.notify =
-		toplevel_decoration_handle_surface_commit;
+	wl_signal_add(&toplevel->events.destroy, &decoration->toplevel_destroy);
+	decoration->toplevel_destroy.notify = toplevel_decoration_handle_toplevel_destroy;
+	wl_signal_add(&toplevel->base->events.configure, &decoration->surface_configure);
+	decoration->surface_configure.notify = toplevel_decoration_handle_surface_configure;
+	wl_signal_add(&toplevel->base->events.ack_configure, &decoration->surface_ack_configure);
+	decoration->surface_ack_configure.notify = toplevel_decoration_handle_surface_ack_configure;
+	wl_signal_add(&toplevel->base->surface->events.commit, &decoration->surface_commit);
+	decoration->surface_commit.notify = toplevel_decoration_handle_surface_commit;
 
 	wl_list_insert(&manager->decorations, &decoration->link);
 
-	if (toplevel->base->added) {
-		decoration->added = true;
-		wl_signal_emit_mutable(&manager->events.new_toplevel_decoration,
-			decoration);
-	}
+	wl_signal_emit_mutable(&manager->events.new_toplevel_decoration, decoration);
 }
 
 static const struct zxdg_decoration_manager_v1_interface

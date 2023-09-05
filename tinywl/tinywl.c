@@ -42,7 +42,8 @@ struct tinywl_server {
 	struct wlr_scene_output_layout *scene_layout;
 
 	struct wlr_xdg_shell *xdg_shell;
-	struct wl_listener new_xdg_surface;
+	struct wl_listener new_xdg_toplevel;
+	struct wl_listener new_xdg_popup;
 	struct wl_list toplevels;
 
 	struct wlr_cursor *cursor;
@@ -767,58 +768,53 @@ static void xdg_toplevel_request_fullscreen(
 	wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
 }
 
-static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
-	/* This event is raised when wlr_xdg_shell receives a new xdg surface from a
-	 * client, either a toplevel (application window) or popup. */
-	struct tinywl_server *server =
-		wl_container_of(listener, server, new_xdg_surface);
-	struct wlr_xdg_surface *xdg_surface = data;
+static void server_new_xdg_toplevel(struct wl_listener *listener, void *data) {
+	/* This event is raised when a client creates a new toplevel (application window). */
+	struct tinywl_server *server = wl_container_of(listener, server, new_xdg_toplevel);
+	struct wlr_xdg_toplevel *xdg_toplevel = data;
+
+	/* Allocate a tinywl_toplevel for this surface */
+	struct tinywl_toplevel *toplevel = calloc(1, sizeof(*toplevel));
+	toplevel->server = server;
+	toplevel->xdg_toplevel = xdg_toplevel;
+	toplevel->scene_tree =
+		wlr_scene_xdg_surface_create(&toplevel->server->scene->tree, xdg_toplevel->base);
+	toplevel->scene_tree->node.data = toplevel;
+	xdg_toplevel->base->data = toplevel->scene_tree;
+
+	/* Listen to the various events it can emit */
+	toplevel->map.notify = xdg_toplevel_map;
+	wl_signal_add(&xdg_toplevel->base->surface->events.map, &toplevel->map);
+	toplevel->unmap.notify = xdg_toplevel_unmap;
+	wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &toplevel->unmap);
+
+	toplevel->destroy.notify = xdg_toplevel_destroy;
+	wl_signal_add(&xdg_toplevel->events.destroy, &toplevel->destroy);
+
+	/* cotd */
+	toplevel->request_move.notify = xdg_toplevel_request_move;
+	wl_signal_add(&xdg_toplevel->events.request_move, &toplevel->request_move);
+	toplevel->request_resize.notify = xdg_toplevel_request_resize;
+	wl_signal_add(&xdg_toplevel->events.request_resize, &toplevel->request_resize);
+	toplevel->request_maximize.notify = xdg_toplevel_request_maximize;
+	wl_signal_add(&xdg_toplevel->events.request_maximize, &toplevel->request_maximize);
+	toplevel->request_fullscreen.notify = xdg_toplevel_request_fullscreen;
+	wl_signal_add(&xdg_toplevel->events.request_fullscreen, &toplevel->request_fullscreen);
+}
+
+static void server_new_xdg_popup(struct wl_listener *listener, void *data) {
+	/* This event is raised when a client creates a new popup. */
+	struct wlr_xdg_popup *xdg_popup = data;
 
 	/* We must add xdg popups to the scene graph so they get rendered. The
 	 * wlroots scene graph provides a helper for this, but to use it we must
 	 * provide the proper parent scene node of the xdg popup. To enable this,
 	 * we always set the user data field of xdg_surfaces to the corresponding
 	 * scene node. */
-	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-		struct wlr_xdg_surface *parent =
-			wlr_xdg_surface_try_from_wlr_surface(xdg_surface->popup->parent);
-		assert(parent != NULL);
-		struct wlr_scene_tree *parent_tree = parent->data;
-		xdg_surface->data = wlr_scene_xdg_surface_create(
-			parent_tree, xdg_surface);
-		return;
-	}
-	assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
-
-	/* Allocate a tinywl_toplevel for this surface */
-	struct tinywl_toplevel *toplevel = calloc(1, sizeof(*toplevel));
-	toplevel->server = server;
-	toplevel->xdg_toplevel = xdg_surface->toplevel;
-	toplevel->scene_tree = wlr_scene_xdg_surface_create(
-			&toplevel->server->scene->tree, toplevel->xdg_toplevel->base);
-	toplevel->scene_tree->node.data = toplevel;
-	xdg_surface->data = toplevel->scene_tree;
-
-	/* Listen to the various events it can emit */
-	toplevel->map.notify = xdg_toplevel_map;
-	wl_signal_add(&xdg_surface->surface->events.map, &toplevel->map);
-	toplevel->unmap.notify = xdg_toplevel_unmap;
-	wl_signal_add(&xdg_surface->surface->events.unmap, &toplevel->unmap);
-	toplevel->destroy.notify = xdg_toplevel_destroy;
-	wl_signal_add(&xdg_surface->events.destroy, &toplevel->destroy);
-
-	/* cotd */
-	struct wlr_xdg_toplevel *xdg_toplevel = xdg_surface->toplevel;
-	toplevel->request_move.notify = xdg_toplevel_request_move;
-	wl_signal_add(&xdg_toplevel->events.request_move, &toplevel->request_move);
-	toplevel->request_resize.notify = xdg_toplevel_request_resize;
-	wl_signal_add(&xdg_toplevel->events.request_resize, &toplevel->request_resize);
-	toplevel->request_maximize.notify = xdg_toplevel_request_maximize;
-	wl_signal_add(&xdg_toplevel->events.request_maximize,
-		&toplevel->request_maximize);
-	toplevel->request_fullscreen.notify = xdg_toplevel_request_fullscreen;
-	wl_signal_add(&xdg_toplevel->events.request_fullscreen,
-		&toplevel->request_fullscreen);
+	struct wlr_xdg_surface *parent = wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
+	assert(parent != NULL);
+	struct wlr_scene_tree *parent_tree = parent->data;
+	xdg_popup->base->data = wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 }
 
 int main(int argc, char *argv[]) {
@@ -914,9 +910,10 @@ int main(int argc, char *argv[]) {
 	 */
 	wl_list_init(&server.toplevels);
 	server.xdg_shell = wlr_xdg_shell_create(server.wl_display, 3);
-	server.new_xdg_surface.notify = server_new_xdg_surface;
-	wl_signal_add(&server.xdg_shell->events.new_surface,
-			&server.new_xdg_surface);
+	server.new_xdg_toplevel.notify = server_new_xdg_toplevel;
+	wl_signal_add(&server.xdg_shell->events.new_toplevel, &server.new_xdg_toplevel);
+	server.new_xdg_popup.notify = server_new_xdg_popup;
+	wl_signal_add(&server.xdg_shell->events.new_popup, &server.new_xdg_popup);
 
 	/*
 	 * Creates a cursor, which is a wlroots utility for tracking the cursor

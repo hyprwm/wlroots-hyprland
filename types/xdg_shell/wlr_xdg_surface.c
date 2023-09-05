@@ -307,12 +307,6 @@ static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		break;
 	}
 
-	if (!surface->added) {
-		surface->added = true;
-		wl_signal_emit_mutable(&surface->client->shell->events.new_surface,
-			surface);
-	}
-
 	if (wlr_surface_has_buffer(wlr_surface)) {
 		wlr_surface_map(wlr_surface);
 	}
@@ -392,6 +386,8 @@ void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_s
 	wl_list_insert(&client->surfaces, &surface->link);
 
 	wlr_surface_set_role_object(wlr_surface, surface->resource);
+
+	wl_signal_emit_mutable(&surface->client->shell->events.new_surface, surface);
 }
 
 bool set_xdg_surface_role(struct wlr_xdg_surface *surface, enum wlr_xdg_surface_role role) {
@@ -465,6 +461,8 @@ void set_xdg_surface_role_object(struct wlr_xdg_surface *surface,
 void destroy_xdg_surface(struct wlr_xdg_surface *surface) {
 	destroy_xdg_surface_role_object(surface);
 	reset_xdg_surface(surface);
+
+	wl_signal_emit_mutable(&surface->events.destroy, NULL);
 
 	wl_list_remove(&surface->link);
 

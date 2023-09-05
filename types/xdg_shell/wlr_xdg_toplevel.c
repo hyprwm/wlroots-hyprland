@@ -476,6 +476,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	}
 	surface->toplevel->base = surface;
 
+	wl_signal_init(&surface->toplevel->events.destroy);
 	wl_signal_init(&surface->toplevel->events.request_maximize);
 	wl_signal_init(&surface->toplevel->events.request_fullscreen);
 	wl_signal_init(&surface->toplevel->events.request_minimize);
@@ -499,6 +500,8 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		&xdg_toplevel_implementation, surface->toplevel, NULL);
 
 	set_xdg_surface_role_object(surface, surface->toplevel->resource);
+
+	wl_signal_emit_mutable(&surface->client->shell->events.new_toplevel, surface->toplevel);
 }
 
 void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
@@ -524,11 +527,7 @@ void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 	wlr_surface_unmap(toplevel->base->surface);
 	reset_xdg_toplevel(toplevel);
 
-	// TODO: improve events
-	if (toplevel->base->added) {
-		wl_signal_emit_mutable(&toplevel->base->events.destroy, NULL);
-		toplevel->base->added = false;
-	}
+	wl_signal_emit_mutable(&toplevel->events.destroy, NULL);
 
 	toplevel->base->toplevel = NULL;
 	wl_resource_set_user_data(toplevel->resource, NULL);

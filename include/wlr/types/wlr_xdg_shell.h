@@ -26,6 +26,8 @@ struct wlr_xdg_shell {
 
 	struct {
 		struct wl_signal new_surface; // struct wlr_xdg_surface
+		struct wl_signal new_toplevel; // struct wlr_xdg_toplevel
+		struct wl_signal new_popup; // struct wlr_xdg_popup
 		struct wl_signal destroy;
 	} events;
 
@@ -102,6 +104,8 @@ struct wlr_xdg_popup {
 	struct wlr_xdg_popup_state current, pending;
 
 	struct {
+		struct wl_signal destroy;
+
 		struct wl_signal reposition;
 	} events;
 
@@ -184,6 +188,8 @@ struct wlr_xdg_toplevel {
 	char *app_id;
 
 	struct {
+		struct wl_signal destroy;
+
 		// Note: as per xdg-shell protocol, the compositor has to
 		// handle state requests by sending a configure event,
 		// even if it didn't actually change the state. Therefore,
@@ -249,7 +255,7 @@ struct wlr_xdg_surface {
 
 	struct wl_list popups; // wlr_xdg_popup.link
 
-	bool added, configured;
+	bool configured;
 	struct wl_event_source *configure_idle;
 	uint32_t scheduled_serial;
 	struct wl_list configure_list;

@@ -34,7 +34,7 @@ struct wlr_xdg_exported_v1 {
 	struct wlr_xdg_foreign_exported base;
 
 	struct wl_resource *resource;
-	struct wl_listener xdg_surface_destroy;
+	struct wl_listener xdg_toplevel_destroy;
 
 	struct wl_list link; // wlr_xdg_foreign_v1.exporter.objects
 };
@@ -54,7 +54,7 @@ struct wlr_xdg_imported_child_v1 {
 
 	struct wl_list link; // wlr_xdg_imported_v1.children
 
-	struct wl_listener xdg_surface_destroy;
+	struct wl_listener xdg_toplevel_destroy;
 	struct wl_listener xdg_toplevel_set_parent;
 };
 
