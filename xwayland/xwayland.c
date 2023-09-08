@@ -63,6 +63,12 @@ static void handle_server_ready(struct wl_listener *listener, void *data) {
 	wl_signal_emit_mutable(&xwayland->events.ready, NULL);
 }
 
+static void handle_shell_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_xwayland *xwayland =
+		wl_container_of(listener, xwayland, shell_destroy);
+	xwayland->shell_v1 = NULL;
+}
+
 void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {
 	if (!xwayland) {
 		return;
@@ -71,6 +77,7 @@ void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {
 	wl_list_remove(&xwayland->server_destroy.link);
 	wl_list_remove(&xwayland->server_start.link);
 	wl_list_remove(&xwayland->server_ready.link);
+	wl_list_remove(&xwayland->shell_destroy.link);
 	free(xwayland->cursor);
 
 	wlr_xwayland_set_seat(xwayland, NULL);
@@ -124,6 +131,9 @@ struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 
 	xwayland->server_ready.notify = handle_server_ready;
 	wl_signal_add(&xwayland->server->events.ready, &xwayland->server_ready);
+
+	xwayland->shell_destroy.notify = handle_shell_destroy;
+	wl_signal_add(&xwayland->shell_v1->events.destroy, &xwayland->shell_destroy);
 
 	return xwayland;
 }

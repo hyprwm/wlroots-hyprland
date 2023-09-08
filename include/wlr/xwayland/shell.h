@@ -21,6 +21,7 @@ struct wlr_xwayland_shell_v1 {
 	struct wl_global *global;
 
 	struct {
+		struct wl_signal destroy;
 		struct wl_signal new_surface; // struct wlr_xwayland_surface_v1
 	} events;
 

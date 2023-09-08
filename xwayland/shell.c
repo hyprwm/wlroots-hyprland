@@ -179,6 +179,7 @@ struct wlr_xwayland_shell_v1 *wlr_xwayland_shell_v1_create(
 
 	wl_list_init(&shell->surfaces);
 	wl_signal_init(&shell->events.new_surface);
+	wl_signal_init(&shell->events.destroy);
 
 	shell->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &shell->display_destroy);
@@ -192,6 +193,8 @@ void wlr_xwayland_shell_v1_destroy(struct wlr_xwayland_shell_v1 *shell) {
 	if (shell == NULL) {
 		return;
 	}
+
+	wl_signal_emit_mutable(&shell->events.destroy, NULL);
 
 	struct wlr_xwayland_surface_v1 *xwl_surface, *tmp;
 	wl_list_for_each_safe(xwl_surface, tmp, &shell->surfaces, link) {
