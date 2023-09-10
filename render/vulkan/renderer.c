@@ -1818,10 +1818,12 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 			.srcOffsets[0] = {
 				.x = src_x,
 				.y = src_y,
+				.z = 0,
 			},
 			.srcOffsets[1] = {
 				.x = src_x + width,
 				.y = src_y + height,
+				.z = 1,
 			},
 			.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 			.dstSubresource.layerCount = 1,
