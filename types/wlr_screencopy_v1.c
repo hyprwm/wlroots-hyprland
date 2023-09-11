@@ -11,6 +11,7 @@
 #include <wlr/util/log.h>
 #include "wlr-screencopy-unstable-v1-protocol.h"
 #include "render/pixel_format.h"
+#include "render/wlr_renderer.h"
 
 #define SCREENCOPY_MANAGER_VERSION 3
 
@@ -208,12 +209,12 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 	}
 
 	bool ok = false;
-	if (!wlr_renderer_begin_with_buffer(renderer, src_buffer)) {
+	if (!renderer_bind_buffer(renderer, src_buffer)) {
 		goto out;
 	}
 	ok = wlr_renderer_read_pixels(renderer, format,
 		stride, width, height, x, y, 0, 0, data);
-	wlr_renderer_end(renderer);
+	renderer_bind_buffer(renderer, NULL);
 
 out:
 	wlr_buffer_end_data_ptr_access(frame->buffer);
