@@ -319,11 +319,6 @@ static void output_apply_state(struct wlr_output *output,
 		output->cursor_swapchain = NULL;
 	}
 
-	if (output_pending_enabled(output, state)) {
-		output->frame_pending = true;
-		output->needs_frame = false;
-	}
-
 	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
 		for (size_t i = 0; i < state->layers_len; i++) {
 			struct wlr_output_layer_state *layer_state = &state->layers[i];
@@ -825,6 +820,12 @@ bool wlr_output_commit_state(struct wlr_output *output,
 	}
 
 	output->commit_seq++;
+
+	if (output_pending_enabled(output, state)) {
+		output->frame_pending = true;
+		output->needs_frame = false;
+	}
+
 	output_apply_state(output, &pending);
 
 	struct wlr_output_event_commit event = {
