@@ -550,7 +550,12 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		float scale = output_cursor->output_cursor->output->scale;
 		wlr_xcursor_manager_load(manager, scale);
 		struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(manager, name, scale);
-		if (xcursor == NULL || output_cursor->xcursor == xcursor) {
+		if (xcursor == NULL) {
+			wlr_output_cursor_set_buffer(output_cursor->output_cursor, NULL, 0, 0);
+			return;
+		}
+
+		if (output_cursor->xcursor == xcursor) {
 			return;
 		}
 
