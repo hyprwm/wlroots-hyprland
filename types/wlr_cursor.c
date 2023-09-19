@@ -505,17 +505,15 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		int dst_width = 0, dst_height = 0;
 		if (buffer != NULL) {
 			texture = wlr_texture_from_buffer(renderer, buffer);
-			if (texture == NULL) {
-				return;
+			if (texture) {
+				src_box = (struct wlr_fbox){
+					.width = texture->width,
+					.height = texture->height,
+				};
+
+				dst_width = texture->width / scale;
+				dst_height = texture->height / scale;
 			}
-
-			src_box = (struct wlr_fbox){
-				.width = texture->width,
-				.height = texture->height,
-			};
-
-			dst_width = texture->width / scale;
-			dst_height = texture->height / scale;
 		}
 
 		output_cursor_set_texture(output_cursor->output_cursor, texture, true,
