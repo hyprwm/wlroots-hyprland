@@ -555,10 +555,6 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 			return;
 		}
 
-		if (output_cursor->xcursor == xcursor) {
-			return;
-		}
-
 		output_cursor->xcursor = xcursor;
 		output_cursor_set_xcursor_image(output_cursor, 0);
 	} else {
