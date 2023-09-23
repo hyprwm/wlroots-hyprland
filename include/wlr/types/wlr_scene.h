@@ -529,6 +529,9 @@ struct wlr_scene_output_layout *wlr_scene_attach_output_layout(struct wlr_scene 
 
 /**
  * Add an output to the scene, with its positioning defined by the output layout.
+ *
+ * The `wlr_scene_output_layout` takes ownership of the `wlr_scene_output`, which will be destroyed
+ * when either the `wlr_scene_output_layout` or the `wlr_output_layout_output` is destroyed.
  */
 void wlr_scene_output_layout_add_output(struct wlr_scene_output_layout *sol,
 	struct wlr_output_layout_output *lo, struct wlr_scene_output *so);
