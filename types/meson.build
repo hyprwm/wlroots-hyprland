@@ -91,6 +91,7 @@ wlr_files += files(
 	'wlr_xdg_foreign_v2.c',
 	'wlr_xdg_foreign_registry.c',
 	'wlr_xdg_output_v1.c',
+	'wlr_tearing_control_v1.c',
 )
 
 if features.get('drm-backend')
