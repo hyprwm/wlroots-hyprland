@@ -24,7 +24,7 @@ static void server_decoration_handle_request_mode(struct wl_client *client,
 		struct wl_resource *resource, uint32_t mode) {
 	struct wlr_server_decoration *decoration =
 		decoration_from_resource(resource);
-	if (decoration->mode == mode) {
+	if (decoration == NULL || decoration->mode == mode) {
 		return;
 	}
 	decoration->mode = mode;
