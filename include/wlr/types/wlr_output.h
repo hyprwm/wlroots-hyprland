@@ -89,6 +89,12 @@ struct wlr_output_state {
 	enum wl_output_subpixel subpixel;
 
 	struct wlr_buffer *buffer;
+	/* Request a tearing page-flip. When enabled, this may cause the output to
+	 * display a part of the previous buffer and a part of the current buffer at
+	 * the same time. The backend may reject the commit if a tearing page-flip
+	 * cannot be performed, in which case the caller should fall back to a
+	 * regular page-flip at the next wlr_output.frame event. */
+	bool tearing_page_flip;
 
 	enum wlr_output_state_mode_type mode_type;
 	struct wlr_output_mode *mode;

@@ -106,6 +106,10 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 		drm->iface = &atomic_iface;
 	}
 
+	if (drm->iface == &legacy_iface) {
+		drm->supports_tearing_page_flips = drmGetCap(drm->fd, DRM_CAP_ASYNC_PAGE_FLIP, &cap) == 0 && cap == 1;
+	}
+
 	int ret = drmGetCap(drm->fd, DRM_CAP_TIMESTAMP_MONOTONIC, &cap);
 	drm->clock = (ret == 0 && cap == 1) ? CLOCK_MONOTONIC : CLOCK_REALTIME;
 
@@ -650,6 +654,11 @@ static bool drm_connector_test(struct wlr_output *output,
 		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
 			goto out;
 		}
+
+		if (pending.base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
+			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
+			goto out;
+		}
 	}
 	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
 		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
@@ -725,7 +734,7 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		// page-flip, either a blocking modeset. When performing a blocking modeset
 		// we'll wait for all queued page-flips to complete, so we don't need this
 		// safeguard.
-		if (conn->pending_page_flip_crtc && !pending.modeset) {
+		if (conn->pending_page_flip_crtc && !pending.modeset && !pending.base->tearing_page_flip) {
 			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
 				"a page-flip is already pending");
 			goto out;
@@ -748,6 +757,9 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	}
 
 	uint32_t flags = pending.active ? DRM_MODE_PAGE_FLIP_EVENT : 0;
+	if (pending.base->tearing_page_flip) {
+		flags |= DRM_MODE_PAGE_FLIP_ASYNC;
+	}
 
 	ok = drm_crtc_commit(conn, &pending, flags, false);
 	if (!ok) {

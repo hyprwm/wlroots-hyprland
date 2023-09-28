@@ -665,6 +665,9 @@ static bool output_basic_test(struct wlr_output *output,
 			wlr_log(WLR_DEBUG, "Primary buffer size mismatch");
 			return false;
 		}
+	} else if (state->tearing_page_flip) {
+		wlr_log(WLR_ERROR, "Trying to commit a tearing page flip without a buffer?");
+		return false;
 	}
 
 	if (state->committed & WLR_OUTPUT_STATE_RENDER_FORMAT) {
