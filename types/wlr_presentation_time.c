@@ -17,7 +17,7 @@ struct wlr_presentation_surface_state {
 struct wlr_presentation_surface {
 	struct wlr_presentation_surface_state current, pending;
 
-	struct wlr_addon addon; // wlr_surface::addons
+	struct wlr_addon addon; // wlr_surface.addons
 
 	struct wl_listener surface_commit;
 };

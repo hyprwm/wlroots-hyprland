@@ -19,13 +19,13 @@ struct keyboard_group_device {
 	struct wl_listener keymap;
 	struct wl_listener repeat_info;
 	struct wl_listener destroy;
-	struct wl_list link; // wlr_keyboard_group::devices
+	struct wl_list link; // wlr_keyboard_group.devices
 };
 
 struct keyboard_group_key {
 	uint32_t keycode;
 	size_t count;
-	struct wl_list link; // wlr_keyboard_group::keys
+	struct wl_list link; // wlr_keyboard_group.keys
 };
 
 static void keyboard_set_leds(struct wlr_keyboard *kb, uint32_t leds) {

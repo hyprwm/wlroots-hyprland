@@ -10,7 +10,7 @@
 struct tablet_tool {
 	struct wlr_tablet_tool wlr_tool;
 	struct libinput_tablet_tool *handle;
-	struct wl_list link; // wlr_libinput_input_device::tablet_tools
+	struct wl_list link; // wlr_libinput_input_device.tablet_tools
 };
 
 const struct wlr_tablet_impl libinput_tablet_impl = {

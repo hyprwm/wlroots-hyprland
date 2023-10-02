@@ -108,9 +108,9 @@ struct wlr_xwayland_surface {
 	pid_t pid;
 	bool has_utf8_title;
 
-	struct wl_list children; // wlr_xwayland_surface::parent_link
+	struct wl_list children; // wlr_xwayland_surface.parent_link
 	struct wlr_xwayland_surface *parent;
-	struct wl_list parent_link; // wlr_xwayland_surface::children
+	struct wl_list parent_link; // wlr_xwayland_surface.children
 
 	xcb_atom_t *window_type;
 	size_t window_type_len;

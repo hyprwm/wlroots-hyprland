@@ -133,7 +133,7 @@ struct wlr_wl_seat {
 
 	struct wl_pointer *wl_pointer;
 	struct wlr_wl_pointer *active_pointer;
-	struct wl_list pointers; // wlr_wl_pointer::link
+	struct wl_list pointers; // wlr_wl_pointer.link
 
 	struct zwp_pointer_gesture_swipe_v1 *gesture_swipe;
 	struct zwp_pointer_gesture_pinch_v1 *gesture_pinch;

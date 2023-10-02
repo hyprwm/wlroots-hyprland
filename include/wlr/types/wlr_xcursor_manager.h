@@ -30,7 +30,7 @@ struct wlr_xcursor_manager_theme {
 struct wlr_xcursor_manager {
 	char *name;
 	uint32_t size;
-	struct wl_list scaled_themes; // wlr_xcursor_manager_theme::link
+	struct wl_list scaled_themes; // wlr_xcursor_manager_theme.link
 };
 
 /**

@@ -68,7 +68,7 @@ static void wlr_text_input_destroy(struct wlr_text_input_v3 *text_input) {
 	wl_signal_emit_mutable(&text_input->events.destroy, text_input);
 	text_input_clear_focused_surface(text_input);
 	wl_list_remove(&text_input->seat_destroy.link);
-	// remove from manager::text_inputs
+	// remove from manager.text_inputs
 	wl_list_remove(&text_input->link);
 	free(text_input->current.surrounding.text);
 	free(text_input->pending.surrounding.text);

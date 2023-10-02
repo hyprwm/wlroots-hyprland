@@ -113,10 +113,10 @@ struct wlr_xwm {
 	struct wlr_xwayland_surface *focus_surface;
 
 	// Surfaces in creation order
-	struct wl_list surfaces; // wlr_xwayland_surface::link
+	struct wl_list surfaces; // wlr_xwayland_surface.link
 	// Surfaces in bottom-to-top stacking order, for _NET_CLIENT_LIST_STACKING
-	struct wl_list surfaces_in_stack_order; // wlr_xwayland_surface::stack_link
-	struct wl_list unpaired_surfaces; // wlr_xwayland_surface::unpaired_link
+	struct wl_list surfaces_in_stack_order; // wlr_xwayland_surface.stack_link
+	struct wl_list unpaired_surfaces; // wlr_xwayland_surface.unpaired_link
 	struct wl_list pending_startup_ids; // pending_startup_id
 
 	struct wlr_drag *drag;

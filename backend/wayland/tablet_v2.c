@@ -39,7 +39,7 @@ struct tablet_tool {
 };
 
 struct tablet_pad_ring {
-	struct wl_list link; // tablet_pad_group::rings
+	struct wl_list link; // tablet_pad_group.rings
 	/* static */
 	struct zwp_tablet_pad_ring_v2 *ring;
 	struct tablet_pad_group *group;
@@ -52,7 +52,7 @@ struct tablet_pad_ring {
 };
 
 struct tablet_pad_strip {
-	struct wl_list link; // tablet_pad_group::strips
+	struct wl_list link; // tablet_pad_group.strips
 	struct zwp_tablet_pad_strip_v2 *strip;
 	struct tablet_pad_group *group;
 	size_t index;
@@ -69,8 +69,8 @@ struct tablet_pad_group {
 
 	struct wlr_tablet_pad_group group;
 
-	struct wl_list rings; // tablet_pad_ring::link
-	struct wl_list strips; // tablet_pad_strips::link
+	struct wl_list rings; // tablet_pad_ring.link
+	struct wl_list strips; // tablet_pad_strips.link
 };
 
 static void handle_tablet_pad_ring_source(void *data,
@@ -257,7 +257,7 @@ static void handle_tablet_pad_group_mode_switch(void *data,
 }
 
 static void destroy_tablet_pad_group(struct tablet_pad_group *group) {
-	/* No need to remove the ::link on strips rings as long as we do *not*
+	/* No need to remove the link on strips rings as long as we do *not*
 	 * wl_list_remove on the wl_groups ring/strip attributes here */
 	struct tablet_pad_ring *ring, *tmp_ring;
 	wl_list_for_each_safe(ring, tmp_ring, &group->rings, link) {

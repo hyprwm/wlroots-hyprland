@@ -6,15 +6,15 @@
 #include <wlr/types/wlr_tablet_v2.h>
 
 struct wlr_tablet_seat_v2 {
-	struct wl_list link; // wlr_tablet_manager_v2::seats
+	struct wl_list link; // wlr_tablet_manager_v2.seats
 	struct wlr_seat *wlr_seat;
 	struct wlr_tablet_manager_v2 *manager;
 
-	struct wl_list tablets; // wlr_tablet_v2_tablet::link
+	struct wl_list tablets; // wlr_tablet_v2_tablet.link
 	struct wl_list tools;
 	struct wl_list pads;
 
-	struct wl_list clients; // wlr_tablet_seat_v2_client::link
+	struct wl_list clients; // wlr_tablet_seat_v2_client.link
 
 	struct wl_listener seat_destroy;
 };
@@ -30,14 +30,14 @@ struct wlr_tablet_seat_client_v2 {
 
 	struct wl_listener seat_client_destroy;
 
-	struct wl_list tools;   //wlr_tablet_tool_client_v2::link
-	struct wl_list tablets; //wlr_tablet_client_v2::link
-	struct wl_list pads;    //wlr_tablet_pad_client_v2::link
+	struct wl_list tools; // wlr_tablet_tool_client_v2.link
+	struct wl_list tablets; // wlr_tablet_client_v2.link
+	struct wl_list pads; // wlr_tablet_pad_client_v2.link
 };
 
 struct wlr_tablet_client_v2 {
-	struct wl_list seat_link; // wlr_tablet_seat_client_v2::tablet
-	struct wl_list tablet_link; // wlr_tablet_v2_tablet::clients
+	struct wl_list seat_link; // wlr_tablet_seat_client_v2.tablet
+	struct wl_list tablet_link; // wlr_tablet_v2_tablet.clients
 	struct wl_client *client;
 	struct wl_resource *resource;
 };

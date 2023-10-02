@@ -7,7 +7,7 @@
 
 struct wlr_drm_dumb_buffer {
 	struct wlr_buffer base;
-	struct wl_list link; // wlr_drm_dumb_allocator::buffers
+	struct wl_list link; // wlr_drm_dumb_allocator.buffers
 
 	int drm_fd; // -1 if the allocator has been destroyed
 	struct wlr_dmabuf_attributes dmabuf;
@@ -23,7 +23,7 @@ struct wlr_drm_dumb_buffer {
 
 struct wlr_drm_dumb_allocator {
 	struct wlr_allocator base;
-	struct wl_list buffers; // wlr_drm_dumb_buffer::link
+	struct wl_list buffers; // wlr_drm_dumb_buffer.link
 	int drm_fd;
 };
 

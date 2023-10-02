@@ -138,7 +138,7 @@ struct wlr_output {
 	int32_t phys_width, phys_height; // mm
 
 	// Note: some backends may have zero modes
-	struct wl_list modes; // wlr_output_mode::link
+	struct wl_list modes; // wlr_output_mode.link
 	struct wlr_output_mode *current_mode;
 	int32_t width, height;
 	int32_t refresh; // mHz, may be zero
@@ -191,7 +191,7 @@ struct wlr_output {
 
 	int attach_render_locks; // number of locks forcing rendering
 
-	struct wl_list cursors; // wlr_output_cursor::link
+	struct wl_list cursors; // wlr_output_cursor.link
 	struct wlr_output_cursor *hardware_cursor;
 	struct wlr_swapchain *cursor_swapchain;
 	struct wlr_buffer *cursor_front_buffer;

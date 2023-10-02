@@ -73,8 +73,8 @@ struct wlr_cursor_output_cursor {
 struct wlr_cursor_state {
 	struct wlr_cursor cursor;
 
-	struct wl_list devices; // wlr_cursor_device::link
-	struct wl_list output_cursors; // wlr_cursor_output_cursor::link
+	struct wl_list devices; // wlr_cursor_device.link
+	struct wl_list output_cursors; // wlr_cursor_output_cursor.link
 	struct wlr_output_layout *layout;
 	struct wlr_output *mapped_output;
 	struct wlr_box mapped_box; // empty if unset

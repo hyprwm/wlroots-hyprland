@@ -102,7 +102,7 @@ struct wlr_surface_output {
 	struct wlr_surface *surface;
 	struct wlr_output *output;
 
-	struct wl_list link; // wlr_surface::current_outputs
+	struct wl_list link; // wlr_surface.current_outputs
 	struct wl_listener bind;
 	struct wl_listener destroy;
 };

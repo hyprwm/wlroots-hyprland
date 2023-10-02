@@ -30,7 +30,7 @@ struct wlr_x11_backend;
 struct wlr_x11_output {
 	struct wlr_output wlr_output;
 	struct wlr_x11_backend *x11;
-	struct wl_list link; // wlr_x11_backend::outputs
+	struct wl_list link; // wlr_x11_backend.outputs
 
 	xcb_window_t win;
 	xcb_present_event_t present_event_id;
@@ -38,9 +38,9 @@ struct wlr_x11_output {
 	struct wlr_pointer pointer;
 
 	struct wlr_touch touch;
-	struct wl_list touchpoints; // wlr_x11_touchpoint::link
+	struct wl_list touchpoints; // wlr_x11_touchpoint.link
 
-	struct wl_list buffers; // wlr_x11_buffer::link
+	struct wl_list buffers; // wlr_x11_buffer.link
 
 	pixman_region32_t exposed;
 
@@ -55,7 +55,7 @@ struct wlr_x11_output {
 struct wlr_x11_touchpoint {
 	uint32_t x11_id;
 	int wayland_id;
-	struct wl_list link; // wlr_x11_output::touch_points
+	struct wl_list link; // wlr_x11_output.touch_points
 };
 
 struct wlr_x11_backend {
@@ -76,7 +76,7 @@ struct wlr_x11_backend {
 	uint32_t dri3_major_version, dri3_minor_version;
 
 	size_t requested_outputs;
-	struct wl_list outputs; // wlr_x11_output::link
+	struct wl_list outputs; // wlr_x11_output.link
 
 	struct wlr_keyboard keyboard;
 
@@ -113,7 +113,7 @@ struct wlr_x11_buffer {
 	struct wlr_x11_backend *x11;
 	struct wlr_buffer *buffer;
 	xcb_pixmap_t pixmap;
-	struct wl_list link; // wlr_x11_output::buffers
+	struct wl_list link; // wlr_x11_output.buffers
 	struct wl_listener buffer_destroy;
 	size_t n_busy;
 };

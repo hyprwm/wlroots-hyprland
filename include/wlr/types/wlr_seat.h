@@ -134,7 +134,7 @@ struct wlr_touch_grab_interface {
 	void (*frame)(struct wlr_seat_touch_grab *grab);
 	// Cancel grab
 	void (*cancel)(struct wlr_seat_touch_grab *grab);
-	// Send wl_touch::cancel
+	// Send wl_touch.cancel
 	void (*wl_cancel)(struct wlr_seat_touch_grab *grab,
 			struct wlr_surface *surface);
 };

@@ -22,7 +22,7 @@ struct wlr_tablet_manager_client_v2 {
 	struct wl_resource *resource;
 	struct wlr_tablet_manager_v2 *manager;
 
-	struct wl_list tablet_seats; // wlr_tablet_seat_client_v2::link
+	struct wl_list tablet_seats; // wlr_tablet_seat_client_v2.link
 };
 
 static void tablet_seat_destroy(struct wlr_tablet_seat_v2 *seat) {
