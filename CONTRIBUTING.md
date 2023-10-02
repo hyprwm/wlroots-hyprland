@@ -237,6 +237,15 @@ used and `#undef` them after.
 * Document the contents and container of a `struct wl_list` with a
   `// content.link` and `// container.list` comment.
 
+### Safety
+
+* Avoid string manipulation functions which don't take the size of the
+  destination buffer as input: for instance, prefer `snprintf` over `sprintf`.
+* Avoid repeating type names in `sizeof()` where possible. For instance, prefer
+  `ptr = calloc(1, sizeof(*ptr))` over `ptr = calloc(1, sizeof(struct foo))`.
+* Prefer `*ptr = (struct foo){0}` over `memset(ptr, 0, sizeof(*ptr))`.
+* Prefer `*foo = *bar` over `memcpy(foo, bar, sizeof(*foo))`.
+
 ### Example
 
 ```c
