@@ -952,7 +952,7 @@ static void deferred_present_event_handle_output_destroy(struct wl_listener *lis
 }
 
 void output_defer_present(struct wlr_output *output, struct wlr_output_event_present event) {
-	struct deferred_present_event *deferred = calloc(1, sizeof(struct wlr_output_event_present));
+	struct deferred_present_event *deferred = calloc(1, sizeof(*deferred));
 	if (!deferred) {
 		return;
 	}
