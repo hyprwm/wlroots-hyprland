@@ -734,7 +734,7 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		// page-flip, either a blocking modeset. When performing a blocking modeset
 		// we'll wait for all queued page-flips to complete, so we don't need this
 		// safeguard.
-		if (conn->pending_page_flip_crtc && !pending.modeset && !pending.base->tearing_page_flip) {
+		if (conn->pending_page_flip_crtc && !pending.modeset) {
 			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
 				"a page-flip is already pending");
 			goto out;
