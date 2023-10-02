@@ -149,8 +149,8 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 	wl_signal_emit_mutable(&manager->events.destroy, NULL);
 
-	struct wlr_tearing_control_v1 *hint;
-	wl_list_for_each(hint, &manager->surface_hints, link) {
+	struct wlr_tearing_control_v1 *hint, *tmp;
+	wl_list_for_each_safe(hint, tmp, &manager->surface_hints, link) {
 		destroy_tearing_hint(hint);
 	}
 
