@@ -235,8 +235,7 @@ static void data_source_handle_resource_destroy(struct wl_resource *resource) {
 struct wlr_client_data_source *client_data_source_create(
 		struct wl_client *client, uint32_t version, uint32_t id,
 		struct wl_list *resource_list) {
-	struct wlr_client_data_source *source =
-		calloc(1, sizeof(struct wlr_client_data_source));
+	struct wlr_client_data_source *source = calloc(1, sizeof(*source));
 	if (source == NULL) {
 		return NULL;
 	}

@@ -83,8 +83,7 @@ static void screencopy_damage_handle_output_destroy(
 static struct screencopy_damage *screencopy_damage_create(
 		struct wlr_screencopy_v1_client *client,
 		struct wlr_output *output) {
-	struct screencopy_damage *damage =
-		calloc(1, sizeof(struct screencopy_damage));
+	struct screencopy_damage *damage = calloc(1, sizeof(*damage));
 	if (!damage) {
 		return NULL;
 	}
@@ -475,8 +474,7 @@ static void capture_output(struct wl_client *wl_client,
 		struct wlr_screencopy_v1_client *client, uint32_t version,
 		uint32_t id, int32_t overlay_cursor, struct wlr_output *output,
 		const struct wlr_box *box) {
-	struct wlr_screencopy_frame_v1 *frame =
-		calloc(1, sizeof(struct wlr_screencopy_frame_v1));
+	struct wlr_screencopy_frame_v1 *frame = calloc(1, sizeof(*frame));
 	if (frame == NULL) {
 		wl_client_post_no_memory(wl_client);
 		return;
@@ -634,8 +632,7 @@ static void manager_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_screencopy_manager_v1 *manager = data;
 
-	struct wlr_screencopy_v1_client *client =
-		calloc(1, sizeof(struct wlr_screencopy_v1_client));
+	struct wlr_screencopy_v1_client *client = calloc(1, sizeof(*client));
 	if (client == NULL) {
 		goto failure;
 	}
@@ -670,8 +667,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_screencopy_manager_v1 *wlr_screencopy_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_screencopy_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_screencopy_manager_v1));
+	struct wlr_screencopy_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

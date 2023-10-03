@@ -49,7 +49,7 @@ static const struct zwlr_output_power_v1_listener output_power_listener = {
 static void registry_handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	if (strcmp(interface, wl_output_interface.name) == 0) {
-		struct output *output = calloc(1, sizeof(struct output));
+		struct output *output = calloc(1, sizeof(*output));
 		output->wl_output = wl_registry_bind(registry, name,
 			&wl_output_interface, 1);
 		wl_list_insert(&outputs, &output->link);

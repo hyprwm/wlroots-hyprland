@@ -407,8 +407,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_pointer_gestures_v1 *wlr_pointer_gestures_v1_create(
 		struct wl_display *display) {
-	struct wlr_pointer_gestures_v1 *gestures =
-		calloc(1, sizeof(struct wlr_pointer_gestures_v1));
+	struct wlr_pointer_gestures_v1 *gestures = calloc(1, sizeof(*gestures));
 	if (!gestures) {
 		return NULL;
 	}

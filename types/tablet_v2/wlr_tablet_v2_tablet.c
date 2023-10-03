@@ -61,7 +61,7 @@ struct wlr_tablet_v2_tablet *wlr_tablet_create(
 		return NULL;
 	}
 	struct wlr_tablet *wlr_tablet = wlr_tablet_from_input_device(wlr_device);
-	struct wlr_tablet_v2_tablet *tablet = calloc(1, sizeof(struct wlr_tablet_v2_tablet));
+	struct wlr_tablet_v2_tablet *tablet = calloc(1, sizeof(*tablet));
 	if (!tablet) {
 		return NULL;
 	}
@@ -88,8 +88,7 @@ struct wlr_tablet_v2_tablet *wlr_tablet_create(
 
 void add_tablet_client(struct wlr_tablet_seat_client_v2 *seat,
 		struct wlr_tablet_v2_tablet *tablet) {
-	struct wlr_tablet_client_v2 *client =
-		calloc(1, sizeof(struct wlr_tablet_client_v2));
+	struct wlr_tablet_client_v2 *client = calloc(1, sizeof(*client));
 	if (!client) {
 		return;
 	}

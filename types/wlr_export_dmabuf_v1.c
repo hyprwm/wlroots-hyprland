@@ -115,8 +115,7 @@ static void manager_handle_capture_output(struct wl_client *client,
 		manager_from_resource(manager_resource);
 	struct wlr_output *output = wlr_output_from_resource(output_resource);
 
-	struct wlr_export_dmabuf_frame_v1 *frame =
-		calloc(1, sizeof(struct wlr_export_dmabuf_frame_v1));
+	struct wlr_export_dmabuf_frame_v1 *frame = calloc(1, sizeof(*frame));
 	if (frame == NULL) {
 		wl_resource_post_no_memory(manager_resource);
 		return;
@@ -200,8 +199,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_export_dmabuf_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_export_dmabuf_manager_v1));
+	struct wlr_export_dmabuf_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

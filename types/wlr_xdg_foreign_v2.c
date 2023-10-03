@@ -95,7 +95,7 @@ static void xdg_imported_handle_set_parent_of(struct wl_client *client,
 		}
 	}
 
-	child = calloc(1, sizeof(struct wlr_xdg_imported_child_v2));
+	child = calloc(1, sizeof(*child));
 	if (child == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -214,8 +214,7 @@ static void xdg_exporter_handle_export(struct wl_client *wl_client,
 		return;
 	}
 
-	struct wlr_xdg_exported_v2 *exported =
-		calloc(1, sizeof(struct wlr_xdg_exported_v2));
+	struct wlr_xdg_exported_v2 *exported = calloc(1, sizeof(*exported));
 	if (exported == NULL) {
 		wl_client_post_no_memory(wl_client);
 		return;
@@ -305,8 +304,7 @@ static void xdg_importer_handle_import(struct wl_client *wl_client,
 	struct wlr_xdg_foreign_v2 *foreign =
 		xdg_foreign_from_importer_resource(client_resource);
 
-	struct wlr_xdg_imported_v2 *imported =
-		calloc(1, sizeof(struct wlr_xdg_imported_v2));
+	struct wlr_xdg_imported_v2 *imported = calloc(1, sizeof(*imported));
 	if (imported == NULL) {
 		wl_client_post_no_memory(wl_client);
 		return;
@@ -389,8 +387,7 @@ static void handle_foreign_registry_destroy(struct wl_listener *listener,
 
 struct wlr_xdg_foreign_v2 *wlr_xdg_foreign_v2_create(
 		struct wl_display *display, struct wlr_xdg_foreign_registry *registry) {
-	struct wlr_xdg_foreign_v2 *foreign = calloc(1,
-			sizeof(struct wlr_xdg_foreign_v2));
+	struct wlr_xdg_foreign_v2 *foreign = calloc(1, sizeof(*foreign));
 	if (!foreign) {
 		return NULL;
 	}

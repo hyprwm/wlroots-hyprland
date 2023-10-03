@@ -107,8 +107,7 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	struct wlr_headless_backend *backend =
 		headless_backend_from_backend(wlr_backend);
 
-	struct wlr_headless_output *output =
-		calloc(1, sizeof(struct wlr_headless_output));
+	struct wlr_headless_output *output = calloc(1, sizeof(*output));
 	if (output == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_headless_output");
 		return NULL;

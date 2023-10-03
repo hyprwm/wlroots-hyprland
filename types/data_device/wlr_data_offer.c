@@ -242,7 +242,7 @@ struct wlr_data_offer *data_offer_create(struct wl_resource *device_resource,
 	assert(seat_client != NULL);
 	assert(source != NULL); // a NULL source means no selection
 
-	struct wlr_data_offer *offer = calloc(1, sizeof(struct wlr_data_offer));
+	struct wlr_data_offer *offer = calloc(1, sizeof(*offer));
 	if (offer == NULL) {
 		return NULL;
 	}

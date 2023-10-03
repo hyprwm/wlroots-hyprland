@@ -127,8 +127,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_backend *wlr_multi_backend_create(struct wl_display *display) {
-	struct wlr_multi_backend *backend =
-		calloc(1, sizeof(struct wlr_multi_backend));
+	struct wlr_multi_backend *backend = calloc(1, sizeof(*backend));
 	if (!backend) {
 		wlr_log(WLR_ERROR, "Backend allocation failed");
 		return NULL;
@@ -191,7 +190,7 @@ bool wlr_multi_backend_add(struct wlr_backend *_multi,
 		return true;
 	}
 
-	struct subbackend_state *sub = calloc(1, sizeof(struct subbackend_state));
+	struct subbackend_state *sub = calloc(1, sizeof(*sub));
 	if (sub == NULL) {
 		wlr_log(WLR_ERROR, "Could not add backend: allocation failed");
 		return false;

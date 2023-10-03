@@ -10,8 +10,7 @@
 static const struct wlr_addon_interface addon_impl;
 
 struct wlr_output_layout *wlr_output_layout_create(void) {
-	struct wlr_output_layout *layout =
-		calloc(1, sizeof(struct wlr_output_layout));
+	struct wlr_output_layout *layout = calloc(1, sizeof(*layout));
 	if (layout == NULL) {
 		return NULL;
 	}
@@ -142,8 +141,7 @@ static const struct wlr_addon_interface addon_impl = {
 
 static struct wlr_output_layout_output *output_layout_output_create(
 		struct wlr_output_layout *layout, struct wlr_output *output) {
-	struct wlr_output_layout_output *l_output =
-		calloc(1, sizeof(struct wlr_output_layout_output));
+	struct wlr_output_layout_output *l_output = calloc(1, sizeof(*l_output));
 	if (l_output == NULL) {
 		return NULL;
 	}

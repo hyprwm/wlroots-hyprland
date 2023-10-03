@@ -256,8 +256,7 @@ static const struct wlr_texture_impl texture_impl = {
 
 static struct wlr_vk_texture *vulkan_texture_create(
 		struct wlr_vk_renderer *renderer, uint32_t width, uint32_t height) {
-	struct wlr_vk_texture *texture =
-		calloc(1, sizeof(struct wlr_vk_texture));
+	struct wlr_vk_texture *texture = calloc(1, sizeof(*texture));
 	if (texture == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

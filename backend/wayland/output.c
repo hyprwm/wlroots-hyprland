@@ -230,7 +230,7 @@ static struct wlr_wl_buffer *create_wl_buffer(struct wlr_wl_backend *wl,
 		return NULL;
 	}
 
-	struct wlr_wl_buffer *buffer = calloc(1, sizeof(struct wlr_wl_buffer));
+	struct wlr_wl_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (buffer == NULL) {
 		wl_buffer_destroy(wl_buffer);
 		return NULL;

@@ -101,8 +101,7 @@ static void handle_input_notification(struct wl_listener *listener, void *data) 
 
 static struct wlr_idle_timeout *create_timer(struct wlr_idle *idle,
 		struct wlr_seat *seat, uint32_t timeout, struct wl_resource *resource) {
-	struct wlr_idle_timeout *timer =
-		calloc(1, sizeof(struct wlr_idle_timeout));
+	struct wlr_idle_timeout *timer = calloc(1, sizeof(*timer));
 	if (!timer) {
 		return NULL;
 	}
@@ -221,7 +220,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_idle *wlr_idle_create(struct wl_display *display) {
-	struct wlr_idle *idle = calloc(1, sizeof(struct wlr_idle));
+	struct wlr_idle *idle = calloc(1, sizeof(*idle));
 	if (!idle) {
 		return NULL;
 	}

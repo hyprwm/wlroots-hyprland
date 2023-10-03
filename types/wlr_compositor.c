@@ -671,7 +671,7 @@ static void surface_handle_renderer_destroy(struct wl_listener *listener,
 
 static struct wlr_surface *surface_create(struct wl_client *client,
 		uint32_t version, uint32_t id, struct wlr_renderer *renderer) {
-	struct wlr_surface *surface = calloc(1, sizeof(struct wlr_surface));
+	struct wlr_surface *surface = calloc(1, sizeof(*surface));
 	if (!surface) {
 		wl_client_post_no_memory(client);
 		return NULL;
@@ -970,7 +970,7 @@ void wlr_surface_send_enter(struct wlr_surface *surface,
 		}
 	}
 
-	surface_output = calloc(1, sizeof(struct wlr_surface_output));
+	surface_output = calloc(1, sizeof(*surface_output));
 	if (surface_output == NULL) {
 		return;
 	}

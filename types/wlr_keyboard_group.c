@@ -42,8 +42,7 @@ static const struct wlr_keyboard_impl impl = {
 };
 
 struct wlr_keyboard_group *wlr_keyboard_group_create(void) {
-	struct wlr_keyboard_group *group =
-		calloc(1, sizeof(struct wlr_keyboard_group));
+	struct wlr_keyboard_group *group = calloc(1, sizeof(*group));
 	if (!group) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_keyboard_group");
 		return NULL;
@@ -93,8 +92,7 @@ static bool process_key(struct keyboard_group_device *group_device,
 	}
 
 	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		struct keyboard_group_key *key =
-			calloc(1, sizeof(struct keyboard_group_key));
+		struct keyboard_group_key *key = calloc(1, sizeof(*key));
 		if (!key) {
 			wlr_log(WLR_ERROR, "Failed to allocate keyboard_group_key");
 			return false;
@@ -256,8 +254,7 @@ bool wlr_keyboard_group_add_keyboard(struct wlr_keyboard_group *group,
 		return false;
 	}
 
-	struct keyboard_group_device *device =
-		calloc(1, sizeof(struct keyboard_group_device));
+	struct keyboard_group_device *device = calloc(1, sizeof(*device));
 	if (!device) {
 		wlr_log(WLR_ERROR, "Failed to allocate keyboard_group_device");
 		return false;

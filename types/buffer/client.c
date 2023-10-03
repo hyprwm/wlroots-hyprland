@@ -62,8 +62,7 @@ struct wlr_client_buffer *wlr_client_buffer_create(struct wlr_buffer *buffer,
 		return NULL;
 	}
 
-	struct wlr_client_buffer *client_buffer =
-		calloc(1, sizeof(struct wlr_client_buffer));
+	struct wlr_client_buffer *client_buffer = calloc(1, sizeof(*client_buffer));
 	if (client_buffer == NULL) {
 		wlr_texture_destroy(texture);
 		return NULL;

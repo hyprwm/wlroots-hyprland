@@ -495,8 +495,7 @@ bool wlr_output_cursor_move(struct wlr_output_cursor *cursor,
 }
 
 struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output) {
-	struct wlr_output_cursor *cursor =
-		calloc(1, sizeof(struct wlr_output_cursor));
+	struct wlr_output_cursor *cursor = calloc(1, sizeof(*cursor));
 	if (cursor == NULL) {
 		return NULL;
 	}

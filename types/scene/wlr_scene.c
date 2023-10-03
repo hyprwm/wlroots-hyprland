@@ -149,7 +149,7 @@ static void scene_tree_init(struct wlr_scene_tree *tree,
 }
 
 struct wlr_scene *wlr_scene_create(void) {
-	struct wlr_scene *scene = calloc(1, sizeof(struct wlr_scene));
+	struct wlr_scene *scene = calloc(1, sizeof(*scene));
 	if (scene == NULL) {
 		return NULL;
 	}
@@ -177,7 +177,7 @@ struct wlr_scene *wlr_scene_create(void) {
 struct wlr_scene_tree *wlr_scene_tree_create(struct wlr_scene_tree *parent) {
 	assert(parent);
 
-	struct wlr_scene_tree *tree = calloc(1, sizeof(struct wlr_scene_tree));
+	struct wlr_scene_tree *tree = calloc(1, sizeof(*tree));
 	if (tree == NULL) {
 		return NULL;
 	}
@@ -564,8 +564,7 @@ static void scene_node_update(struct wlr_scene_node *node,
 
 struct wlr_scene_rect *wlr_scene_rect_create(struct wlr_scene_tree *parent,
 		int width, int height, const float color[static 4]) {
-	struct wlr_scene_rect *scene_rect =
-		calloc(1, sizeof(struct wlr_scene_rect));
+	struct wlr_scene_rect *scene_rect = calloc(1, sizeof(*scene_rect));
 	if (scene_rect == NULL) {
 		return NULL;
 	}
@@ -1727,8 +1726,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 
 		// add the current frame's damage if there is damage
 		if (pixman_region32_not_empty(&scene_output->damage_ring.current)) {
-			struct highlight_region *current_damage =
-				calloc(1, sizeof(*current_damage));
+			struct highlight_region *current_damage = calloc(1, sizeof(*current_damage));
 			if (current_damage) {
 				pixman_region32_init(&current_damage->region);
 				pixman_region32_copy(&current_damage->region,

@@ -92,7 +92,7 @@ static struct tablet_tool *get_tablet_tool(
 		return tool;
 	}
 
-	tool = calloc(1, sizeof(struct tablet_tool));
+	tool = calloc(1, sizeof(*tool));
 	if (tool == NULL) {
 		wlr_log_errno(WLR_ERROR, "failed to allocate wlr_libinput_tablet_tool");
 		return NULL;

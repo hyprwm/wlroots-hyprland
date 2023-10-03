@@ -341,8 +341,7 @@ static const struct wlr_drm_format_set *pixman_get_render_formats(
 static struct wlr_pixman_texture *pixman_texture_create(
 		struct wlr_pixman_renderer *renderer, uint32_t drm_format,
 		uint32_t width, uint32_t height) {
-	struct wlr_pixman_texture *texture =
-		calloc(1, sizeof(struct wlr_pixman_texture));
+	struct wlr_pixman_texture *texture = calloc(1, sizeof(*texture));
 	if (texture == NULL) {
 		wlr_log_errno(WLR_ERROR, "Failed to allocate pixman texture");
 		return NULL;
@@ -530,8 +529,7 @@ static const struct wlr_renderer_impl renderer_impl = {
 };
 
 struct wlr_renderer *wlr_pixman_renderer_create(void) {
-	struct wlr_pixman_renderer *renderer =
-		calloc(1, sizeof(struct wlr_pixman_renderer));
+	struct wlr_pixman_renderer *renderer = calloc(1, sizeof(*renderer));
 	if (renderer == NULL) {
 		return NULL;
 	}

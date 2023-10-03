@@ -96,8 +96,7 @@ static void toplevel_decoration_handle_surface_configure(
 		return;
 	}
 
-	struct wlr_xdg_toplevel_decoration_v1_configure *configure =
-		calloc(1, sizeof(struct wlr_xdg_toplevel_decoration_v1_configure));
+	struct wlr_xdg_toplevel_decoration_v1_configure *configure = calloc(1, sizeof(*configure));
 	if (configure == NULL) {
 		return;
 	}
@@ -197,8 +196,7 @@ static void decoration_manager_handle_get_toplevel_decoration(
 		}
 	}
 
-	struct wlr_xdg_toplevel_decoration_v1 *decoration =
-		calloc(1, sizeof(struct wlr_xdg_toplevel_decoration_v1));
+	struct wlr_xdg_toplevel_decoration_v1 *decoration = calloc(1, sizeof(*decoration));
 	if (decoration == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -282,8 +280,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_xdg_decoration_manager_v1 *
 		wlr_xdg_decoration_manager_v1_create(struct wl_display *display) {
-	struct wlr_xdg_decoration_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_xdg_decoration_manager_v1));
+	struct wlr_xdg_decoration_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

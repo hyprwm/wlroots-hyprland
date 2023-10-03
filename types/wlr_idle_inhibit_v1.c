@@ -70,8 +70,7 @@ static void manager_handle_create_inhibitor(struct wl_client *client,
 	struct wlr_idle_inhibit_manager_v1 *manager =
 		wlr_idle_inhibit_manager_v1_from_resource(manager_resource);
 
-	struct wlr_idle_inhibitor_v1 *inhibitor =
-		calloc(1, sizeof(struct wlr_idle_inhibitor_v1));
+	struct wlr_idle_inhibitor_v1 *inhibitor = calloc(1, sizeof(*inhibitor));
 	if (!inhibitor) {
 		wl_client_post_no_memory(client);
 		return;
@@ -135,8 +134,7 @@ static void idle_inhibit_bind(struct wl_client *wl_client, void *data,
 }
 
 struct wlr_idle_inhibit_manager_v1 *wlr_idle_inhibit_v1_create(struct wl_display *display) {
-	struct wlr_idle_inhibit_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_idle_inhibit_manager_v1));
+	struct wlr_idle_inhibit_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

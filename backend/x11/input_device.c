@@ -232,7 +232,7 @@ void handle_x11_xinput_event(struct wlr_x11_backend *x11,
 			id = last_touchpoint->wayland_id + 1;
 		}
 
-		struct wlr_x11_touchpoint *touchpoint = calloc(1, sizeof(struct wlr_x11_touchpoint));
+		struct wlr_x11_touchpoint *touchpoint = calloc(1, sizeof(*touchpoint));
 		touchpoint->x11_id = ev->detail;
 		touchpoint->wayland_id = id;
 		wl_list_init(&touchpoint->link);

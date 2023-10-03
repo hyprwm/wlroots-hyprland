@@ -206,8 +206,7 @@ static void handle_tablet_pad_group_ring(void *data,
 		struct zwp_tablet_pad_group_v2 *pad_group,
 		struct zwp_tablet_pad_ring_v2 *ring) {
 	struct tablet_pad_group *group = data;
-	struct tablet_pad_ring *tablet_ring =
-		calloc(1, sizeof(struct tablet_pad_ring));
+	struct tablet_pad_ring *tablet_ring = calloc(1, sizeof(*tablet_ring));
 	if (!tablet_ring) {
 		zwp_tablet_pad_ring_v2_destroy(ring);
 		return;
@@ -227,8 +226,7 @@ static void handle_tablet_pad_group_strip(void *data,
 		struct zwp_tablet_pad_group_v2 *pad_group,
 		struct zwp_tablet_pad_strip_v2 *strip) {
 	struct tablet_pad_group *group = data;
-	struct tablet_pad_strip *tablet_strip =
-		calloc(1, sizeof(struct tablet_pad_strip));
+	struct tablet_pad_strip *tablet_strip = calloc(1, sizeof(*tablet_strip));
 	if (!tablet_strip) {
 		zwp_tablet_pad_strip_v2_destroy(strip);
 		return;
@@ -296,8 +294,7 @@ static void handle_tablet_pad_group(void *data,
 	struct wlr_wl_seat *seat = data;
 	struct wlr_tablet_pad *pad = &seat->wlr_tablet_pad;
 
-	struct tablet_pad_group *group =
-		calloc(1, sizeof(struct tablet_pad_group));
+	struct tablet_pad_group *group = calloc(1, sizeof(*group));
 	if (!group) {
 		wlr_log_errno(WLR_ERROR, "failed to allocate tablet_pad_group");
 		zwp_tablet_pad_group_v2_destroy(pad_group);
@@ -788,7 +785,7 @@ static void handle_tool_added(void *data,
 
 	wl_signal_init(&seat->wlr_tablet_tool.events.destroy);
 
-	struct tablet_tool *tool = calloc(1, sizeof(struct tablet_tool));
+	struct tablet_tool *tool = calloc(1, sizeof(*tool));
 	if (tool == NULL) {
 		wlr_log_errno(WLR_ERROR, "failed to allocate tablet_tool");
 		zwp_tablet_tool_v2_destroy(zwp_tablet_tool_v2);

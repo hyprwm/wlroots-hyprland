@@ -180,8 +180,7 @@ struct wlr_drm_lease_v1 *wlr_drm_lease_request_v1_grant(
 		return NULL;
 	}
 
-	lease->connectors = calloc(request->n_connectors,
-			sizeof(struct wlr_drm_lease_connector_v1 *));
+	lease->connectors = calloc(request->n_connectors, sizeof(*lease->connectors));
 	if (!lease->connectors) {
 		wlr_log(WLR_ERROR, "Failed to allocate lease connectors list");
 		close(fd);
@@ -399,8 +398,7 @@ static void drm_lease_device_v1_handle_create_lease_request(
 		return;
 	}
 
-	struct wlr_drm_lease_request_v1 *req =
-		calloc(1, sizeof(struct wlr_drm_lease_request_v1));
+	struct wlr_drm_lease_request_v1 *req = calloc(1, sizeof(*req));
 	if (!req) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_drm_lease_request_v1");
 		wl_resource_post_no_memory(resource);
@@ -553,8 +551,7 @@ bool wlr_drm_lease_v1_manager_offer_output(
 		}
 	}
 
-	struct wlr_drm_lease_connector_v1 *connector =
-			calloc(1, sizeof(struct wlr_drm_lease_connector_v1));
+	struct wlr_drm_lease_connector_v1 *connector = calloc(1, sizeof(*connector));
 	if (!connector) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_drm_lease_connector_v1");
 		return false;
@@ -638,8 +635,7 @@ static void drm_lease_device_v1_create(struct wlr_drm_lease_v1_manager *manager,
 	wlr_log(WLR_DEBUG, "Creating wlr_drm_lease_device_v1 for %s",
 			drm_backend->name);
 
-	struct wlr_drm_lease_device_v1 *lease_device =
-		calloc(1, sizeof(struct wlr_drm_lease_device_v1));
+	struct wlr_drm_lease_device_v1 *lease_device = calloc(1, sizeof(*lease_device));
 
 	if (!lease_device) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_drm_lease_device_v1");
@@ -694,8 +690,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_drm_lease_v1_manager *wlr_drm_lease_v1_manager_create(
 		struct wl_display *display, struct wlr_backend *backend) {
-	struct wlr_drm_lease_v1_manager *manager = calloc(1,
-			sizeof(struct wlr_drm_lease_v1_manager));
+	struct wlr_drm_lease_v1_manager *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_drm_lease_v1_manager");
 		return NULL;

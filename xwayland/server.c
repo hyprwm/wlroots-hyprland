@@ -454,8 +454,7 @@ struct wlr_xwayland_server *wlr_xwayland_server_create(
 		return NULL;
 	}
 
-	struct wlr_xwayland_server *server =
-		calloc(1, sizeof(struct wlr_xwayland_server));
+	struct wlr_xwayland_server *server = calloc(1, sizeof(*server));
 	if (!server) {
 		return NULL;
 	}

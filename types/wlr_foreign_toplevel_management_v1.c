@@ -291,8 +291,7 @@ void wlr_foreign_toplevel_handle_v1_output_enter(
 		}
 	}
 
-	toplevel_output =
-		calloc(1, sizeof(struct wlr_foreign_toplevel_handle_v1_output));
+	toplevel_output = calloc(1, sizeof(*toplevel_output));
 	if (!toplevel_output) {
 		wlr_log(WLR_ERROR, "failed to allocate memory for toplevel output");
 		return;
@@ -560,8 +559,7 @@ static struct wl_resource *create_toplevel_resource_for_resource(
 struct wlr_foreign_toplevel_handle_v1 *
 wlr_foreign_toplevel_handle_v1_create(
 		struct wlr_foreign_toplevel_manager_v1 *manager) {
-	struct wlr_foreign_toplevel_handle_v1 *toplevel = calloc(1,
-			sizeof(struct wlr_foreign_toplevel_handle_v1));
+	struct wlr_foreign_toplevel_handle_v1 *toplevel = calloc(1, sizeof(*toplevel));
 	if (!toplevel) {
 		return NULL;
 	}
@@ -685,8 +683,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_foreign_toplevel_manager_v1 *manager = calloc(1,
-			sizeof(struct wlr_foreign_toplevel_manager_v1));
+	struct wlr_foreign_toplevel_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

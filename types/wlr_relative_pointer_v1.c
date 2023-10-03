@@ -92,8 +92,7 @@ static void relative_pointer_manager_v1_handle_get_relative_pointer(struct wl_cl
 		return;
 	}
 
-	struct wlr_relative_pointer_v1 *relative_pointer =
-		calloc(1, sizeof(struct wlr_relative_pointer_v1));
+	struct wlr_relative_pointer_v1 *relative_pointer = calloc(1, sizeof(*relative_pointer));
 	if (relative_pointer == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -155,8 +154,7 @@ static const struct zwp_relative_pointer_v1_interface relative_pointer_v1_impl =
 };
 
 struct wlr_relative_pointer_manager_v1 *wlr_relative_pointer_manager_v1_create(struct wl_display *display) {
-	struct wlr_relative_pointer_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_relative_pointer_manager_v1));
+	struct wlr_relative_pointer_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

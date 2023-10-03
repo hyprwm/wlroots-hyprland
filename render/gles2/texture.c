@@ -174,8 +174,7 @@ static const struct wlr_texture_impl texture_impl = {
 
 static struct wlr_gles2_texture *gles2_texture_create(
 		struct wlr_gles2_renderer *renderer, uint32_t width, uint32_t height) {
-	struct wlr_gles2_texture *texture =
-		calloc(1, sizeof(struct wlr_gles2_texture));
+	struct wlr_gles2_texture *texture = calloc(1, sizeof(*texture));
 	if (texture == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

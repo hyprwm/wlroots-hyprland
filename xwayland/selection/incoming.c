@@ -402,8 +402,7 @@ static void xwm_selection_get_targets(struct wlr_xwm_selection *selection) {
 	struct wlr_xwm *xwm = selection->xwm;
 
 	if (selection == &xwm->clipboard_selection) {
-		struct x11_data_source *source =
-			calloc(1, sizeof(struct x11_data_source));
+		struct x11_data_source *source = calloc(1, sizeof(*source));
 		if (source == NULL) {
 			return;
 		}
@@ -421,8 +420,7 @@ static void xwm_selection_get_targets(struct wlr_xwm_selection *selection) {
 			wlr_data_source_destroy(&source->base);
 		}
 	} else if (selection == &xwm->primary_selection) {
-		struct x11_primary_selection_source *source =
-			calloc(1, sizeof(struct x11_primary_selection_source));
+		struct x11_primary_selection_source *source = calloc(1, sizeof(*source));
 		if (source == NULL) {
 			return;
 		}

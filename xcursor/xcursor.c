@@ -149,7 +149,7 @@ xcursor_image_create(int width, int height)
 	if (width > XCURSOR_IMAGE_MAX_SIZE || height > XCURSOR_IMAGE_MAX_SIZE)
 		return NULL;
 
-	image = malloc(sizeof(struct xcursor_image) +
+	image = malloc(sizeof(*image) +
 		       width * height * sizeof(uint32_t));
 	if (!image)
 		return NULL;
@@ -173,7 +173,7 @@ xcursor_images_create(int size)
 {
 	struct xcursor_images *images;
 
-	images = malloc(sizeof(struct xcursor_images) +
+	images = malloc(sizeof(*images) +
 			size * sizeof(struct xcursor_image *));
 	if (!images)
 		return NULL;
@@ -228,7 +228,7 @@ xcursor_file_header_create(uint32_t ntoc)
 
 	if (ntoc > 0x10000)
 		return NULL;
-	file_header = malloc(sizeof(struct xcursor_file_header) +
+	file_header = malloc(sizeof(*file_header) +
 			    ntoc * sizeof(struct xcursor_file_toc));
 	if (!file_header)
 		return NULL;

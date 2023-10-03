@@ -135,8 +135,7 @@ static int xwayland_surface_handle_ping_timeout(void *data) {
 static struct wlr_xwayland_surface *xwayland_surface_create(
 		struct wlr_xwm *xwm, xcb_window_t window_id, int16_t x, int16_t y,
 		uint16_t width, uint16_t height, bool override_redirect) {
-	struct wlr_xwayland_surface *surface =
-		calloc(1, sizeof(struct wlr_xwayland_surface));
+	struct wlr_xwayland_surface *surface = calloc(1, sizeof(*surface));
 	if (!surface) {
 		wlr_log(WLR_ERROR, "Could not allocate wlr xwayland surface");
 		return NULL;
@@ -681,7 +680,7 @@ static void read_surface_hints(struct wlr_xwm *xwm,
 	}
 
 	free(xsurface->hints);
-	xsurface->hints = calloc(1, sizeof(xcb_icccm_wm_hints_t));
+	xsurface->hints = calloc(1, sizeof(*xsurface->hints));
 	if (xsurface->hints == NULL) {
 		return;
 	}
@@ -704,7 +703,7 @@ static void read_surface_normal_hints(struct wlr_xwm *xwm,
 	}
 
 	free(xsurface->size_hints);
-	xsurface->size_hints = calloc(1, sizeof(xcb_size_hints_t));
+	xsurface->size_hints = calloc(1, sizeof(*xsurface->size_hints));
 	if (xsurface->size_hints == NULL) {
 		return;
 	}
@@ -777,7 +776,7 @@ static void read_surface_strut_partial(struct wlr_xwm *xwm,
 	}
 
 	free(xsurface->strut_partial);
-	xsurface->strut_partial = calloc(1, sizeof(xcb_ewmh_wm_strut_partial_t));
+	xsurface->strut_partial = calloc(1, sizeof(*xsurface->strut_partial));
 	if (xsurface->strut_partial == NULL) {
 		return;
 	}
@@ -1433,7 +1432,7 @@ static void xwm_handle_net_startup_info_message(struct wlr_xwm *xwm,
 		start = curr->msg + curr->len;
 		curr->len += buf_len;
 	} else {
-		curr = calloc(1, sizeof(struct pending_startup_id));
+		curr = calloc(1, sizeof(*curr));
 		if (!curr)
 			return;
 		curr->window = ev->window;
@@ -2111,7 +2110,7 @@ void xwm_set_cursor(struct wlr_xwm *xwm, const uint8_t *pixels, uint32_t stride,
 }
 
 struct wlr_xwm *xwm_create(struct wlr_xwayland *xwayland, int wm_fd) {
-	struct wlr_xwm *xwm = calloc(1, sizeof(struct wlr_xwm));
+	struct wlr_xwm *xwm = calloc(1, sizeof(*xwm));
 	if (xwm == NULL) {
 		return NULL;
 	}

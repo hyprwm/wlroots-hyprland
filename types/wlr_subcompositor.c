@@ -313,7 +313,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 	struct wlr_surface *parent = wlr_surface_from_resource(parent_resource);
 
-	struct wlr_subsurface *subsurface = calloc(1, sizeof(struct wlr_subsurface));
+	struct wlr_subsurface *subsurface = calloc(1, sizeof(*subsurface));
 	if (!subsurface) {
 		wl_client_post_no_memory(client);
 		return;
@@ -394,8 +394,7 @@ static void subcompositor_handle_display_destroy(
 }
 
 struct wlr_subcompositor *wlr_subcompositor_create(struct wl_display *display) {
-	struct wlr_subcompositor *subcompositor =
-		calloc(1, sizeof(*subcompositor));
+	struct wlr_subcompositor *subcompositor = calloc(1, sizeof(*subcompositor));
 	if (!subcompositor) {
 		return NULL;
 	}

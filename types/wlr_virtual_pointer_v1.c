@@ -230,8 +230,7 @@ static void virtual_pointer_manager_create_virtual_pointer_with_output(
 		uint32_t id) {
 	struct wlr_virtual_pointer_manager_v1 *manager = manager_from_resource(resource);
 
-	struct wlr_virtual_pointer_v1 *virtual_pointer = calloc(1,
-		sizeof(struct wlr_virtual_pointer_v1));
+	struct wlr_virtual_pointer_v1 *virtual_pointer = calloc(1, sizeof(*virtual_pointer));
 	if (!virtual_pointer) {
 		wl_client_post_no_memory(client);
 		return;
@@ -321,8 +320,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_virtual_pointer_manager_v1* wlr_virtual_pointer_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_virtual_pointer_manager_v1 *manager = calloc(1,
-		sizeof(struct wlr_virtual_pointer_manager_v1));
+	struct wlr_virtual_pointer_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

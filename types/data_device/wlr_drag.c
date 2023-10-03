@@ -378,7 +378,7 @@ static void drag_icon_handle_surface_destroy(struct wl_listener *listener,
 
 static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 		struct wlr_surface *surface) {
-	struct wlr_drag_icon *icon = calloc(1, sizeof(struct wlr_drag_icon));
+	struct wlr_drag_icon *icon = calloc(1, sizeof(*icon));
 	if (!icon) {
 		return NULL;
 	}
@@ -398,7 +398,7 @@ static struct wlr_drag_icon *drag_icon_create(struct wlr_drag *drag,
 
 struct wlr_drag *wlr_drag_create(struct wlr_seat_client *seat_client,
 		struct wlr_data_source *source, struct wlr_surface *icon_surface) {
-	struct wlr_drag *drag = calloc(1, sizeof(struct wlr_drag));
+	struct wlr_drag *drag = calloc(1, sizeof(*drag));
 	if (drag == NULL) {
 		return NULL;
 	}

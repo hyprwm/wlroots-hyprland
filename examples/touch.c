@@ -104,7 +104,7 @@ static void touch_down_notify(struct wl_listener *listener, void *data) {
 	struct wlr_touch_down_event *event = data;
 	struct touch_state *tstate = wl_container_of(listener, tstate, down);
 	struct sample_state *sample = tstate->sample;
-	struct touch_point *point = calloc(1, sizeof(struct touch_point));
+	struct touch_point *point = calloc(1, sizeof(*point));
 	point->touch_id = event->touch_id;
 	point->x = event->x;
 	point->y = event->y;
@@ -175,7 +175,7 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
-	struct sample_output *sample_output = calloc(1, sizeof(struct sample_output));
+	struct sample_output *sample_output = calloc(1, sizeof(*sample_output));
 	sample_output->output = output;
 	sample_output->sample = sample;
 	wl_signal_add(&output->events.frame, &sample_output->frame);
@@ -222,7 +222,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	struct sample_state *sample = wl_container_of(listener, sample, new_input);
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:;
-		struct sample_keyboard *keyboard = calloc(1, sizeof(struct sample_keyboard));
+		struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
 		keyboard->sample = sample;
 		wl_signal_add(&device->events.destroy, &keyboard->destroy);
@@ -245,7 +245,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		xkb_context_unref(context);
 		break;
 	case WLR_INPUT_DEVICE_TOUCH:;
-		struct touch_state *tstate = calloc(sizeof(struct touch_state), 1);
+		struct touch_state *tstate = calloc(1, sizeof(*tstate));
 		tstate->wlr_touch = wlr_touch_from_input_device(device);
 		tstate->sample = sample;
 		tstate->destroy.notify = touch_destroy_notify;

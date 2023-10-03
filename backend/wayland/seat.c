@@ -266,7 +266,7 @@ static const struct wl_seat_listener seat_listener;
 
 bool create_wl_seat(struct wl_seat *wl_seat, struct wlr_wl_backend *wl,
 		uint32_t global_name) {
-	struct wlr_wl_seat *seat = calloc(1, sizeof(struct wlr_wl_seat));
+	struct wlr_wl_seat *seat = calloc(1, sizeof(*seat));
 	if (!seat) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return false;

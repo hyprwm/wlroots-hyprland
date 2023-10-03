@@ -122,8 +122,7 @@ static void manager_handle_inhibit_shortcuts(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor =
-		calloc(1, sizeof(struct wlr_keyboard_shortcuts_inhibitor_v1));
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor = calloc(1, sizeof(*inhibitor));
 	if (!inhibitor) {
 		wl_client_post_no_memory(client);
 		return;
@@ -186,8 +185,7 @@ static void keyboard_shortcuts_inhibit_bind(struct wl_client *wl_client,
 
 struct wlr_keyboard_shortcuts_inhibit_manager_v1 *
 wlr_keyboard_shortcuts_inhibit_v1_create(struct wl_display *display) {
-	struct wlr_keyboard_shortcuts_inhibit_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_keyboard_shortcuts_inhibit_manager_v1));
+	struct wlr_keyboard_shortcuts_inhibit_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

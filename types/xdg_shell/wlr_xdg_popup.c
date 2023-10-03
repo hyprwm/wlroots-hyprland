@@ -12,8 +12,7 @@ void handle_xdg_popup_ack_configure(
 
 struct wlr_xdg_popup_configure *send_xdg_popup_configure(
 		struct wlr_xdg_popup *popup) {
-	struct wlr_xdg_popup_configure *configure =
-		calloc(1, sizeof(*configure));
+	struct wlr_xdg_popup_configure *configure = calloc(1, sizeof(*configure));
 	if (configure == NULL) {
 		wl_resource_post_no_memory(popup->resource);
 		return NULL;
@@ -214,7 +213,7 @@ static struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
 		}
 	}
 
-	xdg_grab = calloc(1, sizeof(struct wlr_xdg_popup_grab));
+	xdg_grab = calloc(1, sizeof(*xdg_grab));
 	if (!xdg_grab) {
 		return NULL;
 	}
@@ -382,7 +381,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	}
 
 	assert(surface->popup == NULL);
-	surface->popup = calloc(1, sizeof(struct wlr_xdg_popup));
+	surface->popup = calloc(1, sizeof(*surface->popup));
 	if (!surface->popup) {
 		wl_resource_post_no_memory(surface->resource);
 		return;

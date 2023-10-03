@@ -252,7 +252,7 @@ static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
 static void toplevel_manager_handle_toplevel(void *data,
 		struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager,
 		struct zwlr_foreign_toplevel_handle_v1 *zwlr_toplevel) {
-	struct toplevel_v1 *toplevel = calloc(1, sizeof(struct toplevel_v1));
+	struct toplevel_v1 *toplevel = calloc(1, sizeof(*toplevel));
 	if (!toplevel) {
 		fprintf(stderr, "Failed to allocate memory for toplevel\n");
 		return;

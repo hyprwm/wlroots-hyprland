@@ -122,7 +122,7 @@ static void presentation_handle_feedback(struct wl_client *client,
 
 	struct wlr_presentation_feedback *feedback = p_surface->pending.feedback;
 	if (feedback == NULL) {
-		feedback = calloc(1, sizeof(struct wlr_presentation_feedback));
+		feedback = calloc(1, sizeof(*feedback));
 		if (feedback == NULL) {
 			wl_client_post_no_memory(client);
 			return;
@@ -182,8 +182,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_presentation *wlr_presentation_create(struct wl_display *display,
 		struct wlr_backend *backend) {
-	struct wlr_presentation *presentation =
-		calloc(1, sizeof(struct wlr_presentation));
+	struct wlr_presentation *presentation = calloc(1, sizeof(*presentation));
 	if (presentation == NULL) {
 		return NULL;
 	}

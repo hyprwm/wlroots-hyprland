@@ -306,7 +306,7 @@ static struct wlr_primary_selection_v1_device *get_or_create_device(
 		}
 	}
 
-	device = calloc(1, sizeof(struct wlr_primary_selection_v1_device));
+	device = calloc(1, sizeof(*device));
 	if (device == NULL) {
 		return NULL;
 	}
@@ -369,8 +369,7 @@ static struct wlr_primary_selection_v1_device_manager *manager_from_resource(
 
 static void device_manager_handle_create_source(struct wl_client *client,
 		struct wl_resource *manager_resource, uint32_t id) {
-	struct client_data_source *source =
-		calloc(1, sizeof(struct client_data_source));
+	struct client_data_source *source = calloc(1, sizeof(*source));
 	if (source == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -472,8 +471,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 struct wlr_primary_selection_v1_device_manager *
 		wlr_primary_selection_v1_device_manager_create(
 		struct wl_display *display) {
-	struct wlr_primary_selection_v1_device_manager *manager =
-		calloc(1, sizeof(struct wlr_primary_selection_v1_device_manager));
+	struct wlr_primary_selection_v1_device_manager *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

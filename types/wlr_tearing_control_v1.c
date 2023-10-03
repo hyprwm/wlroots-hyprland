@@ -92,8 +92,7 @@ static void tearing_control_manager_handle_get_tearing_control(
 		return;
 	}
 
-	struct wlr_tearing_control_v1 *hint = calloc(1, sizeof(struct wlr_tearing_control_v1));
-
+	struct wlr_tearing_control_v1 *hint = calloc(1, sizeof(*hint));
 	if (!hint) {
 		wl_client_post_no_memory(client);
 		return;
@@ -163,8 +162,7 @@ struct wlr_tearing_control_manager_v1 *wlr_tearing_control_manager_v1_create(
 		struct wl_display *display, uint32_t version) {
 	assert(version <= TEARING_CONTROL_MANAGER_VERSION);
 
-	struct wlr_tearing_control_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_tearing_control_manager_v1));
+	struct wlr_tearing_control_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

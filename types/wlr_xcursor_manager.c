@@ -5,8 +5,7 @@
 
 struct wlr_xcursor_manager *wlr_xcursor_manager_create(const char *name,
 		uint32_t size) {
-	struct wlr_xcursor_manager *manager =
-		calloc(1, sizeof(struct wlr_xcursor_manager));
+	struct wlr_xcursor_manager *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}
@@ -41,7 +40,7 @@ bool wlr_xcursor_manager_load(struct wlr_xcursor_manager *manager,
 		}
 	}
 
-	theme = calloc(1, sizeof(struct wlr_xcursor_manager_theme));
+	theme = calloc(1, sizeof(*theme));
 	if (theme == NULL) {
 		return false;
 	}

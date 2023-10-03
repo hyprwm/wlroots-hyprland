@@ -210,7 +210,7 @@ static struct wlr_egl *egl_create(void) {
 		return NULL;
 	}
 
-	struct wlr_egl *egl = calloc(1, sizeof(struct wlr_egl));
+	struct wlr_egl *egl = calloc(1, sizeof(*egl));
 	if (egl == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;
@@ -457,7 +457,7 @@ static EGLDeviceEXT get_egl_device_from_drm_fd(struct wlr_egl *egl,
 		return EGL_NO_DEVICE_EXT;
 	}
 
-	EGLDeviceEXT *devices = calloc(nb_devices, sizeof(EGLDeviceEXT));
+	EGLDeviceEXT *devices = calloc(nb_devices, sizeof(*devices));
 	if (devices == NULL) {
 		wlr_log_errno(WLR_ERROR, "Failed to allocate EGL device list");
 		return EGL_NO_DEVICE_EXT;
@@ -807,7 +807,7 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, EGLint **formats) {
 		};
 		int num = sizeof(fallback_formats) / sizeof(fallback_formats[0]);
 
-		*formats = calloc(num, sizeof(EGLint));
+		*formats = calloc(num, sizeof(**formats));
 		if (!*formats) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
 			return -1;
@@ -823,7 +823,7 @@ static int get_egl_dmabuf_formats(struct wlr_egl *egl, EGLint **formats) {
 		return -1;
 	}
 
-	*formats = calloc(num, sizeof(EGLint));
+	*formats = calloc(num, sizeof(**formats));
 	if (*formats == NULL) {
 		wlr_log(WLR_ERROR, "Allocation failed: %s", strerror(errno));
 		return -1;
@@ -860,12 +860,12 @@ static int get_egl_dmabuf_modifiers(struct wlr_egl *egl, EGLint format,
 		return 0;
 	}
 
-	*modifiers = calloc(num, sizeof(uint64_t));
+	*modifiers = calloc(num, sizeof(**modifiers));
 	if (*modifiers == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return -1;
 	}
-	*external_only = calloc(num, sizeof(EGLBoolean));
+	*external_only = calloc(num, sizeof(**external_only));
 	if (*external_only == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(*modifiers);
@@ -912,7 +912,7 @@ static char *get_render_name(const char *name) {
 		wlr_log(WLR_ERROR, "drmGetDevices2 failed: %s", strerror(-devices_len));
 		return NULL;
 	}
-	drmDevice **devices = calloc(devices_len, sizeof(drmDevice *));
+	drmDevice **devices = calloc(devices_len, sizeof(*devices));
 	if (devices == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

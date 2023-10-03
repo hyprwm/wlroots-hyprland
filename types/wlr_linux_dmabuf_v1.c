@@ -556,8 +556,7 @@ static struct wlr_linux_dmabuf_feedback_v1_compiled *feedback_compile(
 
 	munmap(table, table_size);
 
-	struct wlr_linux_dmabuf_feedback_v1_compiled *compiled = calloc(1,
-		sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled) +
+	struct wlr_linux_dmabuf_feedback_v1_compiled *compiled = calloc(1, sizeof(*compiled) +
 		tranches_len * sizeof(struct wlr_linux_dmabuf_feedback_v1_compiled_tranche));
 	if (compiled == NULL) {
 		close(ro_fd);
@@ -938,8 +937,7 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *displa
 		uint32_t version, const struct wlr_linux_dmabuf_feedback_v1 *default_feedback) {
 	assert(version <= LINUX_DMABUF_VERSION);
 
-	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
-		calloc(1, sizeof(struct wlr_linux_dmabuf_v1));
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf = calloc(1, sizeof(*linux_dmabuf));
 	if (linux_dmabuf == NULL) {
 		wlr_log(WLR_ERROR, "could not create simple dmabuf manager");
 		return NULL;

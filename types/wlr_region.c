@@ -53,7 +53,7 @@ static void region_handle_resource_destroy(struct wl_resource *resource) {
 
 struct wl_resource *region_create(struct wl_client *client,
 		uint32_t version, uint32_t id) {
-	pixman_region32_t *region = calloc(1, sizeof(pixman_region32_t));
+	pixman_region32_t *region = calloc(1, sizeof(*region));
 	if (region == NULL) {
 		wl_client_post_no_memory(client);
 		return NULL;

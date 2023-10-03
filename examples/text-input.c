@@ -121,7 +121,7 @@ static void show_status(void) {
 	for (unsigned i = 0; i < utf8_strlen(buffer); i++) {
 		printf(" ");
 	}
-	char *cursor_mark = calloc(utf8_strlen(preedit_text) + 2, sizeof(char));
+	char *cursor_mark = calloc(utf8_strlen(preedit_text) + 2, sizeof(*cursor_mark));
 	for (unsigned i = 0; i < utf8_strlen(preedit_text); i++) {
 		cursor_mark[i] = '.';
 	}
@@ -249,7 +249,7 @@ static void text_input_handle_done(void *data,
 		commit_string = "";
 	}
 	size_t new_size = strlen(buffer) + strlen(commit_string) + 1;
-	char *new_buffer = calloc(new_size, sizeof(char)); // realloc may fail anyway
+	char *new_buffer = calloc(new_size, sizeof(*new_buffer)); // realloc may fail anyway
 	snprintf(new_buffer, new_size, "%s%s", buffer, commit_string);
 	free(buffer);
 	buffer = new_buffer;
@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	buffer = calloc(1, sizeof(char));
+	buffer = calloc(1, sizeof(*buffer));
 
 	display = wl_display_connect(NULL);
 	if (display == NULL) {

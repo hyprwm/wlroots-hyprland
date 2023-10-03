@@ -277,8 +277,7 @@ uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 		uint32_t width, uint32_t height) {
 	struct wl_display *display =
 		wl_client_get_display(wl_resource_get_client(surface->resource));
-	struct wlr_layer_surface_v1_configure *configure =
-		calloc(1, sizeof(struct wlr_layer_surface_v1_configure));
+	struct wlr_layer_surface_v1_configure *configure = calloc(1, sizeof(*configure));
 	if (configure == NULL) {
 		wl_client_post_no_memory(wl_resource_get_client(surface->resource));
 		return surface->pending.configure_serial;
@@ -395,8 +394,7 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	struct wlr_surface *wlr_surface =
 		wlr_surface_from_resource(surface_resource);
 
-	struct wlr_layer_surface_v1 *surface =
-		calloc(1, sizeof(struct wlr_layer_surface_v1));
+	struct wlr_layer_surface_v1 *surface = calloc(1, sizeof(*surface));
 	if (surface == NULL) {
 		wl_client_post_no_memory(wl_client);
 		return;
@@ -485,8 +483,7 @@ struct wlr_layer_shell_v1 *wlr_layer_shell_v1_create(struct wl_display *display,
 		uint32_t version) {
 	assert(version <= LAYER_SHELL_VERSION);
 
-	struct wlr_layer_shell_v1 *layer_shell =
-		calloc(1, sizeof(struct wlr_layer_shell_v1));
+	struct wlr_layer_shell_v1 *layer_shell = calloc(1, sizeof(*layer_shell));
 	if (!layer_shell) {
 		return NULL;
 	}

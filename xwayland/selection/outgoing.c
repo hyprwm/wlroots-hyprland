@@ -269,8 +269,7 @@ static bool xwm_selection_send_data(struct wlr_xwm_selection *selection,
 		return false;
 	}
 
-	struct wlr_xwm_selection_transfer *transfer =
-		calloc(1, sizeof(struct wlr_xwm_selection_transfer));
+	struct wlr_xwm_selection_transfer *transfer = calloc(1, sizeof(*transfer));
 	if (transfer == NULL) {
 		wlr_log(WLR_ERROR, "Allocation failed");
 		return false;

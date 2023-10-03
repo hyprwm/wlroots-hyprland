@@ -72,8 +72,7 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 
 	wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
-	struct output *output =
-		calloc(1, sizeof(struct output));
+	struct output *output = calloc(1, sizeof(*output));
 	output->wlr = wlr_output;
 	output->server = server;
 	output->frame.notify = output_handle_frame;
@@ -118,7 +117,7 @@ static void server_handle_new_surface(struct wl_listener *listener,
 	int pos = server->surface_offset;
 	server->surface_offset += 50;
 
-	struct surface *surface = calloc(1, sizeof(struct surface));
+	struct surface *surface = calloc(1, sizeof(*surface));
 	surface->wlr = wlr_surface;
 	surface->commit.notify = surface_handle_commit;
 	wl_signal_add(&wlr_surface->events.commit, &surface->commit);

@@ -475,7 +475,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	}
 
 	assert(surface->toplevel == NULL);
-	surface->toplevel = calloc(1, sizeof(struct wlr_xdg_toplevel));
+	surface->toplevel = calloc(1, sizeof(*surface->toplevel));
 	if (surface->toplevel == NULL) {
 		wl_resource_post_no_memory(surface->resource);
 		return;

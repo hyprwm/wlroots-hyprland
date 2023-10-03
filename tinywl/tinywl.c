@@ -243,8 +243,7 @@ static void server_new_keyboard(struct tinywl_server *server,
 		struct wlr_input_device *device) {
 	struct wlr_keyboard *wlr_keyboard = wlr_keyboard_from_input_device(device);
 
-	struct tinywl_keyboard *keyboard =
-		calloc(1, sizeof(struct tinywl_keyboard));
+	struct tinywl_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 	keyboard->server = server;
 	keyboard->wlr_keyboard = wlr_keyboard;
 
@@ -619,8 +618,7 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 	wlr_output_state_finish(&state);
 
 	/* Allocates and configures our state for this output */
-	struct tinywl_output *output =
-		calloc(1, sizeof(struct tinywl_output));
+	struct tinywl_output *output = calloc(1, sizeof(*output));
 	output->wlr_output = wlr_output;
 	output->server = server;
 
@@ -794,8 +792,7 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 	assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
 	/* Allocate a tinywl_view for this surface */
-	struct tinywl_view *view =
-		calloc(1, sizeof(struct tinywl_view));
+	struct tinywl_view *view = calloc(1, sizeof(*view));
 	view->server = server;
 	view->xdg_toplevel = xdg_surface->toplevel;
 	view->scene_tree = wlr_scene_xdg_surface_create(

@@ -119,8 +119,7 @@ void destroy_tablet_tool_v2(struct wl_resource *resource) {
 
 void add_tablet_tool_client(struct wlr_tablet_seat_client_v2 *seat,
 		struct wlr_tablet_v2_tablet_tool *tool) {
-	struct wlr_tablet_tool_client_v2 *client =
-		calloc(1, sizeof(struct wlr_tablet_tool_client_v2));
+	struct wlr_tablet_tool_client_v2 *client = calloc(1, sizeof(*client));
 	if (!client) {
 		return;
 	}
@@ -233,8 +232,7 @@ struct wlr_tablet_v2_tablet_tool *wlr_tablet_tool_create(
 	if (!seat) {
 		return NULL;
 	}
-	struct wlr_tablet_v2_tablet_tool *tool =
-		calloc(1, sizeof(struct wlr_tablet_v2_tablet_tool));
+	struct wlr_tablet_v2_tablet_tool *tool = calloc(1, sizeof(*tool));
 	if (!tool) {
 		return NULL;
 	}
@@ -822,15 +820,14 @@ void wlr_tablet_tool_v2_start_implicit_grab(
 		return;
 	}
 
-	struct wlr_tablet_tool_v2_grab *grab =
-		calloc(1, sizeof(struct wlr_tablet_tool_v2_grab));
+	struct wlr_tablet_tool_v2_grab *grab = calloc(1, sizeof(*grab));
 	if (!grab) {
 		return;
 	}
 
 	grab->interface = &implicit_tool_grab_interface;
 	grab->tool = tool;
-	struct implicit_grab_state *state = calloc(1, sizeof(struct implicit_grab_state));
+	struct implicit_grab_state *state = calloc(1, sizeof(*state));
 	if (!state) {
 		free(grab);
 		return;

@@ -192,7 +192,7 @@ static void handle_output_description(struct wl_listener *listener,
 
 static void add_output(struct wlr_xdg_output_manager_v1 *manager,
 		struct wlr_output_layout_output *layout_output) {
-	struct wlr_xdg_output_v1 *output = calloc(1, sizeof(struct wlr_xdg_output_v1));
+	struct wlr_xdg_output_v1 *output = calloc(1, sizeof(*output));
 	if (output == NULL) {
 		return;
 	}
@@ -256,8 +256,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager_v1_create(
 		struct wl_display *display, struct wlr_output_layout *layout) {
-	struct wlr_xdg_output_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_xdg_output_manager_v1));
+	struct wlr_xdg_output_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

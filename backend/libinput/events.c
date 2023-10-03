@@ -69,8 +69,7 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 	const char *name = libinput_device_get_name(libinput_dev);
 	wlr_log(WLR_DEBUG, "Adding %s [%d:%d]", name, vendor, product);
 
-	struct wlr_libinput_input_device *dev =
-		calloc(1, sizeof(struct wlr_libinput_input_device));
+	struct wlr_libinput_input_device *dev = calloc(1, sizeof(*dev));
 	if (dev == NULL) {
 		wlr_log_errno(WLR_ERROR, "failed to allocate wlr_libinput_input_device");
 		return;

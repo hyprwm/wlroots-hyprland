@@ -256,7 +256,7 @@ static struct wlr_x11_buffer *create_x11_buffer(struct wlr_x11_output *output,
 		return NULL;
 	}
 
-	struct wlr_x11_buffer *buffer = calloc(1, sizeof(struct wlr_x11_buffer));
+	struct wlr_x11_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (!buffer) {
 		xcb_free_pixmap(x11->xcb, pixmap);
 		return NULL;
@@ -535,7 +535,7 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 		return NULL;
 	}
 
-	struct wlr_x11_output *output = calloc(1, sizeof(struct wlr_x11_output));
+	struct wlr_x11_output *output = calloc(1, sizeof(*output));
 	if (output == NULL) {
 		return NULL;
 	}

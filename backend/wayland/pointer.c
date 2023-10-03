@@ -448,7 +448,7 @@ void create_pointer(struct wlr_wl_seat *seat, struct wlr_wl_output *output) {
 	wlr_log(WLR_DEBUG, "creating pointer for output '%s' from seat '%s'",
 		output->wlr_output.name, seat->name);
 
-	struct wlr_wl_pointer *pointer = calloc(1, sizeof(struct wlr_wl_pointer));
+	struct wlr_wl_pointer *pointer = calloc(1, sizeof(*pointer));
 	if (pointer == NULL) {
 		wlr_log(WLR_ERROR, "failed to allocate wlr_wl_pointer");
 		return;

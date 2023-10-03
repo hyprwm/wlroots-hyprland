@@ -22,8 +22,7 @@ static void add_pad_group_from_libinput(struct wlr_tablet_pad *pad,
 		struct libinput_device *device, unsigned int index) {
 	struct libinput_tablet_pad_mode_group *li_group =
 		libinput_device_tablet_pad_get_mode_group(device, index);
-	struct wlr_tablet_pad_group *group =
-		calloc(1, sizeof(struct wlr_tablet_pad_group));
+	struct wlr_tablet_pad_group *group = calloc(1, sizeof(*group));
 	if (!group) {
 		wlr_log_errno(WLR_ERROR, "failed to allocate wlr_tablet_pad_group");
 		return;

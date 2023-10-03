@@ -95,8 +95,7 @@ static void xdg_shell_bind(struct wl_client *wl_client, void *data,
 	struct wlr_xdg_shell *xdg_shell = data;
 	assert(wl_client && xdg_shell);
 
-	struct wlr_xdg_client *client =
-		calloc(1, sizeof(struct wlr_xdg_client));
+	struct wlr_xdg_client *client = calloc(1, sizeof(*client));
 	if (client == NULL) {
 		wl_client_post_no_memory(wl_client);
 		return;
@@ -140,8 +139,7 @@ struct wlr_xdg_shell *wlr_xdg_shell_create(struct wl_display *display,
 		uint32_t version) {
 	assert(version <= WM_BASE_VERSION);
 
-	struct wlr_xdg_shell *xdg_shell =
-		calloc(1, sizeof(struct wlr_xdg_shell));
+	struct wlr_xdg_shell *xdg_shell = calloc(1, sizeof(*xdg_shell));
 	if (!xdg_shell) {
 		return NULL;
 	}

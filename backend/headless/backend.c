@@ -66,8 +66,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 struct wlr_backend *wlr_headless_backend_create(struct wl_display *display) {
 	wlr_log(WLR_INFO, "Creating headless backend");
 
-	struct wlr_headless_backend *backend =
-		calloc(1, sizeof(struct wlr_headless_backend));
+	struct wlr_headless_backend *backend = calloc(1, sizeof(*backend));
 	if (!backend) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_headless_backend");
 		return NULL;

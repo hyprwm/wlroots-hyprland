@@ -170,8 +170,7 @@ static void gamma_control_manager_get_gamma_control(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_gamma_control_v1 *gamma_control =
-		calloc(1, sizeof(struct wlr_gamma_control_v1));
+	struct wlr_gamma_control_v1 *gamma_control = calloc(1, sizeof(*gamma_control));
 	if (gamma_control == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -226,8 +225,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_gamma_control_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_gamma_control_manager_v1));
+	struct wlr_gamma_control_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

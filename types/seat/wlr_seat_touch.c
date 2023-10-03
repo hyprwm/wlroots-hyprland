@@ -144,7 +144,7 @@ static struct wlr_touch_point *touch_point_create(
 		return NULL;
 	}
 
-	struct wlr_touch_point *point = calloc(1, sizeof(struct wlr_touch_point));
+	struct wlr_touch_point *point = calloc(1, sizeof(*point));
 	if (!point) {
 		return NULL;
 	}

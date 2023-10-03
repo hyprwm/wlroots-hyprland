@@ -252,7 +252,7 @@ static int open_drm_render_node(void) {
 		wlr_log(WLR_ERROR, "drmGetDevices2 failed: %s", strerror(-devices_len));
 		return -1;
 	}
-	drmDevice **devices = calloc(devices_len, sizeof(drmDevice *));
+	drmDevice **devices = calloc(devices_len, sizeof(*devices));
 	if (devices == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return -1;

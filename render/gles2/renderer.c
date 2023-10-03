@@ -583,7 +583,7 @@ static struct wlr_render_timer *gles2_render_timer_create(struct wlr_renderer *w
 		return NULL;
 	}
 
-	struct wlr_gles2_render_timer *timer = calloc(1, sizeof(struct wlr_gles2_render_timer));
+	struct wlr_gles2_render_timer *timer = calloc(1, sizeof(*timer));
 	if (!timer) {
 		return NULL;
 	}
@@ -826,8 +826,7 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 		return NULL;
 	}
 
-	struct wlr_gles2_renderer *renderer =
-		calloc(1, sizeof(struct wlr_gles2_renderer));
+	struct wlr_gles2_renderer *renderer = calloc(1, sizeof(*renderer));
 	if (renderer == NULL) {
 		return NULL;
 	}

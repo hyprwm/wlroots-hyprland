@@ -288,7 +288,7 @@ static struct wl_resource *create_offer(struct wlr_data_control_device_v1 *devic
 		struct wl_array *mime_types, bool is_primary) {
 	struct wl_client *client = wl_resource_get_client(device->resource);
 
-	struct data_offer *offer = calloc(1, sizeof(struct data_offer));
+	struct data_offer *offer = calloc(1, sizeof(*offer));
 	if (offer == NULL) {
 		wl_client_post_no_memory(client);
 		return NULL;
@@ -361,8 +361,7 @@ static void control_handle_set_selection(struct wl_client *client,
 		return;
 	}
 
-	struct client_data_source *client_source =
-		calloc(1, sizeof(struct client_data_source));
+	struct client_data_source *client_source = calloc(1, sizeof(*client_source));
 	if (client_source == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -414,8 +413,7 @@ static void control_handle_set_primary_selection(struct wl_client *client,
 		return;
 	}
 
-	struct client_primary_selection_source *client_source =
-		calloc(1, sizeof(struct client_primary_selection_source));
+	struct client_primary_selection_source *client_source = calloc(1, sizeof(*client_source));
 	if (client_source == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -565,8 +563,7 @@ static struct wlr_data_control_manager_v1 *manager_from_resource(
 
 static void manager_handle_create_data_source(struct wl_client *client,
 		struct wl_resource *manager_resource, uint32_t id) {
-	struct data_control_source *source =
-		calloc(1, sizeof(struct data_control_source));
+	struct data_control_source *source = calloc(1, sizeof(*source));
 	if (source == NULL) {
 		wl_resource_post_no_memory(manager_resource);
 		return;
@@ -608,8 +605,7 @@ static void manager_handle_get_data_device(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_data_control_device_v1 *device =
-		calloc(1, sizeof(struct wlr_data_control_device_v1));
+	struct wlr_data_control_device_v1 *device = calloc(1, sizeof(*device));
 	if (device == NULL) {
 		wl_resource_post_no_memory(manager_resource);
 		return;
@@ -678,8 +674,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1_create(
 		struct wl_display *display) {
-	struct wlr_data_control_manager_v1 *manager =
-		calloc(1, sizeof(struct wlr_data_control_manager_v1));
+	struct wlr_data_control_manager_v1 *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

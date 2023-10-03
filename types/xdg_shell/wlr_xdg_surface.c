@@ -129,8 +129,7 @@ static void surface_send_configure(void *user_data) {
 
 	surface->configure_idle = NULL;
 
-	struct wlr_xdg_surface_configure *configure =
-		calloc(1, sizeof(struct wlr_xdg_surface_configure));
+	struct wlr_xdg_surface_configure *configure = calloc(1, sizeof(*configure));
 	if (configure == NULL) {
 		wl_client_post_no_memory(surface->client->client);
 		return;
@@ -352,8 +351,7 @@ void create_xdg_surface(struct wlr_xdg_client *client, struct wlr_surface *wlr_s
 		return;
 	}
 
-	struct wlr_xdg_surface *surface =
-		calloc(1, sizeof(struct wlr_xdg_surface));
+	struct wlr_xdg_surface *surface = calloc(1, sizeof(*surface));
 	if (surface == NULL) {
 		wl_client_post_no_memory(client->client);
 		return;

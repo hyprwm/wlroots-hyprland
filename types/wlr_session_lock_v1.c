@@ -80,8 +80,7 @@ struct wlr_session_lock_surface_v1 *wlr_session_lock_surface_v1_try_from_wlr_sur
 uint32_t wlr_session_lock_surface_v1_configure(
 		struct wlr_session_lock_surface_v1 *lock_surface,
 		uint32_t width, uint32_t height) {
-	struct wlr_session_lock_surface_v1_configure *configure =
-		calloc(1, sizeof(struct wlr_session_lock_surface_v1_configure));
+	struct wlr_session_lock_surface_v1_configure *configure = calloc(1, sizeof(*configure));
 	if (configure == NULL) {
 		wl_resource_post_no_memory(lock_surface->resource);
 		return lock_surface->pending.configure_serial;
@@ -258,8 +257,7 @@ static void lock_handle_get_lock_surface(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_session_lock_surface_v1 *lock_surface =
-		calloc(1, sizeof(struct wlr_session_lock_surface_v1));
+	struct wlr_session_lock_surface_v1 *lock_surface = calloc(1, sizeof(*lock_surface));
 	if (lock_surface == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -380,8 +378,7 @@ static void lock_manager_handle_lock(struct wl_client *client,
 	struct wlr_session_lock_manager_v1 *lock_manager =
 		lock_manager_from_resource(manager_resource);
 
-	struct wlr_session_lock_v1 *lock =
-		calloc(1, sizeof(struct wlr_session_lock_v1));
+	struct wlr_session_lock_v1 *lock = calloc(1, sizeof(*lock));
 	if (lock == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -441,8 +438,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 struct wlr_session_lock_manager_v1 *wlr_session_lock_manager_v1_create(struct wl_display *display) {
-	struct wlr_session_lock_manager_v1 *lock_manager =
-		calloc(1, sizeof(struct wlr_session_lock_manager_v1));
+	struct wlr_session_lock_manager_v1 *lock_manager = calloc(1, sizeof(*lock_manager));
 	if (lock_manager == NULL) {
 		return NULL;
 	}

@@ -257,7 +257,7 @@ static char *get_render_name(const char *name) {
 		wlr_log(WLR_ERROR, "drmGetDevices2 failed: %s", strerror(-devices_len));
 		return NULL;
 	}
-	drmDevice **devices = calloc(devices_len, sizeof(drmDevice *));
+	drmDevice **devices = calloc(devices_len, sizeof(*devices));
 	if (devices == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

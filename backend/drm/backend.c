@@ -202,7 +202,7 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 	wlr_log(WLR_INFO, "Initializing DRM backend for %s (%s)", name, version->name);
 	drmFreeVersion(version);
 
-	struct wlr_drm_backend *drm = calloc(1, sizeof(struct wlr_drm_backend));
+	struct wlr_drm_backend *drm = calloc(1, sizeof(*drm));
 	if (!drm) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		return NULL;

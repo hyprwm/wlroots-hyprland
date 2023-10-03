@@ -291,8 +291,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_data_device_manager *wlr_data_device_manager_create(
 		struct wl_display *display) {
-	struct wlr_data_device_manager *manager =
-		calloc(1, sizeof(struct wlr_data_device_manager));
+	struct wlr_data_device_manager *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		wlr_log(WLR_ERROR, "could not create data device manager");
 		return NULL;

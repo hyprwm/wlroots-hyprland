@@ -117,7 +117,7 @@ bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 		return true;
 	}
 
-	struct drm_color_lut *gamma = malloc(size * sizeof(struct drm_color_lut));
+	struct drm_color_lut *gamma = malloc(size * sizeof(*gamma));
 	if (gamma == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate gamma table");
 		return false;
@@ -133,7 +133,7 @@ bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 	}
 
 	if (drmModeCreatePropertyBlob(drm->fd, gamma,
-			size * sizeof(struct drm_color_lut), blob_id) != 0) {
+			size * sizeof(*gamma), blob_id) != 0) {
 		wlr_log_errno(WLR_ERROR, "Unable to create gamma LUT property blob");
 		free(gamma);
 		return false;

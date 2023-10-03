@@ -194,8 +194,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
 		struct wlr_session *session) {
-	struct wlr_libinput_backend *backend =
-		calloc(1, sizeof(struct wlr_libinput_backend));
+	struct wlr_libinput_backend *backend = calloc(1, sizeof(*backend));
 	if (!backend) {
 		wlr_log(WLR_ERROR, "Allocation failed: %s", strerror(errno));
 		return NULL;

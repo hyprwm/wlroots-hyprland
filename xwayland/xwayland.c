@@ -82,7 +82,7 @@ void wlr_xwayland_destroy(struct wlr_xwayland *xwayland) {
 
 struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 		struct wlr_compositor *compositor, bool lazy) {
-	struct wlr_xwayland *xwayland = calloc(1, sizeof(struct wlr_xwayland));
+	struct wlr_xwayland *xwayland = calloc(1, sizeof(*xwayland));
 	if (!xwayland) {
 		return NULL;
 	}
@@ -139,7 +139,7 @@ void wlr_xwayland_set_cursor(struct wlr_xwayland *xwayland,
 
 	free(xwayland->cursor);
 
-	xwayland->cursor = calloc(1, sizeof(struct wlr_xwayland_cursor));
+	xwayland->cursor = calloc(1, sizeof(*xwayland->cursor));
 	if (xwayland->cursor == NULL) {
 		return;
 	}

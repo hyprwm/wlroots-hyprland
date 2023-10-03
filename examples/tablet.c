@@ -270,7 +270,7 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
-	struct sample_output *sample_output = calloc(1, sizeof(struct sample_output));
+	struct sample_output *sample_output = calloc(1, sizeof(*sample_output));
 	sample_output->output = output;
 	sample_output->sample = sample;
 	wl_signal_add(&output->events.frame, &sample_output->frame);
@@ -317,7 +317,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	struct sample_state *sample = wl_container_of(listener, sample, new_input);
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:;
-		struct sample_keyboard *keyboard = calloc(1, sizeof(struct sample_keyboard));
+		struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
 		keyboard->sample = sample;
 		wl_signal_add(&device->events.destroy, &keyboard->destroy);
@@ -340,7 +340,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		xkb_context_unref(context);
 		break;
 	case WLR_INPUT_DEVICE_TABLET_PAD:;
-		struct tablet_pad_state *pstate = calloc(sizeof(struct tablet_pad_state), 1);
+		struct tablet_pad_state *pstate = calloc(1, sizeof(*pstate));
 		pstate->wlr_tablet_pad = wlr_tablet_pad_from_input_device(device);
 		pstate->sample = sample;
 		pstate->destroy.notify = tablet_pad_destroy_notify;
@@ -358,7 +358,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		sample->height_mm = tablet->height_mm == 0 ?
 			10 : tablet->height_mm;
 
-		struct tablet_tool_state *tstate = calloc(sizeof(struct tablet_tool_state), 1);
+		struct tablet_tool_state *tstate = calloc(1, sizeof(*tstate));
 		tstate->wlr_tablet = tablet;
 		tstate->sample = sample;
 		tstate->destroy.notify = tablet_tool_destroy_notify;

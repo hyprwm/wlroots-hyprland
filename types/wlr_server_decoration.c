@@ -81,8 +81,7 @@ static void server_decoration_manager_handle_create(struct wl_client *client,
 		manager_from_resource(manager_resource);
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 
-	struct wlr_server_decoration *decoration =
-		calloc(1, sizeof(struct wlr_server_decoration));
+	struct wlr_server_decoration *decoration = calloc(1, sizeof(*decoration));
 	if (decoration == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -173,8 +172,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_server_decoration_manager *wlr_server_decoration_manager_create(
 		struct wl_display *display) {
-	struct wlr_server_decoration_manager *manager =
-		calloc(1, sizeof(struct wlr_server_decoration_manager));
+	struct wlr_server_decoration_manager *manager = calloc(1, sizeof(*manager));
 	if (manager == NULL) {
 		return NULL;
 	}

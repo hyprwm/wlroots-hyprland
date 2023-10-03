@@ -116,8 +116,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_fullscreen_shell_v1 *wlr_fullscreen_shell_v1_create(
 		struct wl_display *display) {
-	struct wlr_fullscreen_shell_v1 *shell =
-		calloc(1, sizeof(struct wlr_fullscreen_shell_v1));
+	struct wlr_fullscreen_shell_v1 *shell = calloc(1, sizeof(*shell));
 	if (shell == NULL) {
 		return NULL;
 	}

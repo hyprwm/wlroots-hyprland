@@ -104,7 +104,7 @@ struct wlr_cursor_state {
 };
 
 struct wlr_cursor *wlr_cursor_create(void) {
-	struct wlr_cursor_state *state = calloc(1, sizeof(struct wlr_cursor_state));
+	struct wlr_cursor_state *state = calloc(1, sizeof(*state));
 	if (!state) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor_state");
 		return NULL;
@@ -916,8 +916,7 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 
 static struct wlr_cursor_device *cursor_device_create(
 		struct wlr_cursor *cursor, struct wlr_input_device *device) {
-	struct wlr_cursor_device *c_device =
-		calloc(1, sizeof(struct wlr_cursor_device));
+	struct wlr_cursor_device *c_device = calloc(1, sizeof(*c_device));
 	if (!c_device) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor_device");
 		return NULL;
@@ -1065,7 +1064,7 @@ static void layout_add(struct wlr_cursor_state *state,
 		}
 	}
 
-	output_cursor = calloc(1, sizeof(struct wlr_cursor_output_cursor));
+	output_cursor = calloc(1, sizeof(*output_cursor));
 	if (output_cursor == NULL) {
 		wlr_log(WLR_ERROR, "Failed to allocate wlr_cursor_output_cursor");
 		return;

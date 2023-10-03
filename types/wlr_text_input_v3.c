@@ -254,8 +254,7 @@ static void text_input_manager_get_text_input(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_text_input_v3 *text_input =
-		calloc(1, sizeof(struct wlr_text_input_v3));
+	struct wlr_text_input_v3 *text_input = calloc(1, sizeof(*text_input));
 	if (text_input == NULL) {
 		wl_client_post_no_memory(client);
 		return;
@@ -318,8 +317,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_text_input_manager_v3 *wlr_text_input_manager_v3_create(
 		struct wl_display *display) {
-	struct wlr_text_input_manager_v3 *manager =
-		calloc(1, sizeof(struct wlr_text_input_manager_v3));
+	struct wlr_text_input_manager_v3 *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}

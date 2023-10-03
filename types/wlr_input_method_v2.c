@@ -206,8 +206,7 @@ static void im_get_input_popup_surface(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_input_popup_surface_v2 *popup_surface =
-		calloc(1, sizeof(struct wlr_input_popup_surface_v2));
+	struct wlr_input_popup_surface_v2 *popup_surface = calloc(1, sizeof(*popup_surface));
 	if (!popup_surface) {
 		wl_client_post_no_memory(client);
 		return;
@@ -410,8 +409,7 @@ static void im_grab_keyboard(struct wl_client *client,
 		// Already grabbed
 		return;
 	}
-	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab =
-		calloc(1, sizeof(struct wlr_input_method_keyboard_grab_v2));
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = calloc(1, sizeof(*keyboard_grab));
 	if (!keyboard_grab) {
 		wl_client_post_no_memory(client);
 		return;
@@ -535,8 +533,7 @@ static void manager_get_input_method(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_input_method_v2 *input_method = calloc(1,
-		sizeof(struct wlr_input_method_v2));
+	struct wlr_input_method_v2 *input_method = calloc(1, sizeof(*input_method));
 	if (!input_method) {
 		wl_client_post_no_memory(client);
 		return;
@@ -598,8 +595,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 
 struct wlr_input_method_manager_v2 *wlr_input_method_manager_v2_create(
 		struct wl_display *display) {
-	struct wlr_input_method_manager_v2 *im_manager = calloc(1,
-		sizeof(struct wlr_input_method_manager_v2));
+	struct wlr_input_method_manager_v2 *im_manager = calloc(1, sizeof(*im_manager));
 	if (!im_manager) {
 		return NULL;
 	}

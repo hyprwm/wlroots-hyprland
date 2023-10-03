@@ -114,8 +114,7 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 struct wlr_input_inhibit_manager *wlr_input_inhibit_manager_create(
 		struct wl_display *display) {
 	// TODO: Client destroy
-	struct wlr_input_inhibit_manager *manager =
-		calloc(1, sizeof(struct wlr_input_inhibit_manager));
+	struct wlr_input_inhibit_manager *manager = calloc(1, sizeof(*manager));
 	if (!manager) {
 		return NULL;
 	}
