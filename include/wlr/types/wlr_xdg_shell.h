@@ -256,7 +256,9 @@ struct wlr_xdg_surface {
 
 	struct wlr_xdg_surface_state current, pending;
 
+	// Whether the surface is ready to receive configure events
 	bool initialized;
+	// Whether the latest commit is an initial commit
 	bool initial_commit;
 
 	struct {
