@@ -346,6 +346,23 @@ static void log_creation_failure(bool is_auto, const char *msg) {
 	wlr_log(is_auto ? WLR_DEBUG : WLR_ERROR, "%s%s", msg, is_auto ? ". Skipping!" : "");
 }
 
+static bool has_render_node(struct wlr_backend *backend) {
+	if (!backend) {
+		return false;
+	}
+
+	int backend_drm_fd = wlr_backend_get_drm_fd(backend);
+	if (backend_drm_fd < 0) {
+		return false;
+	}
+
+	char *render_node = drmGetRenderDeviceNameFromFd(backend_drm_fd);
+	bool has_render_node = render_node != NULL;
+	free(render_node);
+
+	return has_render_node;
+}
+
 static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int drm_fd) {
 	const char *renderer_options[] = {
 		"auto",
@@ -396,15 +413,7 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
 	}
 #endif
 
-	bool has_render_node = false;
-	int backend_drm_fd = wlr_backend_get_drm_fd(backend);
-	if (is_auto && backend_drm_fd >= 0) {
-		char *render_node = drmGetRenderDeviceNameFromFd(backend_drm_fd);
-		has_render_node = render_node != NULL;
-		free(render_node);
-	}
-
-	if ((is_auto && !has_render_node) || strcmp(renderer_name, "pixman") == 0) {
+	if ((is_auto && !has_render_node(backend)) || strcmp(renderer_name, "pixman") == 0) {
 		renderer = wlr_pixman_renderer_create();
 		if (renderer) {
 			goto out;
