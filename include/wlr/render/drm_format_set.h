@@ -37,7 +37,7 @@ void wlr_drm_format_finish(struct wlr_drm_format *format);
  * instance, backends will report the set they can display, and renderers will
  * report the set they can render to. For a more general overview of formats
  * and modifiers, see:
- * https://lore.kernel.org/dri-devel/20210905122742.86029-1-daniels@collabora.com/
+ * https://www.kernel.org/doc/html/next/userspace-api/dma-buf-alloc-exchange.html#formats-and-modifiers
  *
  * For compatibility with legacy drivers which don't support explicit
  * modifiers, the special modifier DRM_FORMAT_MOD_INVALID is used to indicate
