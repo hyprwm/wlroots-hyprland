@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-bool generate_token(char out[static TOKEN_STRLEN]) {
+bool generate_token(char out[static TOKEN_SIZE]) {
 	static FILE *urandom = NULL;
 	uint64_t data[2];
 
@@ -31,7 +31,7 @@ bool generate_token(char out[static TOKEN_STRLEN]) {
 		wlr_log_errno(WLR_ERROR, "Failed to read from random device");
 		return false;
 	}
-	if (snprintf(out, TOKEN_STRLEN, "%016" PRIx64 "%016" PRIx64, data[0], data[1]) != TOKEN_STRLEN - 1) {
+	if (snprintf(out, TOKEN_SIZE, "%016" PRIx64 "%016" PRIx64, data[0], data[1]) != TOKEN_SIZE - 1) {
 		wlr_log_errno(WLR_ERROR, "Failed to format hex string token");
 		return false;
 	}

@@ -60,7 +60,7 @@ static void token_handle_destroy(struct wl_client *client,
 }
 
 static bool token_init( struct wlr_xdg_activation_token_v1 *token) {
-	char token_str[TOKEN_STRLEN + 1] = {0};
+	char token_str[TOKEN_SIZE] = {0};
 	if (!generate_token(token_str)) {
 		return false;
 	}
@@ -137,7 +137,7 @@ static void token_handle_commit(struct wl_client *client,
 error:;
 	// Here we send a generated token, but it's invalid and can't be used to
 	// request activation.
-	char token_str[TOKEN_STRLEN + 1] = {0};
+	char token_str[TOKEN_SIZE] = {0};
 	if (!generate_token(token_str)) {
 		wl_client_post_no_memory(client);
 		return;

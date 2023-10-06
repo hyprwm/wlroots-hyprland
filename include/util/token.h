@@ -3,7 +3,8 @@
 
 #include <stdbool.h>
 
-#define TOKEN_STRLEN 33
-bool generate_token(char out[static TOKEN_STRLEN]);
+#define TOKEN_SIZE 33
+
+bool generate_token(char out[static TOKEN_SIZE]);
 
 #endif
