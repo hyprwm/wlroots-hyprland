@@ -28,7 +28,6 @@ static void scene_output_layout_output_destroy(
 	wl_list_remove(&solo->layout_output_destroy.link);
 	wl_list_remove(&solo->scene_output_destroy.link);
 	wl_list_remove(&solo->link);
-	wlr_scene_output_destroy(solo->scene_output);
 	free(solo);
 }
 
@@ -43,7 +42,6 @@ static void scene_output_layout_output_handle_scene_output_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_scene_output_layout_output *solo =
 		wl_container_of(listener, solo, scene_output_destroy);
-	solo->scene_output = NULL;
 	scene_output_layout_output_destroy(solo);
 }
 
