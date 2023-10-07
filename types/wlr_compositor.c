@@ -439,7 +439,10 @@ static void surface_commit_state(struct wlr_surface *surface,
 	bool invalid_buffer = next->committed & WLR_SURFACE_STATE_BUFFER;
 
 	if (invalid_buffer && next->buffer == NULL) {
+		surface->unmap_commit = surface->mapped;
 		wlr_surface_unmap(surface);
+	} else {
+		surface->unmap_commit = false;
 	}
 
 	surface_update_damage(&surface->buffer_damage, &surface->current, next);
