@@ -68,6 +68,21 @@ static bool atomic_commit(struct atomic *atom,
 	}
 
 	int ret = drmModeAtomicCommit(drm->fd, atom->req, flags, drm);
+
+	// A non-blocking commit will fail with EBUSY if a commit is already in
+	// progress for the affected CRTCs, and the caller is responsible for
+	// waiting for page_flip events before queuing more non-blocking commits.
+	//
+	// The driver may implicitly add more CRTCs to our commit for e.g. resource
+	// reallocation, and in that case we have no chance of waiting for the
+	// right page_flip events. Retry with a blocking commit when this happens.
+	if (ret == -EBUSY &&
+			(flags & DRM_MODE_ATOMIC_NONBLOCK) &&
+			(flags & DRM_MODE_ATOMIC_ALLOW_MODESET)) {
+		flags &= ~DRM_MODE_ATOMIC_NONBLOCK;
+		ret = drmModeAtomicCommit(drm->fd, atom->req, flags, drm);
+	}
+
 	if (ret != 0) {
 		wlr_drm_conn_log_errno(conn,
 			(flags & DRM_MODE_ATOMIC_TEST_ONLY) ? WLR_DEBUG : WLR_ERROR,
@@ -314,12 +329,8 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 	}
 	if (modeset) {
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-	} else if (!test_only && (state->base->committed & WLR_OUTPUT_STATE_BUFFER)) {
-		// The wlr_output API requires non-modeset commits with a new buffer to
-		// wait for the frame event. However compositors often perform
-		// non-modesets commits without a new buffer without waiting for the
-		// frame event. In that case we need to make the KMS commit blocking,
-		// otherwise the kernel will error out with EBUSY.
+	}
+	if (!test_only && conn->pending_page_flip_crtc == 0) {
 		flags |= DRM_MODE_ATOMIC_NONBLOCK;
 	}
 
