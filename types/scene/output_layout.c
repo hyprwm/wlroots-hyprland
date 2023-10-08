@@ -73,7 +73,12 @@ void wlr_scene_output_layout_add_output(struct wlr_scene_output_layout *sol,
 		struct wlr_output_layout_output *lo, struct wlr_scene_output *so) {
 	assert(lo->output == so->output);
 
-	struct wlr_scene_output_layout_output *solo = calloc(1, sizeof(*solo));
+	struct wlr_scene_output_layout_output *solo;
+	wl_list_for_each(solo, &sol->outputs, link) {
+		assert(solo->scene_output != so);
+	}
+
+	solo = calloc(1, sizeof(*solo));
 	if (solo == NULL) {
 		return;
 	}
