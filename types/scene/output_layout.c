@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
@@ -70,6 +71,8 @@ static void scene_output_layout_handle_layout_change(
 
 void wlr_scene_output_layout_add_output(struct wlr_scene_output_layout *sol,
 		struct wlr_output_layout_output *lo, struct wlr_scene_output *so) {
+	assert(lo->output == so->output);
+
 	struct wlr_scene_output_layout_output *solo = calloc(1, sizeof(*solo));
 	if (solo == NULL) {
 		return;
