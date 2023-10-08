@@ -11,16 +11,16 @@ void wlr_addon_set_init(struct wlr_addon_set *set) {
 }
 
 void wlr_addon_set_finish(struct wlr_addon_set *set) {
-	struct wlr_addon *addon, *tmp;
-	wl_list_for_each_safe(addon, tmp, &set->addons, link) {
+	while (!wl_list_empty(&set->addons)) {
+		struct wl_list *link = set->addons.next;
+		struct wlr_addon *addon = wl_container_of(link, addon, link);
+		const struct wlr_addon_interface *impl = addon->impl;
 		addon->impl->destroy(addon);
+		if (set->addons.next == link) {
+			wlr_log(WLR_ERROR, "Dangling addon: %s", impl->name);
+			abort();
+		}
 	}
-
-	wl_list_for_each(addon, &set->addons, link) {
-		wlr_log(WLR_ERROR, "Dangling addon: %s", addon->impl->name);
-	}
-
-	assert(wl_list_empty(&set->addons));
 }
 
 void wlr_addon_init(struct wlr_addon *addon, struct wlr_addon_set *set,
