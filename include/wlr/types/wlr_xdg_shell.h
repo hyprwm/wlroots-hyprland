@@ -421,8 +421,9 @@ bool wlr_xdg_toplevel_set_parent(struct wlr_xdg_toplevel *toplevel,
 	struct wlr_xdg_toplevel *parent);
 
 /**
- * Request that this popup closes.
- **/
+ * Notify the client that the popup has been dismissed and destroy the
+ * struct wlr_xdg_popup, rendering the resource inert.
+ */
 void wlr_xdg_popup_destroy(struct wlr_xdg_popup *popup);
 
 /**
