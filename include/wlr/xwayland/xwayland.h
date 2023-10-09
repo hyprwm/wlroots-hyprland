@@ -22,6 +22,7 @@ struct wlr_drag;
 
 struct wlr_xwayland {
 	struct wlr_xwayland_server *server;
+	bool own_server;
 	struct wlr_xwm *xwm;
 	struct wlr_xwayland_shell_v1 *shell_v1;
 	struct wlr_xwayland_cursor *cursor;
@@ -199,6 +200,12 @@ struct wlr_xwayland_minimize_event {
  */
 struct wlr_xwayland *wlr_xwayland_create(struct wl_display *wl_display,
 	struct wlr_compositor *compositor, bool lazy);
+
+/**
+ * Create an XWM from an existing Xwayland server.
+ */
+struct wlr_xwayland *wlr_xwayland_create_with_server(struct wl_display *display,
+	struct wlr_compositor *compositor, struct wlr_xwayland_server *server);
 
 void wlr_xwayland_destroy(struct wlr_xwayland *wlr_xwayland);
 
