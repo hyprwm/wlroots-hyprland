@@ -293,6 +293,9 @@ uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 }
 
 void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
+	if (surface == NULL) {
+		return;
+	}
 	zwlr_layer_surface_v1_send_closed(surface->resource);
 	layer_surface_destroy(surface);
 }
