@@ -1158,6 +1158,7 @@ static void xwm_handle_property_notify(struct wlr_xwm *xwm,
 	}
 
 	read_surface_property(xwm, xsurface, ev->atom, reply);
+	free(reply);
 }
 
 static void xwm_handle_surface_id_message(struct wlr_xwm *xwm,
