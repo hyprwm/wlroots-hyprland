@@ -275,6 +275,7 @@ static int xserver_handle_ready(int fd, uint32_t mask, void *data) {
 	close(fd);
 	wl_event_source_remove(server->pipe_source);
 	server->pipe_source = NULL;
+	server->ready = true;
 
 	struct wlr_xwayland_server_ready_event event = {
 		.server = server,
