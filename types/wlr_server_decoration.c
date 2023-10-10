@@ -144,7 +144,6 @@ static void server_decoration_manager_destroy_resource(
 static void server_decoration_manager_bind(struct wl_client *client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_server_decoration_manager *manager = data;
-	assert(client && manager);
 
 	struct wl_resource *resource = wl_resource_create(client,
 		&org_kde_kwin_server_decoration_manager_interface, version, id);

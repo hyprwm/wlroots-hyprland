@@ -246,7 +246,6 @@ static void wlr_tablet_manager_v2_destroy(struct wl_resource *resource) {
 static void tablet_v2_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_tablet_manager_v2 *manager = data;
-	assert(wl_client && manager);
 
 	struct wlr_tablet_manager_client_v2 *client = calloc(1, sizeof(*client));
 	if (client == NULL) {

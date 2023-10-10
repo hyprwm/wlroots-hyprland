@@ -294,7 +294,6 @@ static const struct zwp_text_input_manager_v3_interface
 static void text_input_manager_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_text_input_manager_v3 *manager = data;
-	assert(wl_client && manager);
 
 	struct wl_resource *resource = wl_resource_create(wl_client,
 		&zwp_text_input_manager_v3_interface, version, id);

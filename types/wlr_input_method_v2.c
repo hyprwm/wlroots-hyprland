@@ -571,7 +571,6 @@ static const struct zwp_input_method_manager_v2_interface
 
 static void input_method_manager_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
-	assert(wl_client);
 	struct wlr_input_method_manager_v2 *im_manager = data;
 
 	struct wl_resource *bound_resource = wl_resource_create(wl_client,

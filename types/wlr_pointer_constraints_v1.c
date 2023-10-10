@@ -276,7 +276,6 @@ static const struct zwp_pointer_constraints_v1_interface
 static void pointer_constraints_bind(struct wl_client *client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_pointer_constraints_v1 *pointer_constraints = data;
-	assert(client && pointer_constraints);
 
 	struct wl_resource *resource = wl_resource_create(client,
 		&zwp_pointer_constraints_v1_interface, version, id);

@@ -93,7 +93,6 @@ static int xdg_client_ping_timeout(void *user_data) {
 static void xdg_shell_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_xdg_shell *xdg_shell = data;
-	assert(wl_client && xdg_shell);
 
 	struct wlr_xdg_client *client = calloc(1, sizeof(*client));
 	if (client == NULL) {

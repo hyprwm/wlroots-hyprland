@@ -89,7 +89,6 @@ static void input_manager_resource_destroy(struct wl_resource *resource) {
 static void inhibit_manager_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_input_inhibit_manager *manager = data;
-	assert(wl_client && manager);
 
 	struct wl_resource *wl_resource = wl_resource_create(wl_client,
 		&zwlr_input_inhibit_manager_v1_interface, version, id);

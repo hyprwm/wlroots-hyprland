@@ -461,7 +461,6 @@ static const struct zwlr_layer_shell_v1_interface layer_shell_implementation = {
 static void layer_shell_bind(struct wl_client *wl_client, void *data,
 		uint32_t version, uint32_t id) {
 	struct wlr_layer_shell_v1 *layer_shell = data;
-	assert(wl_client && layer_shell);
 
 	struct wl_resource *resource = wl_resource_create(
 			wl_client, &zwlr_layer_shell_v1_interface, version, id);

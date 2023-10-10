@@ -177,7 +177,6 @@ static void seat_handle_bind(struct wl_client *client, void *_wlr_seat,
 		uint32_t version, uint32_t id) {
 	// `wlr_seat` can be NULL if the seat global is being destroyed
 	struct wlr_seat *wlr_seat = _wlr_seat;
-	assert(client);
 
 	struct wl_resource *wl_resource =
 		wl_resource_create(client, &wl_seat_interface, version, id);
