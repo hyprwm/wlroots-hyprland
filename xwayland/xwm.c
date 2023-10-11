@@ -775,20 +775,6 @@ static void read_surface_strut_partial(struct wlr_xwm *xwm,
 		return;
 	}
 	xcb_ewmh_get_wm_strut_partial_from_reply(xsurface->strut_partial, reply);
-
-	/*
-	 * Translate right/bottom into root x/y coordinates here since
-	 * the compositor is ignorant of X11 screen width/height.
-	 *
-	 * (This could result in an incorrect position if the X11 screen
-	 * size changes but _NET_WM_STRUT_PARTIAL doesn't. It's probably
-	 * not worth the additional code to fix this corner case.)
-	 */
-	xsurface->strut_partial->right =
-		xwm->screen->width_in_pixels - xsurface->strut_partial->right;
-	xsurface->strut_partial->bottom =
-		xwm->screen->height_in_pixels - xsurface->strut_partial->bottom;
-
 	wl_signal_emit_mutable(&xsurface->events.set_strut_partial, NULL);
 }
 

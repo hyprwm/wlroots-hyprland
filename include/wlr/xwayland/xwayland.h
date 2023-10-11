@@ -124,8 +124,11 @@ struct wlr_xwayland_surface {
 	xcb_icccm_wm_hints_t *hints;
 	xcb_size_hints_t *size_hints;
 	/*
-	 * _NET_WM_STRUT_PARTIAL (used by e.g. XWayland panels;
-	 * right/bottom are translated into root x/y coordinates)
+	 * _NET_WM_STRUT_PARTIAL (used by e.g. XWayland panels).
+	 * Note that right/bottom values are offsets from the lower
+	 * right corner of the X11 screen, and the exact relation
+	 * between X11 screen coordinates and the wlr_output_layout
+	 * depends on the XWayland implementation.
 	 */
 	xcb_ewmh_wm_strut_partial_t *strut_partial;
 
