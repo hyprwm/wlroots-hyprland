@@ -275,7 +275,6 @@ struct wlr_xdg_surface {
 
 	// private state
 
-	bool client_mapped;
 	struct wl_listener role_resource_destroy;
 };
 

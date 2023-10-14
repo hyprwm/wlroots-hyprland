@@ -24,9 +24,8 @@ static void xdg_surface_configure_destroy(
 // 2) the xdg_surface role object implementation is destroyed
 
 static void reset_xdg_surface(struct wlr_xdg_surface *surface) {
-	surface->client_mapped = false;
-	surface->initialized = false;
 	surface->configured = false;
+	surface->initialized = false;
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
@@ -275,14 +274,14 @@ static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		return;
 	}
 
-	surface->initial_commit = !surface->initialized;
-
-	if (surface->client_mapped && !wlr_surface_has_buffer(wlr_surface)) {
-		assert(!surface->initial_commit);
-		// This commit has unmapped the surface
+	if (surface->surface->unmap_commit) {
 		reset_xdg_surface_role_object(surface);
 		reset_xdg_surface(surface);
+
+		assert(!surface->initial_commit);
+		surface->initial_commit = false;
 	} else {
+		surface->initial_commit = !surface->initialized;
 		surface->initialized = true;
 	}
 
@@ -315,7 +314,6 @@ static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 	}
 
 	if (wlr_surface_has_buffer(wlr_surface)) {
-		surface->client_mapped = true;
 		wlr_surface_map(wlr_surface);
 	}
 }

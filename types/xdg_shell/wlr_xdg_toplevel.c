@@ -513,7 +513,6 @@ void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 	wlr_surface_unmap(toplevel->base->surface);
-
 	reset_xdg_toplevel(toplevel);
 
 	// TODO: improve events
