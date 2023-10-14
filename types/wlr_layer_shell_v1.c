@@ -22,8 +22,32 @@ static void resource_handle_destroy(struct wl_client *client,
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation;
 static const struct zwlr_layer_surface_v1_interface layer_surface_implementation;
 
+static void layer_surface_configure_destroy(
+		struct wlr_layer_surface_v1_configure *configure) {
+	if (configure == NULL) {
+		return;
+	}
+	wl_list_remove(&configure->link);
+	free(configure);
+}
+
+static void layer_surface_reset(struct wlr_layer_surface_v1 *surface) {
+	surface->configured = false;
+
+	struct wlr_xdg_popup *popup, *popup_tmp;
+	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
+		wlr_xdg_popup_destroy(popup);
+	}
+
+	struct wlr_layer_surface_v1_configure *configure, *tmp;
+	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
+		layer_surface_configure_destroy(configure);
+	}
+}
+
 static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
 	wlr_surface_unmap(surface->surface);
+	layer_surface_reset(surface);
 
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
 	wl_resource_set_user_data(surface->resource, NULL);
@@ -53,15 +77,6 @@ struct wlr_layer_surface_v1 *wlr_layer_surface_v1_try_from_wlr_surface(
 		return NULL;
 	}
 	return wlr_layer_surface_v1_from_resource(surface->role_resource);
-}
-
-static void layer_surface_configure_destroy(
-		struct wlr_layer_surface_v1_configure *configure) {
-	if (configure == NULL) {
-		return;
-	}
-	wl_list_remove(&configure->link);
-	free(configure);
 }
 
 static void layer_surface_handle_ack_configure(struct wl_client *client,
@@ -334,6 +349,10 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 		return;
 	}
 
+	if (surface->surface->unmap_commit) {
+		layer_surface_reset(surface);
+	}
+
 	surface->current = surface->pending;
 	surface->pending.committed = 0;
 
@@ -350,26 +369,6 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	}
 }
 
-static void layer_surface_role_unmap(struct wlr_surface *wlr_surface) {
-	struct wlr_layer_surface_v1 *surface =
-		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
-	if (surface == NULL) {
-		return;
-	}
-
-	surface->configured = false;
-
-	struct wlr_xdg_popup *popup, *popup_tmp;
-	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
-		wlr_xdg_popup_destroy(popup);
-	}
-
-	struct wlr_layer_surface_v1_configure *configure, *tmp;
-	wl_list_for_each_safe(configure, tmp, &surface->configure_list, link) {
-		layer_surface_configure_destroy(configure);
-	}
-}
-
 static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
@@ -383,7 +382,6 @@ static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 static const struct wlr_surface_role layer_surface_role = {
 	.name = "zwlr_layer_surface_v1",
 	.commit = layer_surface_role_commit,
-	.unmap = layer_surface_role_unmap,
 	.destroy = layer_surface_role_destroy,
 };
 
