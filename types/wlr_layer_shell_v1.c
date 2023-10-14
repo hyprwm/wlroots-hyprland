@@ -33,6 +33,7 @@ static void layer_surface_configure_destroy(
 
 static void layer_surface_reset(struct wlr_layer_surface_v1 *surface) {
 	surface->configured = false;
+	surface->initialized = false;
 
 	struct wlr_xdg_popup *popup, *popup_tmp;
 	wl_list_for_each_safe(popup, popup_tmp, &surface->popups, link) {
@@ -290,6 +291,11 @@ static const struct zwlr_layer_surface_v1_interface layer_surface_implementation
 
 uint32_t wlr_layer_surface_v1_configure(struct wlr_layer_surface_v1 *surface,
 		uint32_t width, uint32_t height) {
+	if (!surface->initialized) {
+		wlr_log(WLR_ERROR, "A configure is sent to an uninitialized wlr_layer_surface_v1 %p",
+			surface);
+	}
+
 	struct wl_display *display =
 		wl_client_get_display(wl_resource_get_client(surface->resource));
 	struct wlr_layer_surface_v1_configure *configure = calloc(1, sizeof(*configure));
@@ -351,6 +357,12 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 
 	if (surface->surface->unmap_commit) {
 		layer_surface_reset(surface);
+
+		assert(!surface->initialized);
+		surface->initial_commit = false;
+	} else {
+		surface->initial_commit = !surface->initialized;
+		surface->initialized = true;
 	}
 
 	surface->current = surface->pending;

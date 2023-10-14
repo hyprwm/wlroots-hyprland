@@ -88,6 +88,11 @@ struct wlr_layer_surface_v1 {
 
 	struct wlr_layer_surface_v1_state current, pending;
 
+	// Whether the surface is ready to receive configure events
+	bool initialized;
+	// Whether the latest commit is an initial commit
+	bool initial_commit;
+
 	struct {
 		/**
 		 * The destroy signal indicates that the struct wlr_layer_surface is
