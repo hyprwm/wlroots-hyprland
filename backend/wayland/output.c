@@ -515,6 +515,8 @@ static bool commit_layers(struct wlr_wl_output *output,
 		if (!output_layer_commit(output, layer, &layers[i])) {
 			return false;
 		}
+
+		prev_layer = layer;
 	}
 
 	return true;
