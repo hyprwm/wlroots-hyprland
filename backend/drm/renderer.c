@@ -394,8 +394,12 @@ void drm_fb_destroy(struct wlr_drm_fb *fb) {
 	wl_list_remove(&fb->link);
 	wlr_addon_finish(&fb->addon);
 
-	if (drmModeRmFB(drm->fd, fb->id) != 0) {
-		wlr_log(WLR_ERROR, "drmModeRmFB failed");
+	int ret = drmModeCloseFB(drm->fd, fb->id);
+	if (ret == -EINVAL) {
+		ret = drmModeRmFB(drm->fd, fb->id);
+	}
+	if (ret != 0) {
+		wlr_log(WLR_ERROR, "Failed to close FB: %s", strerror(-ret));
 	}
 
 	free(fb);
