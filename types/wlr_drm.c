@@ -55,19 +55,22 @@ static const struct wlr_buffer_impl buffer_impl = {
 	.get_dmabuf = buffer_get_dmabuf,
 };
 
-bool wlr_drm_buffer_is_resource(struct wl_resource *resource) {
+static bool buffer_resource_is_instance(struct wl_resource *resource) {
 	return wl_resource_instance_of(resource, &wl_buffer_interface,
 		&wl_buffer_impl);
 }
 
-struct wlr_drm_buffer *wlr_drm_buffer_from_resource(
+struct wlr_drm_buffer *wlr_drm_buffer_try_from_resource(
 		struct wl_resource *resource) {
-	assert(wlr_drm_buffer_is_resource(resource));
+	if (!buffer_resource_is_instance(resource)) {
+		return NULL;
+	}
 	return wl_resource_get_user_data(resource);
 }
 
 static void buffer_handle_resource_destroy(struct wl_resource *resource) {
-	struct wlr_drm_buffer *buffer = wlr_drm_buffer_from_resource(resource);
+	struct wlr_drm_buffer *buffer = wlr_drm_buffer_try_from_resource(resource);
+	assert(buffer != NULL);
 	buffer->resource = NULL;
 	wlr_buffer_drop(&buffer->base);
 }
@@ -170,13 +173,14 @@ static void drm_bind(struct wl_client *client, void *data,
 }
 
 static struct wlr_buffer *buffer_from_resource(struct wl_resource *resource) {
-	struct wlr_drm_buffer *buffer = wlr_drm_buffer_from_resource(resource);
+	struct wlr_drm_buffer *buffer = wlr_drm_buffer_try_from_resource(resource);
+	assert(buffer != NULL);
 	return &buffer->base;
 }
 
 static const struct wlr_buffer_resource_interface buffer_resource_interface = {
 	.name = "wlr_drm_buffer",
-	.is_instance = wlr_drm_buffer_is_resource,
+	.is_instance = buffer_resource_is_instance,
 	.from_resource = buffer_from_resource,
 };
 

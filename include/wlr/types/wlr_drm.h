@@ -45,9 +45,7 @@ struct wlr_drm {
 	struct wl_listener display_destroy;
 };
 
-bool wlr_drm_buffer_is_resource(struct wl_resource *resource);
-
-struct wlr_drm_buffer *wlr_drm_buffer_from_resource(
+struct wlr_drm_buffer *wlr_drm_buffer_try_from_resource(
 	struct wl_resource *resource);
 
 struct wlr_drm *wlr_drm_create(struct wl_display *display,
