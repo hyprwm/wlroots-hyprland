@@ -5,10 +5,6 @@
 #include <wlr/util/log.h>
 #include "types/wlr_buffer.h"
 
-bool wlr_resource_is_buffer(struct wl_resource *resource) {
-	return strcmp(wl_resource_get_class(resource), wl_buffer_interface.name) == 0;
-}
-
 /* struct wlr_buffer_resource_interface */
 static struct wl_array buffer_resource_interfaces = {0};
 
@@ -43,8 +39,10 @@ static const struct wlr_buffer_resource_interface *get_buffer_resource_iface(
 	return NULL;
 }
 
-struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource) {
-	assert(resource && wlr_resource_is_buffer(resource));
+struct wlr_buffer *wlr_buffer_try_from_resource(struct wl_resource *resource) {
+	if (strcmp(wl_resource_get_class(resource), wl_buffer_interface.name) != 0) {
+		return NULL;
+	}
 
 	const struct wlr_buffer_resource_interface *iface =
 			get_buffer_resource_iface(resource);

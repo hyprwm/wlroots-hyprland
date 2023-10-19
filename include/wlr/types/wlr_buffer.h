@@ -103,7 +103,7 @@ bool wlr_buffer_get_shm(struct wlr_buffer *buffer,
  *
  * The provided struct wl_resource must be a wl_buffer.
  */
-struct wlr_buffer *wlr_buffer_from_resource(struct wl_resource *resource);
+struct wlr_buffer *wlr_buffer_try_from_resource(struct wl_resource *resource);
 
 /**
  * Buffer data pointer access flags.
@@ -160,9 +160,5 @@ struct wlr_client_buffer {
  * buffer, returns NULL.
  */
 struct wlr_client_buffer *wlr_client_buffer_get(struct wlr_buffer *buffer);
-/**
- * Check if a resource is a wl_buffer resource.
- */
-bool wlr_resource_is_buffer(struct wl_resource *resource);
 
 #endif

@@ -61,7 +61,7 @@ static void surface_handle_attach(struct wl_client *client,
 
 	struct wlr_buffer *buffer = NULL;
 	if (buffer_resource != NULL) {
-		buffer = wlr_buffer_from_resource(buffer_resource);
+		buffer = wlr_buffer_try_from_resource(buffer_resource);
 		if (buffer == NULL) {
 			wl_resource_post_error(buffer_resource, 0, "unknown buffer type");
 			return;
