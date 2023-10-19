@@ -30,16 +30,10 @@ struct wlr_dmabuf_v1_buffer {
 };
 
 /**
- * Returns true if the given resource was created via the linux-dmabuf
- * buffer protocol, false otherwise
- */
-bool wlr_dmabuf_v1_resource_is_buffer(struct wl_resource *buffer_resource);
-
-/**
  * Returns the struct wlr_dmabuf_buffer if the given resource was created
- * via the linux-dmabuf buffer protocol.
+ * via the linux-dmabuf buffer protocol or NULL otherwise.
  */
-struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_from_buffer_resource(
+struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_try_from_buffer_resource(
 	struct wl_resource *buffer_resource);
 
 struct wlr_linux_dmabuf_feedback_v1 {

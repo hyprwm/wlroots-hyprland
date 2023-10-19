@@ -72,18 +72,17 @@ static const struct wl_buffer_interface wl_buffer_impl = {
 	.destroy = buffer_handle_destroy,
 };
 
-bool wlr_dmabuf_v1_resource_is_buffer(struct wl_resource *resource) {
-	if (!wl_resource_instance_of(resource, &wl_buffer_interface,
-			&wl_buffer_impl)) {
-		return false;
-	}
-	return wl_resource_get_user_data(resource) != NULL;
+static bool buffer_resource_is_instance(struct wl_resource *resource) {
+	return wl_resource_instance_of(resource, &wl_buffer_interface,
+		&wl_buffer_impl);
 }
 
-struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_from_buffer_resource(
+struct wlr_dmabuf_v1_buffer *wlr_dmabuf_v1_buffer_try_from_buffer_resource(
 		struct wl_resource *resource) {
-	assert(wl_resource_instance_of(resource, &wl_buffer_interface,
-		&wl_buffer_impl));
+	if (!buffer_resource_is_instance(resource) ||
+				wl_resource_get_user_data(resource) == NULL) {
+		return NULL;
+	}
 	return wl_resource_get_user_data(resource);
 }
 
@@ -195,7 +194,8 @@ static void params_add(struct wl_client *client,
 
 static void buffer_handle_resource_destroy(struct wl_resource *buffer_resource) {
 	struct wlr_dmabuf_v1_buffer *buffer =
-		wlr_dmabuf_v1_buffer_from_buffer_resource(buffer_resource);
+		wlr_dmabuf_v1_buffer_try_from_buffer_resource(buffer_resource);
+	assert(buffer != NULL);
 	buffer->resource = NULL;
 	wlr_buffer_drop(&buffer->base);
 }
@@ -836,13 +836,14 @@ static void linux_dmabuf_bind(struct wl_client *client, void *data,
 
 static struct wlr_buffer *buffer_from_resource(struct wl_resource *resource) {
 	struct wlr_dmabuf_v1_buffer *buffer =
-		wlr_dmabuf_v1_buffer_from_buffer_resource(resource);
+		wlr_dmabuf_v1_buffer_try_from_buffer_resource(resource);
+	assert(buffer != NULL);
 	return &buffer->base;
 }
 
 static const struct wlr_buffer_resource_interface buffer_resource_interface = {
 	.name = "wlr_dmabuf_v1_buffer",
-	.is_instance = wlr_dmabuf_v1_resource_is_buffer,
+	.is_instance = buffer_resource_is_instance,
 	.from_resource = buffer_from_resource,
 };
 
