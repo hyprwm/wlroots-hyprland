@@ -488,11 +488,16 @@ static void output_cursor_set_xcursor_image(struct wlr_cursor_output_cursor *out
 
 static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_cursor) {
 	struct wlr_cursor *cur = output_cursor->cursor;
+	struct wlr_output *output = output_cursor->output_cursor->output;
+
+	if (!output->enabled) {
+		return;
+	}
 
 	cursor_output_cursor_reset_image(output_cursor);
 
 	if (cur->state->buffer != NULL) {
-		struct wlr_renderer *renderer = output_cursor->output_cursor->output->renderer;
+		struct wlr_renderer *renderer = output->renderer;
 		assert(renderer != NULL);
 
 		struct wlr_buffer *buffer = cur->state->buffer;
@@ -535,7 +540,6 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 			&src_box, dst_width, dst_height, surface->current.transform,
 			hotspot_x, hotspot_y);
 
-		struct wlr_output *output = output_cursor->output_cursor->output;
 		if (output_cursor->output_cursor->visible) {
 			wlr_surface_send_enter(surface, output);
 		} else {
@@ -545,7 +549,7 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		struct wlr_xcursor_manager *manager = cur->state->xcursor_manager;
 		const char *name = cur->state->xcursor_name;
 
-		float scale = output_cursor->output_cursor->output->scale;
+		float scale = output->scale;
 		wlr_xcursor_manager_load(manager, scale);
 		struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(manager, name, scale);
 		if (xcursor == NULL) {
@@ -566,7 +570,8 @@ static void output_cursor_output_handle_output_commit(
 		wl_container_of(listener, output_cursor, output_commit);
 	const struct wlr_output_event_commit *event = data;
 
-	if (event->state->committed & WLR_OUTPUT_STATE_SCALE) {
+	if (event->state->committed & (WLR_OUTPUT_STATE_SCALE | WLR_OUTPUT_STATE_TRANSFORM
+				| WLR_OUTPUT_STATE_ENABLED)) {
 		cursor_output_cursor_update(output_cursor);
 	}
 
