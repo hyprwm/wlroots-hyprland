@@ -33,11 +33,6 @@ static const struct wlr_vk_format formats[] = {
 		.is_srgb = true,
 	},
 	{
-		.drm = DRM_FORMAT_ARGB8888,
-		.vk = VK_FORMAT_B8G8R8A8_SRGB,
-		.is_srgb = true,
-	},
-	{
 		.drm = DRM_FORMAT_XRGB8888,
 		.vk = VK_FORMAT_B8G8R8A8_SRGB,
 		.is_srgb = true,
@@ -47,12 +42,16 @@ static const struct wlr_vk_format formats[] = {
 		.vk = VK_FORMAT_R8G8B8A8_SRGB,
 		.is_srgb = true,
 	},
+	// The Vulkan _SRGB formats correspond to unpremultiplied alpha, but
+	// the Wayland protocol specifies premultiplied alpha on electrical values
+	{
+		.drm = DRM_FORMAT_ARGB8888,
+		.vk = VK_FORMAT_B8G8R8A8_UNORM,
+	},
 	{
 		.drm = DRM_FORMAT_ABGR8888,
-		.vk = VK_FORMAT_R8G8B8A8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_R8G8B8A8_UNORM,
 	},
-
 	// Vulkan packed formats have the same channel order as DRM formats on
 	// little endian systems.
 #if WLR_LITTLE_ENDIAN
