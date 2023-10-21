@@ -315,6 +315,39 @@ static bool query_modifier_usage_support(struct wlr_vk_device *dev, VkFormat vk_
 	return true;
 }
 
+static bool query_shm_support(struct wlr_vk_device *dev, VkFormat vk_format,
+		VkImageFormatProperties *out, const char **errmsg) {
+	VkResult res;
+	*errmsg = NULL;
+
+	VkPhysicalDeviceImageFormatInfo2 fmti = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+		.type = VK_IMAGE_TYPE_2D,
+		.format = vk_format,
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
+		.usage = vulkan_shm_tex_usage,
+		.flags = 0,
+		.pNext = NULL,
+	};
+	VkImageFormatProperties2 ifmtp = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+	};
+
+	res = vkGetPhysicalDeviceImageFormatProperties2(dev->phdev, &fmti, &ifmtp);
+	if (res != VK_SUCCESS) {
+		if (res == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+			*errmsg = "unsupported format";
+		} else {
+			wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2", res);
+			*errmsg = "failed to get format properties";
+		}
+		return false;
+	}
+
+	*out = ifmtp.imageFormatProperties;
+	return true;
+}
+
 static bool query_modifier_support(struct wlr_vk_device *dev,
 		struct wlr_vk_format_props *props, size_t modifier_count) {
 	VkDrmFormatModifierPropertiesListEXT modp = {
@@ -409,8 +442,6 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 
 void vulkan_format_props_query(struct wlr_vk_device *dev,
 		const struct wlr_vk_format *format) {
-	VkResult res;
-
 	if (format->is_ycbcr && !dev->sampler_ycbcr_conversion) {
 		return;
 	}
@@ -437,35 +468,15 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 	const struct wlr_pixel_format_info *format_info = drm_get_pixel_format_info(format->drm);
 
 	// shm texture properties
-	const char *shm_texture_status;
+	char shm_texture_status[256];
+	const char *errmsg = "unknown error";
 	if ((fmtp.formatProperties.optimalTilingFeatures & shm_tex_features) == shm_tex_features &&
 			!format->is_ycbcr && format_info != NULL) {
-		VkPhysicalDeviceImageFormatInfo2 fmti = {
-			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-			.type = VK_IMAGE_TYPE_2D,
-			.format = format->vk,
-			.tiling = VK_IMAGE_TILING_OPTIMAL,
-			.usage = vulkan_shm_tex_usage,
-		};
-		VkImageFormatProperties2 ifmtp = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-		};
-
-		res = vkGetPhysicalDeviceImageFormatProperties2(dev->phdev, &fmti, &ifmtp);
-		if (res != VK_SUCCESS) {
-			if (res == VK_ERROR_FORMAT_NOT_SUPPORTED) {
-				shm_texture_status = "✗ texture (unsupported format)";
-			} else {
-				wlr_vk_error("vkGetPhysicalDeviceImageFormatProperties2", res);
-				shm_texture_status = "✗ texture (failed to get format properties)";
-			}
-		} else {
-			VkExtent3D me = ifmtp.imageFormatProperties.maxExtent;
-			props.shm.max_extent.width = me.width;
-			props.shm.max_extent.height = me.height;
+		VkImageFormatProperties ifmtp;
+		if (query_shm_support(dev, format->vk, &ifmtp, &errmsg)) {
+			props.shm.max_extent.width = ifmtp.maxExtent.width;
+			props.shm.max_extent.height = ifmtp.maxExtent.height;
 			props.shm.features = fmtp.formatProperties.optimalTilingFeatures;
-
-			shm_texture_status = "✓ texture";
 
 			dev->shm_formats[dev->shm_format_count] = format->drm;
 			++dev->shm_format_count;
@@ -473,7 +484,13 @@ void vulkan_format_props_query(struct wlr_vk_device *dev,
 			add_fmt_props = true;
 		}
 	} else {
-		shm_texture_status = "✗ texture (missing required features)";
+		errmsg = "missing required features";
+	}
+
+	if (errmsg != NULL) {
+		snprintf(shm_texture_status, sizeof(shm_texture_status), "✗ texture (%s)", errmsg);
+	} else {
+		snprintf(shm_texture_status, sizeof(shm_texture_status), "✓ texture");
 	}
 	wlr_log(WLR_DEBUG, "    Shared memory: %s", shm_texture_status);
 
