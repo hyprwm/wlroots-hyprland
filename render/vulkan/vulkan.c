@@ -457,17 +457,18 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 	// For dmabuf import we require at least the external_memory_fd,
 	// external_memory_dma_buf, queue_family_foreign and
 	// image_drm_format_modifier extensions.
-	const char *extensions[] = {
-		VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
-		VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-		VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, // or vulkan 1.2
-		VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
-		VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
-		VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
-		VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, // or vulkan 1.2
-		VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, // or vulkan 1.3
-	};
-	size_t extensions_len = sizeof(extensions) / sizeof(extensions[0]);
+	// The size is set to a large number to allow for other conditional
+	// extensions before the device is created
+	const char *extensions[32] = {0};
+	size_t extensions_len = 0;
+	extensions[extensions_len++] = VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME;
+	extensions[extensions_len++] = VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME;
+	extensions[extensions_len++] = VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME; // or vulkan 1.2
+	extensions[extensions_len++] = VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME;
+	extensions[extensions_len++] = VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME;
+	extensions[extensions_len++] = VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME;
+	extensions[extensions_len++] = VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME; // or vulkan 1.2
+	extensions[extensions_len++] = VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME; // or vulkan 1.3
 
 	for (size_t i = 0; i < extensions_len; i++) {
 		if (!check_extension(avail_ext_props, avail_extc, extensions[i])) {
@@ -551,6 +552,23 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		.pQueuePriorities = &prio,
 	};
 
+	VkDeviceQueueGlobalPriorityCreateInfoKHR global_priority;
+	bool has_global_priority = check_extension(avail_ext_props, avail_extc,
+		VK_KHR_GLOBAL_PRIORITY_EXTENSION_NAME);
+	if (has_global_priority) {
+		// If global priorities are supported, request a high-priority context
+		global_priority = (VkDeviceQueueGlobalPriorityCreateInfoKHR){
+			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR,
+			.globalPriority = VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
+		};
+		qinfo.pNext = &global_priority;
+		extensions[extensions_len++] = VK_KHR_GLOBAL_PRIORITY_EXTENSION_NAME;
+		wlr_log(WLR_DEBUG, "Requesting a high-priority device queue");
+	} else {
+		wlr_log(WLR_DEBUG, "Global priorities are not supported, "
+			"falling back to regular queue priority");
+	}
+
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures sampler_ycbcr_features = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
 		.samplerYcbcrConversion = dev->sampler_ycbcr_conversion,
@@ -574,7 +592,19 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
 		.ppEnabledExtensionNames = extensions,
 	};
 
+	assert(extensions_len < sizeof(extensions) / sizeof(extensions[0]));
+
 	res = vkCreateDevice(phdev, &dev_info, NULL, &dev->dev);
+
+	if (has_global_priority && (res == VK_ERROR_NOT_PERMITTED_EXT ||
+			res == VK_ERROR_INITIALIZATION_FAILED)) {
+		// Try to recover from the driver denying a global priority queue
+		wlr_log(WLR_DEBUG, "Failed to obtain a high-priority device queue, "
+			"falling back to regular queue priority");
+		qinfo.pNext = NULL;
+		res = vkCreateDevice(phdev, &dev_info, NULL, &dev->dev);
+	}
+
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("Failed to create vulkan device", res);
 		goto error;
