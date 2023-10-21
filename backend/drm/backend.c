@@ -35,6 +35,7 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 	struct wlr_drm_connector *conn, *next;
 	wl_list_for_each_safe(conn, next, &drm->connectors, link) {
+		conn->crtc = NULL; // leave CRTCs on when shutting down
 		destroy_drm_connector(conn);
 	}
 
