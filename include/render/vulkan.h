@@ -87,7 +87,7 @@ int vulkan_find_mem_type(struct wlr_vk_device *device,
 struct wlr_vk_format {
 	uint32_t drm;
 	VkFormat vk;
-	bool is_srgb;
+	VkFormat vk_srgb; // sRGB version of the format, or 0 if nonexistent
 	bool is_ycbcr;
 };
 

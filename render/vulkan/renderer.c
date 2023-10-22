@@ -768,7 +768,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		goto error;
 	}
 
-	bool has_blending_buffer = !fmt->format.is_srgb;
+	bool has_blending_buffer = !fmt->format.vk_srgb || true /* temporary */;
 
 	buffer->render_setup = find_or_create_render_setup(
 		renderer, &fmt->format, has_blending_buffer);

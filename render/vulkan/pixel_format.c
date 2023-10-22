@@ -14,33 +14,33 @@ static const struct wlr_vk_format formats[] = {
 	// order.
 	{
 		.drm = DRM_FORMAT_R8,
-		.vk = VK_FORMAT_R8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_R8_UNORM,
+		.vk_srgb = VK_FORMAT_R8_SRGB,
 	},
 	{
 		.drm = DRM_FORMAT_GR88,
-		.vk = VK_FORMAT_R8G8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_R8G8_UNORM,
+		.vk_srgb = VK_FORMAT_R8G8_SRGB,
 	},
 	{
 		.drm = DRM_FORMAT_RGB888,
-		.vk = VK_FORMAT_B8G8R8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_B8G8R8_UNORM,
+		.vk_srgb = VK_FORMAT_B8G8R8_SRGB,
 	},
 	{
 		.drm = DRM_FORMAT_BGR888,
-		.vk = VK_FORMAT_R8G8B8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_R8G8B8_UNORM,
+		.vk_srgb = VK_FORMAT_R8G8B8_SRGB,
 	},
 	{
 		.drm = DRM_FORMAT_XRGB8888,
-		.vk = VK_FORMAT_B8G8R8A8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_B8G8R8A8_UNORM,
+		.vk_srgb = VK_FORMAT_B8G8R8A8_SRGB,
 	},
 	{
 		.drm = DRM_FORMAT_XBGR8888,
-		.vk = VK_FORMAT_R8G8B8A8_SRGB,
-		.is_srgb = true,
+		.vk = VK_FORMAT_R8G8B8A8_UNORM,
+		.vk_srgb = VK_FORMAT_R8G8B8A8_SRGB,
 	},
 	// The Vulkan _SRGB formats correspond to unpremultiplied alpha, but
 	// the Wayland protocol specifies premultiplied alpha on electrical values

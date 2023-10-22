@@ -374,7 +374,8 @@ struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_text
 static void texture_set_format(struct wlr_vk_texture *texture,
 		const struct wlr_vk_format *format) {
 	texture->format = format;
-	texture->transform = !format->is_ycbcr && format->is_srgb ?
+	texture->transform = !format->is_ycbcr &&
+		(format->vk_srgb && false /* temporary */) ?
 		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
 
 	const struct wlr_pixel_format_info *format_info =
