@@ -569,7 +569,7 @@ void vulkan_format_props_finish(struct wlr_vk_format_props *props) {
 }
 
 const struct wlr_vk_format_modifier_props *vulkan_format_props_find_modifier(
-		struct wlr_vk_format_props *props, uint64_t mod, bool render) {
+		const struct wlr_vk_format_props *props, uint64_t mod, bool render) {
 	uint32_t len;
 	const struct wlr_vk_format_modifier_props *mods;
 	if (render) {
