@@ -411,6 +411,15 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 
 	texture_set_format(texture, &fmt->format);
 
+	VkFormat view_formats[2] = {
+		fmt->format.vk,
+		fmt->format.vk_srgb,
+	};
+	VkImageFormatListCreateInfoKHR list_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+		.pViewFormats = view_formats,
+		.viewFormatCount = 2,
+	};
 	VkImageCreateInfo img_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = VK_IMAGE_TYPE_2D,
@@ -423,7 +432,11 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		.extent = (VkExtent3D) { width, height, 1 },
 		.tiling = VK_IMAGE_TILING_OPTIMAL,
 		.usage = vulkan_shm_tex_usage,
+		.pNext = fmt->shm.has_mutable_srgb ? &list_info : NULL,
 	};
+	if (fmt->shm.has_mutable_srgb) {
+		img_info.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+	}
 
 	res = vkCreateImage(dev, &img_info, NULL, &texture->image);
 	if (res != VK_SUCCESS) {
@@ -571,6 +584,9 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 	if (disjoint) {
 		img_info.flags = VK_IMAGE_CREATE_DISJOINT_BIT;
 	}
+	if (mod->has_mutable_srgb) {
+		img_info.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+	}
 
 	VkExternalMemoryImageCreateInfo eimg = {
 		.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
@@ -594,6 +610,19 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		.pPlaneLayouts = plane_layouts,
 	};
 	eimg.pNext = &mod_info;
+
+	VkFormat view_formats[2] = {
+		fmt->format.vk,
+		fmt->format.vk_srgb,
+	};
+	VkImageFormatListCreateInfoKHR list_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+		.pViewFormats = view_formats,
+		.viewFormatCount = 2,
+	};
+	if (mod->has_mutable_srgb) {
+		mod_info.pNext = &list_info;
+	}
 
 	VkImage image;
 	res = vkCreateImage(dev, &img_info, NULL, &image);
