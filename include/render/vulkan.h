@@ -101,6 +101,7 @@ const struct wlr_vk_format *vulkan_get_format_from_drm(uint32_t drm_format);
 struct wlr_vk_format_modifier_props {
 	VkDrmFormatModifierPropertiesEXT props;
 	VkExtent2D max_extent;
+	bool has_mutable_srgb;
 };
 
 struct wlr_vk_format_props {
@@ -109,6 +110,7 @@ struct wlr_vk_format_props {
 	struct {
 		VkExtent2D max_extent;
 		VkFormatFeatureFlags features;
+		bool has_mutable_srgb;
 	} shm;
 
 	struct {
