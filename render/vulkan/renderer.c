@@ -730,8 +730,9 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 	wlr_log(WLR_DEBUG, "vulkan create_render_buffer: %.4s, %dx%d",
 		(const char*) &dmabuf.format, dmabuf.width, dmabuf.height);
 
+	bool using_mutable_srgb = false;
 	buffer->image = vulkan_import_dmabuf(renderer, &dmabuf,
-		buffer->memories, &buffer->mem_count, true);
+		buffer->memories, &buffer->mem_count, true, &using_mutable_srgb);
 	if (!buffer->image) {
 		goto error;
 	}
@@ -748,7 +749,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = buffer->image,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = fmt->format.vk,
+		.format = using_mutable_srgb ? fmt->format.vk_srgb : fmt->format.vk,
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -768,7 +769,7 @@ static struct wlr_vk_render_buffer *create_render_buffer(
 		goto error;
 	}
 
-	bool has_blending_buffer = !fmt->format.vk_srgb || true /* temporary */;
+	bool has_blending_buffer = !using_mutable_srgb;
 
 	buffer->render_setup = find_or_create_render_setup(
 		renderer, &fmt->format, has_blending_buffer);
@@ -2028,8 +2029,9 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 			goto error;
 		}
 	} else {
+		assert(format->vk_srgb);
 		VkAttachmentDescription attachment = {
-			.format = format->vk,
+			.format = format->vk_srgb,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,

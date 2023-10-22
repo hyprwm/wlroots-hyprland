@@ -311,7 +311,8 @@ struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_text
 	VkImageViewCreateInfo view_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->format->vk,
+		.format = texture->using_mutable_srgb ? texture->format->vk_srgb
+			: texture->format->vk,
 		.components.r = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
 		.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -372,10 +373,10 @@ struct wlr_vk_texture_view *vulkan_texture_get_or_create_view(struct wlr_vk_text
 }
 
 static void texture_set_format(struct wlr_vk_texture *texture,
-		const struct wlr_vk_format *format) {
+		const struct wlr_vk_format *format, bool has_mutable_srgb) {
 	texture->format = format;
-	texture->transform = !format->is_ycbcr &&
-		(format->vk_srgb && false /* temporary */) ?
+	texture->using_mutable_srgb = has_mutable_srgb;
+	texture->transform = !format->is_ycbcr && has_mutable_srgb ?
 		WLR_VK_TEXTURE_TRANSFORM_IDENTITY : WLR_VK_TEXTURE_TRANSFORM_SRGB;
 
 	const struct wlr_pixel_format_info *format_info =
@@ -409,7 +410,7 @@ static struct wlr_texture *vulkan_texture_from_pixels(
 		return NULL;
 	}
 
-	texture_set_format(texture, &fmt->format);
+	texture_set_format(texture, &fmt->format, fmt->shm.has_mutable_srgb);
 
 	VkFormat view_formats[2] = {
 		fmt->format.vk,
@@ -516,7 +517,7 @@ static bool is_dmabuf_disjoint(const struct wlr_dmabuf_attributes *attribs) {
 VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		const struct wlr_dmabuf_attributes *attribs,
 		VkDeviceMemory mems[static WLR_DMABUF_MAX_PLANES], uint32_t *n_mems,
-		bool for_render) {
+		bool for_render, bool *using_mutable_srgb) {
 	VkResult res;
 	VkDevice dev = renderer->dev->dev;
 	*n_mems = 0u;
@@ -729,6 +730,7 @@ VkImage vulkan_import_dmabuf(struct wlr_vk_renderer *renderer,
 		goto error_image;
 	}
 
+	*using_mutable_srgb = mod->has_mutable_srgb;
 	return image;
 
 error_image:
@@ -760,13 +762,13 @@ static struct wlr_vk_texture *vulkan_texture_from_dmabuf(
 		return NULL;
 	}
 
-	texture_set_format(texture, &fmt->format);
-
+	bool using_mutable_srgb = false;
 	texture->image = vulkan_import_dmabuf(renderer, attribs,
-		texture->memories, &texture->mem_count, false);
+		texture->memories, &texture->mem_count, false, &using_mutable_srgb);
 	if (!texture->image) {
 		goto error;
 	}
+	texture_set_format(texture, &fmt->format, using_mutable_srgb);
 
 	texture->dmabuf_imported = true;
 
