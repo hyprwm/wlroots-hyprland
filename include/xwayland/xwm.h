@@ -88,6 +88,7 @@ enum atom_name {
 	DND_ACTION_PRIVATE,
 	NET_CLIENT_LIST,
 	NET_CLIENT_LIST_STACKING,
+	NET_WORKAREA,
 	ATOM_LAST // keep last
 };
 

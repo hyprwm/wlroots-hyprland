@@ -90,6 +90,7 @@ static const char *const atom_map[ATOM_LAST] = {
 	[DND_ACTION_PRIVATE] = "XdndActionPrivate",
 	[NET_CLIENT_LIST] = "_NET_CLIENT_LIST",
 	[NET_CLIENT_LIST_STACKING] = "_NET_CLIENT_LIST_STACKING",
+	[NET_WORKAREA] = "_NET_WORKAREA",
 };
 
 #define STARTUP_INFO_REMOVE_PREFIX "remove: ID="
@@ -2326,4 +2327,25 @@ enum wlr_xwayland_icccm_input_model wlr_xwayland_icccm_input_model(
 		}
 	}
 	return WLR_ICCCM_INPUT_MODEL_NONE;
+}
+
+void wlr_xwayland_set_workareas(struct wlr_xwayland *wlr_xwayland,
+		const struct wlr_box *workareas, size_t num_workareas) {
+	uint32_t *data = malloc(4 * sizeof(uint32_t) * num_workareas);
+	if (!data) {
+		return;
+	}
+
+	for (size_t i = 0; i < num_workareas; i++) {
+		data[4 * i] = workareas[i].x;
+		data[4 * i + 1] = workareas[i].y;
+		data[4 * i + 2] = workareas[i].width;
+		data[4 * i + 3] = workareas[i].height;
+	}
+
+	struct wlr_xwm *xwm = wlr_xwayland->xwm;
+	xcb_change_property(xwm->xcb_conn, XCB_PROP_MODE_REPLACE,
+			xwm->screen->root, xwm->atoms[NET_WORKAREA],
+			XCB_ATOM_CARDINAL, 32, 4 * num_workareas, data);
+	free(data);
 }

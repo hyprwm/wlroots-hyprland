@@ -16,6 +16,7 @@
 #include <xcb/xcb_icccm.h>
 #include <wlr/util/addon.h>
 
+struct wlr_box;
 struct wlr_xwm;
 struct wlr_data_source;
 struct wlr_drag;
@@ -284,5 +285,15 @@ bool wlr_xwayland_or_surface_wants_focus(
 
 enum wlr_xwayland_icccm_input_model wlr_xwayland_icccm_input_model(
 	const struct wlr_xwayland_surface *xsurface);
+
+/**
+ * Sets the _NET_WORKAREA root window property. The compositor should set
+ * one workarea per virtual desktop. This indicates the usable geometry
+ * (relative to the virtual desktop viewport) that is not covered by
+ * panels, docks, etc. Unfortunately, it is not possible to specify
+ * per-output workareas.
+ */
+void wlr_xwayland_set_workareas(struct wlr_xwayland *wlr_xwayland,
+	const struct wlr_box *workareas, size_t num_workareas);
 
 #endif
