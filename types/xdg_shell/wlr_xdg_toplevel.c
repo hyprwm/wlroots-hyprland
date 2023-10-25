@@ -78,31 +78,25 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	if (configure->activated) {
 		states[nstates++] = XDG_TOPLEVEL_STATE_ACTIVATED;
 	}
-	if (configure->tiled) {
-		if (version >= XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION) {
-			const struct {
-				enum wlr_edges edge;
-				enum xdg_toplevel_state state;
-			} tiled[] = {
-				{ WLR_EDGE_LEFT, XDG_TOPLEVEL_STATE_TILED_LEFT },
-				{ WLR_EDGE_RIGHT, XDG_TOPLEVEL_STATE_TILED_RIGHT },
-				{ WLR_EDGE_TOP, XDG_TOPLEVEL_STATE_TILED_TOP },
-				{ WLR_EDGE_BOTTOM, XDG_TOPLEVEL_STATE_TILED_BOTTOM },
-			};
+	if (configure->tiled && version >= XDG_TOPLEVEL_STATE_TILED_LEFT_SINCE_VERSION) {
+		const struct {
+			enum wlr_edges edge;
+			enum xdg_toplevel_state state;
+		} tiled[] = {
+			{ WLR_EDGE_LEFT, XDG_TOPLEVEL_STATE_TILED_LEFT },
+			{ WLR_EDGE_RIGHT, XDG_TOPLEVEL_STATE_TILED_RIGHT },
+			{ WLR_EDGE_TOP, XDG_TOPLEVEL_STATE_TILED_TOP },
+			{ WLR_EDGE_BOTTOM, XDG_TOPLEVEL_STATE_TILED_BOTTOM },
+		};
 
-			for (size_t i = 0; i < sizeof(tiled)/sizeof(tiled[0]); ++i) {
-				if ((configure->tiled & tiled[i].edge) == 0) {
-					continue;
-				}
-				states[nstates++] = tiled[i].state;
+		for (size_t i = 0; i < sizeof(tiled)/sizeof(tiled[0]); ++i) {
+			if ((configure->tiled & tiled[i].edge) == 0) {
+				continue;
 			}
-		} else if (!configure->maximized) {
-			states[nstates++] = XDG_TOPLEVEL_STATE_MAXIMIZED;
+			states[nstates++] = tiled[i].state;
 		}
 	}
-
-	if (configure->suspended &&
-			version >= XDG_TOPLEVEL_STATE_SUSPENDED_SINCE_VERSION) {
+	if (configure->suspended && version >= XDG_TOPLEVEL_STATE_SUSPENDED_SINCE_VERSION) {
 		states[nstates++] = XDG_TOPLEVEL_STATE_SUSPENDED;
 	}
 	assert(nstates <= sizeof(states) / sizeof(states[0]));
