@@ -2848,12 +2848,6 @@ struct wlr_renderer *wlr_vk_renderer_create_with_drm_fd(int drm_fd) {
 		return NULL;
 	}
 
-	uint32_t qfam_count;
-	vkGetPhysicalDeviceQueueFamilyProperties(phdev, &qfam_count, NULL);
-	VkQueueFamilyProperties queue_props[qfam_count];
-	vkGetPhysicalDeviceQueueFamilyProperties(phdev, &qfam_count,
-		queue_props);
-
 	struct wlr_vk_device *dev = vulkan_device_create(ini, phdev);
 	if (!dev) {
 		wlr_log(WLR_ERROR, "Failed to create vulkan device");
