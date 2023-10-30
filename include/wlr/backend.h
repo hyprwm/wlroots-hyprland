@@ -52,10 +52,6 @@ bool wlr_backend_start(struct wlr_backend *backend);
  */
 void wlr_backend_destroy(struct wlr_backend *backend);
 /**
- * Returns the clock used by the backend for presentation feedback.
- */
-clockid_t wlr_backend_get_presentation_clock(struct wlr_backend *backend);
-/**
  * Returns the DRM node file descriptor used by the backend's underlying
  * platform. Can be used by consumers for additional rendering operations.
  * The consumer must not close the file descriptor since the backend continues

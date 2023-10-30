@@ -63,20 +63,6 @@ static void multi_backend_destroy(struct wlr_backend *wlr_backend) {
 	free(backend);
 }
 
-static clockid_t multi_backend_get_presentation_clock(
-		struct wlr_backend *backend) {
-	struct wlr_multi_backend *multi = multi_backend_from_backend(backend);
-
-	struct subbackend_state *sub;
-	wl_list_for_each(sub, &multi->backends, link) {
-		if (sub->backend->impl->get_presentation_clock) {
-			return wlr_backend_get_presentation_clock(sub->backend);
-		}
-	}
-
-	return CLOCK_MONOTONIC;
-}
-
 static int multi_backend_get_drm_fd(struct wlr_backend *backend) {
 	struct wlr_multi_backend *multi = multi_backend_from_backend(backend);
 
@@ -115,7 +101,6 @@ static uint32_t multi_backend_get_buffer_caps(struct wlr_backend *backend) {
 static const struct wlr_backend_impl backend_impl = {
 	.start = multi_backend_start,
 	.destroy = multi_backend_destroy,
-	.get_presentation_clock = multi_backend_get_presentation_clock,
 	.get_drm_fd = multi_backend_get_drm_fd,
 	.get_buffer_caps = multi_backend_get_buffer_caps,
 };

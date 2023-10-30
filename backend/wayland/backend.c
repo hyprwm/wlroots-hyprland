@@ -95,7 +95,11 @@ static const struct xdg_wm_base_listener xdg_wm_base_listener = {
 static void presentation_handle_clock_id(void *data,
 		struct wp_presentation *presentation, uint32_t clock) {
 	struct wlr_wl_backend *wl = data;
-	wl->presentation_clock = clock;
+
+	if (clock != CLOCK_MONOTONIC) {
+		wp_presentation_destroy(wl->presentation);
+		wl->presentation = NULL;
+	}
 }
 
 static const struct wp_presentation_listener presentation_listener = {
@@ -535,11 +539,6 @@ static void backend_destroy(struct wlr_backend *backend) {
 	free(wl);
 }
 
-static clockid_t backend_get_presentation_clock(struct wlr_backend *backend) {
-	struct wlr_wl_backend *wl = get_wl_backend_from_backend(backend);
-	return wl->presentation_clock;
-}
-
 static int backend_get_drm_fd(struct wlr_backend *backend) {
 	struct wlr_wl_backend *wl = get_wl_backend_from_backend(backend);
 	return wl->drm_fd;
@@ -554,7 +553,6 @@ static uint32_t get_buffer_caps(struct wlr_backend *backend) {
 static const struct wlr_backend_impl backend_impl = {
 	.start = backend_start,
 	.destroy = backend_destroy,
-	.get_presentation_clock = backend_get_presentation_clock,
 	.get_drm_fd = backend_get_drm_fd,
 	.get_buffer_caps = get_buffer_caps,
 };
@@ -585,7 +583,6 @@ struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
 	wl_list_init(&wl->outputs);
 	wl_list_init(&wl->seats);
 	wl_list_init(&wl->buffers);
-	wl->presentation_clock = CLOCK_MONOTONIC;
 
 	if (remote_display != NULL) {
 		wl->remote_display = remote_display;

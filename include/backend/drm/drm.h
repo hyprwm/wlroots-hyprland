@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <time.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/backend/drm.h>
@@ -79,7 +78,6 @@ struct wlr_drm_backend {
 
 	struct wlr_drm_backend *parent;
 	const struct wlr_drm_interface *iface;
-	clockid_t clock;
 	bool addfb2_modifiers;
 
 	int fd;

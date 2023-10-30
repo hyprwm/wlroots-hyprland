@@ -21,7 +21,6 @@ struct wlr_output_event_present;
 
 struct wlr_presentation {
 	struct wl_global *global;
-	clockid_t clock;
 
 	struct {
 		struct wl_signal destroy;

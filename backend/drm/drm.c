@@ -80,6 +80,11 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 		return false;
 	}
 
+	if (drmGetCap(drm->fd, DRM_CAP_TIMESTAMP_MONOTONIC, &cap) || !cap) {
+		wlr_log(WLR_ERROR, "DRM_CAP_TIMESTAMP_MONOTONIC unsupported");
+		return false;
+	}
+
 	if (env_parse_bool("WLR_DRM_FORCE_LIBLIFTOFF")) {
 #if HAVE_LIBLIFTOFF
 		wlr_log(WLR_INFO,
@@ -110,13 +115,10 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 		drm->supports_tearing_page_flips = drmGetCap(drm->fd, DRM_CAP_ASYNC_PAGE_FLIP, &cap) == 0 && cap == 1;
 	}
 
-	int ret = drmGetCap(drm->fd, DRM_CAP_TIMESTAMP_MONOTONIC, &cap);
-	drm->clock = (ret == 0 && cap == 1) ? CLOCK_MONOTONIC : CLOCK_REALTIME;
-
 	if (env_parse_bool("WLR_DRM_NO_MODIFIERS")) {
 		wlr_log(WLR_DEBUG, "WLR_DRM_NO_MODIFIERS set, disabling modifiers");
 	} else {
-		ret = drmGetCap(drm->fd, DRM_CAP_ADDFB2_MODIFIERS, &cap);
+		int ret = drmGetCap(drm->fd, DRM_CAP_ADDFB2_MODIFIERS, &cap);
 		drm->addfb2_modifiers = ret == 0 && cap == 1;
 		wlr_log(WLR_DEBUG, "ADDFB2 modifiers %s",
 			drm->addfb2_modifiers ? "supported" : "unsupported");
