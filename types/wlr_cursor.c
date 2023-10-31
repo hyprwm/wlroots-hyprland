@@ -553,6 +553,7 @@ static void cursor_output_cursor_update(struct wlr_cursor_output_cursor *output_
 		wlr_xcursor_manager_load(manager, scale);
 		struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(manager, name, scale);
 		if (xcursor == NULL) {
+			wlr_log(WLR_DEBUG, "XCursor theme is missing '%s' cursor", name);
 			wlr_output_cursor_set_buffer(output_cursor->output_cursor, NULL, 0, 0);
 			return;
 		}
