@@ -51,7 +51,7 @@ static int handle_libinput_readable(int fd, uint32_t mask, void *_backend) {
 	int ret = libinput_dispatch(backend->libinput_context);
 	if (ret != 0) {
 		wlr_log(WLR_ERROR, "Failed to dispatch libinput: %s", strerror(-ret));
-		wl_display_terminate(backend->display);
+		wlr_backend_destroy(&backend->backend);
 		return 0;
 	}
 	struct libinput_event *event;

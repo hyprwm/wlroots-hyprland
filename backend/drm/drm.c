@@ -1790,7 +1790,7 @@ int handle_drm_event(int fd, uint32_t mask, void *data) {
 
 	if (drmHandleEvent(fd, &event) != 0) {
 		wlr_log(WLR_ERROR, "drmHandleEvent failed");
-		wl_display_terminate(drm->display);
+		wlr_backend_destroy(&drm->backend);
 	}
 	return 1;
 }

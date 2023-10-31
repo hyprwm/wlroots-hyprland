@@ -59,7 +59,7 @@ static int dispatch_events(int fd, uint32_t mask, void *data) {
 		if (mask & WL_EVENT_ERROR) {
 			wlr_log(WLR_ERROR, "Failed to read from remote Wayland display");
 		}
-		wl_display_terminate(wl->local_display);
+		wlr_backend_destroy(&wl->backend);
 		return 0;
 	}
 
@@ -77,7 +77,7 @@ static int dispatch_events(int fd, uint32_t mask, void *data) {
 
 	if (count < 0) {
 		wlr_log(WLR_ERROR, "Failed to dispatch remote Wayland display");
-		wl_display_terminate(wl->local_display);
+		wlr_backend_destroy(&wl->backend);
 		return 0;
 	}
 	return count;

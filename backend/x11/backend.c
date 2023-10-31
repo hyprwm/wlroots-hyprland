@@ -132,7 +132,7 @@ static int x11_event(int fd, uint32_t mask, void *data) {
 		if (mask & WL_EVENT_ERROR) {
 			wlr_log(WLR_ERROR, "Failed to read from X11 server");
 		}
-		wl_display_terminate(x11->wl_display);
+		wlr_backend_destroy(&x11->backend);
 		return 0;
 	}
 
@@ -145,7 +145,7 @@ static int x11_event(int fd, uint32_t mask, void *data) {
 	int ret = xcb_connection_has_error(x11->xcb);
 	if (ret != 0) {
 		wlr_log(WLR_ERROR, "X11 connection error (%d)", ret);
-		wl_display_terminate(x11->wl_display);
+		wlr_backend_destroy(&x11->backend);
 	}
 
 	return 0;
