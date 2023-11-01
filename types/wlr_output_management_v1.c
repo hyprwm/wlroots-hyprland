@@ -32,7 +32,7 @@ static struct wlr_output_head_v1 *head_from_resource(
 
 static const struct zwlr_output_mode_v1_interface output_mode_impl;
 
-// Can return NULL if the mode is inert
+// Can return NULL if the mode is custom or inert
 static struct wlr_output_mode *mode_from_resource(
 		struct wl_resource *resource) {
 	assert(wl_resource_instance_of(resource,
@@ -84,6 +84,28 @@ static struct wlr_output_head_v1 *head_create(
 	head->output_destroy.notify = head_handle_output_destroy;
 	wl_signal_add(&output->events.destroy, &head->output_destroy);
 	return head;
+}
+
+static void head_destroy_custom_mode_resources(struct wlr_output_head_v1 *head) {
+	struct wl_resource *resource, *tmp;
+	wl_resource_for_each_safe(resource, tmp, &head->mode_resources) {
+		if (wl_resource_get_user_data(resource) != NULL) {
+			continue;
+		}
+		zwlr_output_mode_v1_send_finished(resource);
+		wl_list_remove(wl_resource_get_link(resource));
+		wl_list_init(wl_resource_get_link(resource));
+	}
+}
+
+static bool head_has_custom_mode_resources(const struct wlr_output_head_v1 *head) {
+	struct wl_resource *resource;
+	wl_resource_for_each(resource, &head->mode_resources) {
+		if (wl_resource_get_user_data(resource) == NULL) {
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -161,12 +183,12 @@ static void config_head_handle_set_mode(struct wl_client *client,
 		return;
 	}
 
-	// Mode can be NULL if the output doesn't support modes (in which case we
-	// expose only one "virtual" mode, the current mode)
+	// Mode can be NULL if the output uses a custom mode (in which case we
+	// expose a virtual mode with user data set to NULL).
 	struct wlr_output_mode *mode = mode_from_resource(mode_resource);
 	struct wlr_output *output = config_head->state.output;
 
-	bool found = (mode == NULL && wl_list_empty(&output->modes));
+	bool found = mode == NULL;
 	struct wlr_output_mode *m;
 	wl_list_for_each(m, &output->modes, link) {
 		if (mode == m) {
@@ -737,9 +759,6 @@ static void head_send_state(struct wlr_output_head_v1 *head,
 	}
 
 	if (state & HEAD_STATE_MODE) {
-		assert(head->state.mode != NULL ||
-			wl_list_empty(&head->state.output->modes));
-
 		bool found = false;
 		struct wl_resource *mode_resource;
 		wl_resource_for_each(mode_resource, &head->mode_resources) {
@@ -847,8 +866,8 @@ static void manager_send_head(struct wlr_output_manager_v1 *manager,
 		head_send_mode(head, head_resource, mode);
 	}
 
-	if (wl_list_empty(&output->modes)) {
-		// Output doesn't support modes. Send a virtual one.
+	if (output->current_mode == NULL) {
+		// Output doesn't have a fixed mode set. Send a virtual one.
 		head_send_mode(head, head_resource, NULL);
 	}
 
@@ -905,6 +924,15 @@ static bool manager_update_head(struct wlr_output_manager_v1 *manager,
 				head_send_mode(head, resource, mode);
 			}
 		}
+	}
+
+	if (next->mode == NULL && !head_has_custom_mode_resources(head)) {
+		struct wl_resource *resource;
+		wl_resource_for_each(resource, &head->resources) {
+			head_send_mode(head, resource, NULL);
+		}
+	} else if (next->mode != NULL) {
+		head_destroy_custom_mode_resources(head);
 	}
 
 	if (state != 0) {
