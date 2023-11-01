@@ -239,7 +239,7 @@ void wlr_xcursor_theme_destroy(struct wlr_xcursor_theme *theme) {
 	free(theme);
 }
 
-struct wlr_xcursor *wlr_xcursor_theme_get_cursor(struct wlr_xcursor_theme *theme,
+static struct wlr_xcursor *xcursor_theme_get_cursor(struct wlr_xcursor_theme *theme,
 		const char *name) {
 	for (unsigned int i = 0; i < theme->cursor_count; i++) {
 		if (strcmp(name, theme->cursors[i]->name) == 0) {
@@ -248,6 +248,47 @@ struct wlr_xcursor *wlr_xcursor_theme_get_cursor(struct wlr_xcursor_theme *theme
 	}
 
 	return NULL;
+}
+
+struct wlr_xcursor *wlr_xcursor_theme_get_cursor(struct wlr_xcursor_theme *theme,
+		const char *name) {
+	struct wlr_xcursor *xcursor = xcursor_theme_get_cursor(theme, name);
+	if (xcursor) {
+		return xcursor;
+	}
+
+	// Try the legacy name as a fallback
+	const char *fallback;
+	if (strcmp(name, "default") == 0) {
+		fallback = "left_ptr";
+	} else if (strcmp(name, "text") == 0) {
+		fallback = "xterm";
+	} else if (strcmp(name, "pointer") == 0) {
+		fallback = "hand1";
+	} else if (strcmp(name, "wait") == 0) {
+		fallback = "watch";
+	} else if (strcmp(name, "all-scroll") == 0) {
+		fallback = "grabbing";
+	} else if (strcmp(name, "sw-resize") == 0) {
+		fallback = "bottom_left_corner";
+	} else if (strcmp(name, "se-resize") == 0) {
+		fallback = "bottom_right_corner";
+	} else if (strcmp(name, "s-resize") == 0) {
+		fallback = "bottom_side";
+	} else if (strcmp(name, "w-resize") == 0) {
+		fallback = "left_side";
+	} else if (strcmp(name, "e-resize") == 0) {
+		fallback = "right_side";
+	} else if (strcmp(name, "nw-resize") == 0) {
+		fallback = "top_left_corner";
+	} else if (strcmp(name, "ne-resize") == 0) {
+		fallback = "top_right_corner";
+	} else if (strcmp(name, "n-resize") == 0) {
+		fallback = "top_side";
+	} else {
+		return NULL;
+	}
+	return xcursor_theme_get_cursor(theme, fallback);
 }
 
 static int xcursor_frame_and_duration(struct wlr_xcursor *cursor,
