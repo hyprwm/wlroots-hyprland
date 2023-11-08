@@ -1064,7 +1064,7 @@ static bool scene_node_at_iterator(struct wlr_scene_node *node,
 		struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
 
 		if (scene_buffer->point_accepts_input &&
-				!scene_buffer->point_accepts_input(scene_buffer, rx, ry)) {
+				!scene_buffer->point_accepts_input(scene_buffer, &rx, &ry)) {
 			return false;
 		}
 	}

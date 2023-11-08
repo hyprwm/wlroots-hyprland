@@ -45,7 +45,7 @@ struct wlr_linux_dmabuf_v1;
 struct wlr_output_state;
 
 typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
-	struct wlr_scene_buffer *buffer, int sx, int sy);
+	struct wlr_scene_buffer *buffer, double *sx, double *sy);
 
 typedef void (*wlr_scene_buffer_iterator_func_t)(
 	struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
