@@ -5,6 +5,7 @@
 #include <wlr/util/log.h>
 #include <wlr/util/edges.h>
 #include "types/wlr_xdg_shell.h"
+#include "util/utf8.h"
 
 void handle_xdg_toplevel_ack_configure(
 		struct wlr_xdg_toplevel *toplevel,
@@ -223,6 +224,12 @@ static void xdg_toplevel_handle_set_title(struct wl_client *client,
 	struct wlr_xdg_toplevel *toplevel =
 		wlr_xdg_toplevel_from_resource(resource);
 	char *tmp;
+
+	if (!is_utf8(title)) {
+		// TODO: update when xdg_toplevel has a dedicated error code for this
+		wl_resource_post_error(resource, (uint32_t)-1, "xdg_toplevel title is not valid UTF-8");
+		return;
+	}
 
 	tmp = strdup(title);
 	if (tmp == NULL) {
