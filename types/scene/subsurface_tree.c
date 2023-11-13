@@ -4,6 +4,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/util/addon.h>
+#include "types/wlr_scene.h"
 
 /**
  * A tree for a surface and all of its child sub-surfaces.
@@ -24,6 +25,8 @@ struct wlr_scene_subsurface_tree {
 	struct wlr_scene_subsurface_tree *parent; // NULL for the top-level surface
 
 	struct wlr_addon scene_addon;
+
+	struct wlr_box clip;
 
 	// Only valid if the surface is a sub-surface
 
@@ -62,8 +65,46 @@ static struct wlr_scene_subsurface_tree *subsurface_tree_from_subsurface(
 	return subsurface_tree;
 }
 
+static bool subsurface_tree_reconfigure_clip(
+		struct wlr_scene_subsurface_tree *subsurface_tree) {
+	if (subsurface_tree->parent) {
+		subsurface_tree->clip = (struct wlr_box){
+			.x = subsurface_tree->parent->clip.x - subsurface_tree->tree->node.x,
+			.y = subsurface_tree->parent->clip.y - subsurface_tree->tree->node.y,
+			.width = subsurface_tree->parent->clip.width,
+			.height = subsurface_tree->parent->clip.height,
+		};
+	}
+
+	if (wlr_box_empty(&subsurface_tree->clip)) {
+		scene_surface_set_clip(subsurface_tree->scene_surface, NULL);
+		wlr_scene_node_set_enabled(&subsurface_tree->scene_surface->buffer->node, true);
+		wlr_scene_node_set_position(&subsurface_tree->scene_surface->buffer->node, 0, 0);
+
+		return false;
+	} else {
+		struct wlr_box clip = subsurface_tree->clip;
+		struct wlr_box surface_box = {
+			.width = subsurface_tree->surface->current.width,
+			.height = subsurface_tree->surface->current.height,
+		};
+
+		bool intersects = wlr_box_intersection(&clip, &clip, &surface_box);
+		wlr_scene_node_set_enabled(&subsurface_tree->scene_surface->buffer->node, intersects);
+
+		if (intersects) {
+			wlr_scene_node_set_position(&subsurface_tree->scene_surface->buffer->node, clip.x, clip.y);
+			scene_surface_set_clip(subsurface_tree->scene_surface, &clip);
+		}
+
+		return true;
+	}
+}
+
 static void subsurface_tree_reconfigure(
 		struct wlr_scene_subsurface_tree *subsurface_tree) {
+	bool has_clip = subsurface_tree_reconfigure_clip(subsurface_tree);
+
 	struct wlr_surface *surface = subsurface_tree->surface;
 
 	struct wlr_scene_node *prev = NULL;
@@ -79,6 +120,10 @@ static void subsurface_tree_reconfigure(
 
 		wlr_scene_node_set_position(&child->tree->node,
 			subsurface->current.x, subsurface->current.y);
+
+		if (has_clip) {
+			subsurface_tree_reconfigure_clip(child);
+		}
 	}
 
 	if (prev != NULL) {
@@ -95,6 +140,10 @@ static void subsurface_tree_reconfigure(
 
 		wlr_scene_node_set_position(&child->tree->node,
 			subsurface->current.x, subsurface->current.y);
+
+		if (has_clip) {
+			subsurface_tree_reconfigure_clip(child);
+		}
 	}
 }
 
@@ -262,4 +311,60 @@ struct wlr_scene_tree *wlr_scene_subsurface_tree_create(
 		return NULL;
 	}
 	return subsurface_tree->tree;
+}
+
+static struct wlr_scene_subsurface_tree *get_subsurface_tree_from_node(
+		struct wlr_scene_node *node) {
+	struct wlr_addon *addon = wlr_addon_find(&node->addons, NULL, &subsurface_tree_addon_impl);
+	if (!addon) {
+		return NULL;
+	}
+
+	struct wlr_scene_subsurface_tree *tree =
+		wl_container_of(addon, tree, scene_addon);
+	return tree;
+}
+
+static bool subsurface_tree_set_clip(struct wlr_scene_node *node,
+		struct wlr_box *clip) {
+	if (node->type != WLR_SCENE_NODE_TREE) {
+		return false;
+	}
+
+	bool discovered_subsurface_tree = false;
+	struct wlr_scene_subsurface_tree *tree = get_subsurface_tree_from_node(node);
+	if (tree) {
+		if (tree->parent == NULL) {
+			if (wlr_box_equal(&tree->clip, clip)) {
+				return true;
+			}
+
+			if (clip) {
+				tree->clip = *clip;
+			} else {
+				tree->clip = (struct wlr_box){0};
+			}
+		}
+
+		discovered_subsurface_tree = true;
+		subsurface_tree_reconfigure_clip(tree);
+	}
+
+	struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
+	struct wlr_scene_node *child;
+	wl_list_for_each(child, &scene_tree->children, link) {
+		discovered_subsurface_tree |= subsurface_tree_set_clip(child, clip);
+	}
+
+	return discovered_subsurface_tree;
+}
+
+void wlr_scene_subsurface_tree_set_clip(struct wlr_scene_node *node,
+		struct wlr_box *clip) {
+#ifndef NDEBUG
+	bool found =
+#endif
+		subsurface_tree_set_clip(node, clip);
+
+	assert(found);
 }

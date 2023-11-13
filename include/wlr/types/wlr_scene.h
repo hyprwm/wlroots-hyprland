@@ -544,6 +544,16 @@ struct wlr_scene_tree *wlr_scene_subsurface_tree_create(
 	struct wlr_scene_tree *parent, struct wlr_surface *surface);
 
 /**
+ * Sets a cropping region for any subsurface trees that are children of this
+ * scene node. The clip coordinate space will be that of the root surface of
+ * the subsurface tree.
+ *
+ * A NULL or empty clip will disable clipping
+ */
+void wlr_scene_subsurface_tree_set_clip(struct wlr_scene_node *node,
+	struct wlr_box *clip);
+
+/**
  * Add a node displaying an xdg_surface and all of its sub-surfaces to the
  * scene-graph.
  *
