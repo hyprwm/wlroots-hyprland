@@ -486,6 +486,24 @@ struct wlr_surface *wlr_xdg_surface_popup_surface_at(
 struct wlr_xdg_surface *wlr_xdg_surface_try_from_wlr_surface(struct wlr_surface *surface);
 
 /**
+ * Get a struct wlr_xdg_toplevel from a struct wlr_surface.
+ *
+ * Returns NULL if the surface doesn't have the xdg_surface role, the
+ * xdg_surface is not a toplevel, or the xdg_surface/xdg_toplevel objects have
+ * been destroyed.
+ */
+struct wlr_xdg_toplevel *wlr_xdg_toplevel_try_from_wlr_surface(struct wlr_surface *surface);
+
+/**
+ * Get a struct wlr_xdg_popup from a struct wlr_surface.
+ *
+ * Returns NULL if the surface doesn't have the xdg_surface role, the
+ * xdg_surface is not a popup, or the xdg_surface/xdg_popup objects have
+ * been destroyed.
+ */
+struct wlr_xdg_popup *wlr_xdg_popup_try_from_wlr_surface(struct wlr_surface *surface);
+
+/**
  * Get the surface geometry.
  *
  * This is either the geometry as set by the client, or defaulted to the bounds

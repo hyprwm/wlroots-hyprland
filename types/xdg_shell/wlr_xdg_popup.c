@@ -261,6 +261,14 @@ struct wlr_xdg_popup *wlr_xdg_popup_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
+struct wlr_xdg_popup *wlr_xdg_popup_try_from_wlr_surface(struct wlr_surface *surface) {
+	struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface);
+	if (xdg_surface == NULL || xdg_surface->role != WLR_XDG_SURFACE_ROLE_POPUP) {
+		return NULL;
+	}
+	return xdg_surface->popup;
+}
+
 static void xdg_popup_handle_grab(struct wl_client *client,
 		struct wl_resource *resource, struct wl_resource *seat_resource,
 		uint32_t serial) {

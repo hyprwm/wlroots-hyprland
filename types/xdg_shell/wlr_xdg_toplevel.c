@@ -158,6 +158,14 @@ struct wlr_xdg_toplevel *wlr_xdg_toplevel_from_resource(
 	return wl_resource_get_user_data(resource);
 }
 
+struct wlr_xdg_toplevel *wlr_xdg_toplevel_try_from_wlr_surface(struct wlr_surface *surface) {
+	struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(surface);
+	if (xdg_surface == NULL || xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
+		return NULL;
+	}
+	return xdg_surface->toplevel;
+}
+
 static void handle_parent_unmap(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel *toplevel =
 		wl_container_of(listener, toplevel, parent_unmap);
