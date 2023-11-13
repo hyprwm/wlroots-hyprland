@@ -119,6 +119,8 @@ struct wlr_scene_surface {
 
 	// private state
 
+	struct wlr_box clip;
+
 	struct wlr_addon addon;
 
 	struct wl_listener outputs_update;

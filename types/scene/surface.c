@@ -100,18 +100,63 @@ static void scene_buffer_unmark_client_buffer(struct wlr_scene_buffer *scene_buf
 	buffer->n_ignore_locks--;
 }
 
+static int min(int a, int b) {
+	return a < b ? a : b;
+}
+
 static void surface_reconfigure(struct wlr_scene_surface *scene_surface) {
 	struct wlr_scene_buffer *scene_buffer = scene_surface->buffer;
 	struct wlr_surface *surface = scene_surface->surface;
 	struct wlr_surface_state *state = &surface->current;
 
-	wlr_scene_buffer_set_opaque_region(scene_buffer, &surface->opaque_region);
-
 	struct wlr_fbox src_box;
 	wlr_surface_get_buffer_source_box(surface, &src_box);
-	wlr_scene_buffer_set_source_box(scene_buffer, &src_box);
 
-	wlr_scene_buffer_set_dest_size(scene_buffer, state->width, state->height);
+	pixman_region32_t opaque;
+	pixman_region32_init(&opaque);
+	pixman_region32_copy(&opaque, &surface->opaque_region);
+
+	int width = state->width;
+	int height = state->height;
+
+	if (!wlr_box_empty(&scene_surface->clip)) {
+		struct wlr_box *clip = &scene_surface->clip;
+
+		int buffer_width = state->buffer_width;
+		int buffer_height = state->buffer_height;
+		width = min(clip->width, width - clip->x);
+		height = min(clip->height, height - clip->y);
+
+		wlr_fbox_transform(&src_box, &src_box, state->transform,
+			buffer_width, buffer_height);
+
+		if (state->transform & WL_OUTPUT_TRANSFORM_90) {
+			int tmp = buffer_width;
+			buffer_width = buffer_height;
+			buffer_height = tmp;
+		}
+
+		src_box.x += (double)(clip->x * buffer_width) / state->width;
+		src_box.y += (double)(clip->y * buffer_height) / state->height;
+		src_box.width *= (double)width / state->width;
+		src_box.height *= (double)height / state->height;
+
+		wlr_fbox_transform(&src_box, &src_box, wlr_output_transform_invert(state->transform),
+			buffer_width, buffer_height);
+
+		pixman_region32_translate(&opaque, -clip->x, -clip->y);
+		pixman_region32_intersect_rect(&opaque, &opaque, 0, 0, width, height);
+	}
+
+	if (width <= 0 || height <= 0) {
+		wlr_scene_buffer_set_buffer(scene_buffer, NULL);
+		pixman_region32_fini(&opaque);
+		return;
+	}
+
+	wlr_scene_buffer_set_opaque_region(scene_buffer, &opaque);
+	wlr_scene_buffer_set_source_box(scene_buffer, &src_box);
+	wlr_scene_buffer_set_dest_size(scene_buffer, width, height);
 	wlr_scene_buffer_set_transform(scene_buffer, state->transform);
 
 	scene_buffer_unmark_client_buffer(scene_buffer);
@@ -124,6 +169,8 @@ static void surface_reconfigure(struct wlr_scene_surface *scene_surface) {
 	} else {
 		wlr_scene_buffer_set_buffer(scene_buffer, NULL);
 	}
+
+	pixman_region32_fini(&opaque);
 }
 
 static void handle_scene_surface_surface_commit(
@@ -152,6 +199,9 @@ static bool scene_buffer_point_accepts_input(struct wlr_scene_buffer *scene_buff
 		double *sx, double *sy) {
 	struct wlr_scene_surface *scene_surface =
 		wlr_scene_surface_try_from_buffer(scene_buffer);
+
+	*sx += scene_surface->clip.x;
+	*sy += scene_surface->clip.y;
 
 	return wlr_surface_point_accepts_input(scene_surface->surface, *sx, *sy);
 }
@@ -235,4 +285,18 @@ struct wlr_scene_surface *wlr_scene_surface_create(struct wlr_scene_tree *parent
 	surface_reconfigure(surface);
 
 	return surface;
+}
+
+void scene_surface_set_clip(struct wlr_scene_surface *surface, struct wlr_box *clip) {
+	if (wlr_box_equal(clip, &surface->clip)) {
+		return;
+	}
+
+	if (clip) {
+		surface->clip = *clip;
+	} else {
+		surface->clip = (struct wlr_box){0};
+	}
+
+	surface_reconfigure(surface);
 }
