@@ -120,11 +120,10 @@ static void focus_view(struct tinywl_view *view, struct wlr_surface *surface) {
 		 * it no longer has focus and the client will repaint accordingly, e.g.
 		 * stop displaying a caret.
 		 */
-		struct wlr_xdg_surface *previous =
-			wlr_xdg_surface_try_from_wlr_surface(seat->keyboard_state.focused_surface);
-		assert(previous != NULL && previous->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
-		if (previous->toplevel != NULL) {
-			wlr_xdg_toplevel_set_activated(previous->toplevel, false);
+		struct wlr_xdg_toplevel *prev_toplevel =
+			wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
+		if (prev_toplevel != NULL) {
+			wlr_xdg_toplevel_set_activated(prev_toplevel, false);
 		}
 	}
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
