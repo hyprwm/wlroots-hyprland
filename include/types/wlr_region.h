@@ -3,6 +3,8 @@
 
 #include <wlr/types/wlr_region.h>
 
+struct wl_client;
+
 /*
  * Creates a new region resource with the provided new ID.
  */

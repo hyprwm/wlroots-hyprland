@@ -11,6 +11,8 @@
 
 #include <wayland-server-core.h>
 
+struct wlr_renderer;
+
 /**
  * Shared memory buffer interface.
  *
