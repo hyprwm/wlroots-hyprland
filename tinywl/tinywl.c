@@ -672,7 +672,7 @@ static void xdg_toplevel_unmap(struct wl_listener *listener, void *data) {
 }
 
 static void xdg_toplevel_destroy(struct wl_listener *listener, void *data) {
-	/* Called when the surface is destroyed and should never be shown again. */
+	/* Called when the xdg_toplevel is destroyed. */
 	struct tinywl_toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
 
 	wl_list_remove(&toplevel->map.link);
