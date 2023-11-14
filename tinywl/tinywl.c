@@ -385,9 +385,9 @@ static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
 	 * toplevel on one or two axes, but can also move the toplevel if you resize
 	 * from the top or left edges (or top-left corner).
 	 *
-	 * Note that I took some shortcuts here. In a more fleshed-out compositor,
-	 * you'd wait for the client to prepare a buffer at the new size, then
-	 * commit any movement that was prepared.
+	 * Note that some shortcuts are taken here. In a more fleshed-out
+	 * compositor, you'd wait for the client to prepare a buffer at the new
+	 * size, then commit any movement that was prepared.
 	 */
 	struct tinywl_toplevel *toplevel = server->grabbed_toplevel;
 	double border_x = server->cursor->x - server->grab_x;
@@ -909,10 +909,8 @@ int main(int argc, char *argv[]) {
 	server.scene_layout = wlr_scene_attach_output_layout(server.scene, server.output_layout);
 
 	/* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
-	 * used for application windows. For more detail on shells, refer to my
-	 * article:
-	 *
-	 * https://drewdevault.com/2018/07/29/Wayland-shells.html
+	 * used for application windows. For more detail on shells, refer to
+	 * https://drewdevault.com/2018/07/29/Wayland-shells.html.
 	 */
 	wl_list_init(&server.toplevels);
 	server.xdg_shell = wlr_xdg_shell_create(server.wl_display, 3);
@@ -938,10 +936,8 @@ int main(int argc, char *argv[]) {
 	 * when the pointer moves. However, we can attach input devices to it, and
 	 * it will generate aggregate events for all of them. In these events, we
 	 * can choose how we want to process them, forwarding them to clients and
-	 * moving the cursor around. More detail on this process is described in my
-	 * input handling blog post:
-	 *
-	 * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
+	 * moving the cursor around. More detail on this process is described in
+	 * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html.
 	 *
 	 * And more comments are sprinkled throughout the notify functions above.
 	 */
