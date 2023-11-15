@@ -1274,7 +1274,8 @@ static void scene_output_handle_commit(struct wl_listener *listener, void *data)
 
 	bool force_update = state->committed & (
 		WLR_OUTPUT_STATE_TRANSFORM |
-		WLR_OUTPUT_STATE_SCALE);
+		WLR_OUTPUT_STATE_SCALE |
+		WLR_OUTPUT_STATE_SUBPIXEL);
 
 	if (force_update || state->committed & (WLR_OUTPUT_STATE_MODE |
 			WLR_OUTPUT_STATE_ENABLED)) {
