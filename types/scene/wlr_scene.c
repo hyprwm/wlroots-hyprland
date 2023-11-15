@@ -415,7 +415,9 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	assert(!scene_buffer->active_outputs || scene_buffer->primary_output);
 
 	// Skip output update event if nothing was updated
-	if (old_active == active_outputs && (!force || ((1ull << force->index) & ~active_outputs))) {
+	if (old_active == active_outputs &&
+			(!force || ((1ull << force->index) & ~active_outputs)) &&
+			old_primary_output == scene_buffer->primary_output) {
 		return;
 	}
 
