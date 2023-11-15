@@ -333,7 +333,8 @@ static void scene_damage_outputs(struct wlr_scene *scene, pixman_region32_t *dam
 }
 
 static void update_node_update_outputs(struct wlr_scene_node *node,
-		struct wl_list *outputs, struct wlr_scene_output *ignore) {
+		struct wl_list *outputs, struct wlr_scene_output *ignore,
+		struct wlr_scene_output *force) {
 	if (node->type != WLR_SCENE_NODE_BUFFER) {
 		return;
 	}
@@ -413,8 +414,8 @@ static void update_node_update_outputs(struct wlr_scene_node *node,
 	// output
 	assert(!scene_buffer->active_outputs || scene_buffer->primary_output);
 
-	// if no outputs changes intersection status, skip calling outputs_update
-	if (old_active == active_outputs) {
+	// Skip output update event if nothing was updated
+	if (old_active == active_outputs && (!force || ((1ull << force->index) & ~active_outputs))) {
 		return;
 	}
 
@@ -457,7 +458,7 @@ static bool scene_node_update_iterator(struct wlr_scene_node *node,
 		pixman_region32_fini(&opaque);
 	}
 
-	update_node_update_outputs(node, data->outputs, NULL);
+	update_node_update_outputs(node, data->outputs, NULL, NULL);
 
 	return false;
 }
@@ -1240,25 +1241,27 @@ static const struct wlr_addon_interface output_addon_impl = {
 };
 
 static void scene_node_output_update(struct wlr_scene_node *node,
-		struct wl_list *outputs, struct wlr_scene_output *ignore) {
+		struct wl_list *outputs, struct wlr_scene_output *ignore,
+		struct wlr_scene_output *force) {
 	if (node->type == WLR_SCENE_NODE_TREE) {
 		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
-			scene_node_output_update(child, outputs, ignore);
+			scene_node_output_update(child, outputs, ignore, force);
 		}
 		return;
 	}
 
-	update_node_update_outputs(node, outputs, ignore);
+	update_node_update_outputs(node, outputs, ignore, force);
 }
 
-static void scene_output_update_geometry(struct wlr_scene_output *scene_output) {
+static void scene_output_update_geometry(struct wlr_scene_output *scene_output,
+		bool force_update) {
 	wlr_damage_ring_add_whole(&scene_output->damage_ring);
 	wlr_output_schedule_frame(scene_output->output);
 
 	scene_node_output_update(&scene_output->scene->tree.node,
-			&scene_output->scene->outputs, NULL);
+			&scene_output->scene->outputs, NULL, force_update ? scene_output : NULL);
 }
 
 static void scene_output_handle_commit(struct wl_listener *listener, void *data) {
@@ -1267,11 +1270,13 @@ static void scene_output_handle_commit(struct wl_listener *listener, void *data)
 	struct wlr_output_event_commit *event = data;
 	const struct wlr_output_state *state = event->state;
 
-	if (state->committed & (WLR_OUTPUT_STATE_MODE |
-			WLR_OUTPUT_STATE_TRANSFORM |
-			WLR_OUTPUT_STATE_SCALE |
+	bool force_update = state->committed & (
+		WLR_OUTPUT_STATE_TRANSFORM |
+		WLR_OUTPUT_STATE_SCALE);
+
+	if (force_update || state->committed & (WLR_OUTPUT_STATE_MODE |
 			WLR_OUTPUT_STATE_ENABLED)) {
-		scene_output_update_geometry(scene_output);
+		scene_output_update_geometry(scene_output, force_update);
 	}
 }
 
@@ -1332,7 +1337,7 @@ struct wlr_scene_output *wlr_scene_output_create(struct wlr_scene *scene,
 	scene_output->output_needs_frame.notify = scene_output_handle_needs_frame;
 	wl_signal_add(&output->events.needs_frame, &scene_output->output_needs_frame);
 
-	scene_output_update_geometry(scene_output);
+	scene_output_update_geometry(scene_output, false);
 
 	return scene_output;
 }
@@ -1351,7 +1356,7 @@ void wlr_scene_output_destroy(struct wlr_scene_output *scene_output) {
 	wl_signal_emit_mutable(&scene_output->events.destroy, NULL);
 
 	scene_node_output_update(&scene_output->scene->tree.node,
-		&scene_output->scene->outputs, scene_output);
+		&scene_output->scene->outputs, scene_output, NULL);
 
 	struct highlight_region *damage, *tmp_damage;
 	wl_list_for_each_safe(damage, tmp_damage, &scene_output->damage_highlight_regions, link) {
@@ -1390,7 +1395,7 @@ void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
 	scene_output->x = lx;
 	scene_output->y = ly;
 
-	scene_output_update_geometry(scene_output);
+	scene_output_update_geometry(scene_output, false);
 }
 
 static bool scene_node_invisible(struct wlr_scene_node *node) {
