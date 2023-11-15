@@ -129,6 +129,22 @@ struct wlr_drm_connector_state {
 	struct wlr_drm_fb *primary_fb;
 };
 
+/**
+ * Per-page-flip tracking struct.
+ *
+ * We've asked for a state change in the kernel, and yet to receive a
+ * notification for its completion. Currently, the kernel only has a queue
+ * length of 1, and no way to modify your submissions after they're sent.
+ *
+ * However, we might have multiple in-flight page-flip events, for instance
+ * when performing a non-blocking commit followed by a blocking commit. In
+ * that case, conn will be set to NULL on the non-blocking commit to indicate
+ * that it's been superseded.
+ */
+struct wlr_drm_page_flip {
+	struct wlr_drm_connector *conn;
+};
+
 struct wlr_drm_connector {
 	struct wlr_output output; // only valid if status != DISCONNECTED
 
@@ -153,14 +169,8 @@ struct wlr_drm_connector {
 
 	struct wl_list link; // wlr_drm_backend.connectors
 
-	/* CRTC ID if a page-flip is pending, zero otherwise.
-	 *
-	 * We've asked for a state change in the kernel, and yet to receive a
-	 * notification for its completion. Currently, the kernel only has a
-	 * queue length of 1, and no way to modify your submissions after
-	 * they're sent.
-	 */
-	uint32_t pending_page_flip_crtc;
+	// Last committed page-flip
+	struct wlr_drm_page_flip *pending_page_flip;
 };
 
 struct wlr_drm_backend *get_drm_backend_from_backend(

@@ -59,7 +59,7 @@ static bool legacy_crtc_test(struct wlr_drm_connector *conn,
 
 static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state,
-		uint32_t flags, bool test_only) {
+		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
 	if (!legacy_crtc_test(conn, state)) {
 		return false;
 	}
@@ -181,7 +181,7 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 		}
 
 		if (drmModePageFlip(drm->fd, crtc->id, fb_id,
-				page_flags, drm)) {
+				page_flags, page_flip)) {
 			wlr_drm_conn_log_errno(conn, WLR_ERROR, "drmModePageFlip failed");
 			return false;
 		}

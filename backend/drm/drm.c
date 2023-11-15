@@ -412,15 +412,32 @@ static struct wlr_drm_layer *get_or_create_layer(struct wlr_drm_backend *drm,
 	return layer;
 }
 
+static void drm_connector_set_pending_page_flip(struct wlr_drm_connector *conn,
+		struct wlr_drm_page_flip *page_flip) {
+	if (conn->pending_page_flip != NULL) {
+		conn->pending_page_flip->conn = NULL;
+	}
+	conn->pending_page_flip = page_flip;
+}
+
 static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state,
 		uint32_t flags, bool test_only) {
 	// Disallow atomic-only flags
 	assert((flags & ~DRM_MODE_PAGE_FLIP_FLAGS) == 0);
 
+	struct wlr_drm_page_flip *page_flip = NULL;
+	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
+		page_flip = calloc(1, sizeof(*page_flip));
+		if (page_flip == NULL) {
+			return false;
+		}
+		page_flip->conn = conn;
+	}
+
 	struct wlr_drm_backend *drm = conn->backend;
 	struct wlr_drm_crtc *crtc = conn->crtc;
-	bool ok = drm->iface->crtc_commit(conn, state, flags, test_only);
+	bool ok = drm->iface->crtc_commit(conn, state, page_flip, flags, test_only);
 	if (ok && !test_only) {
 		drm_fb_clear(&crtc->primary->queued_fb);
 		if (state->primary_fb != NULL) {
@@ -434,6 +451,8 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		wl_list_for_each(layer, &crtc->layers, link) {
 			drm_fb_move(&layer->queued_fb, &layer->pending_fb);
 		}
+
+		drm_connector_set_pending_page_flip(conn, page_flip);
 	} else {
 		// The set_cursor() hook is a bit special: it's not really synchronized
 		// to commit() or test(). Once set_cursor() returns true, the new
@@ -446,6 +465,8 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		wl_list_for_each(layer, &crtc->layers, link) {
 			drm_fb_clear(&layer->pending_fb);
 		}
+
+		free(page_flip);
 	}
 	return ok;
 }
@@ -732,16 +753,6 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
 			goto out;
 		}
-
-		// wlr_drm_interface.crtc_commit will perform either a non-blocking
-		// page-flip, either a blocking modeset. When performing a blocking modeset
-		// we'll wait for all queued page-flips to complete, so we don't need this
-		// safeguard.
-		if (conn->pending_page_flip_crtc && !pending.modeset) {
-			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
-				"a page-flip is already pending");
-			goto out;
-		}
 	}
 	if (pending.base->committed & WLR_OUTPUT_STATE_LAYERS) {
 		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
@@ -759,7 +770,19 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
-	uint32_t flags = pending.active ? DRM_MODE_PAGE_FLIP_EVENT : 0;
+	uint32_t flags = 0;
+	if (pending.active) {
+		flags |= DRM_MODE_PAGE_FLIP_EVENT;
+		// wlr_drm_interface.crtc_commit will perform either a non-blocking
+		// page-flip, either a blocking modeset. When performing a blocking modeset
+		// we'll wait for all queued page-flips to complete, so we don't need this
+		// safeguard.
+		if (conn->pending_page_flip != NULL && !pending.modeset) {
+			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
+				"a page-flip is already pending");
+			goto out;
+		}
+	}
 	if (pending.base->tearing_page_flip) {
 		flags |= DRM_MODE_PAGE_FLIP_ASYNC;
 	}
@@ -776,9 +799,6 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 
 		conn->cursor_enabled = false;
 		conn->crtc = NULL;
-	}
-	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
-		conn->pending_page_flip_crtc = conn->crtc->id;
 	}
 
 out:
@@ -1029,7 +1049,7 @@ static void drm_connector_destroy_output(struct wlr_output *output) {
 	dealloc_crtc(conn);
 
 	conn->status = DRM_MODE_DISCONNECTED;
-	conn->pending_page_flip_crtc = 0;
+	drm_connector_set_pending_page_flip(conn, NULL);
 
 	struct wlr_drm_mode *mode, *mode_tmp;
 	wl_list_for_each_safe(mode, mode_tmp, &conn->output.modes, wlr_mode.link) {
@@ -1660,22 +1680,19 @@ static int mhz_to_nsec(int mhz) {
 
 static void handle_page_flip(int fd, unsigned seq,
 		unsigned tv_sec, unsigned tv_usec, unsigned crtc_id, void *data) {
-	struct wlr_drm_backend *drm = data;
+	struct wlr_drm_page_flip *page_flip = data;
 
-	bool found = false;
-	struct wlr_drm_connector *conn;
-	wl_list_for_each(conn, &drm->connectors, link) {
-		if (conn->pending_page_flip_crtc == crtc_id) {
-			found = true;
-			break;
-		}
+	struct wlr_drm_connector *conn = page_flip->conn;
+	if (conn != NULL) {
+		conn->pending_page_flip = NULL;
 	}
-	if (!found) {
-		wlr_log(WLR_DEBUG, "Unexpected page-flip event for CRTC %u", crtc_id);
+	free(page_flip);
+
+	if (conn == NULL) {
 		return;
 	}
 
-	conn->pending_page_flip_crtc = 0;
+	struct wlr_drm_backend *drm = conn->backend;
 
 	if (conn->status != DRM_MODE_CONNECTED || conn->crtc == NULL) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,

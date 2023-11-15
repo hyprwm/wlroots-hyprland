@@ -301,8 +301,8 @@ static void update_layer_feedback(struct wlr_drm_backend *drm,
 }
 
 static bool crtc_commit(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state, uint32_t flags,
-		bool test_only) {
+		const struct wlr_drm_connector_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
 	struct wlr_drm_backend *drm = conn->backend;
 	struct wlr_output *output = &conn->output;
 	struct wlr_drm_crtc *crtc = conn->crtc;
@@ -455,7 +455,7 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		goto out;
 	}
 
-	ret = drmModeAtomicCommit(drm->fd, req, flags, drm);
+	ret = drmModeAtomicCommit(drm->fd, req, flags, page_flip);
 	if (ret != 0) {
 		wlr_drm_conn_log_errno(conn, test_only ? WLR_DEBUG : WLR_ERROR,
 			"Atomic commit failed");
