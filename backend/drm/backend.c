@@ -207,6 +207,7 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 	drm->session = session;
 	wl_list_init(&drm->fbs);
 	wl_list_init(&drm->connectors);
+	wl_list_init(&drm->page_flips);
 
 	drm->dev = dev;
 	drm->fd = dev->fd;

@@ -104,6 +104,8 @@ struct wlr_drm_backend {
 	struct wl_list fbs; // wlr_drm_fb.link
 	struct wl_list connectors; // wlr_drm_connector.link
 
+	struct wl_list page_flips; // wlr_drm_page_flip.link
+
 	/* Only initialized on multi-GPU setups */
 	struct wlr_drm_renderer mgpu_renderer;
 
@@ -142,6 +144,7 @@ struct wlr_drm_connector_state {
  * that it's been superseded.
  */
 struct wlr_drm_page_flip {
+	struct wl_list link; // wlr_drm_connector.page_flips
 	struct wlr_drm_connector *conn;
 };
 
