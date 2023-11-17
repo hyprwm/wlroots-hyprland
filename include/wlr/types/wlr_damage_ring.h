@@ -13,11 +13,21 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <pixman.h>
+#include <wayland-server-core.h>
 
 /* For triple buffering, a history of two frames is required. */
 #define WLR_DAMAGE_RING_PREVIOUS_LEN 2
+/* Keep track of as many buffers as a swapchain can hold */
+#define WLR_DAMAGE_RING_BUFFERS_LEN 4
 
 struct wlr_box;
+
+struct wlr_damage_ring_buffer {
+	struct wlr_buffer *buffer;
+	struct wl_listener destroy;
+	pixman_region32_t damage;
+	uint64_t seq;
+};
 
 struct wlr_damage_ring {
 	int32_t width, height;
@@ -29,6 +39,9 @@ struct wlr_damage_ring {
 
 	pixman_region32_t previous[WLR_DAMAGE_RING_PREVIOUS_LEN];
 	size_t previous_idx;
+
+	uint64_t last_buffer_seq;
+	struct wlr_damage_ring_buffer buffers[WLR_DAMAGE_RING_BUFFERS_LEN];
 };
 
 void wlr_damage_ring_init(struct wlr_damage_ring *ring);
@@ -80,5 +93,18 @@ void wlr_damage_ring_rotate(struct wlr_damage_ring *ring);
  */
 void wlr_damage_ring_get_buffer_damage(struct wlr_damage_ring *ring,
 	int buffer_age, pixman_region32_t *damage);
+
+/**
+ * Get accumulated buffer damage and rotate the damage ring.
+ *
+ * The accumulated buffer damage is the difference between the to-be-painted
+ * buffer and the passed-in buffer. In other words, this is the region that
+ * needs to be redrawn.
+ *
+ * Users should damage the ring if an error occurs while rendering or
+ * submitting the new buffer to the backend.
+ */
+void wlr_damage_ring_rotate_buffer(struct wlr_damage_ring *ring,
+	struct wlr_buffer *buffer, pixman_region32_t *damage);
 
 #endif
