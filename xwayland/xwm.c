@@ -1644,7 +1644,8 @@ static int x11_event_handler(int fd, uint32_t mask, void *data) {
 
 		if (xwm->xwayland->user_event_handler &&
 				xwm->xwayland->user_event_handler(xwm, event)) {
-			break;
+			free(event);
+			continue;
 		}
 
 		if (xwm_handle_selection_event(xwm, event)) {
