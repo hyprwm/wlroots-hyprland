@@ -39,6 +39,11 @@ static void backend_destroy(struct wlr_backend *backend) {
 		destroy_drm_connector(conn);
 	}
 
+	struct wlr_drm_page_flip *page_flip, *page_flip_tmp;
+	wl_list_for_each_safe(page_flip, page_flip_tmp, &drm->page_flips, link) {
+		drm_page_flip_destroy(page_flip);
+	}
+
 	wlr_backend_finish(backend);
 
 	wl_list_remove(&drm->display_destroy.link);

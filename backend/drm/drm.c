@@ -420,7 +420,7 @@ static void drm_connector_set_pending_page_flip(struct wlr_drm_connector *conn,
 	conn->pending_page_flip = page_flip;
 }
 
-static void page_flip_destroy(struct wlr_drm_page_flip *page_flip) {
+void drm_page_flip_destroy(struct wlr_drm_page_flip *page_flip) {
 	if (!page_flip) {
 		return;
 	}
@@ -476,7 +476,7 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 			drm_fb_clear(&layer->pending_fb);
 		}
 
-		page_flip_destroy(page_flip);
+		drm_page_flip_destroy(page_flip);
 	}
 	return ok;
 }
@@ -1696,7 +1696,7 @@ static void handle_page_flip(int fd, unsigned seq,
 	if (conn != NULL) {
 		conn->pending_page_flip = NULL;
 	}
-	page_flip_destroy(page_flip);
+	drm_page_flip_destroy(page_flip);
 
 	if (conn == NULL) {
 		return;
