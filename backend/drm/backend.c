@@ -41,11 +41,6 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 	wlr_backend_finish(backend);
 
-	struct wlr_drm_fb *fb, *fb_tmp;
-	wl_list_for_each_safe(fb, fb_tmp, &drm->fbs, link) {
-		drm_fb_destroy(fb);
-	}
-
 	wl_list_remove(&drm->display_destroy.link);
 	wl_list_remove(&drm->session_destroy.link);
 	wl_list_remove(&drm->session_active.link);
@@ -58,6 +53,11 @@ static void backend_destroy(struct wlr_backend *backend) {
 	}
 
 	finish_drm_resources(drm);
+
+	struct wlr_drm_fb *fb, *fb_tmp;
+	wl_list_for_each_safe(fb, fb_tmp, &drm->fbs, link) {
+		drm_fb_destroy(fb);
+	}
 
 	free(drm->name);
 	wlr_session_close_file(drm->session, drm->dev);
