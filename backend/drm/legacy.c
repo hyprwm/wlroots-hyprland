@@ -175,13 +175,7 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 	}
 
 	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
-		uint32_t page_flags = DRM_MODE_PAGE_FLIP_EVENT;
-		if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-			page_flags |= DRM_MODE_PAGE_FLIP_ASYNC;
-		}
-
-		if (drmModePageFlip(drm->fd, crtc->id, fb_id,
-				page_flags, page_flip)) {
+		if (drmModePageFlip(drm->fd, crtc->id, fb_id, flags, page_flip)) {
 			wlr_drm_conn_log_errno(conn, WLR_ERROR, "drmModePageFlip failed");
 			return false;
 		}
