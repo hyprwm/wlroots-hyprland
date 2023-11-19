@@ -315,12 +315,8 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 	}
 	if (modeset) {
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-	} else if (!test_only && (state->base->committed & WLR_OUTPUT_STATE_BUFFER)) {
-		// The wlr_output API requires non-modeset commits with a new buffer to
-		// wait for the frame event. However compositors often perform
-		// non-modesets commits without a new buffer without waiting for the
-		// frame event. In that case we need to make the KMS commit blocking,
-		// otherwise the kernel will error out with EBUSY.
+	}
+	if (!test_only && state->nonblock) {
 		flags |= DRM_MODE_ATOMIC_NONBLOCK;
 	}
 
