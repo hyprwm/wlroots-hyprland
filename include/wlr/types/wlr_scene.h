@@ -206,6 +206,8 @@ struct wlr_scene_output {
 
 	// private state
 
+	pixman_region32_t pending_commit_damage;
+
 	uint8_t index;
 	bool prev_scanout;
 
