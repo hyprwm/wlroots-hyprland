@@ -763,6 +763,16 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
 			goto out;
 		}
+
+		// wlr_drm_interface.crtc_commit will perform either a non-blocking
+		// page-flip, either a blocking modeset. When performing a blocking modeset
+		// we'll wait for all queued page-flips to complete, so we don't need this
+		// safeguard.
+		if (conn->pending_page_flip != NULL && !pending.modeset) {
+			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
+				"a page-flip is already pending");
+			goto out;
+		}
 	}
 	if (pending.base->committed & WLR_OUTPUT_STATE_LAYERS) {
 		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
@@ -783,15 +793,6 @@ bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	uint32_t flags = 0;
 	if (pending.active) {
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
-		// wlr_drm_interface.crtc_commit will perform either a non-blocking
-		// page-flip, either a blocking modeset. When performing a blocking modeset
-		// we'll wait for all queued page-flips to complete, so we don't need this
-		// safeguard.
-		if (conn->pending_page_flip != NULL && !pending.modeset) {
-			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
-				"a page-flip is already pending");
-			goto out;
-		}
 	}
 	if (pending.base->tearing_page_flip) {
 		flags |= DRM_MODE_PAGE_FLIP_ASYNC;
