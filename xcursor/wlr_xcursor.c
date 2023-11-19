@@ -100,19 +100,19 @@ static void load_default_theme(struct wlr_xcursor_theme *theme) {
 	free(theme->name);
 	theme->name = strdup("default");
 
-	theme->cursor_count = sizeof(cursor_metadata) / sizeof(cursor_metadata[0]);
-	theme->cursors = malloc(theme->cursor_count * sizeof(*theme->cursors));
+	size_t cursor_count = sizeof(cursor_metadata) / sizeof(cursor_metadata[0]);
+	theme->cursor_count = 0;
+	theme->cursors = malloc(cursor_count * sizeof(*theme->cursors));
 	if (theme->cursors == NULL) {
-		theme->cursor_count = 0;
 		return;
 	}
 
-	for (uint32_t i = 0; i < theme->cursor_count; ++i) {
-		theme->cursors[i] =
-			xcursor_create_from_data(&cursor_metadata[i], theme);
+	for (uint32_t i = 0; i < cursor_count; ++i) {
+		theme->cursors[i] = xcursor_create_from_data(&cursor_metadata[i], theme);
 		if (theme->cursors[i] == NULL) {
 			break;
 		}
+		++theme->cursor_count;
 	}
 }
 
