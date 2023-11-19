@@ -113,7 +113,7 @@ struct wlr_buffer *wlr_swapchain_acquire(struct wlr_swapchain *swapchain,
 	return slot_acquire(swapchain, free_slot, age);
 }
 
-static bool swapchain_has_buffer(struct wlr_swapchain *swapchain,
+bool wlr_swapchain_has_buffer(struct wlr_swapchain *swapchain,
 		struct wlr_buffer *buffer) {
 	for (size_t i = 0; i < WLR_SWAPCHAIN_CAP; i++) {
 		struct wlr_swapchain_slot *slot = &swapchain->slots[i];
@@ -128,7 +128,7 @@ void wlr_swapchain_set_buffer_submitted(struct wlr_swapchain *swapchain,
 		struct wlr_buffer *buffer) {
 	assert(buffer != NULL);
 
-	if (!swapchain_has_buffer(swapchain, buffer)) {
+	if (!wlr_swapchain_has_buffer(swapchain, buffer)) {
 		return;
 	}
 

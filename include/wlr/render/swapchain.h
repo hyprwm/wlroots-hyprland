@@ -39,6 +39,12 @@ void wlr_swapchain_destroy(struct wlr_swapchain *swapchain);
 struct wlr_buffer *wlr_swapchain_acquire(struct wlr_swapchain *swapchain,
 	int *age);
 /**
+ * Returns true if this buffer has been created by this swapchain, and false
+ * otherwise.
+ */
+bool wlr_swapchain_has_buffer(struct wlr_swapchain *swapchain,
+	struct wlr_buffer *buffer);
+/**
  * Mark the buffer as submitted for presentation. This needs to be called by
  * swap chain users on frame boundaries.
  *
