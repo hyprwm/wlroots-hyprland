@@ -954,7 +954,7 @@ static char *get_render_name(const char *name) {
 	return render_name;
 }
 
-int wlr_egl_dup_drm_fd(struct wlr_egl *egl) {
+static int dup_egl_device_drm_fd(struct wlr_egl *egl) {
 	if (egl->device == EGL_NO_DEVICE_EXT || (!egl->exts.EXT_device_drm &&
 			!egl->exts.EXT_device_drm_render_node)) {
 		return -1;
@@ -1000,4 +1000,22 @@ int wlr_egl_dup_drm_fd(struct wlr_egl *egl) {
 	free(render_name);
 
 	return render_fd;
+}
+
+int wlr_egl_dup_drm_fd(struct wlr_egl *egl) {
+	int fd = dup_egl_device_drm_fd(egl);
+	if (fd >= 0) {
+		return fd;
+	}
+
+	// Fallback to GBM's FD if we can't use EGLDevice
+	if (egl->gbm_device == NULL) {
+		return -1;
+	}
+
+	fd = fcntl(gbm_device_get_fd(egl->gbm_device), F_DUPFD_CLOEXEC, 0);
+	if (fd < 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to dup GBM FD");
+	}
+	return fd;
 }
