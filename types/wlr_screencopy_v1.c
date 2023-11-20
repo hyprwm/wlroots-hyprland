@@ -227,11 +227,6 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	struct wlr_renderer *renderer = output->renderer;
 	assert(renderer);
 
-	if (frame->box.x < 0 || frame->box.y < 0 ||
-			frame->box.x + frame->box.width > src_buffer->width ||
-			frame->box.y + frame->box.height > src_buffer->height) {
-		return false;
-	}
 
 	struct wlr_texture *src_tex =
 		wlr_texture_from_buffer(renderer, src_buffer);
@@ -297,26 +292,36 @@ static void frame_handle_output_commit(struct wl_listener *listener,
 	wl_list_remove(&frame->output_commit.link);
 	wl_list_init(&frame->output_commit.link);
 
-	bool ok;
+	struct wlr_buffer *src_buffer = event->state->buffer;
+	if (frame->box.x < 0 || frame->box.y < 0 ||
+			frame->box.x + frame->box.width > src_buffer->width ||
+			frame->box.y + frame->box.height > src_buffer->height) {
+		goto err;
+	}
+
 	switch (frame->buffer_cap) {
 	case WLR_BUFFER_CAP_DMABUF:
-		ok = frame_dma_copy(frame, event->state->buffer);
+		if (!frame_dma_copy(frame, src_buffer)) {
+			goto err;
+		}
 		break;
 	case WLR_BUFFER_CAP_DATA_PTR:
-		ok = frame_shm_copy(frame, event->state->buffer);
+		if (!frame_shm_copy(frame, src_buffer)) {
+			goto err;
+		}
 		break;
 	default:
 		abort(); // unreachable
-	}
-	if (!ok) {
-		zwlr_screencopy_frame_v1_send_failed(frame->resource);
-		frame_destroy(frame);
-		return;
 	}
 
 	zwlr_screencopy_frame_v1_send_flags(frame->resource, 0);
 	frame_send_damage(frame);
 	frame_send_ready(frame, event->when);
+	frame_destroy(frame);
+	return;
+
+err:
+	zwlr_screencopy_frame_v1_send_failed(frame->resource);
 	frame_destroy(frame);
 }
 
