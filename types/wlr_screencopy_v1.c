@@ -250,6 +250,10 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options) {
 		.texture = src_tex,
 		.blend_mode = WLR_RENDER_BLEND_MODE_NONE,
+		.dst_box = (struct wlr_box){
+			.width = dst_buffer->width,
+			.height = dst_buffer->height,
+		},
 		.src_box = (struct wlr_fbox){
 			.x = frame->box.x,
 			.y = frame->box.y,
