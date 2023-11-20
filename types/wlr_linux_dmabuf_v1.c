@@ -202,6 +202,10 @@ static void buffer_handle_resource_destroy(struct wl_resource *buffer_resource) 
 
 static bool check_import_dmabuf(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		struct wlr_dmabuf_attributes *attribs) {
+	if (linux_dmabuf->main_device_fd < 0) {
+		return true;
+	}
+
 	// TODO: check number of planes
 	for (int i = 0; i < attribs->n_planes; i++) {
 		uint32_t handle = 0;
@@ -857,7 +861,9 @@ static void linux_dmabuf_v1_destroy(struct wlr_linux_dmabuf_v1 *linux_dmabuf) {
 
 	compiled_feedback_destroy(linux_dmabuf->default_feedback);
 	wlr_drm_format_set_finish(&linux_dmabuf->default_formats);
-	close(linux_dmabuf->main_device_fd);
+	if (linux_dmabuf->main_device_fd >= 0) {
+		close(linux_dmabuf->main_device_fd);
+	}
 
 	wl_list_remove(&linux_dmabuf->display_destroy.link);
 
@@ -884,22 +890,23 @@ static bool set_default_feedback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
 		goto error_compiled;
 	}
 
-	const char *name = NULL;
+	int main_device_fd = -1;
 	if (device->available_nodes & (1 << DRM_NODE_RENDER)) {
-		name = device->nodes[DRM_NODE_RENDER];
+		const char *name = device->nodes[DRM_NODE_RENDER];
+		main_device_fd = open(name, O_RDWR | O_CLOEXEC);
+		drmFreeDevice(&device);
+		if (main_device_fd < 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to open DRM device %s", name);
+			goto error_compiled;
+		}
 	} else {
-		// Likely a split display/render setup
+		// Likely a split display/render setup. Unfortunately we have no way to
+		// get back the proper render node used by the renderer under-the-hood.
+		// TODO: drop once mesa!24825 is widespread
 		assert(device->available_nodes & (1 << DRM_NODE_PRIMARY));
-		name = device->nodes[DRM_NODE_PRIMARY];
 		wlr_log(WLR_DEBUG, "DRM device %s has no render node, "
-			"falling back to primary node", name);
-	}
-
-	int main_device_fd = open(name, O_RDWR | O_CLOEXEC);
-	drmFreeDevice(&device);
-	if (main_device_fd < 0) {
-		wlr_log_errno(WLR_ERROR, "Failed to open DRM device %s", name);
-		goto error_compiled;
+			"skipping DMA-BUF import checks", device->nodes[DRM_NODE_PRIMARY]);
+		drmFreeDevice(&device);
 	}
 
 	size_t tranches_len =

@@ -61,7 +61,7 @@ struct wlr_linux_dmabuf_v1 {
 	struct wlr_drm_format_set default_formats; // for legacy clients
 	struct wl_list surfaces; // wlr_linux_dmabuf_v1_surface.link
 
-	int main_device_fd; // to sanity check FDs sent by clients
+	int main_device_fd; // to sanity check FDs sent by clients, -1 if unavailable
 
 	struct wl_listener display_destroy;
 };
