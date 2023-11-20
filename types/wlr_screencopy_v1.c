@@ -196,8 +196,8 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 
 	int x = frame->box.x;
 	int y = frame->box.y;
-	int width = frame->buffer->width;
-	int height = frame->buffer->height;
+	int width = frame->box.width;
+	int height = frame->box.height;
 
 	void *data;
 	uint32_t format;
