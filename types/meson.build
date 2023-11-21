@@ -48,7 +48,6 @@ wlr_files += files(
 	'wlr_idle_inhibit_v1.c',
 	'wlr_idle_notify_v1.c',
 	'wlr_input_device.c',
-	'wlr_input_inhibitor.c',
 	'wlr_input_method_v2.c',
 	'wlr_keyboard.c',
 	'wlr_keyboard_group.c',
