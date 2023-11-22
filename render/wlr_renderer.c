@@ -33,13 +33,7 @@
 
 void wlr_renderer_init(struct wlr_renderer *renderer,
 		const struct wlr_renderer_impl *impl) {
-	if (!impl->begin_buffer_pass) {
-		assert(impl->begin);
-		assert(impl->clear);
-		assert(impl->scissor);
-		assert(impl->render_subtexture_with_matrix);
-		assert(impl->render_quad_with_matrix);
-	}
+	assert(impl->begin_buffer_pass);
 	assert(impl->get_shm_texture_formats);
 	assert(impl->get_render_buffer_caps);
 
@@ -112,72 +106,6 @@ void wlr_renderer_end(struct wlr_renderer *r) {
 		renderer_bind_buffer(r, NULL);
 		r->rendering_with_buffer = false;
 	}
-}
-
-void wlr_renderer_clear(struct wlr_renderer *r, const float color[static 4]) {
-	assert(r->rendering);
-	r->impl->clear(r, color);
-}
-
-void wlr_renderer_scissor(struct wlr_renderer *r, struct wlr_box *box) {
-	assert(r->rendering);
-	r->impl->scissor(r, box);
-}
-
-bool wlr_render_texture(struct wlr_renderer *r, struct wlr_texture *texture,
-		const float projection[static 9], int x, int y, float alpha) {
-	struct wlr_box box = {
-		.x = x,
-		.y = y,
-		.width = texture->width,
-		.height = texture->height,
-	};
-
-	float matrix[9];
-	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
-		projection);
-
-	return wlr_render_texture_with_matrix(r, texture, matrix, alpha);
-}
-
-bool wlr_render_texture_with_matrix(struct wlr_renderer *r,
-		struct wlr_texture *texture, const float matrix[static 9],
-		float alpha) {
-	struct wlr_fbox box = {
-		.x = 0,
-		.y = 0,
-		.width = texture->width,
-		.height = texture->height,
-	};
-	return wlr_render_subtexture_with_matrix(r, texture, &box, matrix, alpha);
-}
-
-bool wlr_render_subtexture_with_matrix(struct wlr_renderer *r,
-		struct wlr_texture *texture, const struct wlr_fbox *box,
-		const float matrix[static 9], float alpha) {
-	assert(r->rendering);
-	assert(texture->renderer == r);
-	return r->impl->render_subtexture_with_matrix(r, texture,
-		box, matrix, alpha);
-}
-
-void wlr_render_rect(struct wlr_renderer *r, const struct wlr_box *box,
-		const float color[static 4], const float projection[static 9]) {
-	if (box->width == 0 || box->height == 0) {
-		return;
-	}
-	assert(box->width > 0 && box->height > 0);
-	float matrix[9];
-	wlr_matrix_project_box(matrix, box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
-		projection);
-
-	wlr_render_quad_with_matrix(r, color, matrix);
-}
-
-void wlr_render_quad_with_matrix(struct wlr_renderer *r,
-		const float color[static 4], const float matrix[static 9]) {
-	assert(r->rendering);
-	r->impl->render_quad_with_matrix(r, color, matrix);
 }
 
 const uint32_t *wlr_renderer_get_shm_texture_formats(struct wlr_renderer *r,

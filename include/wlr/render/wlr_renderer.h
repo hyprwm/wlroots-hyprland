@@ -72,43 +72,7 @@ bool wlr_renderer_begin_with_buffer(struct wlr_renderer *r,
  * End a render pass.
  */
 void wlr_renderer_end(struct wlr_renderer *r);
-/**
- * Clear the viewport with the provided color.
- */
-void wlr_renderer_clear(struct wlr_renderer *r, const float color[static 4]);
-/**
- * Defines a scissor box. Only pixels that lie within the scissor box can be
- * modified by drawing functions. Providing a NULL `box` disables the scissor
- * box.
- */
-void wlr_renderer_scissor(struct wlr_renderer *r, struct wlr_box *box);
-/**
- * Renders the requested texture.
- */
-bool wlr_render_texture(struct wlr_renderer *r, struct wlr_texture *texture,
-	const float projection[static 9], int x, int y, float alpha);
-/**
- * Renders the requested texture using the provided matrix.
- */
-bool wlr_render_texture_with_matrix(struct wlr_renderer *r,
-	struct wlr_texture *texture, const float matrix[static 9], float alpha);
-/**
- * Renders the requested texture using the provided matrix, after cropping it
- * to the provided rectangle.
- */
-bool wlr_render_subtexture_with_matrix(struct wlr_renderer *r,
-	struct wlr_texture *texture, const struct wlr_fbox *box,
-	const float matrix[static 9], float alpha);
-/**
- * Renders a solid rectangle in the specified color.
- */
-void wlr_render_rect(struct wlr_renderer *r, const struct wlr_box *box,
-	const float color[static 4], const float projection[static 9]);
-/**
- * Renders a solid quadrangle in the specified color with the specified matrix.
- */
-void wlr_render_quad_with_matrix(struct wlr_renderer *r,
-	const float color[static 4], const float matrix[static 9]);
+
 /**
  * Get the shared-memory formats supporting import usage. Buffers allocated
  * with a format from this list may be imported via wlr_texture_from_pixels().
