@@ -60,13 +60,6 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
 		struct wlr_vk_renderer *renderer, const struct wlr_vk_format *format,
 		bool has_blending_buffer);
 
-// https://www.w3.org/Graphics/Color/srgb
-static float color_to_linear(float non_linear) {
-	return (non_linear > 0.04045) ?
-		pow((non_linear + 0.055) / 1.055, 2.4) :
-		non_linear / 12.92;
-}
-
 static void mat3_to_mat4(const float mat3[9], float mat4[4][4]) {
 	memset(mat4, 0, sizeof(float) * 16);
 	mat4[0][0] = mat3[0];
@@ -1387,183 +1380,11 @@ static void vulkan_end(struct wlr_renderer *wlr_renderer) {
 	}
 }
 
-static bool vulkan_render_subtexture_with_matrix(struct wlr_renderer *wlr_renderer,
-		struct wlr_texture *wlr_texture, const struct wlr_fbox *box,
-		const float matrix[static 9], float alpha) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->current_command_buffer->vk;
-
-	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
-	assert(texture->renderer == renderer);
-	if (texture->dmabuf_imported && !texture->owned) {
-		// Store this texture in the list of textures that need to be
-		// acquired before rendering and released after rendering.
-		// We don't do it here immediately since barriers inside
-		// a renderpass are suboptimal (would require additional renderpass
-		// dependency and potentially multiple barriers) and it's
-		// better to issue one barrier for all used textures anyways.
-		texture->owned = true;
-		assert(texture->foreign_link.prev == NULL);
-		assert(texture->foreign_link.next == NULL);
-		wl_list_insert(&renderer->foreign_textures, &texture->foreign_link);
-	}
-
-	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
-		renderer->current_render_buffer->render_setup,
-		&(struct wlr_vk_pipeline_key) {
-			.layout = {
-				.ycbcr_format = texture->format->is_ycbcr ? texture->format : NULL,
-			},
-			.texture_transform = texture->transform,
-		});
-	if (!pipe) {
-		return false;
-	}
-
-	struct wlr_vk_texture_view *view =
-		vulkan_texture_get_or_create_view(texture, pipe->layout);
-	if (!view) {
-		return false;
-	}
-
-	if (pipe->vk != renderer->bound_pipe) {
-		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->vk);
-		renderer->bound_pipe = pipe->vk;
-	}
-
-	vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipe->layout->vk, 0, 1, &view->ds, 0, NULL);
-
-	float final_matrix[9];
-	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
-
-	struct wlr_vk_vert_pcr_data vert_pcr_data;
-	mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
-
-	vert_pcr_data.uv_off[0] = box->x / wlr_texture->width;
-	vert_pcr_data.uv_off[1] = box->y / wlr_texture->height;
-	vert_pcr_data.uv_size[0] = box->width / wlr_texture->width;
-	vert_pcr_data.uv_size[1] = box->height / wlr_texture->height;
-
-	vkCmdPushConstants(cb, pipe->layout->vk,
-		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipe->layout->vk,
-		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float),
-		&alpha);
-	vkCmdDraw(cb, 4, 1, 0, 0);
-	texture->last_used_cb = renderer->current_command_buffer;
-
-	return true;
-}
-
-static void vulkan_clear(struct wlr_renderer *wlr_renderer,
-		const float color[static 4]) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->current_command_buffer->vk;
-
-	if (renderer->scissor.extent.width == 0 || renderer->scissor.extent.height == 0) {
-		return;
-	}
-
-	VkClearAttachment att = {
-		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		.colorAttachment = 0u,
-		// Input color values are given in srgb space, vulkan expects
-		// them in linear space. We explicitly import argb8 render buffers
-		// as srgb, vulkan will convert the input values we give here to
-		// srgb first.
-		// But in other parts of wlroots we just always assume
-		// srgb so that's why we have to convert here.
-		.clearValue.color.float32 = {
-			color_to_linear(color[0]),
-			color_to_linear(color[1]),
-			color_to_linear(color[2]),
-			color[3], // no conversion for alpha
-		},
-	};
-
-	VkClearRect rect = {
-		.rect = renderer->scissor,
-		.layerCount = 1,
-	};
-	vkCmdClearAttachments(cb, 1, &att, 1, &rect);
-}
-
-static void vulkan_scissor(struct wlr_renderer *wlr_renderer,
-		struct wlr_box *box) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->current_command_buffer->vk;
-
-	uint32_t w = renderer->render_width;
-	uint32_t h = renderer->render_height;
-	struct wlr_box dst = {0, 0, w, h};
-	if (box && !wlr_box_intersection(&dst, box, &dst)) {
-		dst = (struct wlr_box) {0, 0, 0, 0}; // empty
-	}
-
-	VkRect2D rect = (VkRect2D) {{dst.x, dst.y}, {dst.width, dst.height}};
-	renderer->scissor = rect;
-	vkCmdSetScissor(cb, 0, 1, &rect);
-}
-
 static const uint32_t *vulkan_get_shm_texture_formats(
 		struct wlr_renderer *wlr_renderer, size_t *len) {
 	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
 	*len = renderer->dev->shm_format_count;
 	return renderer->dev->shm_formats;
-}
-
-static void vulkan_render_quad_with_matrix(struct wlr_renderer *wlr_renderer,
-		const float color[static 4], const float matrix[static 9]) {
-	struct wlr_vk_renderer *renderer = vulkan_get_renderer(wlr_renderer);
-	VkCommandBuffer cb = renderer->current_command_buffer->vk;
-
-	struct wlr_vk_pipeline *pipe = setup_get_or_create_pipeline(
-		renderer->current_render_buffer->render_setup,
-		&(struct wlr_vk_pipeline_key) {
-			.source = WLR_VK_SHADER_SOURCE_SINGLE_COLOR,
-			.layout = {
-				.ycbcr_format = NULL,
-			},
-		});
-	if (!pipe) {
-		return;
-	}
-
-	if (pipe->vk != renderer->bound_pipe) {
-		vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->vk);
-		renderer->bound_pipe = pipe->vk;
-	}
-
-	float final_matrix[9];
-	wlr_matrix_multiply(final_matrix, renderer->projection, matrix);
-
-	struct wlr_vk_vert_pcr_data vert_pcr_data;
-	mat3_to_mat4(final_matrix, vert_pcr_data.mat4);
-	vert_pcr_data.uv_off[0] = 0.f;
-	vert_pcr_data.uv_off[1] = 0.f;
-	vert_pcr_data.uv_size[0] = 1.f;
-	vert_pcr_data.uv_size[1] = 1.f;
-
-	// Input color values are given in srgb space, shader expects
-	// them in linear space. The shader does all computation in linear
-	// space and expects in inputs in linear space since it outputs
-	// colors in linear space as well (and vulkan then automatically
-	// does the conversion for out SRGB render targets).
-	// But in other parts of wlroots we just always assume
-	// srgb so that's why we have to convert here.
-	float linear_color[4];
-	linear_color[0] = color_to_linear(color[0]);
-	linear_color[1] = color_to_linear(color[1]);
-	linear_color[2] = color_to_linear(color[2]);
-	linear_color[3] = color[3]; // no conversion for alpha
-
-	vkCmdPushConstants(cb, pipe->layout->vk,
-		VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcr_data), &vert_pcr_data);
-	vkCmdPushConstants(cb, pipe->layout->vk,
-		VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcr_data), sizeof(float) * 4,
-		linear_color);
-	vkCmdDraw(cb, 4, 1, 0, 0);
 }
 
 static const struct wlr_drm_format_set *vulkan_get_dmabuf_texture_formats(
@@ -1946,10 +1767,6 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.bind_buffer = vulkan_bind_buffer,
 	.begin = vulkan_begin,
 	.end = vulkan_end,
-	.clear = vulkan_clear,
-	.scissor = vulkan_scissor,
-	.render_subtexture_with_matrix = vulkan_render_subtexture_with_matrix,
-	.render_quad_with_matrix = vulkan_render_quad_with_matrix,
 	.get_shm_texture_formats = vulkan_get_shm_texture_formats,
 	.get_dmabuf_texture_formats = vulkan_get_dmabuf_texture_formats,
 	.get_render_formats = vulkan_get_render_formats,
