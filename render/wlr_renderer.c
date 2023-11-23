@@ -9,7 +9,6 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
-#include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_shm.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>

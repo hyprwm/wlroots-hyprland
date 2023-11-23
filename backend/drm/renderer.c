@@ -9,7 +9,6 @@
 #include <wayland-util.h>
 #include <wlr/render/swapchain.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_matrix.h>
 #include <wlr/util/log.h>
 #include "backend/drm/drm.h"
 #include "backend/drm/util.h"
