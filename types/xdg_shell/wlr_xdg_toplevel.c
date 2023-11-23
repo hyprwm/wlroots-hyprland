@@ -131,24 +131,6 @@ void handle_xdg_toplevel_client_commit(struct wlr_xdg_toplevel *toplevel) {
 	}
 }
 
-void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
-	if (toplevel->base->initial_commit) {
-		// On the initial commit, send a configure request to tell the client it
-		// is added
-		wlr_xdg_surface_schedule_configure(toplevel->base);
-
-		if (toplevel->base->client->shell->version >=
-				XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION) {
-			// The first configure event must carry WM capabilities
-			wlr_xdg_toplevel_set_wm_capabilities(toplevel,
-				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU |
-				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
-				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
-				WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE);
-		}
-	}
-}
-
 static const struct xdg_toplevel_interface xdg_toplevel_implementation;
 
 struct wlr_xdg_toplevel *wlr_xdg_toplevel_from_resource(
@@ -505,6 +487,16 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		&xdg_toplevel_implementation, surface->toplevel, NULL);
 
 	set_xdg_surface_role_object(surface, surface->toplevel->resource);
+
+	if (surface->client->shell->version >= XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION) {
+		// The first configure event must carry WM capabilities
+		surface->toplevel->scheduled.wm_capabilities =
+			WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU |
+			WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
+			WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
+			WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
+		surface->toplevel->scheduled.fields |= WLR_XDG_TOPLEVEL_CONFIGURE_WM_CAPABILITIES;
+	}
 
 	wl_signal_emit_mutable(&surface->client->shell->events.new_toplevel, surface->toplevel);
 

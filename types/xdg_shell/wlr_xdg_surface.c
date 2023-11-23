@@ -309,16 +309,12 @@ static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 		assert(0 && "not reached");
 		return;
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-		if (surface->toplevel != NULL) {
-			handle_xdg_toplevel_committed(surface->toplevel);
-		} else {
+		if (surface->toplevel == NULL) {
 			return;
 		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
-		if (surface->popup != NULL) {
-			handle_xdg_popup_committed(surface->popup);
-		} else {
+		if (surface->popup == NULL) {
 			return;
 		}
 		break;
