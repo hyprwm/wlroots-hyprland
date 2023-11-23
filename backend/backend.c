@@ -344,7 +344,8 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 	}
 
 	struct wlr_session *session = NULL;
-	struct wlr_backend *multi = wlr_multi_backend_create(display);
+	struct wl_event_loop *loop = wl_display_get_event_loop(display);
+	struct wlr_backend *multi = wlr_multi_backend_create(loop);
 	if (!multi) {
 		wlr_log(WLR_ERROR, "could not allocate multibackend");
 		return NULL;

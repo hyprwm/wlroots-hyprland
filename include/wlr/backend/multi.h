@@ -15,7 +15,7 @@
  * Creates a multi-backend. Multi-backends wrap an arbitrary number of backends
  * and aggregate their new_output/new_input signals.
  */
-struct wlr_backend *wlr_multi_backend_create(struct wl_display *display);
+struct wlr_backend *wlr_multi_backend_create(struct wl_event_loop *loop);
 /**
  * Adds the given backend to the multi backend. This should be done before the
  * new backend is started.

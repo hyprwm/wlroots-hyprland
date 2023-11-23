@@ -48,7 +48,7 @@ static void subbackend_state_destroy(struct subbackend_state *sub) {
 static void multi_backend_destroy(struct wlr_backend *wlr_backend) {
 	struct wlr_multi_backend *backend = multi_backend_from_backend(wlr_backend);
 
-	wl_list_remove(&backend->display_destroy.link);
+	wl_list_remove(&backend->event_loop_destroy.link);
 
 	wlr_backend_finish(wlr_backend);
 
@@ -105,13 +105,13 @@ static const struct wlr_backend_impl backend_impl = {
 	.get_buffer_caps = multi_backend_get_buffer_caps,
 };
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
+static void handle_event_loop_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_multi_backend *backend =
-		wl_container_of(listener, backend, display_destroy);
+		wl_container_of(listener, backend, event_loop_destroy);
 	multi_backend_destroy((struct wlr_backend*)backend);
 }
 
-struct wlr_backend *wlr_multi_backend_create(struct wl_display *display) {
+struct wlr_backend *wlr_multi_backend_create(struct wl_event_loop *loop) {
 	struct wlr_multi_backend *backend = calloc(1, sizeof(*backend));
 	if (!backend) {
 		wlr_log(WLR_ERROR, "Backend allocation failed");
@@ -124,8 +124,8 @@ struct wlr_backend *wlr_multi_backend_create(struct wl_display *display) {
 	wl_signal_init(&backend->events.backend_add);
 	wl_signal_init(&backend->events.backend_remove);
 
-	backend->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(display, &backend->display_destroy);
+	backend->event_loop_destroy.notify = handle_event_loop_destroy;
+	wl_event_loop_add_destroy_listener(loop, &backend->event_loop_destroy);
 
 	return &backend->backend;
 }
