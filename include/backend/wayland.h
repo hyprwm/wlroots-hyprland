@@ -20,12 +20,12 @@ struct wlr_wl_backend {
 
 	/* local state */
 	bool started;
-	struct wl_display *local_display;
+	struct wl_event_loop *event_loop;
 	struct wl_list outputs;
 	int drm_fd;
 	struct wl_list buffers; // wlr_wl_buffer.link
 	size_t requested_outputs;
-	struct wl_listener local_display_destroy;
+	struct wl_listener event_loop_destroy;
 	char *activation_token;
 
 	/* remote state */

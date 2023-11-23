@@ -159,7 +159,8 @@ int main(int argc, char *argv[]) {
 	init_egl(remote_display);
 
 	struct wl_display *local_display = wl_display_create();
-	struct wlr_backend *backend = wlr_wl_backend_create(local_display, remote_display);
+	struct wl_event_loop *event_loop = wl_display_get_event_loop(local_display);
+	struct wlr_backend *backend = wlr_wl_backend_create(event_loop, remote_display);
 	struct wlr_renderer *renderer = wlr_renderer_autocreate(backend);
 	wlr_renderer_init_wl_display(renderer, local_display);
 	struct wlr_allocator *allocator = wlr_allocator_autocreate(backend, renderer);

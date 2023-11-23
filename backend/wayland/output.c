@@ -774,7 +774,7 @@ static struct wlr_wl_output *output_create(struct wlr_wl_backend *backend,
 	wlr_output_state_set_custom_mode(&state, 1280, 720, 0);
 
 	wlr_output_init(wlr_output, &backend->backend, &output_impl,
-		wl_display_get_event_loop(backend->local_display), &state);
+		backend->event_loop, &state);
 	wlr_output_state_finish(&state);
 
 	wlr_output->adaptive_sync_status = WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
@@ -871,9 +871,8 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 			&xdg_toplevel_listener, output);
 	wl_surface_commit(output->surface);
 
-	struct wl_event_loop *event_loop = wl_display_get_event_loop(backend->local_display);
 	while (!output->configured) {
-		int ret = wl_event_loop_dispatch(event_loop, -1);
+		int ret = wl_event_loop_dispatch(backend->event_loop, -1);
 		if (ret < 0) {
 			wlr_log(WLR_ERROR, "wl_event_loop_dispatch() failed");
 			goto error;

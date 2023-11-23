@@ -194,7 +194,8 @@ static struct wlr_auto_backend_monitor *auto_backend_monitor_create(
 }
 
 static struct wlr_backend *attempt_wl_backend(struct wl_display *display) {
-	struct wlr_backend *backend = wlr_wl_backend_create(display, NULL);
+	struct wl_event_loop *loop = wl_display_get_event_loop(display);
+	struct wlr_backend *backend = wlr_wl_backend_create(loop, NULL);
 	if (backend == NULL) {
 		return NULL;
 	}

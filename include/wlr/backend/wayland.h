@@ -15,7 +15,7 @@ struct wlr_input_device;
  * The remote_display argument is an existing libwayland-client struct wl_display
  * to use. Leave it NULL to create a new connection to the compositor.
  */
-struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
+struct wlr_backend *wlr_wl_backend_create(struct wl_event_loop *loop,
 		struct wl_display *remote_display);
 
 /**
