@@ -16,8 +16,7 @@
 
 struct wlr_input_device;
 
-struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
-		struct wlr_session *session);
+struct wlr_backend *wlr_libinput_backend_create(struct wlr_session *session);
 /**
  * Gets the underlying struct libinput_device handle for the given input device.
  */

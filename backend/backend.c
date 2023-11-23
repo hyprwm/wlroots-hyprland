@@ -291,10 +291,9 @@ static struct wlr_backend *attempt_drm_backend(struct wl_display *display,
 #endif
 }
 
-static struct wlr_backend *attempt_libinput_backend(struct wl_display *display,
-		struct wlr_session *session) {
+static struct wlr_backend *attempt_libinput_backend(struct wlr_session *session) {
 #if WLR_HAS_LIBINPUT_BACKEND
-	return wlr_libinput_backend_create(display, session);
+	return wlr_libinput_backend_create(session);
 #else
 	wlr_log(WLR_ERROR, "Cannot create libinput backend: disabled at compile-time");
 	return NULL;
@@ -322,7 +321,7 @@ static bool attempt_backend_by_name(struct wl_display *display,
 		}
 
 		if (strcmp(name, "libinput") == 0) {
-			backend = attempt_libinput_backend(display, *session_ptr);
+			backend = attempt_libinput_backend(*session_ptr);
 		} else {
 			// attempt_drm_backend() adds the multi drm backends itself
 			return attempt_drm_backend(display, multi, *session_ptr) != NULL;
@@ -415,7 +414,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		goto error;
 	}
 
-	struct wlr_backend *libinput = attempt_libinput_backend(display, session);
+	struct wlr_backend *libinput = attempt_libinput_backend(session);
 	if (libinput) {
 		wlr_multi_backend_add(multi, libinput);
 		if (!auto_backend_monitor_create(multi, libinput)) {

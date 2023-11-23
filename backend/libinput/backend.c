@@ -115,12 +115,10 @@ static bool backend_start(struct wlr_backend *wlr_backend) {
 		}
 	}
 
-	struct wl_event_loop *event_loop =
-		wl_display_get_event_loop(backend->display);
 	if (backend->input_event) {
 		wl_event_source_remove(backend->input_event);
 	}
-	backend->input_event = wl_event_loop_add_fd(event_loop, libinput_fd,
+	backend->input_event = wl_event_loop_add_fd(backend->session->event_loop, libinput_fd,
 			WL_EVENT_READABLE, handle_libinput_readable, backend);
 	if (!backend->input_event) {
 		wlr_log(WLR_ERROR, "Failed to create input event on event loop");
@@ -144,7 +142,6 @@ static void backend_destroy(struct wlr_backend *wlr_backend) {
 
 	wlr_backend_finish(wlr_backend);
 
-	wl_list_remove(&backend->display_destroy.link);
 	wl_list_remove(&backend->session_destroy.link);
 	wl_list_remove(&backend->session_signal.link);
 
@@ -186,14 +183,7 @@ static void handle_session_destroy(struct wl_listener *listener, void *data) {
 	backend_destroy(&backend->backend);
 }
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_libinput_backend *backend =
-		wl_container_of(listener, backend, display_destroy);
-	backend_destroy(&backend->backend);
-}
-
-struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
-		struct wlr_session *session) {
+struct wlr_backend *wlr_libinput_backend_create(struct wlr_session *session) {
 	struct wlr_libinput_backend *backend = calloc(1, sizeof(*backend));
 	if (!backend) {
 		wlr_log(WLR_ERROR, "Allocation failed: %s", strerror(errno));
@@ -204,16 +194,12 @@ struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
 	wl_list_init(&backend->devices);
 
 	backend->session = session;
-	backend->display = display;
 
 	backend->session_signal.notify = session_signal;
 	wl_signal_add(&session->events.active, &backend->session_signal);
 
 	backend->session_destroy.notify = handle_session_destroy;
 	wl_signal_add(&session->events.destroy, &backend->session_destroy);
-
-	backend->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(display, &backend->display_destroy);
 
 	return &backend->backend;
 }

@@ -18,12 +18,10 @@ struct wlr_libinput_backend {
 	struct wlr_backend backend;
 
 	struct wlr_session *session;
-	struct wl_display *display;
 
 	struct libinput *libinput_context;
 	struct wl_event_source *input_event;
 
-	struct wl_listener display_destroy;
 	struct wl_listener session_destroy;
 	struct wl_listener session_signal;
 
