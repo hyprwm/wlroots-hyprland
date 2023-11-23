@@ -751,13 +751,17 @@ static void xdg_toplevel_request_resize(
 static void xdg_toplevel_request_maximize(
 		struct wl_listener *listener, void *data) {
 	/* This event is raised when a client would like to maximize itself,
-	 * typically because the user clicked on the maximize button on
-	 * client-side decorations. tinywl doesn't support maximization, but
-	 * to conform to xdg-shell protocol we still must send a configure.
-	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply. */
+	 * typically because the user clicked on the maximize button on client-side
+	 * decorations. tinywl doesn't support maximization, but to conform to
+	 * xdg-shell protocol we still must send a configure.
+	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
+	 * However, if the request was sent before an initial commit, we don't do
+	 * anything and let the client finish the initial surface setup. */
 	struct tinywl_toplevel *toplevel =
 		wl_container_of(listener, toplevel, request_maximize);
-	wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+	if (toplevel->xdg_toplevel->base->initial_commit) {
+		wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+	}
 }
 
 static void xdg_toplevel_request_fullscreen(
@@ -765,7 +769,9 @@ static void xdg_toplevel_request_fullscreen(
 	/* Just as with request_maximize, we must send a configure here. */
 	struct tinywl_toplevel *toplevel =
 		wl_container_of(listener, toplevel, request_fullscreen);
-	wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+	if (toplevel->xdg_toplevel->base->initial_commit) {
+		wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+	}
 }
 
 static void server_new_xdg_toplevel(struct wl_listener *listener, void *data) {
