@@ -194,20 +194,6 @@ struct wlr_output *wlr_output_from_resource(struct wl_resource *resource) {
 	return wl_resource_get_user_data(resource);
 }
 
-static void output_update_matrix(struct wlr_output *output) {
-	wlr_matrix_identity(output->transform_matrix);
-	if (output->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
-		int tr_width, tr_height;
-		wlr_output_transformed_resolution(output, &tr_width, &tr_height);
-
-		wlr_matrix_translate(output->transform_matrix,
-			output->width / 2.0, output->height / 2.0);
-		wlr_matrix_transform(output->transform_matrix, output->transform);
-		wlr_matrix_translate(output->transform_matrix,
-			- tr_width / 2.0, - tr_height / 2.0);
-	}
-}
-
 void wlr_output_enable(struct wlr_output *output, bool enable) {
 	wlr_output_state_set_enabled(&output->pending, enable);
 }
@@ -310,7 +296,6 @@ static void output_apply_state(struct wlr_output *output,
 
 	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
 		output->transform = state->transform;
-		output_update_matrix(output);
 	}
 
 	bool geometry_updated = state->committed &
@@ -370,7 +355,6 @@ static void output_apply_state(struct wlr_output *output,
 				output->refresh != refresh) {
 			output->width = width;
 			output->height = height;
-			output_update_matrix(output);
 
 			output->refresh = refresh;
 
