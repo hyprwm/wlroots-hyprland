@@ -195,19 +195,19 @@ static struct wlr_backend *attempt_headless_backend(
 	return backend;
 }
 
-static bool attempt_drm_backend(struct wl_display *display,
+static struct wlr_backend *attempt_drm_backend(struct wl_display *display,
 		struct wlr_backend *backend, struct wlr_session *session) {
 #if WLR_HAS_DRM_BACKEND
 	struct wlr_device *gpus[8];
 	ssize_t num_gpus = wlr_session_find_gpus(session, 8, gpus);
 	if (num_gpus < 0) {
 		wlr_log(WLR_ERROR, "Failed to find GPUs");
-		return false;
+		return NULL;
 	}
 
 	if (num_gpus == 0) {
 		wlr_log(WLR_ERROR, "Found 0 GPUs, cannot create backend");
-		return false;
+		return NULL;
 	} else {
 		wlr_log(WLR_INFO, "Found %zu GPUs", num_gpus);
 	}
@@ -236,10 +236,10 @@ static bool attempt_drm_backend(struct wl_display *display,
 		drm_backend_monitor_create(backend, primary_drm, session, display);
 	}
 
-	return true;
+	return primary_drm;
 #else
 	wlr_log(WLR_ERROR, "Cannot create DRM backend: disabled at compile-time");
-	return false;
+	return NULL;
 #endif
 }
 
@@ -277,7 +277,7 @@ static bool attempt_backend_by_name(struct wl_display *display,
 			backend = attempt_libinput_backend(display, *session_ptr);
 		} else {
 			// attempt_drm_backend() adds the multi drm backends itself
-			return attempt_drm_backend(display, multi, *session_ptr);
+			return attempt_drm_backend(display, multi, *session_ptr) != NULL;
 		}
 	} else {
 		wlr_log(WLR_ERROR, "unrecognized backend '%s'", name);
@@ -371,7 +371,8 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		goto error;
 	}
 
-	if (!attempt_drm_backend(display, multi, session)) {
+	struct wlr_backend *primary_drm = attempt_drm_backend(display, multi, session);
+	if (primary_drm == NULL) {
 		wlr_log(WLR_ERROR, "Failed to open any DRM device");
 		goto error;
 	}
