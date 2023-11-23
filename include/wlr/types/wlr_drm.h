@@ -29,6 +29,9 @@ struct wlr_drm_buffer {
  *
  * It only implements the minimum necessary for modern clients to behave
  * properly. In particular, flink handles are left unimplemented.
+ *
+ * Deprecated: this protocol is legacy and superseded by linux-dmabuf. The
+ * implementation will be dropped in a future wlroots version.
  */
 struct wlr_drm {
 	struct wl_global *global;
