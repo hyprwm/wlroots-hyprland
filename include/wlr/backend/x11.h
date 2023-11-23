@@ -17,7 +17,7 @@ struct wlr_input_device;
  * The `x11_display` argument is the name of the X Display socket. Set
  * to NULL for the default behaviour of XOpenDisplay().
  */
-struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
+struct wlr_backend *wlr_x11_backend_create(struct wl_event_loop *loop,
 	const char *x11_display);
 
 /**

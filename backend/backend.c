@@ -211,7 +211,8 @@ static struct wlr_backend *attempt_wl_backend(struct wl_display *display) {
 static struct wlr_backend *attempt_x11_backend(struct wl_display *display,
 		const char *x11_display) {
 #if WLR_HAS_X11_BACKEND
-	struct wlr_backend *backend = wlr_x11_backend_create(display, x11_display);
+	struct wl_event_loop *loop = wl_display_get_event_loop(display);
+	struct wlr_backend *backend = wlr_x11_backend_create(loop, x11_display);
 	if (backend == NULL) {
 		return NULL;
 	}

@@ -192,7 +192,7 @@ static void backend_destroy(struct wlr_backend *backend) {
 	if (x11->event_source) {
 		wl_event_source_remove(x11->event_source);
 	}
-	wl_list_remove(&x11->display_destroy.link);
+	wl_list_remove(&x11->event_loop_destroy.link);
 
 	wlr_drm_format_set_finish(&x11->primary_dri3_formats);
 	wlr_drm_format_set_finish(&x11->primary_shm_formats);
@@ -230,9 +230,8 @@ bool wlr_backend_is_x11(struct wlr_backend *backend) {
 	return backend->impl == &backend_impl;
 }
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_x11_backend *x11 =
-		wl_container_of(listener, x11, display_destroy);
+static void handle_event_loop_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_x11_backend *x11 = wl_container_of(listener, x11, event_loop_destroy);
 	backend_destroy(&x11->backend);
 }
 
@@ -391,7 +390,7 @@ static void x11_get_argb32(struct wlr_x11_backend *x11) {
 	free(reply);
 }
 
-struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
+struct wlr_backend *wlr_x11_backend_create(struct wl_event_loop *loop,
 		const char *x11_display) {
 	wlr_log(WLR_INFO, "Creating X11 backend");
 
@@ -401,7 +400,7 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 	}
 
 	wlr_backend_init(&x11->backend, &backend_impl);
-	x11->wl_display = display;
+	x11->event_loop = loop;
 	wl_list_init(&x11->outputs);
 
 	x11->xcb = xcb_connect(x11_display, NULL);
@@ -561,9 +560,8 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 	free(xi_reply);
 
 	int fd = xcb_get_file_descriptor(x11->xcb);
-	struct wl_event_loop *ev = wl_display_get_event_loop(display);
 	uint32_t events = WL_EVENT_READABLE | WL_EVENT_ERROR | WL_EVENT_HANGUP;
-	x11->event_source = wl_event_loop_add_fd(ev, fd, events, x11_event, x11);
+	x11->event_source = wl_event_loop_add_fd(loop, fd, events, x11_event, x11);
 	if (!x11->event_source) {
 		wlr_log(WLR_ERROR, "Could not create event source");
 		goto error_display;
@@ -644,8 +642,8 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 	wlr_keyboard_init(&x11->keyboard, &x11_keyboard_impl,
 		x11_keyboard_impl.name);
 
-	x11->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(display, &x11->display_destroy);
+	x11->event_loop_destroy.notify = handle_event_loop_destroy;
+	wl_event_loop_add_destroy_listener(loop, &x11->event_loop_destroy);
 
 	// Create an empty pixmap to be used as the cursor. The
 	// default GC foreground is 0, and that is what it will be

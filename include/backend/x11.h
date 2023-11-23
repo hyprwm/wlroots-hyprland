@@ -62,7 +62,7 @@ struct wlr_x11_touchpoint {
 
 struct wlr_x11_backend {
 	struct wlr_backend backend;
-	struct wl_display *wl_display;
+	struct wl_event_loop *event_loop;
 	bool started;
 
 	xcb_connection_t *xcb;
@@ -108,7 +108,7 @@ struct wlr_x11_backend {
 	uint8_t present_opcode;
 	uint8_t xinput_opcode;
 
-	struct wl_listener display_destroy;
+	struct wl_listener event_loop_destroy;
 };
 
 struct wlr_x11_buffer {
