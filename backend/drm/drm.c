@@ -114,6 +114,8 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 
 	if (drm->iface == &legacy_iface) {
 		drm->supports_tearing_page_flips = drmGetCap(drm->fd, DRM_CAP_ASYNC_PAGE_FLIP, &cap) == 0 && cap == 1;
+	} else {
+		drm->supports_tearing_page_flips = drmGetCap(drm->fd, DRM_CAP_ATOMIC_ASYNC_PAGE_FLIP, &cap) == 0 && cap == 1;
 	}
 
 	if (env_parse_bool("WLR_DRM_NO_MODIFIERS")) {
