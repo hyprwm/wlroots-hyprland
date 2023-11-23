@@ -22,6 +22,7 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include "backend/drm/drm.h"
+#include "backend/drm/fb.h"
 #include "backend/drm/iface.h"
 #include "backend/drm/util.h"
 #include "render/pixel_format.h"

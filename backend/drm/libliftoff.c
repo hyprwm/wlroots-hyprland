@@ -6,6 +6,7 @@
 #include <wlr/util/log.h>
 
 #include "backend/drm/drm.h"
+#include "backend/drm/fb.h"
 #include "backend/drm/iface.h"
 
 static bool init(struct wlr_drm_backend *drm) {

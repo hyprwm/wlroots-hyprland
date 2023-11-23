@@ -38,6 +38,7 @@ wlr_files += files(
 	'atomic.c',
 	'backend.c',
 	'drm.c',
+	'fb.c',
 	'legacy.c',
 	'monitor.c',
 	'properties.c',
