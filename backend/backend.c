@@ -229,7 +229,8 @@ static struct wlr_backend *attempt_x11_backend(struct wl_display *display,
 
 static struct wlr_backend *attempt_headless_backend(
 		struct wl_display *display) {
-	struct wlr_backend *backend = wlr_headless_backend_create(display);
+	struct wl_event_loop *loop = wl_display_get_event_loop(display);
+	struct wlr_backend *backend = wlr_headless_backend_create(loop);
 	if (backend == NULL) {
 		return NULL;
 	}

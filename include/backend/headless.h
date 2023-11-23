@@ -8,9 +8,9 @@
 
 struct wlr_headless_backend {
 	struct wlr_backend backend;
-	struct wl_display *display;
+	struct wl_event_loop *event_loop;
 	struct wl_list outputs;
-	struct wl_listener display_destroy;
+	struct wl_listener event_loop_destroy;
 	bool started;
 };
 

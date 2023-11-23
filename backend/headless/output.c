@@ -119,8 +119,7 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	wlr_output_state_init(&state);
 	wlr_output_state_set_custom_mode(&state, width, height, 0);
 
-	wlr_output_init(wlr_output, &backend->backend, &output_impl,
-		wl_display_get_event_loop(backend->display), &state);
+	wlr_output_init(wlr_output, &backend->backend, &output_impl, backend->event_loop, &state);
 	wlr_output_state_finish(&state);
 
 	output_update_refresh(output, 0);
@@ -135,8 +134,7 @@ struct wlr_output *wlr_headless_add_output(struct wlr_backend *wlr_backend,
 	snprintf(description, sizeof(description), "Headless output %zu", output_num);
 	wlr_output_set_description(wlr_output, description);
 
-	struct wl_event_loop *ev = wl_display_get_event_loop(backend->display);
-	output->frame_timer = wl_event_loop_add_timer(ev, signal_frame, output);
+	output->frame_timer = wl_event_loop_add_timer(backend->event_loop, signal_frame, output);
 
 	wl_list_insert(&backend->outputs, &output->link);
 
