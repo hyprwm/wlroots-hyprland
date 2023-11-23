@@ -146,6 +146,53 @@ static size_t parse_outputs_env(const char *name) {
 	return outputs;
 }
 
+/**
+ * Helper to destroy the multi backend when one of its nested backends is
+ * destroyed.
+ */
+struct wlr_auto_backend_monitor {
+	struct wlr_backend *multi;
+	struct wlr_backend *primary;
+
+	struct wl_listener multi_destroy;
+	struct wl_listener primary_destroy;
+};
+
+static void auto_backend_monitor_destroy(struct wlr_auto_backend_monitor *monitor) {
+	wl_list_remove(&monitor->multi_destroy.link);
+	wl_list_remove(&monitor->primary_destroy.link);
+	free(monitor);
+}
+
+static void monitor_handle_multi_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_auto_backend_monitor *monitor = wl_container_of(listener, monitor, multi_destroy);
+	auto_backend_monitor_destroy(monitor);
+}
+
+static void monitor_handle_primary_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_auto_backend_monitor *monitor = wl_container_of(listener, monitor, primary_destroy);
+	wlr_backend_destroy(monitor->multi);
+}
+
+static struct wlr_auto_backend_monitor *auto_backend_monitor_create(
+		struct wlr_backend *multi, struct wlr_backend *primary) {
+	struct wlr_auto_backend_monitor *monitor = calloc(1, sizeof(*monitor));
+	if (monitor == NULL) {
+		return NULL;
+	}
+
+	monitor->multi = multi;
+	monitor->primary = primary;
+
+	monitor->multi_destroy.notify = monitor_handle_multi_destroy;
+	wl_signal_add(&multi->events.destroy, &monitor->multi_destroy);
+
+	monitor->primary_destroy.notify = monitor_handle_primary_destroy;
+	wl_signal_add(&primary->events.destroy, &monitor->primary_destroy);
+
+	return monitor;
+}
+
 static struct wlr_backend *attempt_wl_backend(struct wl_display *display) {
 	struct wlr_backend *backend = wlr_wl_backend_create(display, NULL);
 	if (backend == NULL) {
@@ -335,8 +382,12 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		if (!wl_backend) {
 			goto error;
 		}
-
 		wlr_multi_backend_add(multi, wl_backend);
+
+		if (!auto_backend_monitor_create(multi, wl_backend)) {
+			goto error;
+		}
+
 		goto success;
 	}
 
@@ -347,8 +398,12 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		if (!x11_backend) {
 			goto error;
 		}
-
 		wlr_multi_backend_add(multi, x11_backend);
+
+		if (!auto_backend_monitor_create(multi, x11_backend)) {
+			goto error;
+		}
+
 		goto success;
 	}
 
@@ -362,6 +417,9 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 	struct wlr_backend *libinput = attempt_libinput_backend(display, session);
 	if (libinput) {
 		wlr_multi_backend_add(multi, libinput);
+		if (!auto_backend_monitor_create(multi, libinput)) {
+			goto error;
+		}
 	} else if (env_parse_bool("WLR_LIBINPUT_NO_DEVICES")) {
 		wlr_log(WLR_INFO, "WLR_LIBINPUT_NO_DEVICES is set, "
 			"starting without libinput backend");
@@ -374,6 +432,10 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 	struct wlr_backend *primary_drm = attempt_drm_backend(display, multi, session);
 	if (primary_drm == NULL) {
 		wlr_log(WLR_ERROR, "Failed to open any DRM device");
+		goto error;
+	}
+
+	if (!auto_backend_monitor_create(multi, primary_drm)) {
 		goto error;
 	}
 
