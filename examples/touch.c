@@ -274,7 +274,7 @@ int main(int argc, char *argv[]) {
 	wl_list_init(&state.touch_points);
 	wl_list_init(&state.touch);
 
-	struct wlr_backend *wlr = wlr_backend_autocreate(display, NULL);
+	struct wlr_backend *wlr = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
 	if (!wlr) {
 		exit(1);
 	}

@@ -181,7 +181,7 @@ int main(void) {
 		.last_frame = { 0 },
 		.display = display
 	};
-	struct wlr_backend *backend = wlr_backend_autocreate(display, NULL);
+	struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
 	if (!backend) {
 		exit(1);
 	}

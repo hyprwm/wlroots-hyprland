@@ -41,7 +41,7 @@ struct wlr_backend {
  * The multi-backend will be destroyed if one of the primary underlying
  * backends is destroyed (e.g. if the primary DRM device is unplugged).
  */
-struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
+struct wlr_backend *wlr_backend_autocreate(struct wl_event_loop *loop,
 	struct wlr_session **session_ptr);
 /**
  * Start the backend. This may signal new_input or new_output immediately, but

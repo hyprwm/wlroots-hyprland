@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
 
 	struct fullscreen_server server = {0};
 	server.wl_display = wl_display_create();
-	server.backend = wlr_backend_autocreate(server.wl_display, NULL);
+	server.backend = wlr_backend_autocreate(wl_display_get_event_loop(server.wl_display), NULL);
 	server.renderer = wlr_renderer_autocreate(server.backend);
 	wlr_renderer_init_wl_display(server.renderer, server.wl_display);
 	server.allocator = wlr_allocator_autocreate(server.backend,

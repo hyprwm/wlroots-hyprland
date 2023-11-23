@@ -851,7 +851,7 @@ int main(int argc, char *argv[]) {
 	 * output hardware. The autocreate option will choose the most suitable
 	 * backend based on the current environment, such as opening an X11 window
 	 * if an X11 server is running. */
-	server.backend = wlr_backend_autocreate(server.wl_display, NULL);
+	server.backend = wlr_backend_autocreate(wl_display_get_event_loop(server.wl_display), NULL);
 	if (server.backend == NULL) {
 		wlr_log(WLR_ERROR, "failed to create wlr_backend");
 		return 1;
