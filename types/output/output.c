@@ -146,7 +146,6 @@ void wlr_output_create_global(struct wlr_output *output, struct wl_display *disp
 	}
 
 	wl_list_remove(&output->display_destroy.link);
-	output->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &output->display_destroy);
 }
 
@@ -443,7 +442,9 @@ void wlr_output_init(struct wlr_output *output, struct wlr_backend *backend,
 	}
 
 	wlr_addon_set_init(&output->addons);
+
 	wl_list_init(&output->display_destroy.link);
+	output->display_destroy.notify = handle_display_destroy;
 
 	if (state) {
 		output_apply_state(output, state);
@@ -455,9 +456,10 @@ void wlr_output_destroy(struct wlr_output *output) {
 		return;
 	}
 
-	wl_list_remove(&output->display_destroy.link);
 	wlr_output_destroy_global(output);
 	output_clear_back_buffer(output);
+
+	wl_list_remove(&output->display_destroy.link);
 
 	wl_signal_emit_mutable(&output->events.destroy, output);
 	wlr_addon_set_finish(&output->addons);
