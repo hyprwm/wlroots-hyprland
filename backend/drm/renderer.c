@@ -13,8 +13,6 @@
 
 bool init_drm_renderer(struct wlr_drm_backend *drm,
 		struct wlr_drm_renderer *renderer) {
-	renderer->backend = drm;
-
 	renderer->wlr_rend = renderer_autocreate_with_drm_fd(drm->fd);
 	if (!renderer->wlr_rend) {
 		wlr_log(WLR_ERROR, "Failed to create renderer");

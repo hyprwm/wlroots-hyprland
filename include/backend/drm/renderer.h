@@ -13,8 +13,6 @@ struct wlr_drm_plane;
 struct wlr_buffer;
 
 struct wlr_drm_renderer {
-	struct wlr_drm_backend *backend;
-
 	struct wlr_renderer *wlr_rend;
 	struct wlr_allocator *allocator;
 };
