@@ -41,7 +41,7 @@ void finish_drm_renderer(struct wlr_drm_renderer *renderer) {
 	wlr_renderer_destroy(renderer->wlr_rend);
 }
 
-static void finish_drm_surface(struct wlr_drm_surface *surf) {
+void finish_drm_surface(struct wlr_drm_surface *surf) {
 	if (!surf || !surf->renderer) {
 		return;
 	}
@@ -119,18 +119,6 @@ error_dst:
 error_tex:
 	wlr_texture_destroy(tex);
 	return NULL;
-}
-
-
-void drm_plane_finish_surface(struct wlr_drm_plane *plane) {
-	if (!plane) {
-		return;
-	}
-
-	drm_fb_clear(&plane->queued_fb);
-	drm_fb_clear(&plane->current_fb);
-
-	finish_drm_surface(&plane->mgpu_surf);
 }
 
 bool drm_plane_pick_render_format(struct wlr_drm_plane *plane,

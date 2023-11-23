@@ -305,6 +305,17 @@ error_res:
 	return false;
 }
 
+static void drm_plane_finish_surface(struct wlr_drm_plane *plane) {
+	if (!plane) {
+		return;
+	}
+
+	drm_fb_clear(&plane->queued_fb);
+	drm_fb_clear(&plane->current_fb);
+
+	finish_drm_surface(&plane->mgpu_surf);
+}
+
 void finish_drm_resources(struct wlr_drm_backend *drm) {
 	if (!drm) {
 		return;
