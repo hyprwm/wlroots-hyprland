@@ -91,10 +91,8 @@ struct wlr_drm_backend {
 	size_t num_planes;
 	struct wlr_drm_plane *planes;
 
-	struct wl_display *display;
 	struct wl_event_source *drm_event;
 
-	struct wl_listener display_destroy;
 	struct wl_listener session_destroy;
 	struct wl_listener session_active;
 	struct wl_listener parent_destroy;

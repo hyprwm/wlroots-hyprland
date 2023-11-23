@@ -245,8 +245,7 @@ static struct wlr_backend *attempt_headless_backend(
 	return backend;
 }
 
-static struct wlr_backend *attempt_drm_backend(struct wl_display *display,
-		struct wlr_backend *backend, struct wlr_session *session) {
+static struct wlr_backend *attempt_drm_backend(struct wlr_backend *backend, struct wlr_session *session) {
 #if WLR_HAS_DRM_BACKEND
 	struct wlr_device *gpus[8];
 	ssize_t num_gpus = wlr_session_find_gpus(session, 8, gpus);
@@ -264,8 +263,7 @@ static struct wlr_backend *attempt_drm_backend(struct wl_display *display,
 
 	struct wlr_backend *primary_drm = NULL;
 	for (size_t i = 0; i < (size_t)num_gpus; ++i) {
-		struct wlr_backend *drm = wlr_drm_backend_create(display, session,
-			gpus[i], primary_drm);
+		struct wlr_backend *drm = wlr_drm_backend_create(session, gpus[i], primary_drm);
 		if (!drm) {
 			wlr_log(WLR_ERROR, "Failed to create DRM backend");
 			continue;
@@ -283,7 +281,7 @@ static struct wlr_backend *attempt_drm_backend(struct wl_display *display,
 	}
 
 	if (getenv("WLR_DRM_DEVICES") == NULL) {
-		drm_backend_monitor_create(backend, primary_drm, session, display);
+		drm_backend_monitor_create(backend, primary_drm, session);
 	}
 
 	return primary_drm;
@@ -326,7 +324,7 @@ static bool attempt_backend_by_name(struct wl_display *display,
 			backend = attempt_libinput_backend(*session_ptr);
 		} else {
 			// attempt_drm_backend() adds the multi drm backends itself
-			return attempt_drm_backend(display, multi, *session_ptr) != NULL;
+			return attempt_drm_backend(multi, *session_ptr) != NULL;
 		}
 	} else {
 		wlr_log(WLR_ERROR, "unrecognized backend '%s'", name);
@@ -431,7 +429,7 @@ struct wlr_backend *wlr_backend_autocreate(struct wl_display *display,
 		goto error;
 	}
 
-	struct wlr_backend *primary_drm = attempt_drm_backend(display, multi, session);
+	struct wlr_backend *primary_drm = attempt_drm_backend(multi, session);
 	if (primary_drm == NULL) {
 		wlr_log(WLR_ERROR, "Failed to open any DRM device");
 		goto error;

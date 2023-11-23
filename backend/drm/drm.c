@@ -1483,7 +1483,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 
 	free(current_modeinfo);
 
-	wlr_output_init(output, &drm->backend, &output_impl, wl_display_get_event_loop(drm->display), &state);
+	wlr_output_init(output, &drm->backend, &output_impl, drm->session->event_loop, &state);
 	wlr_output_state_finish(&state);
 
 	// fill out the modes

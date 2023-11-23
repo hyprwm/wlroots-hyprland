@@ -10,7 +10,6 @@ struct wlr_drm_backend_monitor {
 	struct wlr_backend *multi;
 	struct wlr_backend *primary_drm;
 	struct wlr_session *session;
-	struct wl_display *display;
 
 	struct wl_listener multi_destroy;
 	struct wl_listener primary_drm_destroy;
@@ -20,6 +19,6 @@ struct wlr_drm_backend_monitor {
 
 struct wlr_drm_backend_monitor *drm_backend_monitor_create(
 	struct wlr_backend *multi, struct wlr_backend *primary_drm,
-	struct wlr_session *session, struct wl_display *display);
+	struct wlr_session *session);
 
 #endif

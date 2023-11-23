@@ -47,7 +47,6 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 	wlr_backend_finish(backend);
 
-	wl_list_remove(&drm->display_destroy.link);
 	wl_list_remove(&drm->session_destroy.link);
 	wl_list_remove(&drm->session_active.link);
 	wl_list_remove(&drm->parent_destroy.link);
@@ -180,22 +179,15 @@ static void handle_session_destroy(struct wl_listener *listener, void *data) {
 	backend_destroy(&drm->backend);
 }
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_drm_backend *drm =
-		wl_container_of(listener, drm, display_destroy);
-	backend_destroy(&drm->backend);
-}
-
 static void handle_parent_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_drm_backend *drm =
 		wl_container_of(listener, drm, parent_destroy);
 	backend_destroy(&drm->backend);
 }
 
-struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
-		struct wlr_session *session, struct wlr_device *dev,
-		struct wlr_backend *parent) {
-	assert(display && session && dev);
+struct wlr_backend *wlr_drm_backend_create(struct wlr_session *session,
+		struct wlr_device *dev, struct wlr_backend *parent) {
+	assert(session && dev);
 	assert(!parent || wlr_backend_is_drm(parent));
 
 	char *name = drmGetDeviceNameFromFd2(dev->fd);
@@ -234,10 +226,7 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 	drm->dev_remove.notify = handle_dev_remove;
 	wl_signal_add(&dev->events.remove, &drm->dev_remove);
 
-	drm->display = display;
-
-	struct wl_event_loop *event_loop = wl_display_get_event_loop(display);
-	drm->drm_event = wl_event_loop_add_fd(event_loop, drm->fd,
+	drm->drm_event = wl_event_loop_add_fd(session->event_loop, drm->fd,
 		WL_EVENT_READABLE, handle_drm_event, drm);
 	if (!drm->drm_event) {
 		wlr_log(WLR_ERROR, "Failed to create DRM event source");
@@ -287,9 +276,6 @@ struct wlr_backend *wlr_drm_backend_create(struct wl_display *display,
 
 	drm->session_destroy.notify = handle_session_destroy;
 	wl_signal_add(&session->events.destroy, &drm->session_destroy);
-
-	drm->display_destroy.notify = handle_display_destroy;
-	wl_display_add_destroy_listener(display, &drm->display_destroy);
 
 	return &drm->backend;
 
