@@ -253,15 +253,6 @@ struct wlr_vk_renderer {
 	uint64_t timeline_point;
 
 	struct wlr_vk_render_buffer *current_render_buffer;
-	struct wlr_vk_command_buffer *current_command_buffer;
-
-	VkRect2D scissor; // needed for clearing
-
-	VkPipeline bound_pipe;
-
-	uint32_t render_width;
-	uint32_t render_height;
-	float projection[9];
 
 	size_t last_pool_size;
 	struct wl_list descriptor_pools; // wlr_vk_descriptor_pool.link
