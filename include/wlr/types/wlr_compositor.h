@@ -190,7 +190,12 @@ struct wlr_surface {
 		 */
 		struct wl_signal unmap;
 
-		struct wl_signal new_subsurface;
+		/**
+		 * Note: unlike other new_* signals, new_subsurface is emitted when
+		 * the subsurface is added to the parent surface's current state,
+		 * not when the object is created.
+		 */
+		struct wl_signal new_subsurface; // struct wlr_subsurface
 		struct wl_signal destroy;
 	} events;
 
