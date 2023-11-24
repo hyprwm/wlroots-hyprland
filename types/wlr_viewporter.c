@@ -136,22 +136,22 @@ static void viewport_handle_surface_commit(struct wl_listener *listener,
 	struct wlr_viewport *viewport =
 		wl_container_of(listener, viewport, surface_commit);
 
-	struct wlr_surface_state *current = &viewport->surface->pending;
+	struct wlr_surface_state *state = &viewport->surface->pending;
 
-	if (!current->viewport.has_dst &&
-			(floor(current->viewport.src.width) != current->viewport.src.width ||
-			floor(current->viewport.src.height) != current->viewport.src.height)) {
+	if (!state->viewport.has_dst &&
+			(floor(state->viewport.src.width) != state->viewport.src.width ||
+			floor(state->viewport.src.height) != state->viewport.src.height)) {
 		wl_resource_post_error(viewport->resource, WP_VIEWPORT_ERROR_BAD_SIZE,
 			"wl_viewport.set_source width and height must be integers "
 			"when the destination rectangle is unset");
 		return;
 	}
 
-	if (current->viewport.has_src && current->buffer != NULL &&
-			(current->viewport.src.x + current->viewport.src.width >
-				current->buffer_width ||
-			current->viewport.src.y + current->viewport.src.height >
-				current->buffer_height)) {
+	if (state->viewport.has_src && state->buffer != NULL &&
+			(state->viewport.src.x + state->viewport.src.width >
+				state->buffer_width ||
+			state->viewport.src.y + state->viewport.src.height >
+				state->buffer_height)) {
 		wl_resource_post_error(viewport->resource, WP_VIEWPORT_ERROR_OUT_OF_BUFFER,
 			"source rectangle out of buffer bounds");
 		return;
