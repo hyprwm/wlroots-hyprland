@@ -13,7 +13,7 @@ struct wlr_viewport {
 
 	struct wlr_addon addon;
 
-	struct wl_listener surface_commit;
+	struct wl_listener surface_client_commit;
 };
 
 static const struct wp_viewport_interface viewport_impl;
@@ -112,7 +112,7 @@ static void viewport_destroy(struct wlr_viewport *viewport) {
 	wlr_addon_finish(&viewport->addon);
 
 	wl_resource_set_user_data(viewport->resource, NULL);
-	wl_list_remove(&viewport->surface_commit.link);
+	wl_list_remove(&viewport->surface_client_commit.link);
 	free(viewport);
 }
 
@@ -131,10 +131,10 @@ static void viewport_handle_resource_destroy(struct wl_resource *resource) {
 	viewport_destroy(viewport);
 }
 
-static void viewport_handle_surface_commit(struct wl_listener *listener,
+static void viewport_handle_surface_client_commit(struct wl_listener *listener,
 		void *data) {
 	struct wlr_viewport *viewport =
-		wl_container_of(listener, viewport, surface_commit);
+		wl_container_of(listener, viewport, surface_client_commit);
 
 	struct wlr_surface_state *state = &viewport->surface->pending;
 
@@ -195,8 +195,8 @@ static void viewporter_handle_get_viewport(struct wl_client *client,
 
 	wlr_addon_init(&viewport->addon, &surface->addons, NULL, &surface_addon_impl);
 
-	viewport->surface_commit.notify = viewport_handle_surface_commit;
-	wl_signal_add(&surface->events.commit, &viewport->surface_commit);
+	viewport->surface_client_commit.notify = viewport_handle_surface_client_commit;
+	wl_signal_add(&surface->events.client_commit, &viewport->surface_client_commit);
 }
 
 static const struct wp_viewporter_interface viewporter_impl = {
