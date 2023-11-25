@@ -1122,8 +1122,6 @@ static void xwm_handle_map_request(struct wlr_xwm *xwm,
 		return;
 	}
 
-	wlr_xwayland_surface_set_withdrawn(xsurface, false);
-	wlr_xwayland_surface_restack(xsurface, NULL, XCB_STACK_MODE_BELOW);
 	xcb_map_window(xwm->xcb_conn, ev->window);
 }
 
@@ -1135,6 +1133,11 @@ static void xwm_handle_map_notify(struct wlr_xwm *xwm,
 	}
 
 	xwm_update_override_redirect(xsurface, ev->override_redirect);
+
+	if (!xsurface->override_redirect) {
+		wlr_xwayland_surface_set_withdrawn(xsurface, false);
+		wlr_xwayland_surface_restack(xsurface, NULL, XCB_STACK_MODE_BELOW);
+	}
 }
 
 static void xwm_handle_unmap_notify(struct wlr_xwm *xwm,
