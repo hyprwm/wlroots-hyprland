@@ -35,6 +35,8 @@ struct wlr_x11_output {
 	xcb_window_t win;
 	xcb_present_event_t present_event_id;
 
+	int32_t win_width, win_height;
+
 	struct wlr_pointer pointer;
 
 	struct wlr_touch touch;
