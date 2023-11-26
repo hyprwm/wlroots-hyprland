@@ -22,7 +22,7 @@
 #include <wlr/backend/drm.h>
 #endif
 
-#define LINUX_DMABUF_VERSION 4
+#define LINUX_DMABUF_VERSION 5
 
 struct wlr_linux_buffer_params_v1 {
 	struct wl_resource *resource;
