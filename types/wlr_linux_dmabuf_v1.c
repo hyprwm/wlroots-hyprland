@@ -14,7 +14,7 @@
 #include <wlr/types/wlr_output_layer.h>
 #include <wlr/util/log.h>
 #include <xf86drm.h>
-#include "linux-dmabuf-unstable-v1-protocol.h"
+#include "linux-dmabuf-v1-protocol.h"
 #include "render/drm_format_set.h"
 #include "util/shm.h"
 

@@ -21,7 +21,7 @@
 #include "render/pixel_format.h"
 
 #include "drm-client-protocol.h"
-#include "linux-dmabuf-unstable-v1-client-protocol.h"
+#include "linux-dmabuf-v1-client-protocol.h"
 #include "pointer-gestures-unstable-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
 #include "xdg-activation-v1-client-protocol.h"

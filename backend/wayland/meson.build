@@ -14,7 +14,7 @@ wlr_files += files(
 
 client_protos = [
 	'drm',
-	'linux-dmabuf-unstable-v1',
+	'linux-dmabuf-v1',
 	'pointer-gestures-unstable-v1',
 	'presentation-time',
 	'relative-pointer-unstable-v1',

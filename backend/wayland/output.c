@@ -20,7 +20,7 @@
 #include "render/wlr_renderer.h"
 #include "types/wlr_output.h"
 
-#include "linux-dmabuf-unstable-v1-client-protocol.h"
+#include "linux-dmabuf-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
 #include "viewporter-client-protocol.h"
 #include "xdg-activation-v1-client-protocol.h"
