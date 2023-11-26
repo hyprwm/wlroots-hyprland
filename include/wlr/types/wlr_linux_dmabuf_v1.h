@@ -6,8 +6,8 @@
 #error "Add -DWLR_USE_UNSTABLE to enable unstable wlroots features"
 #endif
 
-#ifndef WLR_TYPES_WLR_LINUX_DMABUF_H
-#define WLR_TYPES_WLR_LINUX_DMABUF_H
+#ifndef WLR_TYPES_WLR_LINUX_DMABUF_V1_H
+#define WLR_TYPES_WLR_LINUX_DMABUF_V1_H
 
 #include <stdint.h>
 #include <sys/stat.h>
