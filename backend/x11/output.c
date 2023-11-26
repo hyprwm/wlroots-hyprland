@@ -113,6 +113,9 @@ static void output_destroy(struct wlr_output *wlr_output) {
 
 static bool output_test(struct wlr_output *wlr_output,
 		const struct wlr_output_state *state) {
+	struct wlr_x11_output *output = get_x11_output_from_output(wlr_output);
+	struct wlr_x11_backend *x11 = output->x11;
+
 	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
@@ -128,6 +131,22 @@ static bool output_test(struct wlr_output *wlr_output,
 	if (state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
 		if (!state->adaptive_sync_enabled) {
 			wlr_log(WLR_DEBUG, "Disabling adaptive sync is not supported");
+			return false;
+		}
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		struct wlr_buffer *buffer = state->buffer;
+		struct wlr_dmabuf_attributes dmabuf_attrs;
+		struct wlr_shm_attributes shm_attrs;
+		uint32_t format = DRM_FORMAT_INVALID;
+		if (wlr_buffer_get_dmabuf(buffer, &dmabuf_attrs)) {
+			format = dmabuf_attrs.format;
+		} else if (wlr_buffer_get_shm(buffer, &shm_attrs)) {
+			format = shm_attrs.format;
+		}
+		if (format != x11->x11_format->drm) {
+			wlr_log(WLR_DEBUG, "Unsupported buffer format");
 			return false;
 		}
 	}
