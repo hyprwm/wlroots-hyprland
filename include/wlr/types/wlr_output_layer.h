@@ -18,8 +18,8 @@
  * An output layer.
  *
  * Output layers are displayed between the output primary buffer (see
- * wlr_output_attach_buffer() and wlr_output_attach_render()) and the cursor
- * buffer. They can offload some rendering work to the backend.
+ * wlr_output_attach_buffer()) and the cursor buffer. They can offload some
+ * rendering work to the backend.
  *
  * To configure output layers, callers should call wlr_output_layer_create() to
  * create layers, attach struct wlr_output_layer_state onto

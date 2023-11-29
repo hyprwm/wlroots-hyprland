@@ -57,32 +57,6 @@ void output_clear_back_buffer(struct wlr_output *output) {
 	output->back_buffer = NULL;
 }
 
-bool wlr_output_attach_render(struct wlr_output *output, int *buffer_age) {
-	assert(output->back_buffer == NULL);
-
-	if (!wlr_output_configure_primary_swapchain(output, &output->pending,
-			&output->swapchain)) {
-		return false;
-	}
-
-	struct wlr_renderer *renderer = output->renderer;
-	assert(renderer != NULL);
-
-	struct wlr_buffer *buffer =
-		wlr_swapchain_acquire(output->swapchain, buffer_age);
-	if (buffer == NULL) {
-		return false;
-	}
-
-	if (!renderer_bind_buffer(renderer, buffer)) {
-		wlr_buffer_unlock(buffer);
-		return false;
-	}
-
-	output->back_buffer = buffer;
-	return true;
-}
-
 static struct wlr_buffer *output_acquire_empty_buffer(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	assert(!(state->committed & WLR_OUTPUT_STATE_BUFFER));
@@ -247,13 +221,24 @@ uint32_t wlr_output_preferred_read_format(struct wlr_output *output) {
 		return DRM_FORMAT_INVALID;
 	}
 
-	if (!wlr_output_attach_render(output, NULL)) {
+	if (!wlr_output_configure_primary_swapchain(output, &output->pending, &output->swapchain)) {
+		return false;
+	}
+
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, NULL);
+	if (buffer == NULL) {
+		return false;
+	}
+
+	if (!wlr_renderer_begin_with_buffer(renderer, buffer)) {
+		wlr_buffer_unlock(buffer);
 		return false;
 	}
 
 	uint32_t fmt = renderer->impl->preferred_read_format(renderer);
 
-	output_clear_back_buffer(output);
+	wlr_renderer_end(renderer);
+	wlr_buffer_unlock(buffer);
 
 	return fmt;
 }

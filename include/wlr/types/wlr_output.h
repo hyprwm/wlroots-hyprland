@@ -120,9 +120,8 @@ struct wlr_render_pass;
  * The `frame` event will be emitted when it is a good time for the compositor
  * to submit a new frame.
  *
- * To render a new frame, compositors should call wlr_output_attach_render(),
- * render and call wlr_output_commit(). No rendering should happen outside a
- * `frame` event handler or before wlr_output_attach_render().
+ * To render a new frame, compositors should call wlr_output_begin_render_pass(),
+ * perform rendering on that render pass and finally call wlr_output_commit().
  */
 struct wlr_output {
 	const struct wlr_output_impl *impl;
