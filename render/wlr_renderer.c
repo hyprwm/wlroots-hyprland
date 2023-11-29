@@ -81,7 +81,6 @@ bool wlr_renderer_begin_with_buffer(struct wlr_renderer *r,
 	}
 
 	r->rendering = true;
-	r->rendering_with_buffer = true;
 	return true;
 }
 
@@ -93,11 +92,7 @@ void wlr_renderer_end(struct wlr_renderer *r) {
 	}
 
 	r->rendering = false;
-
-	if (r->rendering_with_buffer) {
-		renderer_bind_buffer(r, NULL);
-		r->rendering_with_buffer = false;
-	}
+	renderer_bind_buffer(r, NULL);
 }
 
 const uint32_t *wlr_renderer_get_shm_texture_formats(struct wlr_renderer *r,

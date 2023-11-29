@@ -41,7 +41,6 @@ struct wlr_renderer {
 	const struct wlr_renderer_impl *impl;
 
 	bool rendering;
-	bool rendering_with_buffer;
 };
 
 /**
