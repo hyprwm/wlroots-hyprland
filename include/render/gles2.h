@@ -148,6 +148,8 @@ const struct wlr_gles2_pixel_format *get_gles2_format_from_gl(
 const uint32_t *get_gles2_shm_formats(const struct wlr_gles2_renderer *renderer,
 	size_t *len);
 
+GLuint gles2_buffer_get_fbo(struct wlr_gles2_buffer *buffer);
+
 struct wlr_gles2_renderer *gles2_get_renderer(
 	struct wlr_renderer *wlr_renderer);
 struct wlr_gles2_render_timer *gles2_get_render_timer(

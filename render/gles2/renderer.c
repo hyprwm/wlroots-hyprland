@@ -93,6 +93,39 @@ static const struct wlr_addon_interface buffer_addon_impl = {
 	.destroy = handle_buffer_destroy,
 };
 
+GLuint gles2_buffer_get_fbo(struct wlr_gles2_buffer *buffer) {
+	if (buffer->fbo) {
+		return buffer->fbo;
+	}
+
+	push_gles2_debug(buffer->renderer);
+
+	if (!buffer->rbo) {
+		glGenRenderbuffers(1, &buffer->rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, buffer->rbo);
+		buffer->renderer->procs.glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER,
+			buffer->image);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	}
+
+	glGenFramebuffers(1, &buffer->fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, buffer->fbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_RENDERBUFFER, buffer->rbo);
+	GLenum fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
+		wlr_log(WLR_ERROR, "Failed to create FBO");
+		glDeleteFramebuffers(1, &buffer->fbo);
+		buffer->fbo = 0;
+	}
+
+	pop_gles2_debug(buffer->renderer);
+
+	return buffer->fbo;
+}
+
 static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *renderer,
 		struct wlr_buffer *wlr_buffer) {
 	struct wlr_addon *addon =
@@ -127,28 +160,6 @@ static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *
 		goto error_image;
 	}
 
-	push_gles2_debug(renderer);
-
-	glGenRenderbuffers(1, &buffer->rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, buffer->rbo);
-	renderer->procs.glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER,
-		buffer->image);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-	glGenFramebuffers(1, &buffer->fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, buffer->fbo);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_RENDERBUFFER, buffer->rbo);
-	GLenum fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	pop_gles2_debug(renderer);
-
-	if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
-		wlr_log(WLR_ERROR, "Failed to create FBO");
-		goto error_image;
-	}
-
 	wlr_addon_init(&buffer->addon, &wlr_buffer->addons, renderer,
 		&buffer_addon_impl);
 
@@ -159,8 +170,6 @@ static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *
 
 	return buffer;
 
-error_image:
-	wlr_egl_destroy_image(renderer->egl, buffer->image);
 error_buffer:
 	free(buffer);
 	return NULL;
@@ -189,6 +198,11 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 
 	wlr_egl_make_current(renderer->egl);
 
+	GLint fbo = gles2_buffer_get_fbo(renderer->current_buffer);
+	if (!fbo) {
+		return false;
+	}
+
 	struct wlr_gles2_buffer *buffer = get_or_create_buffer(renderer, wlr_buffer);
 	if (buffer == NULL) {
 		return false;
@@ -198,7 +212,7 @@ static bool gles2_bind_buffer(struct wlr_renderer *wlr_renderer,
 	renderer->current_buffer = buffer;
 
 	push_gles2_debug(renderer);
-	glBindFramebuffer(GL_FRAMEBUFFER, renderer->current_buffer->fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	pop_gles2_debug(renderer);
 
 	return true;
@@ -872,5 +886,5 @@ bool wlr_gles2_renderer_check_ext(struct wlr_renderer *wlr_renderer,
 GLuint wlr_gles2_renderer_get_current_fbo(struct wlr_renderer *wlr_renderer) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 	assert(renderer->current_buffer);
-	return renderer->current_buffer->fbo;
+	return gles2_buffer_get_fbo(renderer->current_buffer);
 }
