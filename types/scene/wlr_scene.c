@@ -1719,10 +1719,6 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		scene_output->prev_scanout = scanout;
 		wlr_log(WLR_DEBUG, "Direct scan-out %s",
 			scanout ? "enabled" : "disabled");
-		if (!scanout) {
-			// When exiting direct scan-out, damage everything
-			wlr_damage_ring_add_whole(&scene_output->damage_ring);
-		}
 	}
 
 	if (scanout) {
