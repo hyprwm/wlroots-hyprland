@@ -1638,8 +1638,6 @@ bool wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		goto out;
 	}
 
-	wlr_damage_ring_rotate(&scene_output->damage_ring);
-
 out:
 	wlr_output_state_finish(&state);
 	return ok;
@@ -1786,8 +1784,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		return false;
 	}
 
-	int buffer_age;
-	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, &buffer_age);
+	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, NULL);
 	if (buffer == NULL) {
 		return false;
 	}
@@ -1811,9 +1808,11 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	}
 
 	render_data.render_pass = render_pass;
+
+	output_state_apply_damage(&render_data, state);
 	pixman_region32_init(&render_data.damage);
-	wlr_damage_ring_get_buffer_damage(&scene_output->damage_ring,
-		buffer_age, &render_data.damage);
+	wlr_damage_ring_rotate_buffer(&scene_output->damage_ring, buffer,
+		&render_data.damage);
 
 	pixman_region32_t background;
 	pixman_region32_init(&background);
@@ -1899,12 +1898,15 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 
 	if (!wlr_render_pass_submit(render_pass)) {
 		wlr_buffer_unlock(buffer);
+
+		// if we failed to render the buffer, it will have undefined contents
+		// Trash the damage ring
+		wlr_damage_ring_add_whole(&scene_output->damage_ring);
 		return false;
 	}
 
 	wlr_output_state_set_buffer(state, buffer);
 	wlr_buffer_unlock(buffer);
-	output_state_apply_damage(&render_data, state);
 
 	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_HIGHLIGHT &&
 			!wl_list_empty(&scene_output->damage_highlight_regions)) {
