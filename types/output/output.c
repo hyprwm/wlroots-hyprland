@@ -440,7 +440,6 @@ void wlr_output_destroy(struct wlr_output *output) {
 	}
 
 	wlr_output_destroy_global(output);
-	output_clear_back_buffer(output);
 
 	wl_list_remove(&output->display_destroy.link);
 
@@ -761,12 +760,6 @@ bool wlr_output_test_state(struct wlr_output *output,
 bool wlr_output_test(struct wlr_output *output) {
 	struct wlr_output_state state = output->pending;
 
-	if (output->back_buffer != NULL) {
-		assert((state.committed & WLR_OUTPUT_STATE_BUFFER) == 0);
-		state.committed |= WLR_OUTPUT_STATE_BUFFER;
-		state.buffer = output->back_buffer;
-	}
-
 	return wlr_output_test_state(output, &state);
 }
 
@@ -840,22 +833,12 @@ bool wlr_output_commit(struct wlr_output *output) {
 	struct wlr_output_state state = {0};
 	output_state_move(&state, &output->pending);
 
-	// output_clear_back_buffer detaches the buffer from the renderer. This is
-	// important to do before calling impl->commit(), because this marks an
-	// implicit rendering synchronization point. The backend needs it to avoid
-	// displaying a buffer when asynchronous GPU work isn't finished.
-	if (output->back_buffer != NULL) {
-		wlr_output_state_set_buffer(&state, output->back_buffer);
-		output_clear_back_buffer(output);
-	}
-
 	bool ok = wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 	return ok;
 }
 
 void wlr_output_rollback(struct wlr_output *output) {
-	output_clear_back_buffer(output);
 	output_state_clear(&output->pending);
 }
 

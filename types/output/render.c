@@ -16,7 +16,6 @@
 bool wlr_output_init_render(struct wlr_output *output,
 		struct wlr_allocator *allocator, struct wlr_renderer *renderer) {
 	assert(allocator != NULL && renderer != NULL);
-	assert(output->back_buffer == NULL);
 
 	uint32_t backend_caps = backend_get_buffer_caps(output->backend);
 	uint32_t renderer_caps = renderer_get_render_buffer_caps(renderer);
@@ -41,20 +40,6 @@ bool wlr_output_init_render(struct wlr_output *output,
 	output->renderer = renderer;
 
 	return true;
-}
-
-void output_clear_back_buffer(struct wlr_output *output) {
-	if (output->back_buffer == NULL) {
-		return;
-	}
-
-	struct wlr_renderer *renderer = output->renderer;
-	assert(renderer != NULL);
-
-	renderer_bind_buffer(renderer, NULL);
-
-	wlr_buffer_unlock(output->back_buffer);
-	output->back_buffer = NULL;
 }
 
 static struct wlr_buffer *output_acquire_empty_buffer(struct wlr_output *output,
