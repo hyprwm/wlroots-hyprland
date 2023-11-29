@@ -122,6 +122,11 @@ static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *
 		goto error_buffer;
 	}
 
+	if (external_only) {
+		wlr_log(WLR_ERROR, "DMA-BUF format is external-only");
+		goto error_image;
+	}
+
 	push_gles2_debug(renderer);
 
 	glGenRenderbuffers(1, &buffer->rbo);
