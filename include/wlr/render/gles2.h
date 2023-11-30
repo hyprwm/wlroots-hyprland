@@ -14,6 +14,15 @@
 
 struct wlr_egl;
 
+/**
+ * OpenGL ES 2 renderer.
+ *
+ * Care must be taken to avoid stepping each other's toes with EGL contexts:
+ * the current EGL is global state. The GLES2 renderer operations will save
+ * and restore any previous EGL context when called. A render pass is seen as
+ * a single operation.
+ */
+
 struct wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd);
 struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl);
 
