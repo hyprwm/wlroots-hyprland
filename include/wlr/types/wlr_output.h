@@ -722,6 +722,7 @@ bool wlr_output_configure_primary_swapchain(struct wlr_output *output,
  * frames or -1 if unknown. This is useful for damage tracking.
  */
 struct wlr_render_pass *wlr_output_begin_render_pass(struct wlr_output *output,
-	struct wlr_output_state *state, int *buffer_age, struct wlr_render_timer *timer);
+	struct wlr_output_state *state, int *buffer_age,
+	struct wlr_buffer_pass_options *render_options);
 
 #endif
