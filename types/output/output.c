@@ -439,11 +439,12 @@ void wlr_output_destroy(struct wlr_output *output) {
 		return;
 	}
 
+	wl_signal_emit_mutable(&output->events.destroy, output);
+
 	wlr_output_destroy_global(output);
 
 	wl_list_remove(&output->display_destroy.link);
 
-	wl_signal_emit_mutable(&output->events.destroy, output);
 	wlr_addon_set_finish(&output->addons);
 
 	// The backend is responsible for free-ing the list of modes
