@@ -94,6 +94,11 @@ static const struct wlr_addon_interface buffer_addon_impl = {
 };
 
 GLuint gles2_buffer_get_fbo(struct wlr_gles2_buffer *buffer) {
+	if (buffer->external_only) {
+		wlr_log(WLR_ERROR, "DMA-BUF format is external-only");
+		return 0;
+	}
+
 	if (buffer->fbo) {
 		return buffer->fbo;
 	}
@@ -148,16 +153,10 @@ static struct wlr_gles2_buffer *get_or_create_buffer(struct wlr_gles2_renderer *
 		goto error_buffer;
 	}
 
-	bool external_only;
 	buffer->image = wlr_egl_create_image_from_dmabuf(renderer->egl,
-		&dmabuf, &external_only);
+		&dmabuf, &buffer->external_only);
 	if (buffer->image == EGL_NO_IMAGE_KHR) {
 		goto error_buffer;
-	}
-
-	if (external_only) {
-		wlr_log(WLR_ERROR, "DMA-BUF format is external-only");
-		goto error_image;
 	}
 
 	wlr_addon_init(&buffer->addon, &wlr_buffer->addons, renderer,

@@ -103,6 +103,7 @@ struct wlr_gles2_buffer {
 	struct wlr_buffer *buffer;
 	struct wlr_gles2_renderer *renderer;
 	struct wl_list link; // wlr_gles2_renderer.buffers
+	bool external_only;
 
 	EGLImageKHR image;
 	GLuint rbo;
