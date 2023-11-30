@@ -433,6 +433,9 @@ static void gles2_destroy(struct wlr_renderer *wlr_renderer) {
 static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_renderer,
 		struct wlr_buffer *wlr_buffer, const struct wlr_buffer_pass_options *options) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
+
+	struct wlr_egl_context prev_ctx = {0};
+	wlr_egl_save_context(&prev_ctx);
 	if (!wlr_egl_make_current(renderer->egl)) {
 		return NULL;
 	}
@@ -448,7 +451,7 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 		return NULL;
 	}
 
-	struct wlr_gles2_render_pass *pass = begin_gles2_buffer_pass(buffer, timer);
+	struct wlr_gles2_render_pass *pass = begin_gles2_buffer_pass(buffer, &prev_ctx, timer);
 	if (!pass) {
 		return NULL;
 	}

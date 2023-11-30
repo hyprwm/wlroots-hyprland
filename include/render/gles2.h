@@ -15,6 +15,8 @@
 #include <wlr/util/addon.h>
 #include <wlr/util/log.h>
 
+#include "render/egl.h"
+
 // mesa ships old GL headers that don't include this type, so for distros that use headers from
 // mesa we need to def it ourselves until they update.
 // https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/23144
@@ -132,6 +134,7 @@ struct wlr_gles2_render_pass {
 	struct wlr_render_pass base;
 	struct wlr_gles2_buffer *buffer;
 	float projection_matrix[9];
+	struct wlr_egl_context prev_ctx;
 	struct wlr_gles2_render_timer *timer;
 };
 
@@ -164,6 +167,6 @@ void push_gles2_debug_(struct wlr_gles2_renderer *renderer,
 void pop_gles2_debug(struct wlr_gles2_renderer *renderer);
 
 struct wlr_gles2_render_pass *begin_gles2_buffer_pass(struct wlr_gles2_buffer *buffer,
-	struct wlr_gles2_render_timer *timer);
+	struct wlr_egl_context *prev_ctx, struct wlr_gles2_render_timer *timer);
 
 #endif

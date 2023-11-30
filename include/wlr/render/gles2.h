@@ -21,6 +21,10 @@ struct wlr_egl;
  * the current EGL is global state. The GLES2 renderer operations will save
  * and restore any previous EGL context when called. A render pass is seen as
  * a single operation.
+ *
+ * The GLES2 renderer doesn't support arbitrarily nested render passes. It
+ * supports a subset only: after a nested render pass is created, any parent
+ * render pass can't be used before the nested render pass is submitted.
  */
 
 struct wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd);
