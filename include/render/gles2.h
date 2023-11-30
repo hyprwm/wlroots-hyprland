@@ -118,19 +118,14 @@ struct wlr_gles2_texture {
 	struct wlr_gles2_renderer *renderer;
 	struct wl_list link; // wlr_gles2_renderer.textures
 
-	// Basically:
-	//   GL_TEXTURE_2D == mutable
-	//   GL_TEXTURE_EXTERNAL_OES == immutable
 	GLenum target;
 	bool owns_tex;
 	GLuint tex;
 
 	bool has_alpha;
 
-	// Only affects target == GL_TEXTURE_2D
-	uint32_t drm_format; // used to interpret upload data
-	// If imported from a wlr_buffer
-	struct wlr_gles2_buffer *buffer;
+	uint32_t drm_format; // for mutable textures only, used to interpret upload data
+	struct wlr_gles2_buffer *buffer; // for DMA-BUF imports only
 };
 
 struct wlr_gles2_render_pass {

@@ -32,7 +32,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 		struct wlr_buffer *buffer, const pixman_region32_t *damage) {
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
 
-	if (texture->target != GL_TEXTURE_2D || texture->buffer) {
+	if (texture->drm_format == DRM_FORMAT_INVALID) {
 		return false;
 	}
 
