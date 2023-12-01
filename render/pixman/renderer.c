@@ -115,8 +115,16 @@ static bool texture_read_pixels(struct wlr_texture *wlr_texture,
 	return true;
 }
 
+static uint32_t pixman_texture_preferred_read_format(struct wlr_texture *wlr_texture) {
+	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
+
+	pixman_format_code_t pixman_format = pixman_image_get_format(texture->image);
+	return get_drm_format_from_pixman(pixman_format);
+}
+
 static const struct wlr_texture_impl texture_impl = {
 	.read_pixels = texture_read_pixels,
+	.preferred_read_format = pixman_texture_preferred_read_format,
 	.destroy = texture_destroy,
 };
 

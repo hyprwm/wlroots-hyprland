@@ -262,9 +262,15 @@ static bool vulkan_texture_read_pixels(struct wlr_texture *wlr_texture,
 		options->format, options->stride, src.width, src.height, src.x, src.y, 0, 0, p);
 }
 
+static uint32_t vulkan_texture_preferred_read_format(struct wlr_texture *wlr_texture) {
+	struct wlr_vk_texture *texture = vulkan_get_texture(wlr_texture);
+	return texture->format->drm;
+}
+
 static const struct wlr_texture_impl texture_impl = {
 	.update_from_buffer = vulkan_texture_update_from_buffer,
 	.read_pixels = vulkan_texture_read_pixels,
+	.preferred_read_format = vulkan_texture_preferred_read_format,
 	.destroy = vulkan_texture_unref,
 };
 

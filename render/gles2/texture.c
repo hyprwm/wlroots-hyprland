@@ -195,6 +195,8 @@ static bool gles2_texture_read_pixels(struct wlr_texture *wlr_texture,
 	}
 
 	push_gles2_debug(texture->renderer);
+	struct wlr_egl_context prev_ctx;
+	wlr_egl_save_context(&prev_ctx);
 
 	if (!wlr_egl_make_current(texture->renderer->egl)) {
 		return false;
@@ -228,15 +230,58 @@ static bool gles2_texture_read_pixels(struct wlr_texture *wlr_texture,
 		}
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	wlr_egl_restore_context(&prev_ctx);
 	pop_gles2_debug(texture->renderer);
 
 	return glGetError() == GL_NO_ERROR;
 }
 
+static uint32_t gles2_texture_preferred_read_format(struct wlr_texture *wlr_texture) {
+	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
+
+	push_gles2_debug(texture->renderer);
+	struct wlr_egl_context prev_ctx;
+	wlr_egl_save_context(&prev_ctx);
+
+	uint32_t fmt = DRM_FORMAT_INVALID;
+
+	if (!wlr_egl_make_current(texture->renderer->egl)) {
+		goto out;
+	}
+
+	if (!gles2_texture_bind(texture)) {
+		goto out;
+	}
+
+	GLint gl_format = -1, gl_type = -1, alpha_size = -1;
+	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &gl_format);
+	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &gl_type);
+	glGetIntegerv(GL_ALPHA_BITS, &alpha_size);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pop_gles2_debug(texture->renderer);
+
+	const struct wlr_gles2_pixel_format *pix_fmt =
+		get_gles2_format_from_gl(gl_format, gl_type, alpha_size > 0);
+	if (pix_fmt != NULL) {
+		fmt = pix_fmt->drm_format;
+		goto out;
+	}
+
+	if (texture->renderer->exts.EXT_read_format_bgra) {
+		fmt = DRM_FORMAT_XRGB8888;
+		goto out;
+	}
+
+out:
+	wlr_egl_restore_context(&prev_ctx);
+	return fmt;
+}
+
 static const struct wlr_texture_impl texture_impl = {
 	.update_from_buffer = gles2_texture_update_from_buffer,
 	.read_pixels = gles2_texture_read_pixels,
+	.preferred_read_format = gles2_texture_preferred_read_format,
 	.destroy = handle_gles2_texture_destroy,
 };
 
