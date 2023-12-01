@@ -26,6 +26,15 @@ void wlr_texture_destroy(struct wlr_texture *texture) {
 	}
 }
 
+bool wlr_texture_read_pixels(struct wlr_texture *texture,
+		const struct wlr_texture_read_pixels_options *options) {
+	if (!texture->impl->read_pixels) {
+		return false;
+	}
+
+	return texture->impl->read_pixels(texture, options);
+}
+
 struct wlr_texture *wlr_texture_from_pixels(struct wlr_renderer *renderer,
 		uint32_t fmt, uint32_t stride, uint32_t width, uint32_t height,
 		const void *data) {

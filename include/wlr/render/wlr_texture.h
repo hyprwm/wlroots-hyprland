@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <wayland-server-core.h>
 #include <wlr/render/dmabuf.h>
+#include <wlr/util/box.h>
 
 struct wlr_buffer;
 struct wlr_renderer;
@@ -24,6 +25,22 @@ struct wlr_texture {
 
 	struct wlr_renderer *renderer;
 };
+
+struct wlr_texture_read_pixels_options {
+	/** Memory location to read pixels into */
+	void *data;
+	/** Format used for writing the pixel data */
+	uint32_t format;
+	/** Stride in bytes for the data */
+	uint32_t stride;
+	/** Destination offsets */
+	uint32_t dst_x, dst_y;
+	/** Source box of the texture to read from. If empty, the full texture is assumed. */
+	const struct wlr_box src_box;
+};
+
+bool wlr_texture_read_pixels(struct wlr_texture *texture,
+	const struct wlr_texture_read_pixels_options *options);
 
 /**
  * Create a new texture from raw pixel data. `stride` is in bytes. The returned
