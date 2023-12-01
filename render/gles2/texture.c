@@ -110,9 +110,7 @@ void gles2_texture_destroy(struct wlr_gles2_texture *texture) {
 	wl_list_remove(&texture->link);
 	if (texture->buffer != NULL) {
 		wlr_buffer_unlock(texture->buffer->buffer);
-	}
-
-	if (texture->owns_tex) {
+	} else {
 		struct wlr_egl_context prev_ctx;
 		wlr_egl_save_context(&prev_ctx);
 		wlr_egl_make_current(texture->renderer->egl);
@@ -120,6 +118,7 @@ void gles2_texture_destroy(struct wlr_gles2_texture *texture) {
 		push_gles2_debug(texture->renderer);
 
 		glDeleteTextures(1, &texture->tex);
+		glDeleteFramebuffers(1, &texture->fbo);
 
 		pop_gles2_debug(texture->renderer);
 
@@ -133,8 +132,111 @@ static void handle_gles2_texture_destroy(struct wlr_texture *wlr_texture) {
 	gles2_texture_destroy(gles2_get_texture(wlr_texture));
 }
 
+static bool gles2_texture_bind(struct wlr_gles2_texture *texture) {
+	if (texture->fbo) {
+		glBindFramebuffer(GL_FRAMEBUFFER, texture->fbo);
+	} else if (texture->buffer) {
+		if (texture->buffer->external_only) {
+			return false;
+		}
+
+		GLuint fbo = gles2_buffer_get_fbo(texture->buffer);
+		if (!fbo) {
+			return false;
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	} else {
+		glGenFramebuffers(1, &texture->fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, texture->fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			texture->target, texture->tex, 0);
+
+		GLenum fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
+			wlr_log(WLR_ERROR, "Failed to create FBO");
+			glDeleteFramebuffers(1, &texture->fbo);
+			texture->fbo = 0;
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool gles2_texture_read_pixels(struct wlr_texture *wlr_texture,
+		const struct wlr_texture_read_pixels_options *options) {
+	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
+
+	struct wlr_box src;
+	wlr_texture_read_pixels_options_get_src_box(options, wlr_texture, &src);
+
+	const struct wlr_gles2_pixel_format *fmt =
+		get_gles2_format_from_drm(options->format);
+	if (fmt == NULL || !is_gles2_pixel_format_supported(texture->renderer, fmt)) {
+		wlr_log(WLR_ERROR, "Cannot read pixels: unsupported pixel format 0x%"PRIX32, options->format);
+		return false;
+	}
+
+	if (fmt->gl_format == GL_BGRA_EXT && !texture->renderer->exts.EXT_read_format_bgra) {
+		wlr_log(WLR_ERROR,
+			"Cannot read pixels: missing GL_EXT_read_format_bgra extension");
+		return false;
+	}
+
+	const struct wlr_pixel_format_info *drm_fmt =
+		drm_get_pixel_format_info(fmt->drm_format);
+	assert(drm_fmt);
+	if (pixel_format_info_pixels_per_block(drm_fmt) != 1) {
+		wlr_log(WLR_ERROR, "Cannot read pixels: block formats are not supported");
+		return false;
+	}
+
+	push_gles2_debug(texture->renderer);
+
+	if (!wlr_egl_make_current(texture->renderer->egl)) {
+		return false;
+	}
+
+	if (!gles2_texture_bind(texture)) {
+		return false;
+	}
+
+	// Make sure any pending drawing is finished before we try to read it
+	glFinish();
+
+	glGetError(); // Clear the error flag
+
+	unsigned char *p = wlr_texture_read_pixel_options_get_data(options);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	uint32_t pack_stride = pixel_format_info_min_stride(drm_fmt, src.width);
+	if (pack_stride == options->stride && options->dst_x == 0) {
+		// Under these particular conditions, we can read the pixels with only
+		// one glReadPixels call
+
+		glReadPixels(src.x, src.y, src.width, src.height, fmt->gl_format, fmt->gl_type, p);
+	} else {
+		// Unfortunately GLES2 doesn't support GL_PACK_ROW_LENGTH, so we have to read
+		// the lines out row by row
+		for (int32_t i = 0; i < src.height; ++i) {
+			uint32_t y = src.y + i;
+			glReadPixels(src.x, y, src.width, 1, fmt->gl_format,
+				fmt->gl_type, p + i * options->stride);
+		}
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pop_gles2_debug(texture->renderer);
+
+	return glGetError() == GL_NO_ERROR;
+}
+
 static const struct wlr_texture_impl texture_impl = {
 	.update_from_buffer = gles2_texture_update_from_buffer,
+	.read_pixels = gles2_texture_read_pixels,
 	.destroy = handle_gles2_texture_destroy,
 };
 
@@ -185,7 +287,6 @@ static struct wlr_texture *gles2_texture_from_pixels(
 	texture->target = GL_TEXTURE_2D;
 	texture->has_alpha = drm_fmt->has_alpha;
 	texture->drm_format = fmt->drm_format;
-	texture->owns_tex = true;
 
 	GLint internal_format = fmt->gl_internalformat;
 	if (!internal_format) {

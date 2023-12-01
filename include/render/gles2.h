@@ -121,8 +121,12 @@ struct wlr_gles2_texture {
 	struct wl_list link; // wlr_gles2_renderer.textures
 
 	GLenum target;
-	bool owns_tex;
+
+	// If this texture is imported from a buffer, the texture is does not own
+	// these states. These cannot be destroyed along with the texture in this
+	// case.
 	GLuint tex;
+	GLuint fbo;
 
 	bool has_alpha;
 
