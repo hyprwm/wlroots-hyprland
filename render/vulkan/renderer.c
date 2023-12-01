@@ -1116,13 +1116,24 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
 	free(renderer);
 }
 
-static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
+static bool vulkan_read_pixels_legacy(struct wlr_renderer *wlr_renderer,
 		uint32_t drm_format, uint32_t stride,
 		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
 		uint32_t dst_x, uint32_t dst_y, void *data) {
 	struct wlr_vk_renderer *vk_renderer = vulkan_get_renderer(wlr_renderer);
-	VkDevice dev = vk_renderer->dev->dev;
+	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
 	VkImage src_image = vk_renderer->current_render_buffer->image;
+
+	return vulkan_read_pixels(vk_renderer, src_format, src_image, drm_format,
+		stride, width, height, src_x, src_y, dst_x, dst_y, data);
+}
+
+bool vulkan_read_pixels(struct wlr_vk_renderer *vk_renderer,
+		VkFormat src_format, VkImage src_image,
+		uint32_t drm_format, uint32_t stride,
+		uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
+		uint32_t dst_x, uint32_t dst_y, void *data) {
+	VkDevice dev = vk_renderer->dev->dev;
 
 	const struct wlr_pixel_format_info *pixel_format_info = drm_get_pixel_format_info(drm_format);
 	if (!pixel_format_info) {
@@ -1141,7 +1152,6 @@ static bool vulkan_read_pixels(struct wlr_renderer *wlr_renderer,
 		return false;
 	}
 	VkFormat dst_format = wlr_vk_format->vk;
-	VkFormat src_format = vk_renderer->current_render_buffer->render_setup->render_format->vk;
 	VkFormatProperties dst_format_props = {0}, src_format_props = {0};
 	vkGetPhysicalDeviceFormatProperties(vk_renderer->dev->phdev, dst_format, &dst_format_props);
 	vkGetPhysicalDeviceFormatProperties(vk_renderer->dev->phdev, src_format, &src_format_props);
@@ -1387,7 +1397,7 @@ static const struct wlr_renderer_impl renderer_impl = {
 	.get_dmabuf_texture_formats = vulkan_get_dmabuf_texture_formats,
 	.get_render_formats = vulkan_get_render_formats,
 	.preferred_read_format = vulkan_preferred_read_format,
-	.read_pixels = vulkan_read_pixels,
+	.read_pixels = vulkan_read_pixels_legacy,
 	.destroy = vulkan_destroy,
 	.get_drm_fd = vulkan_get_drm_fd,
 	.get_render_buffer_caps = vulkan_get_render_buffer_caps,

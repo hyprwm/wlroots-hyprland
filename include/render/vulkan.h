@@ -374,6 +374,12 @@ bool vulkan_sync_render_buffer(struct wlr_vk_renderer *renderer,
 	struct wlr_vk_render_buffer *render_buffer, struct wlr_vk_command_buffer *cb);
 bool vulkan_sync_foreign_texture(struct wlr_vk_texture *texture);
 
+bool vulkan_read_pixels(struct wlr_vk_renderer *vk_renderer,
+	VkFormat src_format, VkImage src_image,
+	uint32_t drm_format, uint32_t stride,
+	uint32_t width, uint32_t height, uint32_t src_x, uint32_t src_y,
+	uint32_t dst_x, uint32_t dst_y, void *data);
+
 // State (e.g. image texture) associated with a surface.
 struct wlr_vk_texture {
 	struct wlr_texture wlr_texture;
