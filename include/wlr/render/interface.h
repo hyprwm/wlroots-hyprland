@@ -93,4 +93,10 @@ float wlr_render_texture_options_get_alpha(const struct wlr_render_texture_optio
 void wlr_render_rect_options_get_box(const struct wlr_render_rect_options *options,
 	const struct wlr_buffer *buffer, struct wlr_box *box);
 
+void wlr_texture_read_pixels_options_get_src_box(
+	const struct wlr_texture_read_pixels_options *options,
+	const struct wlr_texture *texture, struct wlr_box *box);
+void *wlr_texture_read_pixel_options_get_data(
+	const struct wlr_texture_read_pixels_options *options);
+
 #endif
