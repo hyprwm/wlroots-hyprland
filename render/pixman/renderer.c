@@ -89,7 +89,34 @@ static void texture_destroy(struct wlr_texture *wlr_texture) {
 	free(texture);
 }
 
+static bool texture_read_pixels(struct wlr_texture *wlr_texture,
+		const struct wlr_texture_read_pixels_options *options) {
+	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
+
+	struct wlr_box src;
+	wlr_texture_read_pixels_options_get_src_box(options, wlr_texture, &src);
+
+	pixman_format_code_t fmt = get_pixman_format_from_drm(options->format);
+	if (fmt == 0) {
+		wlr_log(WLR_ERROR, "Cannot read pixels: unsupported pixel format");
+		return false;
+	}
+
+	void *p = wlr_texture_read_pixel_options_get_data(options);
+
+	pixman_image_t *dst = pixman_image_create_bits_no_clear(fmt,
+			src.width, src.height, p, options->stride);
+
+	pixman_image_composite32(PIXMAN_OP_SRC, texture->image, NULL, dst,
+			src.x, src.y, 0, 0, 0, 0, src.width, src.height);
+
+	pixman_image_unref(dst);
+
+	return true;
+}
+
 static const struct wlr_texture_impl texture_impl = {
+	.read_pixels = texture_read_pixels,
 	.destroy = texture_destroy,
 };
 
