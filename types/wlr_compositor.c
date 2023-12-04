@@ -331,7 +331,7 @@ static void surface_state_move(struct wlr_surface_state *state,
 		wl_list_init(&next->frame_callback_list);
 	}
 
-	state->committed |= next->committed;
+	state->committed = next->committed;
 	next->committed = 0;
 
 	state->seq = next->seq;
