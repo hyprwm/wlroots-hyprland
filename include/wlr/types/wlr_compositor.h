@@ -174,7 +174,6 @@ struct wlr_surface {
 
 	struct {
 		struct wl_signal client_commit;
-		struct wl_signal precommit; // const struct wlr_surface_state *
 		struct wl_signal commit;
 
 		/**
