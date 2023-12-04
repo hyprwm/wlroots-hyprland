@@ -1483,17 +1483,16 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
 static void output_state_apply_damage(const struct render_data *data,
 		struct wlr_output_state *state) {
 	struct wlr_scene_output *output = data->output;
-	pixman_region32_union(&output->pending_commit_damage,
-		&output->pending_commit_damage, &output->damage_ring.current);
-	pixman_region32_intersect_rect(&output->pending_commit_damage,
-		&output->pending_commit_damage, 0, 0, data->trans_width, data->trans_height);
 
 	pixman_region32_t frame_damage;
 	pixman_region32_init(&frame_damage);
-	pixman_region32_copy(&frame_damage, &output->pending_commit_damage);
+	pixman_region32_copy(&frame_damage, &output->damage_ring.current);
 	transform_output_damage(&frame_damage, data);
-	wlr_output_state_set_damage(state, &frame_damage);
+	pixman_region32_union(&output->pending_commit_damage,
+		&output->pending_commit_damage, &frame_damage);
 	pixman_region32_fini(&frame_damage);
+
+	wlr_output_state_set_damage(state, &output->pending_commit_damage);
 }
 
 static void scene_buffer_send_dmabuf_feedback(const struct wlr_scene *scene,
