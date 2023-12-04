@@ -273,6 +273,19 @@ static void xdg_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 			"xdg_surface must have a role object");
 		return;
 	}
+
+	switch (surface->role) {
+	case WLR_XDG_SURFACE_ROLE_NONE:
+		assert(0 && "not reached");
+		return;
+	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+		if (surface->toplevel != NULL) {
+			handle_xdg_toplevel_client_commit(surface->toplevel);
+		}
+		break;
+	case WLR_XDG_SURFACE_ROLE_POPUP:
+		break;
+	}
 }
 
 static void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {

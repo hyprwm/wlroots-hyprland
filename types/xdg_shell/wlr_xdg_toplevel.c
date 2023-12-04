@@ -116,7 +116,7 @@ struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	return configure;
 }
 
-void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
+void handle_xdg_toplevel_client_commit(struct wlr_xdg_toplevel *toplevel) {
 	struct wlr_xdg_toplevel_state *pending = &toplevel->pending;
 
 	// 1) Negative values are prohibited
@@ -130,9 +130,9 @@ void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 			"client provided an invalid min or max size");
 		return;
 	}
+}
 
-	toplevel->current = toplevel->pending;
-
+void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel) {
 	if (toplevel->base->initial_commit) {
 		// On the initial commit, send a configure request to tell the client it
 		// is added
@@ -462,6 +462,10 @@ static const struct xdg_toplevel_interface xdg_toplevel_implementation = {
 	.set_minimized = xdg_toplevel_handle_set_minimized,
 };
 
+static const struct wlr_surface_synced_impl surface_synced_impl = {
+	.state_size = sizeof(struct wlr_xdg_toplevel_state),
+};
+
 void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 		uint32_t id) {
 	if (!set_xdg_surface_role(surface, WLR_XDG_SURFACE_ROLE_TOPLEVEL)) {
@@ -487,14 +491,16 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	wl_signal_init(&surface->toplevel->events.set_title);
 	wl_signal_init(&surface->toplevel->events.set_app_id);
 
+	if (!wlr_surface_synced_init(&surface->toplevel->synced, surface->surface,
+			&surface_synced_impl, &surface->toplevel->pending, &surface->toplevel->current)) {
+		goto error_toplevel;
+	}
+
 	surface->toplevel->resource = wl_resource_create(
 		surface->client->client, &xdg_toplevel_interface,
 		wl_resource_get_version(surface->resource), id);
 	if (surface->toplevel->resource == NULL) {
-		free(surface->toplevel);
-		surface->toplevel = NULL;
-		wl_resource_post_no_memory(surface->resource);
-		return;
+		goto error_synced;
 	}
 	wl_resource_set_implementation(surface->toplevel->resource,
 		&xdg_toplevel_implementation, surface->toplevel, NULL);
@@ -502,6 +508,15 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	set_xdg_surface_role_object(surface, surface->toplevel->resource);
 
 	wl_signal_emit_mutable(&surface->client->shell->events.new_toplevel, surface->toplevel);
+
+	return;
+
+error_synced:
+	wlr_surface_synced_finish(&surface->toplevel->synced);
+error_toplevel:
+	free(surface->toplevel);
+	surface->toplevel = NULL;
+	wl_resource_post_no_memory(surface->resource);
 }
 
 void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
@@ -529,6 +544,7 @@ void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel) {
 
 	wl_signal_emit_mutable(&toplevel->events.destroy, NULL);
 
+	wlr_surface_synced_finish(&toplevel->synced);
 	toplevel->base->toplevel = NULL;
 	wl_resource_set_user_data(toplevel->resource, NULL);
 	free(toplevel);

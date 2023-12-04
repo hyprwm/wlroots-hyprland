@@ -208,6 +208,10 @@ struct wlr_xdg_toplevel {
 		struct wl_signal set_title;
 		struct wl_signal set_app_id;
 	} events;
+
+	// private state
+
+	struct wlr_surface_synced synced;
 };
 
 struct wlr_xdg_surface_configure {

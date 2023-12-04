@@ -30,6 +30,7 @@ void create_xdg_toplevel(struct wlr_xdg_surface *surface,
 	uint32_t id);
 void reset_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
 void destroy_xdg_toplevel(struct wlr_xdg_toplevel *toplevel);
+void handle_xdg_toplevel_client_commit(struct wlr_xdg_toplevel *toplevel);
 void handle_xdg_toplevel_committed(struct wlr_xdg_toplevel *toplevel);
 struct wlr_xdg_toplevel_configure *send_xdg_toplevel_configure(
 	struct wlr_xdg_toplevel *toplevel);
