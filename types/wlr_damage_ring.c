@@ -171,7 +171,7 @@ void wlr_damage_ring_rotate_buffer(struct wlr_damage_ring *ring,
 		// Accumulate damage from old buffers
 		for (size_t i = 0; i < WLR_DAMAGE_RING_BUFFERS_LEN; i++) {
 			struct wlr_damage_ring_buffer *rb = &ring->buffers[i];
-			if (rb->seq < ring_buffer->seq) {
+			if (rb->seq > ring_buffer->seq) {
 				pixman_region32_union(damage, damage, &rb->damage);
 			}
 		}
