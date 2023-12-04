@@ -69,6 +69,9 @@ struct wlr_surface_state {
 	// Number of locks that prevent this surface state from being committed.
 	size_t cached_state_locks;
 	struct wl_list cached_state_link; // wlr_surface.cached
+
+	// Sync'ed object states, one per struct wlr_surface_synced
+	struct wl_array synced; // void *
 };
 
 struct wlr_surface_role {
@@ -222,6 +225,9 @@ struct wlr_surface {
 	int32_t preferred_buffer_scale;
 	bool preferred_buffer_transform_sent;
 	enum wl_output_transform preferred_buffer_transform;
+
+	struct wl_list synced; // wlr_surface_synced.link
+	size_t synced_len;
 };
 
 struct wlr_renderer;
@@ -429,6 +435,63 @@ void wlr_surface_set_preferred_buffer_scale(struct wlr_surface *surface,
  */
 void wlr_surface_set_preferred_buffer_transform(struct wlr_surface *surface,
 	enum wl_output_transform transform);
+
+/**
+ * Implementation for struct wlr_surface_synced.
+ *
+ * struct wlr_surface takes care of allocating the sync'ed object state.
+ *
+ * The only mandatory field is state_size.
+ */
+struct wlr_surface_synced_impl {
+	// Size in bytes of the state struct.
+	size_t state_size;
+	// Initialize a state. If NULL, this is a no-op.
+	void (*init_state)(void *state);
+	// Finish a state. If NULL, this is a no-op.
+	void (*finish_state)(void *state);
+	// Move a state. If NULL, memcpy() is used.
+	void (*move_state)(void *dst, void *src);
+};
+
+/**
+ * An object synchronized with a surface.
+ *
+ * This is typically used by surface add-ons which integrate with the surface
+ * commit mechanism.
+ *
+ * A sync'ed object maintains state whose lifecycle is managed by
+ * struct wlr_surface_synced_impl. Clients make requests to mutate the pending
+ * state, then clients commit the pending state via wl_surface.commit. The
+ * pending state may become cached, then becomes current when it's applied.
+ */
+struct wlr_surface_synced {
+	struct wlr_surface *surface;
+	const struct wlr_surface_synced_impl *impl;
+	struct wl_list link; // wlr_surface.synced
+	size_t index;
+};
+
+/**
+ * Initialize a sync'ed object.
+ *
+ * pending and current must be pointers to the sync'ed object's state. This
+ * function will initialize them.
+ */
+bool wlr_surface_synced_init(struct wlr_surface_synced *synced,
+	struct wlr_surface *surface, const struct wlr_surface_synced_impl *impl,
+	void *pending, void *current);
+/**
+ * Finish a sync'ed object.
+ *
+ * This must be called before the struct wlr_surface is destroyed.
+ */
+void wlr_surface_synced_finish(struct wlr_surface_synced *synced);
+/**
+ * Obtain a sync'ed object state.
+ */
+void *wlr_surface_synced_get_state(struct wlr_surface_synced *synced,
+	const struct wlr_surface_state *state);
 
 /**
  * Get a Pixman region from a wl_region resource.
