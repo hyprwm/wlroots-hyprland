@@ -1601,7 +1601,6 @@ static bool scene_entry_try_direct_scanout(struct render_list_entry *entry,
 	}
 
 	wlr_output_state_set_buffer(&pending, buffer->buffer);
-	output_state_apply_damage(data, &pending);
 
 	if (!wlr_output_test_state(scene_output->output, &pending)) {
 		wlr_output_state_finish(&pending);
@@ -1712,6 +1711,12 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	struct render_list_entry *list_data = list_con.render_list->data;
 	int list_len = list_con.render_list->size / sizeof(*list_data);
 
+	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_RERENDER) {
+		wlr_damage_ring_add_whole(&scene_output->damage_ring);
+	}
+
+	output_state_apply_damage(&render_data, state);
+
 	bool scanout = list_len == 1 &&
 		scene_entry_try_direct_scanout(&list_data[0], state, &render_data);
 
@@ -1729,10 +1734,6 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 			timer->pre_render_duration = timespec_to_nsec(&duration);
 		}
 		return true;
-	}
-
-	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_RERENDER) {
-		wlr_damage_ring_add_whole(&scene_output->damage_ring);
 	}
 
 	struct timespec now;
@@ -1805,7 +1806,6 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 
 	render_data.render_pass = render_pass;
 
-	output_state_apply_damage(&render_data, state);
 	pixman_region32_init(&render_data.damage);
 	wlr_damage_ring_rotate_buffer(&scene_output->damage_ring, buffer,
 		&render_data.damage);
