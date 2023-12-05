@@ -10,6 +10,7 @@
 #define WLR_RENDER_GLES2_H
 
 #include <GLES2/gl2.h>
+
 #include <wlr/render/wlr_renderer.h>
 
 struct wlr_egl;
@@ -31,8 +32,8 @@ struct wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd);
 struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl);
 
 struct wlr_egl *wlr_gles2_renderer_get_egl(struct wlr_renderer *renderer);
-bool wlr_gles2_renderer_check_ext(struct wlr_renderer *renderer,
-	const char *ext);
+bool wlr_gles2_renderer_check_ext(struct wlr_renderer *renderer, const char *ext);
+GLuint wlr_gles2_renderer_get_buffer_fbo(struct wlr_renderer *renderer, struct wlr_buffer *buffer);
 
 struct wlr_gles2_texture_attribs {
 	GLenum target; /* either GL_TEXTURE_2D or GL_TEXTURE_EXTERNAL_OES */

@@ -271,6 +271,26 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 	return &pass->base;
 }
 
+GLuint wlr_gles2_renderer_get_buffer_fbo(struct wlr_renderer *wlr_renderer,
+		struct wlr_buffer *wlr_buffer) {
+	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
+	GLuint fbo = 0;
+
+	struct wlr_egl_context prev_ctx = {0};
+	wlr_egl_save_context(&prev_ctx);
+	if (!wlr_egl_make_current(renderer->egl)) {
+		return 0;
+	}
+
+	struct wlr_gles2_buffer *buffer = gles2_buffer_get_or_create(renderer, wlr_buffer);
+	if (buffer) {
+		fbo = gles2_buffer_get_fbo(buffer);
+	}
+
+	wlr_egl_restore_context(&prev_ctx);
+	return fbo;
+}
+
 static struct wlr_render_timer *gles2_render_timer_create(struct wlr_renderer *wlr_renderer) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 	if (!renderer->exts.EXT_disjoint_timer_query) {
