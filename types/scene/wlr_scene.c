@@ -123,7 +123,6 @@ void wlr_scene_node_destroy(struct wlr_scene_node *node) {
 				wlr_scene_output_destroy(scene_output);
 			}
 
-			wl_list_remove(&scene->presentation_destroy.link);
 			wl_list_remove(&scene->linux_dmabuf_v1_destroy.link);
 		} else {
 			assert(node->parent);
@@ -157,7 +156,6 @@ struct wlr_scene *wlr_scene_create(void) {
 	scene_tree_init(&scene->tree, NULL);
 
 	wl_list_init(&scene->outputs);
-	wl_list_init(&scene->presentation_destroy.link);
 	wl_list_init(&scene->linux_dmabuf_v1_destroy.link);
 
 	const char *debug_damage_options[] = {
@@ -1191,23 +1189,6 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
 
 	pixman_region32_fini(&opaque);
 	pixman_region32_fini(&render_region);
-}
-
-static void scene_handle_presentation_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_scene *scene =
-		wl_container_of(listener, scene, presentation_destroy);
-	wl_list_remove(&scene->presentation_destroy.link);
-	wl_list_init(&scene->presentation_destroy.link);
-	scene->presentation = NULL;
-}
-
-void wlr_scene_set_presentation(struct wlr_scene *scene,
-		struct wlr_presentation *presentation) {
-	assert(scene->presentation == NULL);
-	scene->presentation = presentation;
-	scene->presentation_destroy.notify = scene_handle_presentation_destroy;
-	wl_signal_add(&presentation->events.destroy, &scene->presentation_destroy);
 }
 
 static void scene_handle_linux_dmabuf_v1_destroy(struct wl_listener *listener,
