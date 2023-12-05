@@ -71,7 +71,7 @@ struct wlr_presentation *wlr_presentation_create(struct wl_display *display,
  * this surface.
  */
 struct wlr_presentation_feedback *wlr_presentation_surface_sampled(
-	struct wlr_presentation *presentation, struct wlr_surface *surface);
+	struct wlr_surface *surface);
 void wlr_presentation_feedback_send_presented(
 	struct wlr_presentation_feedback *feedback,
 	const struct wlr_presentation_event *event);
@@ -92,8 +92,7 @@ void wlr_presentation_event_from_output(struct wlr_presentation_event *event,
  * before a wlr_output_commit() call to indicate that the surface's current
  * contents have been copied to a buffer which will be displayed on the output.
  */
-void wlr_presentation_surface_textured_on_output(
-	struct wlr_presentation *presentation, struct wlr_surface *surface,
+void wlr_presentation_surface_textured_on_output(struct wlr_surface *surface,
 	struct wlr_output *output);
 /**
  * Mark the current surface's buffer as scanned out on the given output.
@@ -101,8 +100,7 @@ void wlr_presentation_surface_textured_on_output(
  * Same as wlr_presentation_surface_textured_on_output(), but indicates direct
  * scan-out.
  */
-void wlr_presentation_surface_scanned_out_on_output(
-	struct wlr_presentation *presentation, struct wlr_surface *surface,
+void wlr_presentation_surface_scanned_out_on_output(struct wlr_surface *surface,
 	struct wlr_output *output);
 
 #endif

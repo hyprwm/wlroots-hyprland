@@ -54,11 +54,9 @@ static void handle_scene_buffer_output_sample(
 	}
 
 	if (event->direct_scanout) {
-		wlr_presentation_surface_scanned_out_on_output(
-			root->presentation, surface->surface, scene_output->output);
+		wlr_presentation_surface_scanned_out_on_output(surface->surface, scene_output->output);
 	} else {
-		wlr_presentation_surface_textured_on_output(
-			root->presentation, surface->surface, scene_output->output);
+		wlr_presentation_surface_textured_on_output(surface->surface, scene_output->output);
 	}
 }
 

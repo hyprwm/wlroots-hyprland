@@ -89,24 +89,13 @@ static const struct wlr_surface_synced_impl surface_synced_impl = {
 	.move_state = surface_synced_move_state,
 };
 
-static const struct wp_presentation_interface presentation_impl;
-
-static struct wlr_presentation *presentation_from_resource(
-		struct wl_resource *resource) {
-	assert(wl_resource_instance_of(resource, &wp_presentation_interface,
-		&presentation_impl));
-	return wl_resource_get_user_data(resource);
-}
-
 static void presentation_handle_feedback(struct wl_client *client,
 		struct wl_resource *presentation_resource,
 		struct wl_resource *surface_resource, uint32_t id) {
-	struct wlr_presentation *presentation =
-		presentation_from_resource(presentation_resource);
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
 
-	struct wlr_addon *addon = wlr_addon_find(&surface->addons,
-		presentation, &presentation_surface_addon_impl);
+	struct wlr_addon *addon =
+		wlr_addon_find(&surface->addons, NULL, &presentation_surface_addon_impl);
 	struct wlr_presentation_surface *p_surface = NULL;
 	if (addon != NULL) {
 		p_surface = wl_container_of(addon, p_surface, addon);
@@ -117,7 +106,7 @@ static void presentation_handle_feedback(struct wl_client *client,
 			return;
 		}
 		wlr_addon_init(&p_surface->addon, &surface->addons,
-			presentation, &presentation_surface_addon_impl);
+			NULL, &presentation_surface_addon_impl);
 		if (!wlr_surface_synced_init(&p_surface->synced, surface,
 				&surface_synced_impl, &p_surface->pending, &p_surface->current)) {
 			free(p_surface);
@@ -163,16 +152,13 @@ static const struct wp_presentation_interface presentation_impl = {
 
 static void presentation_bind(struct wl_client *client, void *data,
 		uint32_t version, uint32_t id) {
-	struct wlr_presentation *presentation = data;
-
 	struct wl_resource *resource = wl_resource_create(client,
 		&wp_presentation_interface, version, id);
 	if (resource == NULL) {
 		wl_client_post_no_memory(client);
 		return;
 	}
-	wl_resource_set_implementation(resource, &presentation_impl, presentation,
-		NULL);
+	wl_resource_set_implementation(resource, &presentation_impl, NULL, NULL);
 
 	wp_presentation_send_clock_id(resource, CLOCK_MONOTONIC);
 }
@@ -194,7 +180,7 @@ struct wlr_presentation *wlr_presentation_create(struct wl_display *display,
 	}
 
 	presentation->global = wl_global_create(display, &wp_presentation_interface,
-		PRESENTATION_VERSION, presentation, presentation_bind);
+		PRESENTATION_VERSION, NULL, presentation_bind);
 	if (presentation->global == NULL) {
 		free(presentation);
 		return NULL;
@@ -218,9 +204,9 @@ void wlr_presentation_feedback_send_presented(
 }
 
 struct wlr_presentation_feedback *wlr_presentation_surface_sampled(
-		struct wlr_presentation *presentation, struct wlr_surface *surface) {
-	struct wlr_addon *addon = wlr_addon_find(&surface->addons,
-		presentation, &presentation_surface_addon_impl);
+		struct wlr_surface *surface) {
+	struct wlr_addon *addon =
+		wlr_addon_find(&surface->addons, NULL, &presentation_surface_addon_impl);
 	if (addon != NULL) {
 		struct wlr_presentation_surface *p_surface =
 			wl_container_of(addon, p_surface, addon);
@@ -313,11 +299,10 @@ static void feedback_handle_output_destroy(struct wl_listener *listener,
 	wlr_presentation_feedback_destroy(feedback);
 }
 
-static void presentation_surface_queued_on_output(
-		struct wlr_presentation *presentation, struct wlr_surface *surface,
+static void presentation_surface_queued_on_output(struct wlr_surface *surface,
 		struct wlr_output *output, bool zero_copy) {
 	struct wlr_presentation_feedback *feedback =
-		wlr_presentation_surface_sampled(presentation, surface);
+		wlr_presentation_surface_sampled(surface);
 	if (feedback == NULL) {
 		return;
 	}
@@ -334,16 +319,12 @@ static void presentation_surface_queued_on_output(
 	wl_signal_add(&output->events.destroy, &feedback->output_destroy);
 }
 
-void wlr_presentation_surface_textured_on_output(
-		struct wlr_presentation *presentation, struct wlr_surface *surface,
+void wlr_presentation_surface_textured_on_output(struct wlr_surface *surface,
 		struct wlr_output *output) {
-	return presentation_surface_queued_on_output(presentation, surface,
-		output, false);
+	return presentation_surface_queued_on_output(surface, output, false);
 }
 
-void wlr_presentation_surface_scanned_out_on_output(
-		struct wlr_presentation *presentation, struct wlr_surface *surface,
+void wlr_presentation_surface_scanned_out_on_output(struct wlr_surface *surface,
 		struct wlr_output *output) {
-	return presentation_surface_queued_on_output(presentation, surface,
-		output, true);
+	return presentation_surface_queued_on_output(surface, output, true);
 }
