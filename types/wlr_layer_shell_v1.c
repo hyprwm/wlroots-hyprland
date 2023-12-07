@@ -51,6 +51,7 @@ static void layer_surface_destroy(struct wlr_layer_surface_v1 *surface) {
 	layer_surface_reset(surface);
 
 	wl_signal_emit_mutable(&surface->events.destroy, surface);
+	wlr_surface_synced_finish(&surface->synced);
 	wl_resource_set_user_data(surface->resource, NULL);
 	free(surface->namespace);
 	free(surface);
@@ -130,13 +131,12 @@ static void layer_surface_handle_set_size(struct wl_client *client,
 		return;
 	}
 
-	if (surface->current.desired_width == width
-			&& surface->current.desired_height == height) {
-		surface->pending.committed &= ~WLR_LAYER_SURFACE_V1_STATE_DESIRED_SIZE;
-	} else {
-		surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_DESIRED_SIZE;
+	if (surface->pending.desired_width == width
+			&& surface->pending.desired_height == height) {
+		return;
 	}
 
+	surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_DESIRED_SIZE;
 	surface->pending.desired_width = width;
 	surface->pending.desired_height = height;
 }
@@ -160,12 +160,11 @@ static void layer_surface_handle_set_anchor(struct wl_client *client,
 		return;
 	}
 
-	if (surface->current.anchor == anchor) {
-		surface->pending.committed &= ~WLR_LAYER_SURFACE_V1_STATE_ANCHOR;
-	} else {
-		surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_ANCHOR;
+	if (surface->pending.anchor == anchor) {
+		return;
 	}
 
+	surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_ANCHOR;
 	surface->pending.anchor = anchor;
 }
 
@@ -177,12 +176,11 @@ static void layer_surface_handle_set_exclusive_zone(struct wl_client *client,
 		return;
 	}
 
-	if (surface->current.exclusive_zone == zone) {
-		surface->pending.committed &= ~WLR_LAYER_SURFACE_V1_STATE_EXCLUSIVE_ZONE;
-	} else {
-		surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_EXCLUSIVE_ZONE;
+	if (surface->pending.exclusive_zone == zone) {
+		return;
 	}
 
+	surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_EXCLUSIVE_ZONE;
 	surface->pending.exclusive_zone = zone;
 }
 
@@ -196,15 +194,14 @@ static void layer_surface_handle_set_margin(
 		return;
 	}
 
-	if (surface->current.margin.top == top
-			&& surface->current.margin.right == right
-			&& surface->current.margin.bottom == bottom
-			&& surface->current.margin.left == left) {
-		surface->pending.committed &= ~WLR_LAYER_SURFACE_V1_STATE_MARGIN;
-	} else {
-		surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_MARGIN;
+	if (surface->pending.margin.top == top
+			&& surface->pending.margin.right == right
+			&& surface->pending.margin.bottom == bottom
+			&& surface->pending.margin.left == left) {
+		return;
 	}
 
+	surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_MARGIN;
 	surface->pending.margin.top = top;
 	surface->pending.margin.right = right;
 	surface->pending.margin.bottom = bottom;
@@ -268,12 +265,11 @@ static void layer_surface_set_layer(struct wl_client *client,
 		return;
 	}
 
-	if (surface->current.layer == layer) {
-		surface->pending.committed &= ~WLR_LAYER_SURFACE_V1_STATE_LAYER;
-	} else {
-		surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_LAYER;
+	if (surface->pending.layer == layer) {
+		return;
 	}
 
+	surface->pending.committed |= WLR_LAYER_SURFACE_V1_STATE_LAYER;
 	surface->pending.layer = layer;
 }
 
@@ -321,14 +317,14 @@ void wlr_layer_surface_v1_destroy(struct wlr_layer_surface_v1 *surface) {
 	layer_surface_destroy(surface);
 }
 
-static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
+static void layer_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_layer_surface_v1 *surface =
 		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
 	if (surface == NULL) {
 		return;
 	}
 
-	if (wlr_surface_has_buffer(surface->surface) && !surface->configured) {
+	if (wlr_surface_state_has_buffer(&wlr_surface->pending) && !surface->configured) {
 		wl_resource_post_error(surface->resource,
 			ZWLR_LAYER_SHELL_V1_ERROR_ALREADY_CONSTRUCTED,
 			"layer_surface has never been configured");
@@ -338,7 +334,7 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	const uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	if (surface->pending.desired_width == 0 &&
-		(surface->pending.anchor & horiz) != horiz) {
+			(surface->pending.anchor & horiz) != horiz) {
 		wl_resource_post_error(surface->resource,
 			ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
 			"width 0 requested without setting left and right anchors");
@@ -348,10 +344,18 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 	const uint32_t vert = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	if (surface->pending.desired_height == 0 &&
-		(surface->pending.anchor & vert) != vert) {
+			(surface->pending.anchor & vert) != vert) {
 		wl_resource_post_error(surface->resource,
 			ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
 			"height 0 requested without setting top and bottom anchors");
+		return;
+	}
+}
+
+static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
+	struct wlr_layer_surface_v1 *surface =
+		wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface);
+	if (surface == NULL) {
 		return;
 	}
 
@@ -364,9 +368,6 @@ static void layer_surface_role_commit(struct wlr_surface *wlr_surface) {
 		surface->initial_commit = !surface->initialized;
 		surface->initialized = true;
 	}
-
-	surface->current = surface->pending;
-	surface->pending.committed = 0;
 
 	if (wlr_surface_has_buffer(wlr_surface)) {
 		wlr_surface_map(wlr_surface);
@@ -385,8 +386,20 @@ static void layer_surface_role_destroy(struct wlr_surface *wlr_surface) {
 
 static const struct wlr_surface_role layer_surface_role = {
 	.name = "zwlr_layer_surface_v1",
+	.client_commit = layer_surface_role_client_commit,
 	.commit = layer_surface_role_commit,
 	.destroy = layer_surface_role_destroy,
+};
+
+static void surface_synced_move_state(void *_dst, void *_src) {
+	struct wlr_layer_surface_v1_state *dst = _dst, *src = _src;
+	*dst = *src;
+	src->committed = 0;
+}
+
+static const struct wlr_surface_synced_impl surface_synced_impl = {
+	.state_size = sizeof(struct wlr_layer_surface_v1_state),
+	.move_state = surface_synced_move_state,
 };
 
 static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
@@ -398,6 +411,13 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 		layer_shell_from_resource(client_resource);
 	struct wlr_surface *wlr_surface =
 		wlr_surface_from_resource(surface_resource);
+
+	if (layer > ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
+		wl_resource_post_error(client_resource,
+			ZWLR_LAYER_SHELL_V1_ERROR_INVALID_LAYER,
+			"Invalid layer %" PRIu32, layer);
+		return;
+	}
 
 	struct wlr_layer_surface_v1 *surface = calloc(1, sizeof(*surface));
 	if (surface == NULL) {
@@ -416,29 +436,29 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	if (output_resource) {
 		surface->output = wlr_output_from_resource(output_resource);
 	}
-	surface->current.layer = surface->pending.layer = layer;
-	if (layer > ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
-		free(surface);
-		wl_resource_post_error(client_resource,
-				ZWLR_LAYER_SHELL_V1_ERROR_INVALID_LAYER,
-				"Invalid layer %" PRIu32, layer);
-		return;
-	}
 	surface->namespace = strdup(namespace);
 	if (surface->namespace == NULL) {
-		free(surface);
-		wl_client_post_no_memory(wl_client);
-		return;
+		goto error_surface;
 	}
-	surface->resource = wl_resource_create(wl_client,
-		&zwlr_layer_surface_v1_interface,
-		wl_resource_get_version(client_resource),
-		id);
+
+	if (!wlr_surface_synced_init(&surface->synced, wlr_surface,
+			&surface_synced_impl, &surface->pending, &surface->current)) {
+		goto error_namespace;
+	}
+
+	surface->current.layer = surface->pending.layer = layer;
+
+	struct wlr_surface_state *cached;
+	wl_list_for_each(cached, &wlr_surface->cached, cached_state_link) {
+		struct wlr_layer_surface_v1_state *state =
+			wlr_surface_synced_get_state(&surface->synced, cached);
+		state->layer = layer;
+	}
+
+	surface->resource = wl_resource_create(wl_client, &zwlr_layer_surface_v1_interface,
+		wl_resource_get_version(client_resource), id);
 	if (surface->resource == NULL) {
-		free(surface->namespace);
-		free(surface);
-		wl_client_post_no_memory(wl_client);
-		return;
+		goto error_synced;
 	}
 
 	wl_list_init(&surface->configure_list);
@@ -455,6 +475,16 @@ static void layer_shell_handle_get_layer_surface(struct wl_client *wl_client,
 	wlr_surface_set_role_object(wlr_surface, surface->resource);
 
 	wl_signal_emit_mutable(&surface->shell->events.new_surface, surface);
+
+	return;
+
+error_synced:
+	wlr_surface_synced_finish(&surface->synced);
+error_namespace:
+	free(surface->namespace);
+error_surface:
+	free(surface);
+	wl_client_post_no_memory(wl_client);
 }
 
 static const struct zwlr_layer_shell_v1_interface layer_shell_implementation = {
