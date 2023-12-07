@@ -371,6 +371,19 @@ static void surface_state_move(struct wlr_surface_state *state,
 			state_synced[synced->index], next_synced[synced->index]);
 	}
 
+	// commit subsurface order
+	struct wlr_subsurface_parent_state *sub_state_next, *sub_state;
+	wl_list_for_each(sub_state_next, &next->subsurfaces_below, link) {
+		sub_state = wlr_surface_synced_get_state(sub_state_next->synced, state);
+		wl_list_remove(&sub_state->link);
+		wl_list_insert(state->subsurfaces_below.prev, &sub_state->link);
+	}
+	wl_list_for_each(sub_state_next, &next->subsurfaces_above, link) {
+		sub_state = wlr_surface_synced_get_state(sub_state_next->synced, state);
+		wl_list_remove(&sub_state->link);
+		wl_list_insert(state->subsurfaces_above.prev, &sub_state->link);
+	}
+
 	state->committed = next->committed;
 	next->committed = 0;
 
@@ -523,20 +536,11 @@ static void surface_commit_state(struct wlr_surface *surface,
 	surface_update_opaque_region(surface);
 	surface_update_input_region(surface);
 
-	// commit subsurface order
 	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->pending.subsurfaces_below, pending.link) {
-		wl_list_remove(&subsurface->current.link);
-		wl_list_insert(surface->current.subsurfaces_below.prev,
-			&subsurface->current.link);
-
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_below, current.link) {
 		subsurface_handle_parent_commit(subsurface);
 	}
-	wl_list_for_each(subsurface, &surface->pending.subsurfaces_above, pending.link) {
-		wl_list_remove(&subsurface->current.link);
-		wl_list_insert(surface->current.subsurfaces_above.prev,
-			&subsurface->current.link);
-
+	wl_list_for_each(subsurface, &surface->current.subsurfaces_above, current.link) {
 		subsurface_handle_parent_commit(subsurface);
 	}
 

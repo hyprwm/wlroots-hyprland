@@ -33,9 +33,9 @@ static void subsurface_destroy(struct wlr_subsurface *subsurface) {
 
 	wl_signal_emit_mutable(&subsurface->events.destroy, subsurface);
 
+	wlr_surface_synced_finish(&subsurface->parent_synced);
+
 	wl_list_remove(&subsurface->surface_client_commit.link);
-	wl_list_remove(&subsurface->current.link);
-	wl_list_remove(&subsurface->pending.link);
 	wl_list_remove(&subsurface->parent_destroy.link);
 
 	wl_resource_set_user_data(subsurface->resource, NULL);
@@ -225,6 +225,33 @@ const struct wlr_surface_role subsurface_role = {
 	.destroy = subsurface_role_destroy,
 };
 
+static void surface_synced_init_state(void *_state) {
+	struct wlr_subsurface_parent_state *state = _state;
+	wl_list_init(&state->link);
+}
+
+static void surface_synced_finish_state(void *_state) {
+	struct wlr_subsurface_parent_state *state = _state;
+	wl_list_remove(&state->link);
+}
+
+static void surface_synced_move_state(void *_dst, void *_src) {
+	struct wlr_subsurface_parent_state *dst = _dst, *src = _src;
+	dst->x = src->x;
+	dst->y = src->y;
+	dst->synced = src->synced;
+
+	// For the sake of simplicity, copying the position in list is done by the
+	// parent itself
+}
+
+static struct wlr_surface_synced_impl surface_synced_impl = {
+	.state_size = sizeof(struct wlr_subsurface_parent_state),
+	.init_state = surface_synced_init_state,
+	.finish_state = surface_synced_finish_state,
+	.move_state = surface_synced_move_state,
+};
+
 static void subsurface_handle_parent_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_subsurface *subsurface =
@@ -267,8 +294,8 @@ static void collect_damage_iter(struct wlr_surface *surface,
 void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 	struct wlr_surface *surface = subsurface->surface;
 
-	bool moved = subsurface->current.x != subsurface->pending.x ||
-		subsurface->current.y != subsurface->pending.y;
+	bool moved = subsurface->current.x != subsurface->previous.x ||
+		subsurface->current.y != subsurface->previous.y;
 	if (subsurface->surface->mapped && moved) {
 		wlr_surface_for_each_surface(surface,
 			collect_damage_iter, subsurface);
@@ -279,8 +306,6 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 		subsurface->has_cache = false;
 	}
 
-	subsurface->current.x = subsurface->pending.x;
-	subsurface->current.y = subsurface->pending.y;
 	if (subsurface->surface->mapped && (moved || subsurface->reordered)) {
 		subsurface->reordered = false;
 		wlr_surface_for_each_surface(surface,
@@ -293,6 +318,9 @@ void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
 			subsurface);
 		subsurface_consider_map(subsurface);
 	}
+
+	subsurface->previous.x = subsurface->current.x;
+	subsurface->previous.y = subsurface->current.y;
 }
 
 struct wlr_subsurface *wlr_subsurface_try_from_wlr_surface(struct wlr_surface *surface) {
@@ -335,17 +363,38 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 		return;
 	}
 
+	if (!wlr_surface_synced_init(&subsurface->parent_synced, parent, &surface_synced_impl,
+			&subsurface->pending, &subsurface->current)) {
+		free(subsurface);
+		wl_client_post_no_memory(client);
+		return;
+	}
+
 	subsurface->synchronized = true;
 	subsurface->surface = surface;
 	subsurface->resource = wl_resource_create(client, &wl_subsurface_interface,
 		wl_resource_get_version(resource), id);
 	if (subsurface->resource == NULL) {
+		wlr_surface_synced_finish(&subsurface->parent_synced);
 		free(subsurface);
 		wl_client_post_no_memory(client);
 		return;
 	}
 	wl_resource_set_implementation(subsurface->resource,
 		&subsurface_implementation, subsurface, NULL);
+
+	// In surface_state_move() we commit sub-surface order. To do so we need to
+	// iterate over the list of sub-surfaces from a struct wlr_surface_state.
+	// Store a pointer to struct wlr_surface_synced to facilitate this.
+	subsurface->pending.synced = &subsurface->parent_synced;
+	subsurface->current.synced = &subsurface->parent_synced;
+
+	struct wlr_surface_state *cached;
+	wl_list_for_each(cached, &parent->cached, cached_state_link) {
+		struct wlr_subsurface_parent_state *sub_state =
+			wlr_surface_synced_get_state(&subsurface->parent_synced, cached);
+		sub_state->synced = &subsurface->parent_synced;
+	}
 
 	wlr_surface_set_role_object(surface, subsurface->resource);
 
@@ -361,7 +410,7 @@ static void subcompositor_handle_get_subsurface(struct wl_client *client,
 	wl_signal_add(&parent->events.destroy, &subsurface->parent_destroy);
 	subsurface->parent_destroy.notify = subsurface_handle_parent_destroy;
 
-	wl_list_init(&subsurface->current.link);
+	wl_list_remove(&subsurface->pending.link);
 	wl_list_insert(parent->pending.subsurfaces_above.prev,
 		&subsurface->pending.link);
 }
