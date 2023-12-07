@@ -36,7 +36,7 @@ struct wlr_xdg_toplevel_decoration_v1_state {
 
 struct wlr_xdg_toplevel_decoration_v1 {
 	struct wl_resource *resource;
-	struct wlr_xdg_toplevel * toplevel;
+	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_xdg_decoration_manager_v1 *manager;
 	struct wl_list link; // wlr_xdg_decoration_manager_v1.link
 
@@ -52,12 +52,15 @@ struct wlr_xdg_toplevel_decoration_v1 {
 		struct wl_signal request_mode;
 	} events;
 
+	void *data;
+
+	// private state
+
 	struct wl_listener toplevel_destroy;
 	struct wl_listener surface_configure;
 	struct wl_listener surface_ack_configure;
-	struct wl_listener surface_commit;
 
-	void *data;
+	struct wlr_surface_synced synced;
 };
 
 struct wlr_xdg_decoration_manager_v1 *
