@@ -17,10 +17,11 @@
 #include "tearing-control-v1-protocol.h"
 
 struct wlr_tearing_control_v1 {
-	uint32_t hint;
 	struct wl_client *client;
 	struct wl_list link;
 	struct wl_resource *resource;
+
+	enum wp_tearing_control_v1_presentation_hint current, pending;
 
 	struct {
 		struct wl_signal set_hint;
@@ -29,7 +30,13 @@ struct wlr_tearing_control_v1 {
 
 	struct wlr_surface *surface;
 
+	// private state
+
+	enum wp_tearing_control_v1_presentation_hint previous;
 	struct wlr_addon addon;
+	struct wlr_surface_synced synced;
+
+	struct wl_listener surface_commit;
 };
 
 struct wlr_tearing_control_manager_v1 {

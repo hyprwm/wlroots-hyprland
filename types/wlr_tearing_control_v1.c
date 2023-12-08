@@ -39,6 +39,8 @@ static void destroy_tearing_hint(struct wlr_tearing_control_v1 *hint) {
 	wl_resource_set_user_data(hint->resource, NULL);
 
 	wlr_addon_finish(&hint->addon);
+	wlr_surface_synced_finish(&hint->synced);
+	wl_list_remove(&hint->surface_commit.link);
 
 	free(hint);
 }
@@ -64,20 +66,31 @@ static void destroy_tearing_resource_impl(struct wl_resource *resource) {
 	destroy_tearing_hint(hint);
 }
 
-static void tearing_control_handle_presentation_hint(struct wl_client *client,
+static void tearing_control_handle_set_presentation_hint(struct wl_client *client,
 		struct wl_resource *resource, uint32_t hint) {
 	struct wlr_tearing_control_v1 *surface_hint =
 		tearing_surface_hint_from_resource(resource);
-
-	surface_hint->hint = hint;
-
-	wl_signal_emit_mutable(&surface_hint->events.set_hint, NULL);
+	surface_hint->pending = hint;
 }
 
 static const struct wp_tearing_control_v1_interface tearing_control_impl = {
 	.destroy = resource_handle_destroy,
-	.set_presentation_hint = tearing_control_handle_presentation_hint
+	.set_presentation_hint = tearing_control_handle_set_presentation_hint,
 };
+
+static const struct wlr_surface_synced_impl surface_synced_impl = {
+	.state_size = sizeof(enum wp_tearing_control_v1_presentation_hint),
+};
+
+static void hint_handle_surface_commit(struct wl_listener *listener, void *data) {
+	struct wlr_tearing_control_v1 *hint = wl_container_of(listener, hint, surface_commit);
+
+	if (hint->current != hint->previous) {
+		wl_signal_emit_mutable(&hint->events.set_hint, NULL);
+	}
+
+	hint->previous = hint->current;
+}
 
 static void tearing_control_manager_handle_get_tearing_control(
 		struct wl_client *client, struct wl_resource *resource, uint32_t id,
@@ -98,6 +111,13 @@ static void tearing_control_manager_handle_get_tearing_control(
 		return;
 	}
 
+	if (!wlr_surface_synced_init(&hint->synced, surface,
+			&surface_synced_impl, &hint->pending, &hint->current)) {
+		free(hint);
+		wl_client_post_no_memory(client);
+		return;
+	}
+
 	struct wl_resource *created_resource =
 		wl_resource_create(client, &wp_tearing_control_v1_interface,
 			wl_resource_get_version(resource), id);
@@ -110,7 +130,6 @@ static void tearing_control_manager_handle_get_tearing_control(
 	wl_resource_set_implementation(created_resource, &tearing_control_impl,
 		hint, destroy_tearing_resource_impl);
 
-	hint->hint = WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC;
 	hint->client = client;
 	hint->resource = created_resource;
 	hint->surface = surface;
@@ -118,6 +137,9 @@ static void tearing_control_manager_handle_get_tearing_control(
 
 	wl_signal_init(&hint->events.set_hint);
 	wl_signal_init(&hint->events.destroy);
+
+	hint->surface_commit.notify = hint_handle_surface_commit;
+	wl_signal_add(&surface->events.commit, &hint->surface_commit);
 
 	wl_list_insert(&manager->surface_hints, &hint->link);
 
@@ -198,5 +220,5 @@ wlr_tearing_control_manager_v1_surface_hint_from_surface(struct wlr_tearing_cont
 
 	struct wlr_tearing_control_v1 *hint = wl_container_of(addon, hint, addon);
 
-	return hint->hint;
+	return hint->current;
 }
