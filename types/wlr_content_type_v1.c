@@ -8,8 +8,9 @@
 struct wlr_content_type_v1_surface {
 	struct wl_resource *resource;
 	struct wlr_addon addon;
-	struct wl_listener commit;
 	enum wp_content_type_v1_type pending, current;
+
+	struct wlr_surface_synced synced;
 };
 
 static void resource_handle_destroy(struct wl_client *client,
@@ -56,7 +57,7 @@ static void content_type_surface_destroy(
 		return;
 	}
 	wlr_addon_finish(&content_type_surface->addon);
-	wl_list_remove(&content_type_surface->commit.link);
+	wlr_surface_synced_finish(&content_type_surface->synced);
 	wl_resource_set_user_data(content_type_surface->resource, NULL);
 	free(content_type_surface);
 }
@@ -72,12 +73,9 @@ static const struct wlr_addon_interface surface_addon_impl = {
 	.destroy = surface_addon_destroy,
 };
 
-static void content_type_surface_handle_commit(struct wl_listener *listener,
-		void *data) {
-	struct wlr_content_type_v1_surface *content_type_surface =
-		wl_container_of(listener, content_type_surface, commit);
-	content_type_surface->current = content_type_surface->pending;
-}
+static const struct wlr_surface_synced_impl surface_synced_impl = {
+	.state_size = sizeof(enum wp_content_type_v1_type),
+};
 
 static void content_type_surface_handle_resource_destroy(
 		struct wl_resource *resource) {
@@ -107,10 +105,19 @@ static void manager_handle_get_surface_content_type(struct wl_client *client,
 		return;
 	}
 
+	if (!wlr_surface_synced_init(&content_type_surface->synced, surface,
+			&surface_synced_impl, &content_type_surface->pending,
+			&content_type_surface->current)) {
+		free(content_type_surface);
+		wl_resource_post_no_memory(manager_resource);
+		return;
+	}
+
 	uint32_t version = wl_resource_get_version(manager_resource);
 	content_type_surface->resource = wl_resource_create(client,
 		&wp_content_type_v1_interface, version, id);
 	if (content_type_surface->resource == NULL) {
+		wlr_surface_synced_finish(&content_type_surface->synced);
 		free(content_type_surface);
 		wl_resource_post_no_memory(manager_resource);
 		return;
@@ -121,9 +128,6 @@ static void manager_handle_get_surface_content_type(struct wl_client *client,
 
 	wlr_addon_init(&content_type_surface->addon, &surface->addons,
 		manager, &surface_addon_impl);
-
-	content_type_surface->commit.notify = content_type_surface_handle_commit;
-	wl_signal_add(&surface->events.destroy, &content_type_surface->commit);
 }
 
 static const struct wp_content_type_manager_v1_interface manager_impl = {
