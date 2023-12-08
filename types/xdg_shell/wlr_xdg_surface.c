@@ -284,6 +284,9 @@ static void xdg_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 		}
 		break;
 	case WLR_XDG_SURFACE_ROLE_POPUP:
+		if (surface->popup != NULL) {
+			handle_xdg_popup_client_commit(surface->popup);
+		}
 		break;
 	}
 }

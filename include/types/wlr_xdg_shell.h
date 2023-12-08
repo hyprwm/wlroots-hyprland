@@ -20,6 +20,7 @@ void create_xdg_popup(struct wlr_xdg_surface *surface,
 	struct wlr_xdg_positioner *positioner, uint32_t id);
 void reset_xdg_popup(struct wlr_xdg_popup *popup);
 void destroy_xdg_popup(struct wlr_xdg_popup *popup);
+void handle_xdg_popup_client_commit(struct wlr_xdg_popup *popup);
 void handle_xdg_popup_committed(struct wlr_xdg_popup *popup);
 struct wlr_xdg_popup_configure *send_xdg_popup_configure(
 	struct wlr_xdg_popup *popup);
