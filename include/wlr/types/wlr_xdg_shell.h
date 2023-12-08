@@ -281,6 +281,8 @@ struct wlr_xdg_surface {
 
 	// private state
 
+	struct wlr_surface_synced synced;
+
 	struct wl_listener role_resource_destroy;
 };
 
