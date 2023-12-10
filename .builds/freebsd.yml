@@ -1,7 +1,6 @@
 image: freebsd/latest
 packages:
   - devel/evdev-proto
-  - devel/libepoll-shim
   - devel/libudev-devd
   - devel/meson # implies ninja
   - devel/pkgconf
@@ -9,13 +8,10 @@ packages:
   - graphics/libdrm
   - graphics/libliftoff
   - graphics/mesa-libs
-  - graphics/png
   - graphics/vulkan-headers
   - graphics/vulkan-loader
   - graphics/wayland
   - graphics/wayland-protocols
-  - multimedia/ffmpeg
-  - x11/libX11
   - x11/libinput
   - x11/libxcb
   - x11/libxkbcommon

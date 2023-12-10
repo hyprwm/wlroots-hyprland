@@ -1,7 +1,6 @@
 image: alpine/edge
 packages:
   - eudev-dev
-  - ffmpeg-dev
   - glslang
   - libdisplay-info-dev
   - libinput-dev
