@@ -17,8 +17,6 @@
 
 /* For triple buffering, a history of two frames is required. */
 #define WLR_DAMAGE_RING_PREVIOUS_LEN 2
-/* Keep track of as many buffers as a swapchain can hold */
-#define WLR_DAMAGE_RING_BUFFERS_LEN 4
 
 struct wlr_box;
 
@@ -26,7 +24,9 @@ struct wlr_damage_ring_buffer {
 	struct wlr_buffer *buffer;
 	struct wl_listener destroy;
 	pixman_region32_t damage;
-	uint64_t seq;
+
+	struct wlr_damage_ring *ring;
+	struct wl_list link; // wlr_damage_ring.buffers
 };
 
 struct wlr_damage_ring {
@@ -40,8 +40,7 @@ struct wlr_damage_ring {
 	pixman_region32_t previous[WLR_DAMAGE_RING_PREVIOUS_LEN];
 	size_t previous_idx;
 
-	uint64_t last_buffer_seq;
-	struct wlr_damage_ring_buffer buffers[WLR_DAMAGE_RING_BUFFERS_LEN];
+	struct wl_list buffers; // wlr_damage_ring_buffer.link
 };
 
 void wlr_damage_ring_init(struct wlr_damage_ring *ring);

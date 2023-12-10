@@ -19,11 +19,14 @@ void wlr_damage_ring_init(struct wlr_damage_ring *ring) {
 		pixman_region32_init(&ring->previous[i]);
 	}
 
-	for (size_t i = 0; i < WLR_DAMAGE_RING_BUFFERS_LEN; ++i) {
-		struct wlr_damage_ring_buffer *ring_buffer = &ring->buffers[i];
-		wl_list_init(&ring_buffer->destroy.link);
-		pixman_region32_init(&ring_buffer->damage);
-	}
+	wl_list_init(&ring->buffers);
+}
+
+static void buffer_destroy(struct wlr_damage_ring_buffer *entry) {
+	wl_list_remove(&entry->destroy.link);
+	wl_list_remove(&entry->link);
+	pixman_region32_fini(&entry->damage);
+	free(entry);
 }
 
 void wlr_damage_ring_finish(struct wlr_damage_ring *ring) {
@@ -31,10 +34,9 @@ void wlr_damage_ring_finish(struct wlr_damage_ring *ring) {
 	for (size_t i = 0; i < WLR_DAMAGE_RING_PREVIOUS_LEN; ++i) {
 		pixman_region32_fini(&ring->previous[i]);
 	}
-	for (size_t i = 0; i < WLR_DAMAGE_RING_BUFFERS_LEN; ++i) {
-		struct wlr_damage_ring_buffer *ring_buffer = &ring->buffers[i];
-		wl_list_remove(&ring_buffer->destroy.link);
-		pixman_region32_fini(&ring_buffer->damage);
+	struct wlr_damage_ring_buffer *entry, *tmp_entry;
+	wl_list_for_each_safe(entry, tmp_entry, &ring->buffers, link) {
+		buffer_destroy(entry);
 	}
 }
 
@@ -127,53 +129,35 @@ void wlr_damage_ring_get_buffer_damage(struct wlr_damage_ring *ring,
 	}
 }
 
-static void damage_ring_buffer_reset_buffer(struct wlr_damage_ring_buffer *ring_buffer) {
-	ring_buffer->buffer = NULL;
-	wl_list_remove(&ring_buffer->destroy.link);
-	wl_list_init(&ring_buffer->destroy.link);
+static void entry_squash_damage(struct wlr_damage_ring_buffer *entry) {
+	pixman_region32_t *prev;
+	if (entry->link.prev == &entry->ring->buffers) {
+		// this entry is the first in the list
+		prev = &entry->ring->current;
+	} else {
+		struct wlr_damage_ring_buffer *last =
+			wl_container_of(entry->link.prev, last, link);
+		prev = &last->damage;
+	}
+
+	pixman_region32_union(prev, prev, &entry->damage);
 }
 
-static void damage_ring_handle_buffer_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_damage_ring_buffer *ring_buffer =
-		wl_container_of(listener, ring_buffer, destroy);
-	damage_ring_buffer_reset_buffer(ring_buffer);
+static void buffer_handle_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_damage_ring_buffer *entry = wl_container_of(listener, entry, destroy);
+	entry_squash_damage(entry);
+	buffer_destroy(entry);
 }
 
 void wlr_damage_ring_rotate_buffer(struct wlr_damage_ring *ring,
 		struct wlr_buffer *buffer, pixman_region32_t *damage) {
-	bool found = false;
-	struct wlr_damage_ring_buffer *ring_buffer, *oldest = NULL;
-	for (size_t i = 0; i < WLR_DAMAGE_RING_BUFFERS_LEN; i++) {
-		ring_buffer = &ring->buffers[i];
-		if (ring_buffer->buffer == buffer) {
-			found = true;
-			break;
-		}
-		if (oldest == NULL || ring_buffer->seq < oldest->seq) {
-			oldest = ring_buffer;
-		}
-	}
+	pixman_region32_copy(damage, &ring->current);
 
-	if (!found) {
-		damage_ring_buffer_reset_buffer(oldest);
-		ring_buffer = oldest;
-
-		ring_buffer->buffer = buffer;
-
-		ring_buffer->destroy.notify = damage_ring_handle_buffer_destroy;
-		wl_signal_add(&buffer->events.destroy, &ring_buffer->destroy);
-
-		pixman_region32_clear(damage);
-		pixman_region32_union_rect(damage, damage, 0, 0, ring->width, ring->height);
-	} else {
-		pixman_region32_copy(damage, &ring->current);
-
-		// Accumulate damage from old buffers
-		for (size_t i = 0; i < WLR_DAMAGE_RING_BUFFERS_LEN; i++) {
-			struct wlr_damage_ring_buffer *rb = &ring->buffers[i];
-			if (rb->seq > ring_buffer->seq) {
-				pixman_region32_union(damage, damage, &rb->damage);
-			}
+	struct wlr_damage_ring_buffer *entry;
+	wl_list_for_each(entry, &ring->buffers, link) {
+		if (entry->buffer != buffer) {
+			pixman_region32_union(damage, damage, &entry->damage);
+			continue;
 		}
 
 		// Check the number of rectangles
@@ -185,9 +169,34 @@ void wlr_damage_ring_rotate_buffer(struct wlr_damage_ring *ring,
 				extents->x2 - extents->x1,
 				extents->y2 - extents->y1);
 		}
+
+		// rotate
+		entry_squash_damage(entry);
+		pixman_region32_copy(&entry->damage, &ring->current);
+		pixman_region32_clear(&ring->current);
+
+		wl_list_remove(&entry->link);
+		wl_list_insert(&ring->buffers, &entry->link);
+		return;
 	}
 
-	ring_buffer->seq = ++ring->last_buffer_seq;
-	pixman_region32_copy(&ring_buffer->damage, &ring->current);
+	pixman_region32_clear(damage);
+	pixman_region32_union_rect(damage, damage,
+		0, 0, ring->width, ring->height);
+
+	entry = calloc(1, sizeof(*entry));
+	if (!entry) {
+		return;
+	}
+
+	pixman_region32_init(&entry->damage);
+	pixman_region32_copy(&entry->damage, &ring->current);
 	pixman_region32_clear(&ring->current);
+
+	wl_list_insert(&ring->buffers, &entry->link);
+	entry->buffer = buffer;
+	entry->ring = ring;
+
+	entry->destroy.notify = buffer_handle_destroy;
+	wl_signal_add(&buffer->events.destroy, &entry->destroy);
 }
