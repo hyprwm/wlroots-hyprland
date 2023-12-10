@@ -565,6 +565,11 @@ static void surface_handle_commit(struct wl_client *client,
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
 	surface_finalize_pending(surface);
 
+	if (surface->role != NULL && surface->role->client_commit != NULL &&
+			(surface->role_resource != NULL || surface->role->no_object)) {
+		surface->role->client_commit(surface);
+	}
+
 	wl_signal_emit_mutable(&surface->events.client_commit, NULL);
 
 	if (surface->pending.cached_state_locks > 0 || !wl_list_empty(&surface->cached)) {

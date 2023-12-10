@@ -82,6 +82,15 @@ struct wlr_surface_role {
 	 */
 	bool no_object;
 	/**
+	 * Called when the client sends the wl_surface.commit request. May be NULL.
+	 * Typically used to check that the pending state is valid, and send
+	 * protocol errors if not.
+	 *
+	 * If the role is represented by an object, this is only called if
+	 * such object exists.
+	 */
+	void (*client_commit)(struct wlr_surface *surface);
+	/**
 	 * Called when a new surface state is committed. May be NULL.
 	 *
 	 * If the role is represented by an object, this is only called if
