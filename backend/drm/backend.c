@@ -96,6 +96,11 @@ bool wlr_backend_is_drm(struct wlr_backend *b) {
 	return b->impl == &backend_impl;
 }
 
+struct wlr_backend *wlr_drm_backend_get_parent(struct wlr_backend *backend) {
+	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
+	return drm->parent ? &drm->parent->backend : NULL;
+}
+
 static void handle_session_active(struct wl_listener *listener, void *data) {
 	struct wlr_drm_backend *drm =
 		wl_container_of(listener, drm, session_active);

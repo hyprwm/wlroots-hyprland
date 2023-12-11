@@ -44,6 +44,11 @@ bool wlr_backend_is_drm(struct wlr_backend *backend);
 bool wlr_output_is_drm(struct wlr_output *output);
 
 /**
+ * Get the parent DRM backend, if any.
+ */
+struct wlr_backend *wlr_drm_backend_get_parent(struct wlr_backend *backend);
+
+/**
  * Get the KMS connector object ID.
  */
 uint32_t wlr_drm_connector_get_id(struct wlr_output *output);
