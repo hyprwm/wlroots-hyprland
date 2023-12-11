@@ -73,12 +73,7 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 static int backend_get_drm_fd(struct wlr_backend *backend) {
 	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
-
-	if (drm->parent) {
-		return drm->parent->fd;
-	} else {
-		return drm->fd;
-	}
+	return drm->fd;
 }
 
 static uint32_t drm_backend_get_buffer_caps(struct wlr_backend *backend) {
