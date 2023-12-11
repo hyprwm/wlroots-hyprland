@@ -273,7 +273,7 @@ static void surface_update_damage(pixman_region32_t *buffer_damage,
 }
 
 /**
- * Append pending state to current state and clear pending state.
+ * Overwrite state with a copy of the next state, then clear the next state.
  */
 static void surface_state_move(struct wlr_surface_state *state,
 		struct wlr_surface_state *next) {
