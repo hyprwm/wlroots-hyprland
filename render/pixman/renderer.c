@@ -343,6 +343,19 @@ struct wlr_renderer *wlr_pixman_renderer_create(void) {
 	return &renderer->wlr_renderer;
 }
 
+pixman_image_t *wlr_pixman_renderer_get_buffer_image(
+		struct wlr_renderer *wlr_renderer, struct wlr_buffer *wlr_buffer) {
+	struct wlr_pixman_renderer *renderer = get_renderer(wlr_renderer);
+	struct wlr_pixman_buffer *buffer = get_buffer(renderer, wlr_buffer);
+	if (!buffer) {
+		buffer = create_buffer(renderer, wlr_buffer);
+	}
+	if (!buffer) {
+		return NULL;
+	}
+	return buffer->image;
+}
+
 pixman_image_t *wlr_pixman_texture_get_image(struct wlr_texture *wlr_texture) {
 	struct wlr_pixman_texture *texture = get_texture(wlr_texture);
 	return texture->image;
