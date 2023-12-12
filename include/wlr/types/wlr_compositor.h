@@ -278,8 +278,8 @@ void wlr_surface_unmap(struct wlr_surface *surface);
 /**
  * Whether or not this surface currently has an attached buffer. A surface has
  * an attached buffer when it commits with a non-null buffer in its pending
- * state. A surface will not have a buffer if it has never committed one, has
- * committed a null buffer, or something went wrong with uploading the buffer.
+ * state. A surface will not have a buffer if it has never committed one or has
+ * committed a null buffer.
  */
 bool wlr_surface_has_buffer(struct wlr_surface *surface);
 
