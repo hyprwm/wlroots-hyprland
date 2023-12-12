@@ -1073,7 +1073,6 @@ static void handle_layout_output_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_cursor_output_cursor *output_cursor =
 		wl_container_of(listener, output_cursor, layout_output_destroy);
-	//struct wlr_output_layout_output *l_output = data;
 	output_cursor_destroy(output_cursor);
 }
 
