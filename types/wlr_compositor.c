@@ -720,7 +720,11 @@ struct wlr_texture *wlr_surface_get_texture(struct wlr_surface *surface) {
 }
 
 bool wlr_surface_has_buffer(struct wlr_surface *surface) {
-	return surface->current.buffer_width > 0 && surface->current.buffer_height > 0;
+	return wlr_surface_state_has_buffer(&surface->current);
+}
+
+bool wlr_surface_state_has_buffer(const struct wlr_surface_state *state) {
+	return state->buffer_width > 0 && state->buffer_height > 0;
 }
 
 void wlr_surface_map(struct wlr_surface *surface) {

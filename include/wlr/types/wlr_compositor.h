@@ -284,6 +284,19 @@ void wlr_surface_unmap(struct wlr_surface *surface);
 bool wlr_surface_has_buffer(struct wlr_surface *surface);
 
 /**
+ * Check whether this surface state has an attached buffer.
+ *
+ * A surface has an attached buffer when the client commits with a non-null
+ * buffer. A surface will not have a buffer if the client never committed one,
+ * or committed a null buffer.
+ *
+ * Note that wlr_surface_state.buffer may be NULL even if this function returns
+ * true: the buffer field is reset after commit, to allow the buffer to be
+ * released to the client. Additionally, the buffer import or upload may fail.
+ */
+bool wlr_surface_state_has_buffer(const struct wlr_surface_state *state);
+
+/**
  * Get the texture of the buffer currently attached to this surface. Returns
  * NULL if no buffer is currently attached or if something went wrong with
  * uploading the buffer.
