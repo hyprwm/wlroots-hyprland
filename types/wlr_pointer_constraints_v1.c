@@ -114,7 +114,7 @@ static void pointer_constraint_commit(
 			WLR_POINTER_CONSTRAINT_V1_STATE_CURSOR_HINT) {
 		constraint->current.cursor_hint = constraint->pending.cursor_hint;
 	}
-	constraint->current.committed |= constraint->pending.committed;
+	constraint->current.committed = constraint->pending.committed;
 
 	bool updated_region = !!constraint->pending.committed;
 	constraint->pending.committed = 0;
