@@ -82,9 +82,8 @@ static void im_commit(struct wl_client *client, struct wl_resource *resource,
 	}
 	input_method->current = input_method->pending;
 	input_method->current_serial = serial;
-	struct wlr_input_method_v2_state default_state = {0};
-	input_method->pending = default_state;
-	wl_signal_emit_mutable(&input_method->events.commit, (void*)input_method);
+	input_method->pending = (struct wlr_input_method_v2_state){0};
+	wl_signal_emit_mutable(&input_method->events.commit, input_method);
 }
 
 static void im_commit_string(struct wl_client *client,
