@@ -80,10 +80,15 @@ static void im_commit(struct wl_client *client, struct wl_resource *resource,
 	if (!input_method) {
 		return;
 	}
+	if (serial != input_method->current_serial) {
+		free(input_method->pending.commit_text);
+		free(input_method->pending.preedit.text);
+		input_method->pending = (struct wlr_input_method_v2_state){0};
+		return;
+	}
 	free(input_method->current.commit_text);
 	free(input_method->current.preedit.text);
 	input_method->current = input_method->pending;
-	input_method->current_serial = serial;
 	input_method->pending = (struct wlr_input_method_v2_state){0};
 	wl_signal_emit_mutable(&input_method->events.commit, input_method);
 }
