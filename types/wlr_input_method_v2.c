@@ -80,6 +80,8 @@ static void im_commit(struct wl_client *client, struct wl_resource *resource,
 	if (!input_method) {
 		return;
 	}
+	free(input_method->current.commit_text);
+	free(input_method->current.preedit.text);
 	input_method->current = input_method->pending;
 	input_method->current_serial = serial;
 	input_method->pending = (struct wlr_input_method_v2_state){0};
