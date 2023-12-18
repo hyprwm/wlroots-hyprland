@@ -19,6 +19,12 @@
 static const struct zwp_input_method_v2_interface input_method_impl;
 static const struct zwp_input_method_keyboard_grab_v2_interface keyboard_grab_impl;
 
+static void input_state_reset(struct wlr_input_method_v2_state *state) {
+	free(state->commit_text);
+	free(state->preedit.text);
+	*state = (struct wlr_input_method_v2_state){0};
+}
+
 static void popup_surface_destroy(struct wlr_input_popup_surface_v2 *popup_surface) {
 	wlr_surface_unmap(popup_surface->surface);
 
@@ -53,10 +59,8 @@ static void input_method_destroy(struct wlr_input_method_v2 *input_method) {
 	wl_list_remove(wl_resource_get_link(input_method->resource));
 	wl_list_remove(&input_method->seat_client_destroy.link);
 	wlr_input_method_keyboard_grab_v2_destroy(input_method->keyboard_grab);
-	free(input_method->pending.commit_text);
-	free(input_method->pending.preedit.text);
-	free(input_method->current.commit_text);
-	free(input_method->current.preedit.text);
+	input_state_reset(&input_method->pending);
+	input_state_reset(&input_method->current);
 	free(input_method);
 }
 
@@ -81,15 +85,16 @@ static void im_commit(struct wl_client *client, struct wl_resource *resource,
 		return;
 	}
 	if (serial != input_method->current_serial) {
-		free(input_method->pending.commit_text);
-		free(input_method->pending.preedit.text);
-		input_method->pending = (struct wlr_input_method_v2_state){0};
+		input_state_reset(&input_method->pending);
 		return;
 	}
-	free(input_method->current.commit_text);
-	free(input_method->current.preedit.text);
+	input_state_reset(&input_method->current);
+
+	// This transfers ownership of the current commit_text and
+	// preedit.text from pending to current:
 	input_method->current = input_method->pending;
 	input_method->pending = (struct wlr_input_method_v2_state){0};
+
 	wl_signal_emit_mutable(&input_method->events.commit, input_method);
 }
 
