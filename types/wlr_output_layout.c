@@ -118,7 +118,7 @@ static void output_layout_reconfigure(struct wlr_output_layout *layout) {
 static void output_update_global(struct wlr_output_layout *layout,
 		struct wlr_output *output) {
 	// Don't expose the output if it doesn't have a current mode
-	if (wl_list_empty(&output->modes) || output->current_mode != NULL) {
+	if (output->width > 0 && output->height > 0) {
 		wlr_output_create_global(output, layout->display);
 	} else {
 		wlr_output_destroy_global(output);
