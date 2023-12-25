@@ -170,8 +170,7 @@ static void lock_surface_role_commit(struct wlr_surface *surface) {
 		return;
 	}
 
-	if (surface->current.width < 0 || surface->current.height < 0 ||
-			(uint32_t)surface->current.width != lock_surface->pending.width ||
+	if ((uint32_t)surface->current.width != lock_surface->pending.width ||
 			(uint32_t)surface->current.height != lock_surface->pending.height) {
 		wl_resource_post_error(lock_surface->resource,
 			EXT_SESSION_LOCK_SURFACE_V1_ERROR_DIMENSIONS_MISMATCH,
