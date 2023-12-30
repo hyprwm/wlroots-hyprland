@@ -175,6 +175,8 @@ struct wlr_drm_connector {
 
 	// Last committed page-flip
 	struct wlr_drm_page_flip *pending_page_flip;
+
+	int32_t refresh;
 };
 
 struct wlr_drm_backend *get_drm_backend_from_backend(
