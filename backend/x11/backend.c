@@ -600,7 +600,7 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 
 	if (!query_formats(x11)) {
 		wlr_log(WLR_ERROR, "Failed to query supported DRM formats");
-		return false;
+		goto error_event;
 	}
 
 	x11->drm_fd = -1;
@@ -637,7 +637,7 @@ struct wlr_backend *wlr_x11_backend_create(struct wl_display *display,
 #if HAVE_XCB_ERRORS
 	if (xcb_errors_context_new(x11->xcb, &x11->errors_context) != 0) {
 		wlr_log(WLR_ERROR, "Failed to create error context");
-		return false;
+		goto error_event;
 	}
 #endif
 

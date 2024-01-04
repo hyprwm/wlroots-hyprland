@@ -52,12 +52,12 @@ static struct wlr_buffer *output_acquire_empty_buffer(struct wlr_output *output,
 	// wlr_output_test_state(), which will prevent us from being called.
 	if (!wlr_output_configure_primary_swapchain(output, state,
 			&output->swapchain)) {
-		return false;
+		return NULL;
 	}
 
 	struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain, NULL);
 	if (buffer == NULL) {
-		return false;
+		return NULL;
 	}
 
 	struct wlr_render_pass *pass =

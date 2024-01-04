@@ -1816,12 +1816,12 @@ struct wlr_vk_pipeline_layout *get_or_create_pipeline_layout(
 	if (res != VK_SUCCESS) {
 		wlr_vk_error("vkCreateSampler", res);
 		free(pipeline_layout);
-		return false;
+		return NULL;
 	}
 
 	if (!init_tex_layouts(renderer, pipeline_layout->sampler, &pipeline_layout->ds, &pipeline_layout->vk)) {
 		free(pipeline_layout);
-		return false;
+		return NULL;
 	}
 
 	wl_list_insert(&renderer->pipeline_layouts, &pipeline_layout->link);

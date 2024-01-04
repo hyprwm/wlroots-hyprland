@@ -806,7 +806,7 @@ static struct wlr_texture *vulkan_texture_from_dmabuf_buffer(
 
 	struct wlr_vk_texture *texture = vulkan_texture_from_dmabuf(renderer, dmabuf);
 	if (texture == NULL) {
-		return false;
+		return NULL;
 	}
 
 	texture->buffer = wlr_buffer_lock(buffer);
