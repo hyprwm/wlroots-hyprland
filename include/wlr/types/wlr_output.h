@@ -180,7 +180,7 @@ struct wlr_output {
 		// Emitted after a client bound the wl_output global
 		struct wl_signal bind; // struct wlr_output_event_bind
 		struct wl_signal description;
-		struct wl_signal request_state; // struct wlr_output_state
+		struct wl_signal request_state; // struct wlr_output_event_request_state
 		struct wl_signal destroy;
 	} events;
 
