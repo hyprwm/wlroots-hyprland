@@ -39,7 +39,6 @@ struct wlr_subsurface {
 	bool has_cache;
 
 	bool synchronized;
-	bool reordered;
 	bool added;
 
 	struct wl_listener surface_client_commit;

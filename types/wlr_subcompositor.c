@@ -118,8 +118,6 @@ static void subsurface_handle_place_above(struct wl_client *client,
 
 	wl_list_remove(&subsurface->pending.link);
 	wl_list_insert(node, &subsurface->pending.link);
-
-	subsurface->reordered = true;
 }
 
 static void subsurface_handle_place_below(struct wl_client *client,
@@ -150,8 +148,6 @@ static void subsurface_handle_place_below(struct wl_client *client,
 
 	wl_list_remove(&subsurface->pending.link);
 	wl_list_insert(node->prev, &subsurface->pending.link);
-
-	subsurface->reordered = true;
 }
 
 static void subsurface_handle_set_sync(struct wl_client *client,
@@ -281,35 +277,10 @@ static void subsurface_handle_surface_client_commit(
 	}
 }
 
-static void collect_damage_iter(struct wlr_surface *surface,
-		int sx, int sy, void *data) {
-	struct wlr_subsurface *subsurface = data;
-	pixman_region32_t *damage = &subsurface->parent->external_damage;
-	pixman_region32_union_rect(damage, damage,
-		subsurface->current.x + sx,
-		subsurface->current.y + sy,
-		surface->current.width, surface->current.height);
-}
-
 void subsurface_handle_parent_commit(struct wlr_subsurface *subsurface) {
-	struct wlr_surface *surface = subsurface->surface;
-
-	bool moved = subsurface->current.x != subsurface->previous.x ||
-		subsurface->current.y != subsurface->previous.y;
-	if (subsurface->surface->mapped && moved) {
-		wlr_surface_for_each_surface(surface,
-			collect_damage_iter, subsurface);
-	}
-
 	if (subsurface->synchronized && subsurface->has_cache) {
-		wlr_surface_unlock_cached(surface, subsurface->cached_seq);
+		wlr_surface_unlock_cached(subsurface->surface, subsurface->cached_seq);
 		subsurface->has_cache = false;
-	}
-
-	if (subsurface->surface->mapped && (moved || subsurface->reordered)) {
-		subsurface->reordered = false;
-		wlr_surface_for_each_surface(surface,
-			collect_damage_iter, subsurface);
 	}
 
 	if (!subsurface->added) {
