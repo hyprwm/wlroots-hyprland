@@ -249,47 +249,39 @@ static void surface_update_damage(pixman_region32_t *buffer_damage,
 		struct wlr_surface_state *current, struct wlr_surface_state *pending) {
 	pixman_region32_clear(buffer_damage);
 
-	if (pending->width != current->width ||
-			pending->height != current->height ||
-			!wlr_fbox_equal(&pending->viewport.src, &current->viewport.src)) {
-		// Damage the whole buffer on resize or viewport source box change
-		pixman_region32_union_rect(buffer_damage, buffer_damage, 0, 0,
-			pending->buffer_width, pending->buffer_height);
-	} else {
-		// Copy over surface damage + buffer damage
-		pixman_region32_t surface_damage;
-		pixman_region32_init(&surface_damage);
+	// Copy over surface damage + buffer damage
+	pixman_region32_t surface_damage;
+	pixman_region32_init(&surface_damage);
 
-		pixman_region32_copy(&surface_damage, &pending->surface_damage);
+	pixman_region32_copy(&surface_damage, &pending->surface_damage);
 
-		if (pending->viewport.has_dst) {
-			int src_width, src_height;
-			surface_state_viewport_src_size(pending, &src_width, &src_height);
-			float scale_x = (float)pending->viewport.dst_width / src_width;
-			float scale_y = (float)pending->viewport.dst_height / src_height;
-			wlr_region_scale_xy(&surface_damage, &surface_damage,
-				1.0 / scale_x, 1.0 / scale_y);
-		}
-		if (pending->viewport.has_src) {
-			// This is lossy: do a best-effort conversion
-			pixman_region32_translate(&surface_damage,
-				floor(pending->viewport.src.x),
-				floor(pending->viewport.src.y));
-		}
-
-		wlr_region_scale(&surface_damage, &surface_damage, pending->scale);
-
-		int width, height;
-		surface_state_transformed_buffer_size(pending, &width, &height);
-		wlr_region_transform(&surface_damage, &surface_damage,
-			wlr_output_transform_invert(pending->transform),
-			width, height);
-
-		pixman_region32_union(buffer_damage,
-			&pending->buffer_damage, &surface_damage);
-
-		pixman_region32_fini(&surface_damage);
+	if (pending->viewport.has_dst) {
+		int src_width, src_height;
+		surface_state_viewport_src_size(pending, &src_width, &src_height);
+		float scale_x = (float)pending->viewport.dst_width / src_width;
+		float scale_y = (float)pending->viewport.dst_height / src_height;
+		wlr_region_scale_xy(&surface_damage, &surface_damage,
+			1.0 / scale_x, 1.0 / scale_y);
 	}
+	if (pending->viewport.has_src) {
+		// This is lossy: do a best-effort conversion
+		pixman_region32_translate(&surface_damage,
+			floor(pending->viewport.src.x),
+			floor(pending->viewport.src.y));
+	}
+
+	wlr_region_scale(&surface_damage, &surface_damage, pending->scale);
+
+	int width, height;
+	surface_state_transformed_buffer_size(pending, &width, &height);
+	wlr_region_transform(&surface_damage, &surface_damage,
+		wlr_output_transform_invert(pending->transform),
+		width, height);
+
+	pixman_region32_union(buffer_damage,
+		&pending->buffer_damage, &surface_damage);
+
+	pixman_region32_fini(&surface_damage);
 }
 
 static void *surface_synced_create_state(struct wlr_surface_synced *synced) {
