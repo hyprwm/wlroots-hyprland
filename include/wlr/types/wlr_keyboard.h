@@ -45,7 +45,7 @@ struct wlr_keyboard_modifiers {
 	xkb_mod_mask_t depressed;
 	xkb_mod_mask_t latched;
 	xkb_mod_mask_t locked;
-	xkb_mod_mask_t group;
+	xkb_layout_index_t group;
 };
 
 struct wlr_keyboard {

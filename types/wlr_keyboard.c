@@ -48,7 +48,7 @@ bool keyboard_modifier_update(struct wlr_keyboard *keyboard) {
 		XKB_STATE_MODS_LATCHED);
 	xkb_mod_mask_t locked = xkb_state_serialize_mods(keyboard->xkb_state,
 		XKB_STATE_MODS_LOCKED);
-	xkb_mod_mask_t group = xkb_state_serialize_layout(keyboard->xkb_state,
+	xkb_layout_index_t group = xkb_state_serialize_layout(keyboard->xkb_state,
 		XKB_STATE_LAYOUT_EFFECTIVE);
 	if (depressed == keyboard->modifiers.depressed &&
 			latched == keyboard->modifiers.latched &&
