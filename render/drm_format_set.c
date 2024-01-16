@@ -74,6 +74,7 @@ bool wlr_drm_format_set_add(struct wlr_drm_format_set *set, uint32_t format,
 		struct wlr_drm_format *fmts = realloc(set->formats, sizeof(*fmts) * capacity);
 		if (!fmts) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			wlr_drm_format_finish(&fmt);
 			return false;
 		}
 
