@@ -233,6 +233,10 @@ void handle_x11_xinput_event(struct wlr_x11_backend *x11,
 		}
 
 		struct wlr_x11_touchpoint *touchpoint = calloc(1, sizeof(*touchpoint));
+		if (!touchpoint) {
+			return;
+		}
+
 		touchpoint->x11_id = ev->detail;
 		touchpoint->wayland_id = id;
 		wl_list_init(&touchpoint->link);
