@@ -124,14 +124,18 @@ static bool render_pass_submit(struct wlr_render_pass *wlr_pass) {
 
 	// insert acquire and release barriers for dmabuf-images
 	uint32_t barrier_count = wl_list_length(&renderer->foreign_textures) + 1;
+	render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(*render_wait));
+	if (render_wait == NULL) {
+		wlr_log_errno(WLR_ERROR, "Allocation failed");
+		goto error;
+	}
+
 	VkImageMemoryBarrier *acquire_barriers = calloc(barrier_count, sizeof(*acquire_barriers));
 	VkImageMemoryBarrier *release_barriers = calloc(barrier_count, sizeof(*release_barriers));
-	render_wait = calloc(barrier_count * WLR_DMABUF_MAX_PLANES, sizeof(*render_wait));
-	if (acquire_barriers == NULL || release_barriers == NULL || render_wait == NULL) {
+	if (acquire_barriers == NULL || release_barriers == NULL) {
 		wlr_log_errno(WLR_ERROR, "Allocation failed");
 		free(acquire_barriers);
 		free(release_barriers);
-		free(render_wait);
 		goto error;
 	}
 
