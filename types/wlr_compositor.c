@@ -35,6 +35,24 @@ static int max(int fst, int snd) {
 	}
 }
 
+static void set_pending_buffer_resource(struct wlr_surface *surface,
+		struct wl_resource *resource) {
+	wl_list_remove(&surface->pending_buffer_resource_destroy.link);
+	surface->pending_buffer_resource = resource;
+	if (resource != NULL) {
+		wl_resource_add_destroy_listener(resource, &surface->pending_buffer_resource_destroy);
+	} else {
+		wl_list_init(&surface->pending_buffer_resource_destroy.link);
+	}
+}
+
+static void pending_buffer_resource_handle_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_surface *surface =
+		wl_container_of(listener, surface, pending_buffer_resource_destroy);
+
+	set_pending_buffer_resource(surface, NULL);
+}
+
 static void surface_handle_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
@@ -60,19 +78,8 @@ static void surface_handle_attach(struct wl_client *client,
 		return;
 	}
 
-	struct wlr_buffer *buffer = NULL;
-	if (buffer_resource != NULL) {
-		buffer = wlr_buffer_try_from_resource(buffer_resource);
-		if (buffer == NULL) {
-			wl_resource_post_error(buffer_resource, 0, "unknown buffer type");
-			return;
-		}
-	}
-
 	surface->pending.committed |= WLR_SURFACE_STATE_BUFFER;
-
-	wlr_buffer_unlock(surface->pending.buffer);
-	surface->pending.buffer = buffer;
+	set_pending_buffer_resource(surface, buffer_resource);
 
 	if (wl_resource_get_version(resource) < WL_SURFACE_OFFSET_SINCE_VERSION) {
 		surface->pending.committed |= WLR_SURFACE_STATE_OFFSET;
@@ -180,6 +187,17 @@ static void surface_finalize_pending(struct wlr_surface *surface) {
 	struct wlr_surface_state *pending = &surface->pending;
 
 	if ((pending->committed & WLR_SURFACE_STATE_BUFFER)) {
+		struct wl_resource *buffer_resource = surface->pending_buffer_resource;
+		if (buffer_resource != NULL) {
+			set_pending_buffer_resource(surface, NULL);
+
+			pending->buffer = wlr_buffer_try_from_resource(buffer_resource);
+			if (pending->buffer == NULL) {
+				wlr_surface_reject_pending(surface,
+					buffer_resource, -1, "unknown buffer type");
+			}
+		}
+
 		if (pending->buffer != NULL) {
 			pending->buffer_width = pending->buffer->width;
 			pending->buffer_height = pending->buffer->height;
@@ -737,6 +755,9 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 
 	wl_list_remove(&surface->renderer_destroy.link);
 	wl_list_remove(&surface->role_resource_destroy.link);
+
+	wl_list_remove(&surface->pending_buffer_resource_destroy.link);
+
 	surface_state_finish(&surface->pending);
 	surface_state_finish(&surface->current);
 	pixman_region32_fini(&surface->buffer_damage);
@@ -804,6 +825,9 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	}
 
 	wl_list_init(&surface->role_resource_destroy.link);
+
+	surface->pending_buffer_resource_destroy.notify = pending_buffer_resource_handle_destroy;
+	wl_list_init(&surface->pending_buffer_resource_destroy.link);
 
 	return surface;
 }

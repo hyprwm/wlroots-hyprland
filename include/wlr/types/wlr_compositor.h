@@ -240,6 +240,9 @@ struct wlr_surface {
 
 	struct wl_list synced; // wlr_surface_synced.link
 	size_t synced_len;
+
+	struct wl_resource *pending_buffer_resource;
+	struct wl_listener pending_buffer_resource_destroy;
 };
 
 struct wlr_renderer;
