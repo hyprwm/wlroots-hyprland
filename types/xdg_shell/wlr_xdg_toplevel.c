@@ -556,6 +556,7 @@ void wlr_xdg_toplevel_send_close(struct wlr_xdg_toplevel *toplevel) {
 
 uint32_t wlr_xdg_toplevel_set_size(struct wlr_xdg_toplevel *toplevel,
 		int32_t width, int32_t height) {
+	assert(width >= 0 && height >= 0);
 	toplevel->scheduled.width = width;
 	toplevel->scheduled.height = height;
 	return wlr_xdg_surface_schedule_configure(toplevel->base);

@@ -28,6 +28,7 @@ struct wlr_xdg_popup_configure *send_xdg_popup_configure(
 	}
 
 	struct wlr_box *geometry = &configure->geometry;
+	assert(geometry->width > 0 && geometry->height > 0);
 	xdg_popup_send_configure(popup->resource,
 		geometry->x, geometry->y,
 		geometry->width, geometry->height);
