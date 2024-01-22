@@ -131,6 +131,12 @@ static void layer_surface_handle_set_size(struct wl_client *client,
 		return;
 	}
 
+	if (width > INT32_MAX || height > INT32_MAX) {
+		wl_client_post_implementation_error(client,
+			"zwlr_layer_surface_v1.set_size: width and height can't be greater than INT32_MAX");
+		return;
+	}
+
 	if (surface->pending.desired_width == width
 			&& surface->pending.desired_height == height) {
 		return;
