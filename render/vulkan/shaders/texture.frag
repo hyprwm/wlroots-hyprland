@@ -16,7 +16,9 @@ layout (constant_id = 0) const int TEXTURE_TRANSFORM = 0;
 #define TEXTURE_TRANSFORM_SRGB 1
 
 float srgb_channel_to_linear(float x) {
-	return max(x / 12.92, pow((x + 0.055) / 1.055, 2.4));
+	return mix(x / 12.92,
+		pow((x + 0.055) / 1.055, 2.4),
+		x > 0.04045);
 }
 
 vec4 srgb_color_to_linear(vec4 color) {
