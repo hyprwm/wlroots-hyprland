@@ -938,7 +938,7 @@ static void xwayland_surface_associate(struct wlr_xwm *xwm,
 			xcb_get_property_reply(xwm->xcb_conn, cookies[i], NULL);
 		if (reply == NULL) {
 			wlr_log(WLR_ERROR, "Failed to get window property");
-			return;
+			continue;
 		}
 		read_surface_property(xwm, xsurface, props[i], reply);
 		free(reply);
