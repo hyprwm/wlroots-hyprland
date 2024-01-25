@@ -50,6 +50,8 @@ static void multi_backend_destroy(struct wlr_backend *wlr_backend) {
 
 	wl_list_remove(&backend->display_destroy.link);
 
+	wlr_backend_finish(wlr_backend);
+
 	// Some backends may depend on other backends, ie. destroying a backend may
 	// also destroy other backends
 	while (!wl_list_empty(&backend->backends)) {
@@ -58,8 +60,6 @@ static void multi_backend_destroy(struct wlr_backend *wlr_backend) {
 		wlr_backend_destroy(sub->backend);
 	}
 
-	// Destroy this backend only after removing all sub-backends
-	wlr_backend_finish(wlr_backend);
 	free(backend);
 }
 
