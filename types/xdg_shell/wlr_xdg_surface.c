@@ -261,16 +261,14 @@ static void xdg_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 	assert(surface != NULL);
 
 	if (wlr_surface_state_has_buffer(&wlr_surface->pending) && !surface->configured) {
-		wl_resource_post_error(surface->resource,
-			XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER,
-			"xdg_surface has never been configured");
+		wlr_surface_reject_pending(wlr_surface, surface->resource,
+			XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER, "xdg_surface has never been configured");
 		return;
 	}
 
 	if (surface->role_resource == NULL) {
-		wl_resource_post_error(surface->resource,
-			XDG_SURFACE_ERROR_NOT_CONSTRUCTED,
-			"xdg_surface must have a role object");
+		wlr_surface_reject_pending(wlr_surface, surface->resource,
+			XDG_SURFACE_ERROR_NOT_CONSTRUCTED, "xdg_surface must have a role object");
 		return;
 	}
 

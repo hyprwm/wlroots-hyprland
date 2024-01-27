@@ -151,7 +151,8 @@ static void viewport_handle_surface_client_commit(struct wl_listener *listener,
 	if (!state->viewport.has_dst &&
 			(floor(state->viewport.src.width) != state->viewport.src.width ||
 			floor(state->viewport.src.height) != state->viewport.src.height)) {
-		wl_resource_post_error(viewport->resource, WP_VIEWPORT_ERROR_BAD_SIZE,
+		wlr_surface_reject_pending(viewport->surface,
+			viewport->resource, WP_VIEWPORT_ERROR_BAD_SIZE,
 			"wl_viewport.set_source width and height must be integers "
 			"when the destination rectangle is unset");
 		return;
@@ -159,7 +160,8 @@ static void viewport_handle_surface_client_commit(struct wl_listener *listener,
 
 	if (state->viewport.has_src && state->buffer != NULL &&
 			!check_src_buffer_bounds(state)) {
-		wl_resource_post_error(viewport->resource, WP_VIEWPORT_ERROR_OUT_OF_BUFFER,
+		wlr_surface_reject_pending(viewport->surface,
+			viewport->resource, WP_VIEWPORT_ERROR_OUT_OF_BUFFER,
 			"source rectangle out of buffer bounds");
 		return;
 	}

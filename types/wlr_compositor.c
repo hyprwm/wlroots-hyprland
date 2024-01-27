@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/render/interface.h>
@@ -200,7 +201,7 @@ static void surface_finalize_pending(struct wlr_surface *surface) {
 				"is not divisible by scale (%d)", pending->buffer_width,
 				pending->buffer_height, pending->scale);
 		} else {
-			wl_resource_post_error(surface->resource,
+			wlr_surface_reject_pending(surface, surface->resource,
 				WL_SURFACE_ERROR_INVALID_SIZE,
 				"Buffer size (%dx%d) is not divisible by scale (%d)",
 				pending->buffer_width, pending->buffer_height, pending->scale);
@@ -567,6 +568,8 @@ static void surface_commit_state(struct wlr_surface *surface,
 static void surface_handle_commit(struct wl_client *client,
 		struct wl_resource *resource) {
 	struct wlr_surface *surface = wlr_surface_from_resource(resource);
+	surface->handling_commit = true;
+
 	surface_finalize_pending(surface);
 
 	if (surface->role != NULL && surface->role->client_commit != NULL &&
@@ -575,6 +578,11 @@ static void surface_handle_commit(struct wl_client *client,
 	}
 
 	wl_signal_emit_mutable(&surface->events.client_commit, NULL);
+
+	surface->handling_commit = false;
+	if (surface->pending_rejected) {
+		return;
+	}
 
 	if (surface->pending.cached_state_locks > 0 || !wl_list_empty(&surface->cached)) {
 		surface_cache_pending(surface);
@@ -851,6 +859,26 @@ void wlr_surface_unmap(struct wlr_surface *surface) {
 	wl_list_for_each(subsurface, &surface->current.subsurfaces_above, current.link) {
 		wlr_surface_unmap(subsurface->surface);
 	}
+}
+
+void wlr_surface_reject_pending(struct wlr_surface *surface, struct wl_resource *resource,
+		uint32_t code, const char *msg, ...) {
+	assert(surface->handling_commit);
+	if (surface->pending_rejected) {
+		return;
+	}
+
+	va_list args;
+	va_start(args, msg);
+
+	// XXX: libwayland could expose wl_resource_post_error_vargs() instead
+	char buffer[128]; // Matches the size of the buffer used in libwayland
+	vsnprintf(buffer, sizeof(buffer), msg, args);
+
+	wl_resource_post_error(resource, code, "%s", buffer);
+	surface->pending_rejected = true;
+
+	va_end(args);
 }
 
 bool wlr_surface_set_role(struct wlr_surface *surface, const struct wlr_surface_role *role,

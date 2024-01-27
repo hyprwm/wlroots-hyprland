@@ -125,9 +125,8 @@ void handle_xdg_toplevel_client_commit(struct wlr_xdg_toplevel *toplevel) {
 			pending->max_width < 0 || pending->max_height < 0 ||
 			(pending->max_width != 0 && pending->max_width < pending->min_width) ||
 			(pending->max_height != 0 && pending->max_height < pending->min_height)) {
-		wl_resource_post_error(toplevel->resource,
-			XDG_TOPLEVEL_ERROR_INVALID_SIZE,
-			"client provided an invalid min or max size");
+		wlr_surface_reject_pending(toplevel->base->surface, toplevel->resource,
+			XDG_TOPLEVEL_ERROR_INVALID_SIZE, "client provided an invalid min or max size");
 		return;
 	}
 }

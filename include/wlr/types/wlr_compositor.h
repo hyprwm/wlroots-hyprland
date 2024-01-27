@@ -231,6 +231,9 @@ struct wlr_surface {
 
 	bool opaque;
 
+	bool handling_commit;
+	bool pending_rejected;
+
 	int32_t preferred_buffer_scale;
 	bool preferred_buffer_transform_sent;
 	enum wl_output_transform preferred_buffer_transform;
@@ -289,6 +292,15 @@ void wlr_surface_map(struct wlr_surface *surface);
  * This function must only be used by surface role implementations.
  */
 void wlr_surface_unmap(struct wlr_surface *surface);
+
+/**
+ * Mark the pending state of a surface as rejected due to a protocol violation,
+ * preventing it from being cached or committed.
+ *
+ * This function must only be used while processing a commit request.
+ */
+void wlr_surface_reject_pending(struct wlr_surface *surface, struct wl_resource *resource,
+	uint32_t code, const char *msg, ...);
 
 /**
  * Whether or not this surface currently has an attached buffer. A surface has

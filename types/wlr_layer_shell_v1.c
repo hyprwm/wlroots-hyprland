@@ -331,7 +331,7 @@ static void layer_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 	}
 
 	if (wlr_surface_state_has_buffer(&wlr_surface->pending) && !surface->configured) {
-		wl_resource_post_error(surface->resource,
+		wlr_surface_reject_pending(wlr_surface, surface->resource,
 			ZWLR_LAYER_SHELL_V1_ERROR_ALREADY_CONSTRUCTED,
 			"layer_surface has never been configured");
 		return;
@@ -341,7 +341,7 @@ static void layer_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	if (surface->pending.desired_width == 0 &&
 			(surface->pending.anchor & horiz) != horiz) {
-		wl_resource_post_error(surface->resource,
+		wlr_surface_reject_pending(wlr_surface, surface->resource,
 			ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
 			"width 0 requested without setting left and right anchors");
 		return;
@@ -351,7 +351,7 @@ static void layer_surface_role_client_commit(struct wlr_surface *wlr_surface) {
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	if (surface->pending.desired_height == 0 &&
 			(surface->pending.anchor & vert) != vert) {
-		wl_resource_post_error(surface->resource,
+		wlr_surface_reject_pending(wlr_surface, surface->resource,
 			ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
 			"height 0 requested without setting top and bottom anchors");
 		return;

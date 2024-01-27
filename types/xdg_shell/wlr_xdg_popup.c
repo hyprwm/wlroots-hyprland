@@ -240,9 +240,8 @@ static struct wlr_xdg_popup_grab *get_xdg_shell_popup_grab_from_seat(
 
 void handle_xdg_popup_client_commit(struct wlr_xdg_popup *popup) {
 	if (!popup->parent) {
-		wl_resource_post_error(popup->base->resource,
-			XDG_SURFACE_ERROR_NOT_CONSTRUCTED,
-			"xdg_popup has no parent");
+		wlr_surface_reject_pending(popup->base->surface, popup->base->resource,
+			XDG_SURFACE_ERROR_NOT_CONSTRUCTED, "xdg_popup has no parent");
 		return;
 	}
 }

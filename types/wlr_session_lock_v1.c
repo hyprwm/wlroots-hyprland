@@ -157,14 +157,14 @@ static void lock_surface_role_client_commit(struct wlr_surface *surface) {
 	}
 
 	if (!wlr_surface_state_has_buffer(&surface->pending)) {
-		wl_resource_post_error(lock_surface->resource,
+		wlr_surface_reject_pending(surface, lock_surface->resource,
 			EXT_SESSION_LOCK_SURFACE_V1_ERROR_NULL_BUFFER,
 			"session lock surface is committed with a null buffer");
 		return;
 	}
 
 	if (!lock_surface->configured) {
-		wl_resource_post_error(lock_surface->resource,
+		wlr_surface_reject_pending(surface, lock_surface->resource,
 			EXT_SESSION_LOCK_SURFACE_V1_ERROR_COMMIT_BEFORE_FIRST_ACK,
 			"session lock surface has never been configured");
 		return;
@@ -172,7 +172,7 @@ static void lock_surface_role_client_commit(struct wlr_surface *surface) {
 
 	if ((uint32_t)surface->pending.width != lock_surface->pending.width ||
 			(uint32_t)surface->pending.height != lock_surface->pending.height) {
-		wl_resource_post_error(lock_surface->resource,
+		wlr_surface_reject_pending(surface, lock_surface->resource,
 			EXT_SESSION_LOCK_SURFACE_V1_ERROR_DIMENSIONS_MISMATCH,
 			"committed surface dimensions do not match last acked configure");
 		return;
