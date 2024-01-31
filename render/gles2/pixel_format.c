@@ -141,9 +141,7 @@ const struct wlr_gles2_pixel_format *get_gles2_format_from_gl(
 			continue;
 		}
 
-		const struct wlr_pixel_format_info *drm_fmt =
-			drm_get_pixel_format_info(formats[i].drm_format);
-		if (drm_fmt->has_alpha != alpha) {
+		if (pixel_format_has_alpha(formats[i].drm_format) != alpha) {
 			continue;
 		}
 
