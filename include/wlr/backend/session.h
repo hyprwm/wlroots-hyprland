@@ -7,11 +7,14 @@
 
 struct libseat;
 
+/**
+ * An opened physical device.
+ */
 struct wlr_device {
 	int fd;
 	int device_id;
 	dev_t dev;
-	struct wl_list link;
+	struct wl_list link; // wlr_session.devices
 
 	struct {
 		struct wl_signal change; // struct wlr_device_change_event
@@ -19,6 +22,20 @@ struct wlr_device {
 	} events;
 };
 
+/**
+ * A session manages access to physical devices (such as GPUs and input
+ * devices).
+ *
+ * A session is only required when running on bare metal (e.g. with the KMS or
+ * libinput backends).
+ *
+ * The session listens for device hotplug events, and relays that information
+ * via the add_drm_card event and the change/remove events on struct wlr_device.
+ * The session provides functions to gain access to physical device (which is a
+ * privileged operation), see wlr_session_open_file(). The session also keeps
+ * track of the virtual terminal state (allowing users to switch between
+ * compositors or TTYs), see wlr_session_change_vt() and the active event.
+ */
 struct wlr_session {
 	/*
 	 * Signal for when the session becomes active/inactive.
@@ -40,7 +57,7 @@ struct wlr_session {
 	struct libseat *seat_handle;
 	struct wl_event_source *libseat_event;
 
-	struct wl_list devices;
+	struct wl_list devices; // wlr_device.link
 
 	struct wl_event_loop *event_loop;
 	struct wl_listener event_loop_destroy;
@@ -114,6 +131,17 @@ void wlr_session_close_file(struct wlr_session *session,
  */
 bool wlr_session_change_vt(struct wlr_session *session, unsigned vt);
 
+/**
+ * Enumerate and open KMS devices.
+ *
+ * ret is filled with up to ret_len devices. The number of devices ret has been
+ * filled with is returned on success. If more devices than ret_len are probed,
+ * the extraneous ones are ignored. If there is no KMS device, the function
+ * will block until such device is detected up to a timeout. The first device
+ * returned is the default device (marked as "boot_vga" by the kernel).
+ *
+ * On error, or if no device was found, -1 is returned.
+ */
 ssize_t wlr_session_find_gpus(struct wlr_session *session,
 	size_t ret_len, struct wlr_device **ret);
 
