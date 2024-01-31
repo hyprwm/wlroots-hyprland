@@ -1820,16 +1820,10 @@ int wlr_drm_backend_get_non_master_fd(struct wlr_backend *backend) {
 	assert(backend);
 
 	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
-	char *path = drmGetDeviceNameFromFd2(drm->fd);
-	if (!path) {
-		wlr_log(WLR_ERROR, "Failed to get device name from DRM fd");
-		return -1;
-	}
+	int fd = open(drm->name, O_RDWR | O_CLOEXEC);
 
-	int fd = open(path, O_RDWR | O_CLOEXEC);
 	if (fd < 0) {
 		wlr_log_errno(WLR_ERROR, "Unable to clone DRM fd for client fd");
-		free(path);
 		return -1;
 	}
 
