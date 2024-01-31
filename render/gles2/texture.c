@@ -381,13 +381,10 @@ static struct wlr_texture *gles2_texture_from_dmabuf(
 		return NULL;
 	}
 
-	const struct wlr_pixel_format_info *drm_fmt =
-		drm_get_pixel_format_info(attribs->format);
-
 	texture->target = buffer->external_only ? GL_TEXTURE_EXTERNAL_OES : GL_TEXTURE_2D;
 	texture->buffer = buffer;
 	texture->drm_format = DRM_FORMAT_INVALID; // texture can't be written anyways
-	texture->has_alpha = drm_fmt ? drm_fmt->has_alpha : true;
+	texture->has_alpha = pixel_format_has_alpha(attribs->format);
 
 	struct wlr_egl_context prev_ctx;
 	wlr_egl_save_context(&prev_ctx);

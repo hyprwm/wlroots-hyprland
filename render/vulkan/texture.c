@@ -382,7 +382,7 @@ static void texture_set_format(struct wlr_vk_texture *texture,
 	const struct wlr_pixel_format_info *format_info =
 		drm_get_pixel_format_info(format->drm);
 	if (format_info != NULL) {
-		texture->has_alpha = format_info->has_alpha;
+		texture->has_alpha = pixel_format_has_alpha(format->drm);
 	} else {
 		// We don't have format info for multi-planar formats
 		assert(texture->format->is_ycbcr);

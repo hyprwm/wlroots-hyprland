@@ -116,11 +116,5 @@ bool buffer_is_opaque(struct wlr_buffer *buffer) {
 		return false;
 	}
 
-	const struct wlr_pixel_format_info *format_info =
-		drm_get_pixel_format_info(format);
-	if (format_info == NULL) {
-		return false;
-	}
-
-	return !format_info->has_alpha;
+	return !pixel_format_has_alpha(format);
 }
