@@ -6,6 +6,7 @@
 #include "backend/drm/drm.h"
 #include "backend/drm/fb.h"
 #include "backend/drm/renderer.h"
+#include "backend/backend.h"
 #include "render/drm_format_set.h"
 #include "render/allocator/allocator.h"
 #include "render/pixel_format.h"
@@ -19,7 +20,8 @@ bool init_drm_renderer(struct wlr_drm_backend *drm,
 		return false;
 	}
 
-	renderer->allocator = allocator_autocreate_with_drm_fd(&drm->backend,
+	uint32_t backend_caps = backend_get_buffer_caps(&drm->backend);
+	renderer->allocator = allocator_autocreate_with_drm_fd(backend_caps,
 		renderer->wlr_rend, drm->fd);
 	if (renderer->allocator == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create allocator");
