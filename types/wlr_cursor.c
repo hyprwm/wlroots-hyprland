@@ -1179,21 +1179,11 @@ void wlr_cursor_map_input_to_output(struct wlr_cursor *cur,
 
 void wlr_cursor_map_to_region(struct wlr_cursor *cur,
 		const struct wlr_box *box) {
-	cur->state->mapped_box = (struct wlr_box){0};
-
-	if (box) {
-		if (wlr_box_empty(box)) {
-			wlr_log(WLR_ERROR, "cannot map cursor to an empty region");
-			return;
-		}
-		cur->state->mapped_box = *box;
-	}
+	cur->state->mapped_box = wlr_box_empty(box) ? (struct wlr_box){0} : *box;
 }
 
 void wlr_cursor_map_input_to_region(struct wlr_cursor *cur,
 		struct wlr_input_device *dev, const struct wlr_box *box) {
-	cur->state->mapped_box = (struct wlr_box){0};
-
 	struct wlr_cursor_device *c_device = get_cursor_device(cur, dev);
 	if (!c_device) {
 		wlr_log(WLR_ERROR, "Cannot map device \"%s\" to geometry (not found in"
@@ -1201,13 +1191,5 @@ void wlr_cursor_map_input_to_region(struct wlr_cursor *cur,
 		return;
 	}
 
-	if (box) {
-		if (wlr_box_empty(box)) {
-			wlr_log(WLR_ERROR,
-				"cannot map device \"%s\" input to an empty region",
-				dev->name);
-			return;
-		}
-		c_device->mapped_box = *box;
-	}
+	c_device->mapped_box = wlr_box_empty(box) ? (struct wlr_box){0} : *box;
 }
