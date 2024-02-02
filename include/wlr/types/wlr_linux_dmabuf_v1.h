@@ -64,6 +64,9 @@ struct wlr_linux_dmabuf_v1 {
 	int main_device_fd; // to sanity check FDs sent by clients, -1 if unavailable
 
 	struct wl_listener display_destroy;
+
+	bool (*check_dmabuf_callback)(struct wlr_dmabuf_attributes *attribs, void *data);
+	void *check_dmabuf_callback_data;
 };
 
 /**
@@ -82,6 +85,15 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *displa
  */
 struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
 	uint32_t version, struct wlr_renderer *renderer);
+
+/**
+ * Set the dmabuf import check callback
+ *
+ * This can be used by consumers who want to implement specific dmabuf checks. Useful for
+ * users such as gamescope who do not use the rendering logic of wlroots.
+ */
+void wlr_linux_dmabuf_v1_set_check_dmabuf_callback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
+	bool (*callback)(struct wlr_dmabuf_attributes *attribs, void *data), void *data);
 
 /**
  * Set a surface's DMA-BUF feedback.

@@ -205,8 +205,9 @@ static void buffer_handle_resource_destroy(struct wl_resource *buffer_resource) 
 	wlr_buffer_drop(&buffer->base);
 }
 
-static bool check_import_dmabuf(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
-		struct wlr_dmabuf_attributes *attribs) {
+static bool check_import_dmabuf(struct wlr_dmabuf_attributes *attribs, void *data) {
+	struct wlr_linux_dmabuf_v1 *linux_dmabuf = data;
+
 	if (linux_dmabuf->main_device_fd < 0) {
 		return true;
 	}
@@ -344,7 +345,8 @@ static void params_create_common(struct wl_resource *params_resource,
 	}
 
 	/* Check if dmabuf is usable */
-	if (!check_import_dmabuf(linux_dmabuf, &attribs)) {
+	if (!linux_dmabuf->check_dmabuf_callback(&attribs,
+				linux_dmabuf->check_dmabuf_callback_data)) {
 		goto err_failed;
 	}
 
@@ -974,6 +976,9 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *displa
 	linux_dmabuf->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(display, &linux_dmabuf->display_destroy);
 
+	wlr_linux_dmabuf_v1_set_check_dmabuf_callback(linux_dmabuf,
+		check_import_dmabuf, linux_dmabuf);
+
 	wlr_buffer_register_resource_interface(&buffer_resource_interface);
 
 	return linux_dmabuf;
@@ -998,6 +1003,13 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
 		wlr_linux_dmabuf_v1_create(display, version, &feedback);
 	wlr_linux_dmabuf_feedback_v1_finish(&feedback);
 	return linux_dmabuf;
+}
+
+void wlr_linux_dmabuf_v1_set_check_dmabuf_callback(struct wlr_linux_dmabuf_v1 *linux_dmabuf,
+		bool (*callback)(struct wlr_dmabuf_attributes *attribs, void *data), void *data) {
+	assert(callback);
+	linux_dmabuf->check_dmabuf_callback = callback;
+	linux_dmabuf->check_dmabuf_callback_data = data;
 }
 
 bool wlr_linux_dmabuf_v1_set_surface_feedback(
