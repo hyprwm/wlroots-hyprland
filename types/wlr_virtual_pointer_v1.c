@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <assert.h>
 #include <stdlib.h>
 #include <wlr/interfaces/wlr_pointer.h>

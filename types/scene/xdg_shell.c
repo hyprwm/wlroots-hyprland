@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
