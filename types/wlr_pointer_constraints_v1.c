@@ -194,17 +194,8 @@ static void pointer_constraint_create(struct wl_client *client,
 		pointer_constraints_from_resource(pointer_constraints_resource);
 
 	struct wlr_surface *surface = wlr_surface_from_resource(surface_resource);
-	struct wlr_seat *seat =
-		wlr_seat_client_from_pointer_resource(pointer_resource)->seat;
-
-	if (wlr_pointer_constraints_v1_constraint_for_surface(pointer_constraints,
-			surface, seat)) {
-		wl_resource_post_error(pointer_constraints_resource,
-			ZWP_POINTER_CONSTRAINTS_V1_ERROR_ALREADY_CONSTRAINED,
-			"a pointer constraint with a wl_pointer of the same wl_seat"
-			" is already on this surface");
-		return;
-	}
+	struct wlr_seat_client *seat_client =
+		wlr_seat_client_from_pointer_resource(pointer_resource);
 
 	uint32_t version = wl_resource_get_version(pointer_constraints_resource);
 
@@ -215,6 +206,28 @@ static void pointer_constraint_create(struct wl_client *client,
 		wl_resource_create(client, &zwp_confined_pointer_v1_interface, version, id);
 	if (resource == NULL) {
 		wl_client_post_no_memory(client);
+		return;
+	}
+
+	void *impl = locked_pointer ?
+		(void *)&locked_pointer_impl : (void *)&confined_pointer_impl;
+	wl_resource_set_implementation(resource, impl, NULL,
+		pointer_constraint_destroy_resource);
+
+	if (seat_client == NULL) {
+		// Leave the resource inert
+		return;
+	}
+
+	struct wlr_seat *seat = seat_client->seat;
+
+	if (wlr_pointer_constraints_v1_constraint_for_surface(pointer_constraints,
+			surface, seat)) {
+		wl_resource_destroy(resource);
+		wl_resource_post_error(pointer_constraints_resource,
+			ZWP_POINTER_CONSTRAINTS_V1_ERROR_ALREADY_CONSTRAINED,
+			"a pointer constraint with a wl_pointer of the same wl_seat"
+			" is already on this surface");
 		return;
 	}
 
@@ -260,10 +273,7 @@ static void pointer_constraint_create(struct wl_client *client,
 	constraint->seat_destroy.notify = handle_seat_destroy;
 	wl_signal_add(&seat->events.destroy, &constraint->seat_destroy);
 
-	void *impl = locked_pointer ?
-		(void *)&locked_pointer_impl : (void *)&confined_pointer_impl;
-	wl_resource_set_implementation(constraint->resource, impl, constraint,
-		pointer_constraint_destroy_resource);
+	wl_resource_set_user_data(resource, constraint);
 
 	wlr_log(WLR_DEBUG, "new %s_pointer %p (res %p)",
 		locked_pointer ? "locked" : "confined",
