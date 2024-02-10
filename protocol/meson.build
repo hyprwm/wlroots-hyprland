@@ -22,6 +22,7 @@ protocols = {
 	'content-type-v1': wl_protocol_dir / 'staging/content-type/content-type-v1.xml',
 	'cursor-shape-v1': wl_protocol_dir / 'staging/cursor-shape/cursor-shape-v1.xml',
 	'drm-lease-v1': wl_protocol_dir / 'staging/drm-lease/drm-lease-v1.xml',
+	'ext-foreign-toplevel-list-v1': wl_protocol_dir / 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml',
 	'ext-idle-notify-v1': wl_protocol_dir / 'staging/ext-idle-notify/ext-idle-notify-v1.xml',
 	'ext-session-lock-v1': wl_protocol_dir / 'staging/ext-session-lock/ext-session-lock-v1.xml',
 	'fractional-scale-v1': wl_protocol_dir / 'staging/fractional-scale/fractional-scale-v1.xml',
