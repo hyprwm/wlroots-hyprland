@@ -24,47 +24,38 @@ static const struct ext_foreign_toplevel_list_v1_interface toplevel_handle_impl 
 	.destroy = foreign_toplevel_handle_destroy,
 };
 
+// Returns true if clients need to be notified about the update
+static bool update_string(struct wlr_ext_foreign_toplevel_handle_v1 *toplevel,
+		char **dst, const char *src) {
+	if (src == NULL) {
+		if (*dst == NULL) {
+			return false;
+		}
+	} else if (*dst != NULL && strcmp(*dst, src) == 0) {
+		return false;
+	}
+
+	free(*dst);
+	if (src != NULL) {
+		*dst = strdup(src);
+		if (*dst == NULL) {
+			struct wl_resource *resource;
+			wl_resource_for_each(resource, &toplevel->resources) {
+				wl_resource_post_no_memory(resource);
+			}
+			return false;
+		}
+	} else {
+		*dst = NULL;
+	}
+	return true;
+}
+
 void wlr_ext_foreign_toplevel_handle_v1_update_state(
 		struct wlr_ext_foreign_toplevel_handle_v1 *toplevel,
 		const struct wlr_ext_foreign_toplevel_handle_v1_state *state) {
-	bool changed_app_id = false;
-	bool changed_title = false;
-
-	if (state->app_id) {
-		if (strcmp(toplevel->app_id, state->app_id) != 0) {
-			free(toplevel->app_id);
-			toplevel->app_id = strdup(state->app_id);
-			if (toplevel->app_id == NULL) {
-				wlr_log(WLR_ERROR, "failed to allocate memory for toplevel app_id");
-				return;
-			}
-			changed_app_id = true;
-		}
-	} else {
-		if (toplevel->app_id) {
-			free(toplevel->app_id);
-			toplevel->app_id = NULL;
-			changed_app_id = true;
-		}
-	}
-
-	if (state->title) {
-		if (strcmp(toplevel->title, state->title) != 0) {
-			free(toplevel->title);
-			toplevel->title = strdup(state->title);
-			if (toplevel->title == NULL) {
-				wlr_log(WLR_ERROR, "failed to allocate memory for toplevel title");
-				return;
-			}
-			changed_title = true;
-		}
-	} else {
-		if (toplevel->title) {
-			free(toplevel->title);
-			toplevel->title = NULL;
-			changed_title = true;
-		}
-	}
+	bool changed_app_id = update_string(toplevel, &toplevel->app_id, state->app_id);
+	bool changed_title = update_string(toplevel, &toplevel->title, state->title);
 
 	if (!changed_app_id && !changed_title) {
 		return;
