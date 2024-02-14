@@ -100,47 +100,48 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, drm, session_active);
 	struct wlr_session *session = drm->session;
 
-	if (session->active) {
-		wlr_log(WLR_INFO, "DRM fd resumed");
-		scan_drm_connectors(drm, NULL);
+	wlr_log(WLR_INFO, "DRM FD %s", session->active ? "resumed" : "paused");
 
-		// The previous DRM master leaves KMS in an undefined state. We need
-		// to restore out own state, but be careful to avoid invalid
-		// configurations. The connector/CRTC mapping may have changed, so
-		// first disable all CRTCs, then light up the ones we were using
-		// before the VT switch.
-		// TODO: use the atomic API to improve restoration after a VT switch
-		for (size_t i = 0; i < drm->num_crtcs; i++) {
-			struct wlr_drm_crtc *crtc = &drm->crtcs[i];
+	if (!session->active) {
+		return;
+	}
 
-			if (drmModeSetCrtc(drm->fd, crtc->id, 0, 0, 0, NULL, 0, NULL) != 0) {
-				wlr_log_errno(WLR_ERROR, "Failed to disable CRTC %"PRIu32" after VT switch",
-					crtc->id);
+	scan_drm_connectors(drm, NULL);
+
+	// The previous DRM master leaves KMS in an undefined state. We need
+	// to restore out own state, but be careful to avoid invalid
+	// configurations. The connector/CRTC mapping may have changed, so
+	// first disable all CRTCs, then light up the ones we were using
+	// before the VT switch.
+	// TODO: use the atomic API to improve restoration after a VT switch
+	for (size_t i = 0; i < drm->num_crtcs; i++) {
+		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
+
+		if (drmModeSetCrtc(drm->fd, crtc->id, 0, 0, 0, NULL, 0, NULL) != 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to disable CRTC %"PRIu32" after VT switch",
+				crtc->id);
+		}
+	}
+
+	struct wlr_drm_connector *conn;
+	wl_list_for_each(conn, &drm->connectors, link) {
+		bool enabled = conn->status != DRM_MODE_DISCONNECTED && conn->output.enabled;
+
+		struct wlr_output_state state;
+		wlr_output_state_init(&state);
+		wlr_output_state_set_enabled(&state, enabled);
+		if (enabled) {
+			if (conn->output.current_mode != NULL) {
+				wlr_output_state_set_mode(&state, conn->output.current_mode);
+			} else {
+				wlr_output_state_set_custom_mode(&state,
+					conn->output.width, conn->output.height, conn->output.refresh);
 			}
 		}
-
-		struct wlr_drm_connector *conn;
-		wl_list_for_each(conn, &drm->connectors, link) {
-			bool enabled = conn->status != DRM_MODE_DISCONNECTED && conn->output.enabled;
-
-			struct wlr_output_state state;
-			wlr_output_state_init(&state);
-			wlr_output_state_set_enabled(&state, enabled);
-			if (enabled) {
-				if (conn->output.current_mode != NULL) {
-					wlr_output_state_set_mode(&state, conn->output.current_mode);
-				} else {
-					wlr_output_state_set_custom_mode(&state,
-						conn->output.width, conn->output.height, conn->output.refresh);
-				}
-			}
-			if (!drm_connector_commit_state(conn, &state)) {
-				wlr_drm_conn_log(conn, WLR_ERROR, "Failed to restore state after VT switch");
-			}
-			wlr_output_state_finish(&state);
+		if (!drm_connector_commit_state(conn, &state)) {
+			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to restore state after VT switch");
 		}
-	} else {
-		wlr_log(WLR_INFO, "DRM fd paused");
+		wlr_output_state_finish(&state);
 	}
 }
 
