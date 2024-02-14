@@ -159,7 +159,13 @@ struct wlr_drm_connector_state {
  */
 struct wlr_drm_page_flip {
 	struct wl_list link; // wlr_drm_connector.page_flips
-	struct wlr_drm_connector *conn;
+	struct wlr_drm_page_flip_connector *connectors;
+	size_t connectors_len;
+};
+
+struct wlr_drm_page_flip_connector {
+	uint32_t crtc_id;
+	struct wlr_drm_connector *connector; // may be NULL
 };
 
 struct wlr_drm_connector {

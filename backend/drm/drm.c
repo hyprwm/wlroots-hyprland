@@ -422,31 +422,73 @@ static struct wlr_drm_layer *get_or_create_layer(struct wlr_drm_backend *drm,
 	return layer;
 }
 
-static void drm_connector_set_pending_page_flip(struct wlr_drm_connector *conn,
-		struct wlr_drm_page_flip *page_flip) {
-	if (conn->pending_page_flip != NULL) {
-		conn->pending_page_flip->conn = NULL;
-	}
-	conn->pending_page_flip = page_flip;
-}
-
 void drm_page_flip_destroy(struct wlr_drm_page_flip *page_flip) {
 	if (!page_flip) {
 		return;
 	}
 
 	wl_list_remove(&page_flip->link);
+	free(page_flip->connectors);
 	free(page_flip);
 }
 
-static struct wlr_drm_page_flip *drm_page_flip_create(struct wlr_drm_connector *conn) {
+static struct wlr_drm_page_flip *drm_page_flip_create(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state) {
 	struct wlr_drm_page_flip *page_flip = calloc(1, sizeof(*page_flip));
 	if (page_flip == NULL) {
 		return NULL;
 	}
-	page_flip->conn = conn;
-	wl_list_insert(&conn->backend->page_flips, &page_flip->link);
+	page_flip->connectors_len = state->connectors_len;
+	page_flip->connectors =
+		calloc(page_flip->connectors_len, sizeof(page_flip->connectors[0]));
+	if (page_flip->connectors == NULL) {
+		free(page_flip);
+		return NULL;
+	}
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		struct wlr_drm_connector *conn = state->connectors[i].connector;
+		page_flip->connectors[i] = (struct wlr_drm_page_flip_connector){
+			.connector = conn,
+			.crtc_id = conn->crtc->id,
+		};
+	}
+	wl_list_insert(&drm->page_flips, &page_flip->link);
 	return page_flip;
+}
+
+static struct wlr_drm_connector *drm_page_flip_pop(
+		struct wlr_drm_page_flip *page_flip, uint32_t crtc_id) {
+	bool found = false;
+	size_t i;
+	for (i = 0; i < page_flip->connectors_len; i++) {
+		if (page_flip->connectors[i].crtc_id == crtc_id) {
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		return NULL;
+	}
+
+	struct wlr_drm_connector *conn = page_flip->connectors[i].connector;
+	if (i != page_flip->connectors_len - 1) {
+		page_flip->connectors[i] = page_flip->connectors[page_flip->connectors_len - 1];
+	}
+	page_flip->connectors_len--;
+	return conn;
+}
+
+static void drm_connector_set_pending_page_flip(struct wlr_drm_connector *conn,
+		struct wlr_drm_page_flip *page_flip) {
+	if (conn->pending_page_flip != NULL) {
+		struct wlr_drm_page_flip *page_flip = conn->pending_page_flip;
+		for (size_t i = 0; i < page_flip->connectors_len; i++) {
+			if (page_flip->connectors[i].connector == conn) {
+				page_flip->connectors[i].connector = NULL;
+			}
+		}
+	}
+	conn->pending_page_flip = page_flip;
 }
 
 static void drm_connector_apply_commit(const struct wlr_drm_connector_state *state,
@@ -496,8 +538,7 @@ static bool drm_commit(struct wlr_drm_backend *drm,
 
 	struct wlr_drm_page_flip *page_flip = NULL;
 	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
-		assert(state->connectors_len == 1);
-		page_flip = drm_page_flip_create(state->connectors[0].connector);
+		page_flip = drm_page_flip_create(drm, state);
 		if (page_flip == NULL) {
 			return false;
 		}
@@ -1874,11 +1915,13 @@ static void handle_page_flip(int fd, unsigned seq,
 		unsigned tv_sec, unsigned tv_usec, unsigned crtc_id, void *data) {
 	struct wlr_drm_page_flip *page_flip = data;
 
-	struct wlr_drm_connector *conn = page_flip->conn;
+	struct wlr_drm_connector *conn = drm_page_flip_pop(page_flip, crtc_id);
 	if (conn != NULL) {
 		conn->pending_page_flip = NULL;
 	}
-	drm_page_flip_destroy(page_flip);
+	if (page_flip->connectors_len == 0) {
+		drm_page_flip_destroy(page_flip);
+	}
 
 	if (conn == NULL) {
 		return;
