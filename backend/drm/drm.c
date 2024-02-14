@@ -449,6 +449,45 @@ static struct wlr_drm_page_flip *drm_page_flip_create(struct wlr_drm_connector *
 	return page_flip;
 }
 
+static void drm_connector_apply_commit(const struct wlr_drm_connector_state *state,
+		struct wlr_drm_page_flip *page_flip) {
+	struct wlr_drm_connector *conn = state->connector;
+	struct wlr_drm_crtc *crtc = conn->crtc;
+
+	drm_fb_copy(&crtc->primary->queued_fb, state->primary_fb);
+	if (crtc->cursor != NULL) {
+		drm_fb_copy(&crtc->cursor->queued_fb, state->cursor_fb);
+	}
+	drm_fb_clear(&conn->cursor_pending_fb);
+
+	struct wlr_drm_layer *layer;
+	wl_list_for_each(layer, &crtc->layers, link) {
+		drm_fb_move(&layer->queued_fb, &layer->pending_fb);
+	}
+
+	drm_connector_set_pending_page_flip(conn, page_flip);
+
+	if (state->base->committed & WLR_OUTPUT_STATE_MODE) {
+		conn->refresh = calculate_refresh_rate(&state->mode);
+	}
+}
+
+static void drm_connector_rollback_commit(const struct wlr_drm_connector_state *state) {
+	struct wlr_drm_crtc *crtc = state->connector->crtc;
+
+	// The set_cursor() hook is a bit special: it's not really synchronized
+	// to commit() or test(). Once set_cursor() returns true, the new
+	// cursor is effectively committed. So don't roll it back here, or we
+	// risk ending up in a state where we don't have a cursor FB but
+	// wlr_drm_connector.cursor_enabled is true.
+	// TODO: fix our output interface to avoid this issue.
+
+	struct wlr_drm_layer *layer;
+	wl_list_for_each(layer, &crtc->layers, link) {
+		drm_fb_clear(&layer->pending_fb);
+	}
+}
+
 static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state,
 		uint32_t flags, bool test_only) {
@@ -464,38 +503,11 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	}
 
 	struct wlr_drm_backend *drm = conn->backend;
-	struct wlr_drm_crtc *crtc = conn->crtc;
 	bool ok = drm->iface->crtc_commit(conn, state, page_flip, flags, test_only);
 	if (ok && !test_only) {
-		drm_fb_copy(&crtc->primary->queued_fb, state->primary_fb);
-		if (crtc->cursor != NULL) {
-			drm_fb_copy(&crtc->cursor->queued_fb, state->cursor_fb);
-		}
-		drm_fb_clear(&conn->cursor_pending_fb);
-
-		struct wlr_drm_layer *layer;
-		wl_list_for_each(layer, &crtc->layers, link) {
-			drm_fb_move(&layer->queued_fb, &layer->pending_fb);
-		}
-
-		drm_connector_set_pending_page_flip(conn, page_flip);
-
-		if (state->base->committed & WLR_OUTPUT_STATE_MODE) {
-			conn->refresh = calculate_refresh_rate(&state->mode);
-		}
+		drm_connector_apply_commit(state, page_flip);
 	} else {
-		// The set_cursor() hook is a bit special: it's not really synchronized
-		// to commit() or test(). Once set_cursor() returns true, the new
-		// cursor is effectively committed. So don't roll it back here, or we
-		// risk ending up in a state where we don't have a cursor FB but
-		// wlr_drm_connector.cursor_enabled is true.
-		// TODO: fix our output interface to avoid this issue.
-
-		struct wlr_drm_layer *layer;
-		wl_list_for_each(layer, &crtc->layers, link) {
-			drm_fb_clear(&layer->pending_fb);
-		}
-
+		drm_connector_rollback_commit(state);
 		drm_page_flip_destroy(page_flip);
 	}
 	return ok;
