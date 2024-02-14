@@ -185,10 +185,9 @@ void finish_drm_resources(struct wlr_drm_backend *drm);
 void scan_drm_connectors(struct wlr_drm_backend *state,
 	struct wlr_device_hotplug_event *event);
 void scan_drm_leases(struct wlr_drm_backend *drm);
+void restore_drm_device(struct wlr_drm_backend *drm);
 int handle_drm_event(int fd, uint32_t mask, void *data);
 void destroy_drm_connector(struct wlr_drm_connector *conn);
-bool drm_connector_commit_state(struct wlr_drm_connector *conn,
-	const struct wlr_output_state *state);
 bool drm_connector_is_cursor_visible(struct wlr_drm_connector *conn);
 bool drm_connector_supports_vrr(struct wlr_drm_connector *conn);
 size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
