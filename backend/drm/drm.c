@@ -1379,6 +1379,11 @@ static struct wlr_drm_connector *create_drm_connector(struct wlr_drm_backend *dr
 	wlr_conn->status = DRM_MODE_DISCONNECTED;
 	wlr_conn->id = drm_conn->connector_id;
 
+	if (!get_drm_connector_props(drm->fd, wlr_conn->id, &wlr_conn->props)) {
+		free(wlr_conn);
+		return false;
+	}
+
 	const char *conn_name =
 		drmModeGetConnectorTypeName(drm_conn->connector_type);
 	if (conn_name == NULL) {
@@ -1509,10 +1514,6 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		output->subpixel = subpixel_map[drm_conn->subpixel];
 	} else {
 		wlr_log(WLR_ERROR, "Unknown subpixel value: %d", (int)drm_conn->subpixel);
-	}
-
-	if (!get_drm_connector_props(drm->fd, wlr_conn->id, &wlr_conn->props)) {
-		return false;
 	}
 
 	uint64_t non_desktop;
