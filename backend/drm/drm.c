@@ -443,6 +443,16 @@ void drm_page_flip_destroy(struct wlr_drm_page_flip *page_flip) {
 	free(page_flip);
 }
 
+static struct wlr_drm_page_flip *drm_page_flip_create(struct wlr_drm_connector *conn) {
+	struct wlr_drm_page_flip *page_flip = calloc(1, sizeof(*page_flip));
+	if (page_flip == NULL) {
+		return NULL;
+	}
+	page_flip->conn = conn;
+	wl_list_insert(&conn->backend->page_flips, &page_flip->link);
+	return page_flip;
+}
+
 static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state,
 		uint32_t flags, bool test_only) {
@@ -451,12 +461,10 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 
 	struct wlr_drm_page_flip *page_flip = NULL;
 	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
-		page_flip = calloc(1, sizeof(*page_flip));
+		page_flip = drm_page_flip_create(conn);
 		if (page_flip == NULL) {
 			return false;
 		}
-		page_flip->conn = conn;
-		wl_list_insert(&conn->backend->page_flips, &page_flip->link);
 	}
 
 	struct wlr_drm_backend *drm = conn->backend;
