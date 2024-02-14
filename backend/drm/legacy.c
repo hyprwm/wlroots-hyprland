@@ -227,6 +227,20 @@ bool drm_legacy_crtc_set_gamma(struct wlr_drm_backend *drm,
 	return true;
 }
 
+static bool legacy_reset(struct wlr_drm_backend *drm) {
+	bool ok = true;
+	for (size_t i = 0; i < drm->num_crtcs; i++) {
+		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
+		if (drmModeSetCrtc(drm->fd, crtc->id, 0, 0, 0, NULL, 0, NULL) != 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to disable CRTC %"PRIu32,
+				crtc->id);
+			ok = false;
+		}
+	}
+	return ok;
+}
+
 const struct wlr_drm_interface legacy_iface = {
 	.crtc_commit = legacy_crtc_commit,
+	.reset = legacy_reset,
 };

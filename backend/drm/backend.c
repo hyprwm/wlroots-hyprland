@@ -131,14 +131,9 @@ static void handle_session_active(struct wl_listener *listener, void *data) {
 	// configurations. The connector/CRTC mapping may have changed, so
 	// first disable all CRTCs, then light up the ones we were using
 	// before the VT switch.
-	// TODO: use the atomic API to improve restoration after a VT switch
-	for (size_t i = 0; i < drm->num_crtcs; i++) {
-		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
-
-		if (drmModeSetCrtc(drm->fd, crtc->id, 0, 0, 0, NULL, 0, NULL) != 0) {
-			wlr_log_errno(WLR_ERROR, "Failed to disable CRTC %"PRIu32" after VT switch",
-				crtc->id);
-		}
+	// TODO: better use the atomic API to improve restoration after a VT switch
+	if (!drm->iface->reset(drm)) {
+		wlr_log(WLR_ERROR, "Failed to reset state after VT switch");
 	}
 
 	struct wlr_drm_connector *conn;

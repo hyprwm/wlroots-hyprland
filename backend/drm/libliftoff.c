@@ -506,4 +506,5 @@ const struct wlr_drm_interface liftoff_iface = {
 	.init = init,
 	.finish = finish,
 	.crtc_commit = crtc_commit,
+	.reset = drm_atomic_reset,
 };

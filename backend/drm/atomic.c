@@ -61,19 +61,26 @@ static void atomic_begin(struct atomic *atom) {
 	}
 }
 
-static bool atomic_commit(struct atomic *atom,
+static bool atomic_commit(struct atomic *atom, struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *conn, struct wlr_drm_page_flip *page_flip,
 		uint32_t flags) {
-	struct wlr_drm_backend *drm = conn->backend;
 	if (atom->failed) {
 		return false;
 	}
 
 	int ret = drmModeAtomicCommit(drm->fd, atom->req, flags, page_flip);
 	if (ret != 0) {
-		wlr_drm_conn_log_errno(conn,
-			(flags & DRM_MODE_ATOMIC_TEST_ONLY) ? WLR_DEBUG : WLR_ERROR,
-			"Atomic commit failed");
+		enum wlr_log_importance log_level = WLR_ERROR;
+		if (flags & DRM_MODE_ATOMIC_TEST_ONLY) {
+			log_level = WLR_DEBUG;
+		}
+
+		if (conn != NULL) {
+			wlr_drm_conn_log_errno(conn, log_level, "Atomic commit failed");
+		} else {
+			wlr_log_errno(log_level, "Atomic commit failed");
+		}
+
 		char *flags_str = atomic_commit_flags_str(flags);
 		wlr_log(WLR_DEBUG, "(Atomic commit flags: %s)",
 			flags_str ? flags_str : "<error>");
@@ -369,7 +376,7 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		}
 	}
 
-	bool ok = atomic_commit(&atom, conn, page_flip, flags);
+	bool ok = atomic_commit(&atom, drm, conn, page_flip, flags);
 	atomic_finish(&atom);
 
 	if (ok && !test_only) {
@@ -392,6 +399,33 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 	return ok;
 }
 
+bool drm_atomic_reset(struct wlr_drm_backend *drm) {
+	struct atomic atom;
+	atomic_begin(&atom);
+
+	for (size_t i = 0; i < drm->num_crtcs; i++) {
+		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
+		atomic_add(&atom, crtc->id, crtc->props.mode_id, 0);
+		atomic_add(&atom, crtc->id, crtc->props.active, 0);
+	}
+
+	struct wlr_drm_connector *conn;
+	wl_list_for_each(conn, &drm->connectors, link) {
+		atomic_add(&atom, conn->id, conn->props.crtc_id, 0);
+	}
+
+	for (size_t i = 0; i < drm->num_planes; i++) {
+		plane_disable(&atom, &drm->planes[i]);
+	}
+
+	uint32_t flags = DRM_MODE_ATOMIC_ALLOW_MODESET;
+	bool ok = atomic_commit(&atom, drm, NULL, NULL, flags);
+	atomic_finish(&atom);
+
+	return ok;
+}
+
 const struct wlr_drm_interface atomic_iface = {
 	.crtc_commit = atomic_crtc_commit,
+	.reset = drm_atomic_reset,
 };
