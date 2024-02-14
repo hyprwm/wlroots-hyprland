@@ -481,14 +481,6 @@ out:
 		crtc->own_mode_id = true;
 		commit_blob(drm, &crtc->mode_id, mode_id);
 		commit_blob(drm, &crtc->gamma_lut, gamma_lut);
-
-		if (vrr_enabled != prev_vrr_enabled) {
-			output->adaptive_sync_status = vrr_enabled ?
-				WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED :
-				WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED;
-			wlr_drm_conn_log(conn, WLR_DEBUG, "VRR %s",
-				vrr_enabled ? "enabled" : "disabled");
-		}
 	} else {
 		rollback_blob(drm, &crtc->mode_id, mode_id);
 		rollback_blob(drm, &crtc->gamma_lut, gamma_lut);
