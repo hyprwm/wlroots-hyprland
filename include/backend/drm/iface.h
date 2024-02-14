@@ -31,8 +31,7 @@ extern const struct wlr_drm_interface liftoff_iface;
 bool drm_legacy_crtc_set_gamma(struct wlr_drm_backend *drm,
 	struct wlr_drm_crtc *crtc, size_t size, uint16_t *lut);
 
-bool create_mode_blob(struct wlr_drm_backend *drm,
-	struct wlr_drm_connector *conn,
+bool create_mode_blob(struct wlr_drm_connector *conn,
 	const struct wlr_drm_connector_state *state, uint32_t *blob_id);
 bool create_gamma_lut_blob(struct wlr_drm_backend *drm,
 	size_t size, const uint16_t *lut, uint32_t *blob_id);

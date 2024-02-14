@@ -317,7 +317,7 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 
 	uint32_t mode_id = crtc->mode_id;
 	if (modeset) {
-		if (!create_mode_blob(drm, conn, state, &mode_id)) {
+		if (!create_mode_blob(conn, state, &mode_id)) {
 			return false;
 		}
 	}

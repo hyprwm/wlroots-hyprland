@@ -95,15 +95,14 @@ static void atomic_add(struct atomic *atom, uint32_t id, uint32_t prop, uint64_t
 	}
 }
 
-bool create_mode_blob(struct wlr_drm_backend *drm,
-		struct wlr_drm_connector *conn,
+bool create_mode_blob(struct wlr_drm_connector *conn,
 		const struct wlr_drm_connector_state *state, uint32_t *blob_id) {
 	if (!state->active) {
 		*blob_id = 0;
 		return true;
 	}
 
-	if (drmModeCreatePropertyBlob(drm->fd, &state->mode,
+	if (drmModeCreatePropertyBlob(conn->backend->fd, &state->mode,
 			sizeof(drmModeModeInfo), blob_id)) {
 		wlr_log_errno(WLR_ERROR, "Unable to create mode property blob");
 		return false;
@@ -270,7 +269,7 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 
 	uint32_t mode_id = crtc->mode_id;
 	if (modeset) {
-		if (!create_mode_blob(drm, conn, state, &mode_id)) {
+		if (!create_mode_blob(conn, state, &mode_id)) {
 			return false;
 		}
 	}
