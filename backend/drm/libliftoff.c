@@ -497,6 +497,7 @@ out:
 			wlr_log_errno(WLR_ERROR, "Failed to destroy FB_DAMAGE_CLIPS property blob");
 		}
 	}
+	wl_array_release(&fb_damage_clips_arr);
 
 	return ok;
 }
