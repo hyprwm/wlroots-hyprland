@@ -1738,6 +1738,68 @@ static void build_current_connector_state(struct wlr_output_state *state,
 	}
 }
 
+/**
+ * Check whether we need to perform a full reset after a VT switch.
+ *
+ * If any connector or plane has a different CRTC, we need to perform a full
+ * reset to restore our mapping. We couldn't avoid a full reset even if we
+ * used a single KMS atomic commit to apply our state: the kernel rejects
+ * commits which migrate a plane from one CRTC to another without going through
+ * an intermediate state where the plane is disabled.
+ */
+static bool skip_reset_for_restore(struct wlr_drm_backend *drm) {
+	struct wlr_drm_connector *conn;
+	wl_list_for_each(conn, &drm->connectors, link) {
+		drmModeConnector *drm_conn = drmModeGetConnectorCurrent(drm->fd, conn->id);
+		if (drm_conn == NULL) {
+			return false;
+		}
+		struct wlr_drm_crtc *crtc = connector_get_current_crtc(conn, drm_conn);
+		drmModeFreeConnector(drm_conn);
+
+		if (crtc != NULL && conn->crtc != crtc) {
+			return false;
+		}
+	}
+
+	for (size_t i = 0; i < drm->num_planes; i++) {
+		struct wlr_drm_plane *plane = &drm->planes[i];
+
+		drmModePlane *drm_plane = drmModeGetPlane(drm->fd, plane->id);
+		if (drm_plane == NULL) {
+			return false;
+		}
+		uint32_t crtc_id = drm_plane->crtc_id;
+		drmModeFreePlane(drm_plane);
+
+		struct wlr_drm_crtc *crtc = NULL;
+		for (size_t i = 0; i < drm->num_crtcs; i++) {
+			if (drm->crtcs[i].id == crtc_id) {
+				crtc = &drm->crtcs[i];
+				break;
+			}
+		}
+		if (crtc == NULL) {
+			continue;
+		}
+
+		bool ok = false;
+		switch (plane->type) {
+		case DRM_PLANE_TYPE_PRIMARY:
+			ok = crtc->primary == plane;
+			break;
+		case DRM_PLANE_TYPE_CURSOR:
+			ok = crtc->cursor == plane;
+			break;
+		}
+		if (!ok) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void restore_drm_device(struct wlr_drm_backend *drm) {
 	// The previous DRM master leaves KMS in an undefined state. We need
 	// to restore our own state, but be careful to avoid invalid
@@ -1745,7 +1807,7 @@ void restore_drm_device(struct wlr_drm_backend *drm) {
 	// first disable all CRTCs, then light up the ones we were using
 	// before the VT switch.
 	// TODO: better use the atomic API to improve restoration after a VT switch
-	if (!drm->iface->reset(drm)) {
+	if (!skip_reset_for_restore(drm) && !drm->iface->reset(drm)) {
 		wlr_log(WLR_ERROR, "Failed to reset state after VT switch");
 	}
 
