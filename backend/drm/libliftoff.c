@@ -126,27 +126,6 @@ static bool add_prop(drmModeAtomicReq *req, uint32_t obj,
 	return true;
 }
 
-static void commit_blob(struct wlr_drm_backend *drm,
-		uint32_t *current, uint32_t next) {
-	if (*current == next) {
-		return;
-	}
-	if (*current != 0) {
-		drmModeDestroyPropertyBlob(drm->fd, *current);
-	}
-	*current = next;
-}
-
-static void rollback_blob(struct wlr_drm_backend *drm,
-		uint32_t *current, uint32_t next) {
-	if (*current == next) {
-		return;
-	}
-	if (next != 0) {
-		drmModeDestroyPropertyBlob(drm->fd, next);
-	}
-}
-
 static bool set_plane_props(struct wlr_drm_plane *plane,
 		struct liftoff_layer *layer, struct wlr_drm_fb *fb, int32_t x, int32_t y, uint64_t zpos) {
 	if (fb == NULL) {
@@ -301,10 +280,9 @@ static void update_layer_feedback(struct wlr_drm_backend *drm,
 }
 
 static bool crtc_commit(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state,
+		struct wlr_drm_connector_state *state,
 		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
 	struct wlr_drm_backend *drm = conn->backend;
-	struct wlr_output *output = &conn->output;
 	struct wlr_drm_crtc *crtc = conn->crtc;
 
 	bool modeset = state->modeset;
@@ -314,53 +292,8 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		return false;
 	}
 
-	uint32_t mode_id = crtc->mode_id;
-	if (modeset) {
-		if (!create_mode_blob(conn, state, &mode_id)) {
-			return false;
-		}
-	}
-
-	uint32_t gamma_lut = crtc->gamma_lut;
-	if (state->base->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-		// Fallback to legacy gamma interface when gamma properties are not
-		// available (can happen on older Intel GPUs that support gamma but not
-		// degamma).
-		if (crtc->props.gamma_lut == 0) {
-			if (!drm_legacy_crtc_set_gamma(drm, crtc,
-					state->base->gamma_lut_size,
-					state->base->gamma_lut)) {
-				return false;
-			}
-		} else {
-			if (!create_gamma_lut_blob(drm, state->base->gamma_lut_size,
-					state->base->gamma_lut, &gamma_lut)) {
-				return false;
-			}
-		}
-	}
-
-	struct wl_array fb_damage_clips_arr = {0};
-
-	uint32_t primary_fb_damage_clips = 0;
-	if ((state->base->committed & WLR_OUTPUT_STATE_DAMAGE) &&
-			crtc->primary->props.fb_damage_clips != 0) {
-		uint32_t *ptr = wl_array_add(&fb_damage_clips_arr, sizeof(primary_fb_damage_clips));
-		if (ptr == NULL) {
-			return false;
-		}
-		create_fb_damage_clips_blob(drm, state->primary_fb->wlr_buf->width,
-			state->primary_fb->wlr_buf->height, &state->base->damage,
-			&primary_fb_damage_clips);
-		*ptr = primary_fb_damage_clips;
-	}
-
-	bool prev_vrr_enabled =
-		output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
-	bool vrr_enabled = prev_vrr_enabled;
-	if ((state->base->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
-			drm_connector_supports_vrr(conn)) {
-		vrr_enabled = state->base->adaptive_sync_enabled;
+	if (!drm_atomic_connector_prepare(state, modeset)) {
+		return false;
 	}
 
 	if (test_only) {
@@ -373,6 +306,7 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		flags |= DRM_MODE_ATOMIC_NONBLOCK;
 	}
 
+	struct wl_array fb_damage_clips_arr = {0};
 	drmModeAtomicReq *req = drmModeAtomicAlloc();
 	if (req == NULL) {
 		wlr_log(WLR_ERROR, "drmModeAtomicAlloc failed");
@@ -391,22 +325,22 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 	}
 	// TODO: set "max bpc"
 	ok = ok &&
-		add_prop(req, crtc->id, crtc->props.mode_id, mode_id) &&
+		add_prop(req, crtc->id, crtc->props.mode_id, state->mode_id) &&
 		add_prop(req, crtc->id, crtc->props.active, active);
 	if (active) {
 		if (crtc->props.gamma_lut != 0) {
-			ok = ok && add_prop(req, crtc->id, crtc->props.gamma_lut, gamma_lut);
+			ok = ok && add_prop(req, crtc->id, crtc->props.gamma_lut, state->gamma_lut);
 		}
 		if (crtc->props.vrr_enabled != 0) {
-			ok = ok && add_prop(req, crtc->id, crtc->props.vrr_enabled, vrr_enabled);
+			ok = ok && add_prop(req, crtc->id, crtc->props.vrr_enabled, state->vrr_enabled);
 		}
 		ok = ok &&
 			set_plane_props(crtc->primary, crtc->primary->liftoff_layer, state->primary_fb, 0, 0, 0) &&
 			set_plane_props(crtc->primary, crtc->liftoff_composition_layer, state->primary_fb, 0, 0, 0);
 		liftoff_layer_set_property(crtc->primary->liftoff_layer,
-			"FB_DAMAGE_CLIPS", primary_fb_damage_clips);
+			"FB_DAMAGE_CLIPS", state->fb_damage_clips);
 		liftoff_layer_set_property(crtc->liftoff_composition_layer,
-			"FB_DAMAGE_CLIPS", primary_fb_damage_clips);
+			"FB_DAMAGE_CLIPS", state->fb_damage_clips);
 
 		if (state->base->committed & WLR_OUTPUT_STATE_LAYERS) {
 			for (size_t i = 0; i < state->base->layers_len; i++) {
@@ -475,15 +409,9 @@ out:
 	drmModeAtomicFree(req);
 
 	if (ok && !test_only) {
-		if (!crtc->own_mode_id) {
-			crtc->mode_id = 0; // don't try to delete previous master's blobs
-		}
-		crtc->own_mode_id = true;
-		commit_blob(drm, &crtc->mode_id, mode_id);
-		commit_blob(drm, &crtc->gamma_lut, gamma_lut);
+		drm_atomic_connector_apply_commit(state);
 	} else {
-		rollback_blob(drm, &crtc->mode_id, mode_id);
-		rollback_blob(drm, &crtc->gamma_lut, gamma_lut);
+		drm_atomic_connector_rollback_commit(state);
 	}
 
 	uint32_t *fb_damage_clips_ptr;

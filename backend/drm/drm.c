@@ -489,7 +489,7 @@ static void drm_connector_rollback_commit(const struct wlr_drm_connector_state *
 }
 
 static bool drm_crtc_commit(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state,
+		struct wlr_drm_connector_state *state,
 		uint32_t flags, bool test_only) {
 	// Disallow atomic-only flags
 	assert((flags & ~DRM_MODE_PAGE_FLIP_FLAGS) == 0);

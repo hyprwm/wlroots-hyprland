@@ -59,7 +59,7 @@ static bool legacy_crtc_test(struct wlr_drm_connector *conn,
 }
 
 static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state,
+		struct wlr_drm_connector_state *state,
 		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
 	if (!legacy_crtc_test(conn, state)) {
 		return false;
