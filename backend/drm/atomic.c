@@ -61,8 +61,8 @@ static void atomic_begin(struct atomic *atom) {
 }
 
 static bool atomic_commit(struct atomic *atom, struct wlr_drm_backend *drm,
-		struct wlr_drm_connector *conn, struct wlr_drm_page_flip *page_flip,
-		uint32_t flags) {
+		const struct wlr_drm_device_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags) {
 	if (atom->failed) {
 		return false;
 	}
@@ -74,12 +74,12 @@ static bool atomic_commit(struct atomic *atom, struct wlr_drm_backend *drm,
 			log_level = WLR_DEBUG;
 		}
 
-		if (conn != NULL) {
+		if (state->connectors_len == 1) {
+			struct wlr_drm_connector *conn = state->connectors[0].connector;
 			wlr_drm_conn_log_errno(conn, log_level, "Atomic commit failed");
 		} else {
 			wlr_log_errno(log_level, "Atomic commit failed");
 		}
-
 		char *flags_str = atomic_commit_flags_str(flags);
 		wlr_log(WLR_DEBUG, "(Atomic commit flags: %s)",
 			flags_str ? flags_str : "<error>");
@@ -350,82 +350,96 @@ static void set_plane_props(struct atomic *atom, struct wlr_drm_backend *drm,
 	atomic_add(atom, id, props->crtc_y, (uint64_t)y);
 }
 
-static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
-		struct wlr_drm_connector_state *state,
-		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
+static void atomic_connector_add(struct atomic *atom,
+		const struct wlr_drm_connector_state *state, bool modeset) {
+	struct wlr_drm_connector *conn = state->connector;
 	struct wlr_drm_backend *drm = conn->backend;
 	struct wlr_drm_crtc *crtc = conn->crtc;
-
-	bool modeset = state->modeset;
 	bool active = state->active;
 
-	if (!drm_atomic_connector_prepare(state, modeset)) {
-		return false;
+	atomic_add(atom, conn->id, conn->props.crtc_id, active ? crtc->id : 0);
+	if (modeset && active && conn->props.link_status != 0) {
+		atomic_add(atom, conn->id, conn->props.link_status,
+			DRM_MODE_LINK_STATUS_GOOD);
+	}
+	if (active && conn->props.content_type != 0) {
+		atomic_add(atom, conn->id, conn->props.content_type,
+			DRM_MODE_CONTENT_TYPE_GRAPHICS);
+	}
+	if (modeset && active && conn->props.max_bpc != 0 && conn->max_bpc_bounds[1] != 0) {
+		atomic_add(atom, conn->id, conn->props.max_bpc, pick_max_bpc(conn, state->primary_fb));
+	}
+	atomic_add(atom, crtc->id, crtc->props.mode_id, state->mode_id);
+	atomic_add(atom, crtc->id, crtc->props.active, active);
+	if (active) {
+		if (crtc->props.gamma_lut != 0) {
+			atomic_add(atom, crtc->id, crtc->props.gamma_lut, state->gamma_lut);
+		}
+		if (crtc->props.vrr_enabled != 0) {
+			atomic_add(atom, crtc->id, crtc->props.vrr_enabled, state->vrr_enabled);
+		}
+		set_plane_props(atom, drm, crtc->primary, state->primary_fb, crtc->id,
+			0, 0);
+		if (crtc->primary->props.fb_damage_clips != 0) {
+			atomic_add(atom, crtc->primary->id,
+				crtc->primary->props.fb_damage_clips, state->fb_damage_clips);
+		}
+		if (crtc->cursor) {
+			if (drm_connector_is_cursor_visible(conn)) {
+				set_plane_props(atom, drm, crtc->cursor, state->cursor_fb,
+					crtc->id, conn->cursor_x, conn->cursor_y);
+			} else {
+				plane_disable(atom, crtc->cursor);
+			}
+		}
+	} else {
+		plane_disable(atom, crtc->primary);
+		if (crtc->cursor) {
+			plane_disable(atom, crtc->cursor);
+		}
+	}
+}
+
+static bool atomic_device_commit(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
+	bool ok = false;
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		if (!drm_atomic_connector_prepare(&state->connectors[i], state->modeset)) {
+			goto out;
+		}
+	}
+
+	struct atomic atom;
+	atomic_begin(&atom);
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		atomic_connector_add(&atom, &state->connectors[i], state->modeset);
 	}
 
 	if (test_only) {
 		flags |= DRM_MODE_ATOMIC_TEST_ONLY;
 	}
-	if (modeset) {
+	if (state->modeset) {
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
 	}
 	if (!test_only && state->nonblock) {
 		flags |= DRM_MODE_ATOMIC_NONBLOCK;
 	}
 
-	struct atomic atom;
-	atomic_begin(&atom);
-	atomic_add(&atom, conn->id, conn->props.crtc_id, active ? crtc->id : 0);
-	if (modeset && active && conn->props.link_status != 0) {
-		atomic_add(&atom, conn->id, conn->props.link_status,
-			DRM_MODE_LINK_STATUS_GOOD);
-	}
-	if (active && conn->props.content_type != 0) {
-		atomic_add(&atom, conn->id, conn->props.content_type,
-			DRM_MODE_CONTENT_TYPE_GRAPHICS);
-	}
-	if (modeset && active && conn->props.max_bpc != 0 && conn->max_bpc_bounds[1] != 0) {
-		atomic_add(&atom, conn->id, conn->props.max_bpc, pick_max_bpc(conn, state->primary_fb));
-	}
-	atomic_add(&atom, crtc->id, crtc->props.mode_id, state->mode_id);
-	atomic_add(&atom, crtc->id, crtc->props.active, active);
-	if (active) {
-		if (crtc->props.gamma_lut != 0) {
-			atomic_add(&atom, crtc->id, crtc->props.gamma_lut, state->gamma_lut);
-		}
-		if (crtc->props.vrr_enabled != 0) {
-			atomic_add(&atom, crtc->id, crtc->props.vrr_enabled, state->vrr_enabled);
-		}
-		set_plane_props(&atom, drm, crtc->primary, state->primary_fb, crtc->id,
-			0, 0);
-		if (crtc->primary->props.fb_damage_clips != 0) {
-			atomic_add(&atom, crtc->primary->id,
-				crtc->primary->props.fb_damage_clips, state->fb_damage_clips);
-		}
-		if (crtc->cursor) {
-			if (drm_connector_is_cursor_visible(conn)) {
-				set_plane_props(&atom, drm, crtc->cursor, state->cursor_fb,
-					crtc->id, conn->cursor_x, conn->cursor_y);
-			} else {
-				plane_disable(&atom, crtc->cursor);
-			}
-		}
-	} else {
-		plane_disable(&atom, crtc->primary);
-		if (crtc->cursor) {
-			plane_disable(&atom, crtc->cursor);
-		}
-	}
-
-	bool ok = atomic_commit(&atom, drm, conn, page_flip, flags);
+	ok = atomic_commit(&atom, drm, state, page_flip, flags);
 	atomic_finish(&atom);
 
-	if (ok && !test_only) {
-		drm_atomic_connector_apply_commit(state);
-	} else {
-		drm_atomic_connector_rollback_commit(state);
+out:
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		struct wlr_drm_connector_state *conn_state = &state->connectors[i];
+		if (ok && !test_only) {
+			drm_atomic_connector_apply_commit(conn_state);
+		} else {
+			drm_atomic_connector_rollback_commit(conn_state);
+		}
 	}
-
 	return ok;
 }
 
@@ -456,6 +470,6 @@ bool drm_atomic_reset(struct wlr_drm_backend *drm) {
 }
 
 const struct wlr_drm_interface atomic_iface = {
-	.crtc_commit = atomic_crtc_commit,
+	.commit = atomic_device_commit,
 	.reset = drm_atomic_reset,
 };

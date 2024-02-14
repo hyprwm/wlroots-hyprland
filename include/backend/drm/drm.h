@@ -122,11 +122,17 @@ struct wlr_drm_mode {
 	drmModeModeInfo drm_mode;
 };
 
+struct wlr_drm_device_state {
+	bool modeset;
+	bool nonblock;
+
+	struct wlr_drm_connector_state *connectors;
+	size_t connectors_len;
+};
+
 struct wlr_drm_connector_state {
 	struct wlr_drm_connector *connector;
 	const struct wlr_output_state *base;
-	bool modeset;
-	bool nonblock;
 	bool active;
 	drmModeModeInfo mode;
 	struct wlr_drm_fb *primary_fb;

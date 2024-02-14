@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <libliftoff.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
@@ -279,41 +280,16 @@ static void update_layer_feedback(struct wlr_drm_backend *drm,
 	wlr_drm_format_set_finish(&formats);
 }
 
-static bool crtc_commit(struct wlr_drm_connector *conn,
-		struct wlr_drm_connector_state *state,
-		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
-	struct wlr_drm_backend *drm = conn->backend;
+static bool add_connector(drmModeAtomicReq *req,
+		const struct wlr_drm_connector_state *state,
+		bool modeset, struct wl_array *fb_damage_clips_arr) {
+	struct wlr_drm_connector *conn = state->connector;
 	struct wlr_drm_crtc *crtc = conn->crtc;
-
-	bool modeset = state->modeset;
+	struct wlr_drm_backend *drm = conn->backend;
 	bool active = state->active;
+	bool ok = true;
 
-	if (modeset && !register_planes_for_crtc(drm, crtc)) {
-		return false;
-	}
-
-	if (!drm_atomic_connector_prepare(state, modeset)) {
-		return false;
-	}
-
-	if (test_only) {
-		flags |= DRM_MODE_ATOMIC_TEST_ONLY;
-	}
-	if (modeset) {
-		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-	}
-	if (!test_only && state->nonblock) {
-		flags |= DRM_MODE_ATOMIC_NONBLOCK;
-	}
-
-	struct wl_array fb_damage_clips_arr = {0};
-	drmModeAtomicReq *req = drmModeAtomicAlloc();
-	if (req == NULL) {
-		wlr_log(WLR_ERROR, "drmModeAtomicAlloc failed");
-		return false;
-	}
-
-	bool ok = add_prop(req, conn->id, conn->props.crtc_id,
+	ok = ok && add_prop(req, conn->id, conn->props.crtc_id,
 		active ? crtc->id : 0);
 	if (modeset && active && conn->props.link_status != 0) {
 		ok = ok && add_prop(req, conn->id, conn->props.link_status,
@@ -346,7 +322,7 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 			for (size_t i = 0; i < state->base->layers_len; i++) {
 				const struct wlr_output_layer_state *layer_state = &state->base->layers[i];
 				ok = ok && set_layer_props(drm, layer_state, i + 1,
-					&fb_damage_clips_arr);
+					fb_damage_clips_arr);
 			}
 		}
 
@@ -366,52 +342,101 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		}
 	}
 
-	if (!ok) {
-		goto out;
+	return ok;
+}
+
+static void connector_update_layers_feedback(const struct wlr_drm_connector_state *state) {
+	struct wlr_drm_backend *drm = state->connector->backend;
+
+	if (!(state->base->committed & WLR_OUTPUT_STATE_LAYERS)) {
+		return;
 	}
 
-	int ret = liftoff_output_apply(crtc->liftoff, req, flags);
-	if (ret != 0) {
-		wlr_drm_conn_log(conn, test_only ? WLR_DEBUG : WLR_ERROR,
-			"liftoff_output_apply failed: %s", strerror(-ret));
-		ok = false;
-		goto out;
-	}
-
-	if (crtc->cursor &&
-			liftoff_layer_needs_composition(crtc->cursor->liftoff_layer)) {
-		wlr_drm_conn_log(conn, WLR_DEBUG, "Failed to scan-out cursor plane");
-		ok = false;
-		goto out;
-	}
-
-	ret = drmModeAtomicCommit(drm->fd, req, flags, page_flip);
-	if (ret != 0) {
-		wlr_drm_conn_log_errno(conn, test_only ? WLR_DEBUG : WLR_ERROR,
-			"Atomic commit failed");
-		ok = false;
-		goto out;
-	}
-
-	if (state->base->committed & WLR_OUTPUT_STATE_LAYERS) {
-		for (size_t i = 0; i < state->base->layers_len; i++) {
-			struct wlr_output_layer_state *layer_state = &state->base->layers[i];
-			struct wlr_drm_layer *layer = get_drm_layer(drm, layer_state->layer);
-			layer_state->accepted =
-				!liftoff_layer_needs_composition(layer->liftoff);
-			if (!test_only && !layer_state->accepted) {
-				update_layer_feedback(drm, layer);
-			}
+	for (size_t i = 0; i < state->base->layers_len; i++) {
+		struct wlr_output_layer_state *layer_state = &state->base->layers[i];
+		struct wlr_drm_layer *layer = get_drm_layer(drm, layer_state->layer);
+		layer_state->accepted =
+			!liftoff_layer_needs_composition(layer->liftoff);
+		if (!layer_state->accepted) {
+			update_layer_feedback(drm, layer);
 		}
+	}
+}
+
+static bool commit(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
+	bool ok = false;
+	struct wl_array fb_damage_clips_arr = {0};
+	drmModeAtomicReq *req = NULL;
+
+	if (test_only) {
+		flags |= DRM_MODE_ATOMIC_TEST_ONLY;
+	}
+	if (state->modeset) {
+		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
+	}
+	if (!test_only && state->nonblock) {
+		flags |= DRM_MODE_ATOMIC_NONBLOCK;
+	}
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		struct wlr_drm_connector_state *conn_state = &state->connectors[i];
+		struct wlr_drm_connector *conn = conn_state->connector;
+		if (state->modeset && !register_planes_for_crtc(drm, conn->crtc)) {
+			goto out;
+		}
+		if (!drm_atomic_connector_prepare(conn_state, state->modeset)) {
+			goto out;
+		}
+	}
+
+	req = drmModeAtomicAlloc();
+	if (req == NULL) {
+		wlr_log(WLR_ERROR, "drmModeAtomicAlloc failed");
+		goto out;
+	}
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		if (!add_connector(req, &state->connectors[i], state->modeset, &fb_damage_clips_arr)) {
+			goto out;
+		}
+	}
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		struct wlr_drm_connector *conn = state->connectors[i].connector;
+		struct wlr_drm_crtc *crtc = conn->crtc;
+
+		int ret = liftoff_output_apply(crtc->liftoff, req, flags);
+		if (ret != 0) {
+			wlr_drm_conn_log(conn, test_only ? WLR_DEBUG : WLR_ERROR,
+				"liftoff_output_apply failed: %s", strerror(-ret));
+			goto out;
+		}
+
+		if (crtc->cursor &&
+				liftoff_layer_needs_composition(crtc->cursor->liftoff_layer)) {
+			wlr_drm_conn_log(conn, WLR_DEBUG, "Failed to scan-out cursor plane");
+			goto out;
+		}
+	}
+
+	ok = drmModeAtomicCommit(drm->fd, req, flags, page_flip) == 0;
+	if (!ok) {
+		wlr_log_errno(test_only ? WLR_DEBUG : WLR_ERROR,
+			"Atomic commit failed");
 	}
 
 out:
 	drmModeAtomicFree(req);
-
-	if (ok && !test_only) {
-		drm_atomic_connector_apply_commit(state);
-	} else {
-		drm_atomic_connector_rollback_commit(state);
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		struct wlr_drm_connector_state *conn_state = &state->connectors[i];
+		if (ok && !test_only) {
+			drm_atomic_connector_apply_commit(conn_state);
+			connector_update_layers_feedback(conn_state);
+		} else {
+			drm_atomic_connector_rollback_commit(conn_state);
+		}
 	}
 
 	uint32_t *fb_damage_clips_ptr;
@@ -428,6 +453,6 @@ out:
 const struct wlr_drm_interface liftoff_iface = {
 	.init = init,
 	.finish = finish,
-	.crtc_commit = crtc_commit,
+	.commit = commit,
 	.reset = drm_atomic_reset,
 };

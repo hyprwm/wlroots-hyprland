@@ -34,11 +34,12 @@ static bool legacy_fb_props_match(struct wlr_drm_fb *fb1,
 	return true;
 }
 
-static bool legacy_crtc_test(struct wlr_drm_connector *conn,
-		const struct wlr_drm_connector_state *state) {
+static bool legacy_crtc_test(const struct wlr_drm_connector_state *state,
+		bool modeset) {
+	struct wlr_drm_connector *conn = state->connector;
 	struct wlr_drm_crtc *crtc = conn->crtc;
 
-	if ((state->base->committed & WLR_OUTPUT_STATE_BUFFER) && !state->modeset) {
+	if ((state->base->committed & WLR_OUTPUT_STATE_BUFFER) && !modeset) {
 		struct wlr_drm_fb *pending_fb = state->primary_fb;
 
 		struct wlr_drm_fb *prev_fb = crtc->primary->queued_fb;
@@ -58,16 +59,9 @@ static bool legacy_crtc_test(struct wlr_drm_connector *conn,
 	return true;
 }
 
-static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
-		struct wlr_drm_connector_state *state,
-		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only) {
-	if (!legacy_crtc_test(conn, state)) {
-		return false;
-	}
-	if (test_only) {
-		return true;
-	}
-
+static bool legacy_crtc_commit(const struct wlr_drm_connector_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool modeset) {
+	struct wlr_drm_connector *conn = state->connector;
 	struct wlr_drm_backend *drm = conn->backend;
 	struct wlr_output *output = &conn->output;
 	struct wlr_drm_crtc *crtc = conn->crtc;
@@ -83,7 +77,7 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 		fb_id = state->primary_fb->id;
 	}
 
-	if (state->modeset) {
+	if (modeset) {
 		uint32_t *conns = NULL;
 		size_t conns_len = 0;
 		drmModeModeInfo *mode = NULL;
@@ -185,6 +179,32 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 	return true;
 }
 
+static bool legacy_commit(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state,
+		struct wlr_drm_page_flip *page_flip, uint32_t flags,
+		bool test_only) {
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		const struct wlr_drm_connector_state *conn_state = &state->connectors[i];
+		if (!legacy_crtc_test(conn_state, state->modeset)) {
+			return false;
+		}
+	}
+
+	if (test_only) {
+		return true;
+	}
+
+	for (size_t i = 0; i < state->connectors_len; i++) {
+		const struct wlr_drm_connector_state *conn_state = &state->connectors[i];
+		if (!legacy_crtc_commit(conn_state, page_flip, flags,
+				state->modeset)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void fill_empty_gamma_table(size_t size,
 		uint16_t *r, uint16_t *g, uint16_t *b) {
 	assert(0xFFFF < UINT64_MAX / (size - 1));
@@ -241,6 +261,6 @@ static bool legacy_reset(struct wlr_drm_backend *drm) {
 }
 
 const struct wlr_drm_interface legacy_iface = {
-	.crtc_commit = legacy_crtc_commit,
+	.commit = legacy_commit,
 	.reset = legacy_reset,
 };

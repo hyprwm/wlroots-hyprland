@@ -10,6 +10,7 @@
 struct wlr_drm_backend;
 struct wlr_drm_connector;
 struct wlr_drm_crtc;
+struct wlr_drm_device_state;
 struct wlr_drm_connector_state;
 struct wlr_drm_fb;
 struct wlr_drm_page_flip;
@@ -18,9 +19,8 @@ struct wlr_drm_page_flip;
 struct wlr_drm_interface {
 	bool (*init)(struct wlr_drm_backend *drm);
 	void (*finish)(struct wlr_drm_backend *drm);
-	// Commit all pending changes on a CRTC.
-	bool (*crtc_commit)(struct wlr_drm_connector *conn,
-		struct wlr_drm_connector_state *state,
+	bool (*commit)(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state,
 		struct wlr_drm_page_flip *page_flip, uint32_t flags, bool test_only);
 	// Turn off everything
 	bool (*reset)(struct wlr_drm_backend *drm);

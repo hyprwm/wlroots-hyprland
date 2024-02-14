@@ -488,26 +488,30 @@ static void drm_connector_rollback_commit(const struct wlr_drm_connector_state *
 	}
 }
 
-static bool drm_crtc_commit(struct wlr_drm_connector *conn,
-		struct wlr_drm_connector_state *state,
+static bool drm_commit(struct wlr_drm_backend *drm,
+		const struct wlr_drm_device_state *state,
 		uint32_t flags, bool test_only) {
 	// Disallow atomic-only flags
 	assert((flags & ~DRM_MODE_PAGE_FLIP_FLAGS) == 0);
 
 	struct wlr_drm_page_flip *page_flip = NULL;
 	if (flags & DRM_MODE_PAGE_FLIP_EVENT) {
-		page_flip = drm_page_flip_create(conn);
+		assert(state->connectors_len == 1);
+		page_flip = drm_page_flip_create(state->connectors[0].connector);
 		if (page_flip == NULL) {
 			return false;
 		}
 	}
 
-	struct wlr_drm_backend *drm = conn->backend;
-	bool ok = drm->iface->crtc_commit(conn, state, page_flip, flags, test_only);
+	bool ok = drm->iface->commit(drm, state, page_flip, flags, test_only);
 	if (ok && !test_only) {
-		drm_connector_apply_commit(state, page_flip);
+		for (size_t i = 0; i < state->connectors_len; i++) {
+			drm_connector_apply_commit(&state->connectors[i], page_flip);
+		}
 	} else {
-		drm_connector_rollback_commit(state);
+		for (size_t i = 0; i < state->connectors_len; i++) {
+			drm_connector_rollback_commit(&state->connectors[i]);
+		}
 		drm_page_flip_destroy(page_flip);
 	}
 	return ok;
@@ -519,15 +523,7 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 	*state = (struct wlr_drm_connector_state){
 		.connector = conn,
 		.base = base,
-		.modeset = base->allow_reconfiguration,
 		.active = output_pending_enabled(&conn->output, base),
-		// The wlr_output API requires non-modeset commits with a new buffer to
-		// wait for the frame event. However compositors often perform
-		// non-modesets commits without a new buffer without waiting for the
-		// frame event. In that case we need to make the KMS commit blocking,
-		// otherwise the kernel will error out with EBUSY.
-		.nonblock = !base->allow_reconfiguration &&
-			(base->committed & WLR_OUTPUT_STATE_BUFFER),
 	};
 
 	struct wlr_output_mode *mode = conn->output.current_mode;
@@ -580,6 +576,22 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 			}
 		}
 	}
+}
+
+static void drm_device_state_init_single(struct wlr_drm_device_state *dev_state,
+		struct wlr_drm_connector_state *conn_state) {
+	*dev_state = (struct wlr_drm_device_state){
+		.modeset = conn_state->base->allow_reconfiguration,
+		// The wlr_output API requires non-modeset commits with a new buffer to
+		// wait for the frame event. However compositors often perform
+		// non-modesets commits without a new buffer without waiting for the
+		// frame event. In that case we need to make the KMS commit blocking,
+		// otherwise the kernel will error out with EBUSY.
+		.nonblock = !conn_state->base->allow_reconfiguration &&
+			(conn_state->base->committed & WLR_OUTPUT_STATE_BUFFER),
+		.connectors = conn_state,
+		.connectors_len = 1,
+	};
 }
 
 static void drm_connector_state_finish(struct wlr_drm_connector_state *state) {
@@ -708,6 +720,8 @@ static bool drm_connector_test(struct wlr_output *output,
 	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
+	struct wlr_drm_device_state pending_dev = {0};
+	drm_device_state_init_single(&pending_dev, &pending);
 
 	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
 			state->adaptive_sync_enabled &&
@@ -751,7 +765,7 @@ static bool drm_connector_test(struct wlr_output *output,
 		goto out;
 	}
 
-	ok = drm_crtc_commit(conn, &pending, 0, true);
+	ok = drm_commit(conn->backend, &pending_dev, 0, true);
 
 out:
 	drm_connector_state_finish(&pending);
@@ -795,6 +809,8 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, base);
+	struct wlr_drm_device_state pending_dev = {0};
+	drm_device_state_init_single(&pending_dev, &pending);
 
 	if (!pending.active && conn->crtc == NULL) {
 		// Disabling an already-disabled connector
@@ -821,7 +837,7 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		}
 	}
 
-	if (pending.modeset) {
+	if (pending_dev.modeset) {
 		if (pending.active) {
 			wlr_drm_conn_log(conn, WLR_INFO, "Modesetting with %dx%d @ %.3f Hz",
 				pending.mode.hdisplay, pending.mode.vdisplay,
@@ -835,7 +851,7 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	// page-flip, either a blocking modeset. When performing a blocking modeset
 	// we'll wait for all queued page-flips to complete, so we don't need this
 	// safeguard.
-	if (pending.nonblock && conn->pending_page_flip != NULL) {
+	if (pending_dev.nonblock && conn->pending_page_flip != NULL) {
 		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
 			"a page-flip is already pending");
 		goto out;
@@ -849,7 +865,7 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		flags |= DRM_MODE_PAGE_FLIP_ASYNC;
 	}
 
-	ok = drm_crtc_commit(conn, &pending, flags, false);
+	ok = drm_commit(drm, &pending_dev, flags, false);
 	if (!ok) {
 		goto out;
 	}
