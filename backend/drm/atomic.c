@@ -201,14 +201,21 @@ static uint64_t pick_max_bpc(struct wlr_drm_connector *conn, struct wlr_drm_fb *
 	return target_bpc;
 }
 
+static void destroy_blob(struct wlr_drm_backend *drm, uint32_t id) {
+	if (id == 0) {
+		return;
+	}
+	if (drmModeDestroyPropertyBlob(drm->fd, id) != 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to destroy blob");
+	}
+}
+
 static void commit_blob(struct wlr_drm_backend *drm,
 		uint32_t *current, uint32_t next) {
 	if (*current == next) {
 		return;
 	}
-	if (*current != 0) {
-		drmModeDestroyPropertyBlob(drm->fd, *current);
-	}
+	destroy_blob(drm, *current);
 	*current = next;
 }
 
@@ -217,9 +224,7 @@ static void rollback_blob(struct wlr_drm_backend *drm,
 	if (*current == next) {
 		return;
 	}
-	if (next != 0) {
-		drmModeDestroyPropertyBlob(drm->fd, next);
-	}
+	destroy_blob(drm, next);
 }
 
 static void plane_disable(struct atomic *atom, struct wlr_drm_plane *plane) {
@@ -382,11 +387,7 @@ static bool atomic_crtc_commit(struct wlr_drm_connector *conn,
 		rollback_blob(drm, &crtc->mode_id, mode_id);
 		rollback_blob(drm, &crtc->gamma_lut, gamma_lut);
 	}
-
-	if (fb_damage_clips != 0 &&
-			drmModeDestroyPropertyBlob(drm->fd, fb_damage_clips) != 0) {
-		wlr_log_errno(WLR_ERROR, "Failed to destroy FB_DAMAGE_CLIPS property blob");
-	}
+	destroy_blob(drm, fb_damage_clips);
 
 	return ok;
 }
