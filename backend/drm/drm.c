@@ -1740,7 +1740,7 @@ static void build_current_connector_state(struct wlr_output_state *state,
 
 void restore_drm_device(struct wlr_drm_backend *drm) {
 	// The previous DRM master leaves KMS in an undefined state. We need
-	// to restore out own state, but be careful to avoid invalid
+	// to restore our own state, but be careful to avoid invalid
 	// configurations. The connector/CRTC mapping may have changed, so
 	// first disable all CRTCs, then light up the ones we were using
 	// before the VT switch.
