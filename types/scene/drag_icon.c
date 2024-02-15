@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include "wlr/types/wlr_compositor.h"
 #include <wlr/types/wlr_scene.h>

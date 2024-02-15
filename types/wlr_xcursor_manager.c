@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_xcursor_manager.h>

@@ -23,7 +23,6 @@
  * SOFTWARE.
  */
 
-#define _POSIX_C_SOURCE 200809L
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>

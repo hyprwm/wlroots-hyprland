@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200112L
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>

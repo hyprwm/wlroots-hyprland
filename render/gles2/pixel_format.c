@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <drm_fourcc.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>

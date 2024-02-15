@@ -1,4 +1,5 @@
-#define _XOPEN_SOURCE 600
+#undef _POSIX_C_SOURCE
+#define _XOPEN_SOURCE 600 // for M_PI
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

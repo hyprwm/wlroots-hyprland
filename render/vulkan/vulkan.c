@@ -1,5 +1,5 @@
-#if !defined(__FreeBSD__)
-#define _POSIX_C_SOURCE 200809L
+#if defined(__FreeBSD__)
+#undef _POSIX_C_SOURCE
 #endif
 #include <assert.h>
 #include <fcntl.h>

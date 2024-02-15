@@ -1,4 +1,5 @@
-#define _XOPEN_SOURCE 700
+#undef _POSIX_C_SOURCE
+#define _XOPEN_SOURCE 700 // for ffs()
 #include <assert.h>
 #include <stdlib.h>
 #include <strings.h>

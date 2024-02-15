@@ -1,4 +1,5 @@
-#define _XOPEN_SOURCE 700
+#undef _POSIX_C_SOURCE
+#define _XOPEN_SOURCE 700 // for S_ISVTX
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
