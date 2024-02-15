@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 700 // for snprintf
+#define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
