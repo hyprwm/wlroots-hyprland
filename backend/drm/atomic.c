@@ -276,7 +276,7 @@ bool drm_atomic_connector_prepare(struct wlr_drm_connector_state *state, bool mo
 		output->adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED;
 	bool vrr_enabled = prev_vrr_enabled;
 	if ((state->base->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED)) {
-		if (!drm_connector_supports_vrr(conn)) {
+		if (state->base->adaptive_sync_enabled && !drm_connector_supports_vrr(conn)) {
 			return false;
 		}
 		vrr_enabled = state->base->adaptive_sync_enabled;

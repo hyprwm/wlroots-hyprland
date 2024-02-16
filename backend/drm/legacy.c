@@ -110,10 +110,11 @@ static bool legacy_crtc_commit(const struct wlr_drm_connector_state *state,
 	}
 
 	if (state->base->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) {
-		if (!drm_connector_supports_vrr(conn)) {
+		if (state->base->adaptive_sync_enabled && !drm_connector_supports_vrr(conn)) {
 			return false;
 		}
-		if (drmModeObjectSetProperty(drm->fd, crtc->id, DRM_MODE_OBJECT_CRTC,
+		if (crtc->props.vrr_enabled != 0 &&
+				drmModeObjectSetProperty(drm->fd, crtc->id, DRM_MODE_OBJECT_CRTC,
 				crtc->props.vrr_enabled,
 				state->base->adaptive_sync_enabled) != 0) {
 			wlr_drm_conn_log_errno(conn, WLR_ERROR,
