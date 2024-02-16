@@ -723,96 +723,6 @@ static bool drm_connector_set_pending_layer_fbs(struct wlr_drm_connector *conn,
 
 static bool drm_connector_alloc_crtc(struct wlr_drm_connector *conn);
 
-static bool drm_connector_test(struct wlr_output *output,
-		const struct wlr_output_state *state) {
-	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
-
-	if (!conn->backend->session->active) {
-		return false;
-	}
-
-	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
-	if (unsupported != 0) {
-		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
-			unsupported);
-		return false;
-	}
-
-	if ((state->committed & COMMIT_OUTPUT_STATE) == 0) {
-		// This commit doesn't change the KMS state
-		return true;
-	}
-
-	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && state->enabled) {
-		if (output->current_mode == NULL &&
-				!(state->committed & WLR_OUTPUT_STATE_MODE)) {
-			wlr_drm_conn_log(conn, WLR_DEBUG,
-				"Can't enable an output without a mode");
-			return false;
-		}
-	}
-
-	if (output_pending_enabled(output, state) && !drm_connector_alloc_crtc(conn)) {
-		wlr_drm_conn_log(conn, WLR_DEBUG,
-			"No CRTC available for this connector");
-		return false;
-	}
-
-	bool ok = false;
-	struct wlr_drm_connector_state pending = {0};
-	drm_connector_state_init(&pending, conn, state);
-	struct wlr_drm_device_state pending_dev = {0};
-	drm_device_state_init_single(&pending_dev, &pending);
-
-	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
-			state->adaptive_sync_enabled &&
-			!drm_connector_supports_vrr(conn)) {
-		goto out;
-	}
-
-	if (conn->backend->parent) {
-		// If we're running as a secondary GPU, we can't perform an atomic
-		// commit without blitting a buffer.
-		ok = true;
-		goto out;
-	}
-
-	if (!conn->crtc) {
-		// If the output is disabled, we don't have a crtc even after
-		// reallocation
-		ok = true;
-		goto out;
-	}
-
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
-			goto out;
-		}
-
-		if (pending.base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
-			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
-			goto out;
-		}
-	}
-	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
-		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
-			return false;
-		}
-	}
-
-	if (pending.active && !pending.primary_fb) {
-		wlr_drm_conn_log(conn, WLR_DEBUG,
-			"No primary frame buffer available for this connector");
-		goto out;
-	}
-
-	ok = drm_commit(conn->backend, &pending_dev, 0, true);
-
-out:
-	drm_connector_state_finish(&pending);
-	return ok;
-}
-
 bool drm_connector_supports_vrr(struct wlr_drm_connector *conn) {
 	struct wlr_drm_backend *drm = conn->backend;
 
@@ -840,18 +750,59 @@ bool drm_connector_supports_vrr(struct wlr_drm_connector *conn) {
 }
 
 static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
-		const struct wlr_output_state *base) {
+		const struct wlr_output_state *state, bool test_only) {
 	struct wlr_drm_backend *drm = conn->backend;
+	struct wlr_output *output = &conn->output;
 
 	if (!drm->session->active) {
 		return false;
 	}
 
+	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
+	if (unsupported != 0) {
+		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
+			unsupported);
+		return false;
+	}
+
+	if (test_only && (state->committed & COMMIT_OUTPUT_STATE) == 0) {
+		// This commit doesn't change the KMS state
+		return true;
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && state->enabled) {
+		if (output->current_mode == NULL &&
+				!(state->committed & WLR_OUTPUT_STATE_MODE)) {
+			wlr_drm_conn_log(conn, WLR_DEBUG,
+				"Can't enable an output without a mode");
+			return false;
+		}
+	}
+
 	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
-	drm_connector_state_init(&pending, conn, base);
+	drm_connector_state_init(&pending, conn, state);
 	struct wlr_drm_device_state pending_dev = {0};
 	drm_device_state_init_single(&pending_dev, &pending);
+
+	if (output_pending_enabled(output, state) && !drm_connector_alloc_crtc(conn)) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No CRTC available for this connector");
+		return false;
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
+			state->adaptive_sync_enabled &&
+			!drm_connector_supports_vrr(conn)) {
+		goto out;
+	}
+
+	if (test_only && conn->backend->parent) {
+		// If we're running as a secondary GPU, we can't perform an atomic
+		// commit without blitting a buffer.
+		ok = true;
+		goto out;
+	}
 
 	if (!pending.active && conn->crtc == NULL) {
 		// Disabling an already-disabled connector
@@ -859,26 +810,29 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		goto out;
 	}
 
-	if (pending.active) {
-		if (!drm_connector_alloc_crtc(conn)) {
-			wlr_drm_conn_log(conn, WLR_ERROR,
-				"No CRTC available for this connector");
-			goto out;
-		}
-	}
-
-	if (pending.base->committed & WLR_OUTPUT_STATE_BUFFER) {
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
 		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
 			goto out;
 		}
+
+		if (pending.base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
+			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
+			goto out;
+		}
 	}
-	if (pending.base->committed & WLR_OUTPUT_STATE_LAYERS) {
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
 		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
-			return false;
+			goto out;
 		}
 	}
 
-	if (pending_dev.modeset) {
+	if (pending.active && !pending.primary_fb) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No primary frame buffer available for this connector");
+		goto out;
+	}
+
+	if (!test_only && pending_dev.modeset) {
 		if (pending.active) {
 			wlr_drm_conn_log(conn, WLR_INFO, "Modesetting with %dx%d @ %.3f Hz",
 				pending.mode.hdisplay, pending.mode.vdisplay,
@@ -892,26 +846,26 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	// page-flip, either a blocking modeset. When performing a blocking modeset
 	// we'll wait for all queued page-flips to complete, so we don't need this
 	// safeguard.
-	if (pending_dev.nonblock && conn->pending_page_flip != NULL) {
+	if (!test_only && pending_dev.nonblock && conn->pending_page_flip != NULL) {
 		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to page-flip output: "
 			"a page-flip is already pending");
 		goto out;
 	}
 
 	uint32_t flags = 0;
-	if (pending.active) {
+	if (!test_only && pending.active) {
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
 	}
 	if (pending.base->tearing_page_flip) {
 		flags |= DRM_MODE_PAGE_FLIP_ASYNC;
 	}
 
-	ok = drm_commit(drm, &pending_dev, flags, false);
+	ok = drm_commit(drm, &pending_dev, flags, test_only);
 	if (!ok) {
 		goto out;
 	}
 
-	if (!pending.active) {
+	if (!test_only && !pending.active) {
 		drm_plane_finish_surface(conn->crtc->primary);
 		drm_plane_finish_surface(conn->crtc->cursor);
 		drm_fb_clear(&conn->cursor_pending_fb);
@@ -925,15 +879,16 @@ out:
 	return ok;
 }
 
+static bool drm_connector_test(struct wlr_output *output,
+		const struct wlr_output_state *state) {
+	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
+	return drm_connector_commit_state(conn, state, true);
+}
+
 static bool drm_connector_commit(struct wlr_output *output,
 		const struct wlr_output_state *state) {
 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
-
-	if (!drm_connector_test(output, state)) {
-		return false;
-	}
-
-	return drm_connector_commit_state(conn, state);
+	return drm_connector_commit_state(conn, state, false);
 }
 
 size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
@@ -1280,7 +1235,7 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 	struct wlr_output_state state;
 	wlr_output_state_init(&state);
 	wlr_output_state_set_enabled(&state, false);
-	if (!drm_connector_commit_state(conn, &state)) {
+	if (!drm_connector_commit_state(conn, &state, false)) {
 		// On GPU unplug, disabling the CRTC can fail with EPERM
 		wlr_drm_conn_log(conn, WLR_ERROR, "Failed to disable CRTC %"PRIu32,
 			conn->crtc->id);
@@ -1900,7 +1855,7 @@ void restore_drm_device(struct wlr_drm_backend *drm) {
 	wl_list_for_each(conn, &drm->connectors, link) {
 		struct wlr_output_state state;
 		build_current_connector_state(&state, conn);
-		if (!drm_connector_commit_state(conn, &state)) {
+		if (!drm_connector_commit_state(conn, &state, false)) {
 			wlr_drm_conn_log(conn, WLR_ERROR, "Failed to restore state after VT switch");
 		}
 		wlr_output_state_finish(&state);
