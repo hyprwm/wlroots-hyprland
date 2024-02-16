@@ -619,22 +619,6 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 	}
 }
 
-static void drm_device_state_init_single(struct wlr_drm_device_state *dev_state,
-		struct wlr_drm_connector_state *conn_state) {
-	*dev_state = (struct wlr_drm_device_state){
-		.modeset = conn_state->base->allow_reconfiguration,
-		// The wlr_output API requires non-modeset commits with a new buffer to
-		// wait for the frame event. However compositors often perform
-		// non-modesets commits without a new buffer without waiting for the
-		// frame event. In that case we need to make the KMS commit blocking,
-		// otherwise the kernel will error out with EBUSY.
-		.nonblock = !conn_state->base->allow_reconfiguration &&
-			(conn_state->base->committed & WLR_OUTPUT_STATE_BUFFER),
-		.connectors = conn_state,
-		.connectors_len = 1,
-	};
-}
-
 static void drm_connector_state_finish(struct wlr_drm_connector_state *state) {
 	drm_fb_clear(&state->primary_fb);
 	drm_fb_clear(&state->cursor_fb);
@@ -782,8 +766,18 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	bool ok = false;
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
-	struct wlr_drm_device_state pending_dev = {0};
-	drm_device_state_init_single(&pending_dev, &pending);
+	struct wlr_drm_device_state pending_dev = {
+		.modeset = state->allow_reconfiguration,
+		// The wlr_output API requires non-modeset commits with a new buffer to
+		// wait for the frame event. However compositors often perform
+		// non-modesets commits without a new buffer without waiting for the
+		// frame event. In that case we need to make the KMS commit blocking,
+		// otherwise the kernel will error out with EBUSY.
+		.nonblock = !state->allow_reconfiguration &&
+			(state->committed & WLR_OUTPUT_STATE_BUFFER),
+		.connectors = &pending,
+		.connectors_len = 1,
+	};
 
 	if (output_pending_enabled(output, state) && !drm_connector_alloc_crtc(conn)) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,
