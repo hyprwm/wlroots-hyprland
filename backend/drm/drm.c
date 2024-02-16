@@ -512,6 +512,15 @@ static void drm_connector_apply_commit(const struct wlr_drm_connector_state *sta
 	if (state->base->committed & WLR_OUTPUT_STATE_MODE) {
 		conn->refresh = calculate_refresh_rate(&state->mode);
 	}
+
+	if (!state->active) {
+		drm_plane_finish_surface(crtc->primary);
+		drm_plane_finish_surface(crtc->cursor);
+		drm_fb_clear(&conn->cursor_pending_fb);
+
+		conn->cursor_enabled = false;
+		conn->crtc = NULL;
+	}
 }
 
 static void drm_connector_rollback_commit(const struct wlr_drm_connector_state *state) {
@@ -855,18 +864,6 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	}
 
 	ok = drm_commit(drm, &pending_dev, flags, test_only);
-	if (!ok) {
-		goto out;
-	}
-
-	if (!test_only && !pending.active) {
-		drm_plane_finish_surface(conn->crtc->primary);
-		drm_plane_finish_surface(conn->crtc->cursor);
-		drm_fb_clear(&conn->cursor_pending_fb);
-
-		conn->cursor_enabled = false;
-		conn->crtc = NULL;
-	}
 
 out:
 	drm_connector_state_finish(&pending);
