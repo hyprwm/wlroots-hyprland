@@ -1870,6 +1870,73 @@ void restore_drm_device(struct wlr_drm_backend *drm) {
 	}
 }
 
+bool commit_drm_device(struct wlr_drm_backend *drm,
+		const struct wlr_backend_output_state *output_states, size_t output_states_len,
+		bool test_only) {
+	if (!drm->session->active) {
+		return false;
+	}
+
+	struct wlr_drm_connector_state *conn_states = calloc(output_states_len, sizeof(conn_states[0]));
+	if (conn_states == NULL) {
+		return false;
+	}
+
+	bool ok = false;
+	bool modeset = false;
+	size_t conn_states_len = 0;
+	for (size_t i = 0; i < output_states_len; i++) {
+		const struct wlr_backend_output_state *output_state = &output_states[i];
+		struct wlr_output *output = output_state->output;
+		if (!output->enabled && !output_pending_enabled(output, &output_state->base)) {
+			// KMS rejects commits which disable already-disabled connectors
+			// and have the DRM_MODE_PAGE_FLIP_EVENT flag
+			continue;
+		}
+
+		struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
+
+		if (output_pending_enabled(output, &output_state->base) && !drm_connector_alloc_crtc(conn)) {
+			wlr_drm_conn_log(conn, WLR_DEBUG,
+				"No CRTC available for this connector");
+			goto out;
+		}
+
+		struct wlr_drm_connector_state *conn_state = &conn_states[conn_states_len];
+		drm_connector_state_init(conn_state, conn, &output_state->base);
+		conn_states_len++;
+
+		if (!drm_connector_prepare(conn_state, test_only)) {
+			goto out;
+		}
+
+		if (output_state->base.tearing_page_flip) {
+			wlr_log(WLR_DEBUG, "Tearing not supported for DRM device-wide commits");
+			goto out;
+		}
+
+		modeset |= output_state->base.allow_reconfiguration;
+	}
+
+	uint32_t flags = 0;
+	if (!test_only) {
+		flags |= DRM_MODE_PAGE_FLIP_EVENT;
+	}
+	struct wlr_drm_device_state dev_state = {
+		.modeset = modeset,
+		.connectors = conn_states,
+		.connectors_len = conn_states_len,
+	};
+	ok = drm_commit(drm, &dev_state, flags, test_only);
+
+out:
+	for (size_t i = 0; i < conn_states_len; i++) {
+		drm_connector_state_finish(&conn_states[i]);
+	}
+	free(conn_states);
+	return ok;
+}
+
 static int mhz_to_nsec(int mhz) {
 	return 1000000000000LL / mhz;
 }

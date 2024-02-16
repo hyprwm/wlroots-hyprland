@@ -75,15 +75,29 @@ static int backend_get_drm_fd(struct wlr_backend *backend) {
 	return drm->fd;
 }
 
-static uint32_t drm_backend_get_buffer_caps(struct wlr_backend *backend) {
+static uint32_t backend_get_buffer_caps(struct wlr_backend *backend) {
 	return WLR_BUFFER_CAP_DMABUF;
+}
+
+static bool backend_test(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
+	return commit_drm_device(drm, states, states_len, true);
+}
+
+static bool backend_commit(struct wlr_backend *backend,
+		const struct wlr_backend_output_state *states, size_t states_len) {
+	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
+	return commit_drm_device(drm, states, states_len, false);
 }
 
 static const struct wlr_backend_impl backend_impl = {
 	.start = backend_start,
 	.destroy = backend_destroy,
 	.get_drm_fd = backend_get_drm_fd,
-	.get_buffer_caps = drm_backend_get_buffer_caps,
+	.get_buffer_caps = backend_get_buffer_caps,
+	.test = backend_test,
+	.commit = backend_commit,
 };
 
 bool wlr_backend_is_drm(struct wlr_backend *b) {
