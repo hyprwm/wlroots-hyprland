@@ -742,25 +742,16 @@ bool drm_connector_supports_vrr(struct wlr_drm_connector *conn) {
 	return true;
 }
 
-static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
-		const struct wlr_output_state *state, bool test_only) {
-	struct wlr_drm_backend *drm = conn->backend;
+static bool drm_connector_prepare(struct wlr_drm_connector_state *conn_state, bool test_only) {
+	const struct wlr_output_state *state = conn_state->base;
+	struct wlr_drm_connector *conn = conn_state->connector;
 	struct wlr_output *output = &conn->output;
-
-	if (!drm->session->active) {
-		return false;
-	}
 
 	uint32_t unsupported = state->committed & ~SUPPORTED_OUTPUT_STATE;
 	if (unsupported != 0) {
 		wlr_log(WLR_DEBUG, "Unsupported output state fields: 0x%"PRIx32,
 			unsupported);
 		return false;
-	}
-
-	if (test_only && (state->committed & COMMIT_OUTPUT_STATE) == 0) {
-		// This commit doesn't change the KMS state
-		return true;
 	}
 
 	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) && state->enabled) {
@@ -770,6 +761,62 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 				"Can't enable an output without a mode");
 			return false;
 		}
+	}
+
+	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
+			state->adaptive_sync_enabled &&
+			!drm_connector_supports_vrr(conn)) {
+		return false;
+	}
+
+	if (test_only && conn->backend->parent) {
+		// If we're running as a secondary GPU, we can't perform an atomic
+		// commit without blitting a buffer.
+		return true;
+	}
+
+	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
+		if (!drm_connector_state_update_primary_fb(conn, conn_state)) {
+			return false;
+		}
+
+		if (conn_state->base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
+			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
+			return false;
+		}
+	}
+	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
+		if (!drm_connector_set_pending_layer_fbs(conn, conn_state->base)) {
+			return false;
+		}
+	}
+
+	if (conn_state->active && !conn_state->primary_fb) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No primary frame buffer available for this connector");
+		return false;
+	}
+
+	return true;
+}
+
+static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
+		const struct wlr_output_state *state, bool test_only) {
+	struct wlr_drm_backend *drm = conn->backend;
+
+	if (!drm->session->active) {
+		return false;
+	}
+
+	if (test_only && (state->committed & COMMIT_OUTPUT_STATE) == 0) {
+		// This commit doesn't change the KMS state
+		return true;
+	}
+
+	if (output_pending_enabled(&conn->output, state) && !drm_connector_alloc_crtc(conn)) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No CRTC available for this connector");
+		return false;
 	}
 
 	bool ok = false;
@@ -788,15 +835,7 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 		.connectors_len = 1,
 	};
 
-	if (output_pending_enabled(output, state) && !drm_connector_alloc_crtc(conn)) {
-		wlr_drm_conn_log(conn, WLR_DEBUG,
-			"No CRTC available for this connector");
-		return false;
-	}
-
-	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
-			state->adaptive_sync_enabled &&
-			!drm_connector_supports_vrr(conn)) {
+	if (!drm_connector_prepare(&pending, test_only)) {
 		goto out;
 	}
 
@@ -810,28 +849,6 @@ static bool drm_connector_commit_state(struct wlr_drm_connector *conn,
 	if (!pending.active && conn->crtc == NULL) {
 		// Disabling an already-disabled connector
 		ok = true;
-		goto out;
-	}
-
-	if (state->committed & WLR_OUTPUT_STATE_BUFFER) {
-		if (!drm_connector_state_update_primary_fb(conn, &pending)) {
-			goto out;
-		}
-
-		if (pending.base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
-			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
-			goto out;
-		}
-	}
-	if (state->committed & WLR_OUTPUT_STATE_LAYERS) {
-		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
-			goto out;
-		}
-	}
-
-	if (pending.active && !pending.primary_fb) {
-		wlr_drm_conn_log(conn, WLR_DEBUG,
-			"No primary frame buffer available for this connector");
 		goto out;
 	}
 
