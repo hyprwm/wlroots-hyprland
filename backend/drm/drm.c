@@ -163,13 +163,13 @@ static bool init_plane(struct wlr_drm_backend *drm,
 		uint64_t blob_id;
 		if (!get_drm_prop(drm->fd, p->id, p->props.in_formats, &blob_id)) {
 			wlr_log(WLR_ERROR, "Failed to read IN_FORMATS property");
-			goto error;
+			return false;
 		}
 
 		drmModePropertyBlobRes *blob = drmModeGetPropertyBlob(drm->fd, blob_id);
 		if (!blob) {
 			wlr_log(WLR_ERROR, "Failed to read IN_FORMATS blob");
-			goto error;
+			return false;
 		}
 
 		drmModeFormatModifierIterator iter = {0};
@@ -199,10 +199,6 @@ static bool init_plane(struct wlr_drm_backend *drm,
 	}
 
 	return true;
-
-error:
-	free(p);
-	return false;
 }
 
 static bool init_planes(struct wlr_drm_backend *drm) {
