@@ -7,8 +7,8 @@
 
 /*
  * These types contain the property ids for several DRM objects.
- * See https://01.org/linuxgraphics/gfx-docs/drm/gpu/drm-kms.html#kms-properties
- * for more details.
+ * For more details, see:
+ * https://dri.freedesktop.org/docs/drm/gpu/drm-kms.html#kms-properties
  */
 
 union wlr_drm_connector_props {
