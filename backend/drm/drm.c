@@ -1469,6 +1469,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 		struct wlr_drm_mode *mode = drm_mode_create(&drm_conn->modes[i]);
 		if (!mode) {
 			wlr_log_errno(WLR_ERROR, "Allocation failed");
+			free(current_modeinfo);
 			wlr_output_state_finish(&state);
 			return false;
 		}
