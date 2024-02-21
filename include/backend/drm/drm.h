@@ -61,6 +61,7 @@ struct wlr_drm_crtc {
 	struct wl_list layers; // wlr_drm_layer.link
 
 	// Atomic modesetting only
+	bool own_mode_id;
 	uint32_t mode_id;
 	uint32_t gamma_lut;
 

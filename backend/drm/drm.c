@@ -329,7 +329,7 @@ void finish_drm_resources(struct wlr_drm_backend *drm) {
 	for (size_t i = 0; i < drm->num_crtcs; ++i) {
 		struct wlr_drm_crtc *crtc = &drm->crtcs[i];
 
-		if (crtc->mode_id) {
+		if (crtc->mode_id && crtc->own_mode_id) {
 			drmModeDestroyPropertyBlob(drm->fd, crtc->mode_id);
 		}
 		if (crtc->gamma_lut) {
@@ -1483,6 +1483,7 @@ static bool connect_drm_connector(struct wlr_drm_connector *wlr_conn,
 			get_drm_prop(drm->fd, wlr_conn->crtc->id,
 				wlr_conn->crtc->props.mode_id, &mode_id);
 
+			wlr_conn->crtc->own_mode_id = false;
 			wlr_conn->crtc->mode_id = mode_id;
 			wlr_conn->refresh = calculate_refresh_rate(current_modeinfo);
 		}

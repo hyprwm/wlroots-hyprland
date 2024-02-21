@@ -475,6 +475,10 @@ out:
 	drmModeAtomicFree(req);
 
 	if (ok && !test_only) {
+		if (!crtc->own_mode_id) {
+			crtc->mode_id = 0; // don't try to delete previous master's blobs
+		}
+		crtc->own_mode_id = true;
 		commit_blob(drm, &crtc->mode_id, mode_id);
 		commit_blob(drm, &crtc->gamma_lut, gamma_lut);
 
