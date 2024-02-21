@@ -177,6 +177,7 @@ struct wlr_drm_lease_v1 *wlr_drm_lease_request_v1_grant(
 	if (!lease->drm_lease) {
 		wlr_log(WLR_ERROR, "wlr_drm_create_lease failed");
 		wp_drm_lease_v1_send_finished(lease->resource);
+		free(lease);
 		return NULL;
 	}
 
@@ -185,6 +186,7 @@ struct wlr_drm_lease_v1 *wlr_drm_lease_request_v1_grant(
 		wlr_log(WLR_ERROR, "Failed to allocate lease connectors list");
 		close(fd);
 		wp_drm_lease_v1_send_finished(lease->resource);
+		free(lease);
 		return NULL;
 	}
 	lease->n_connectors = request->n_connectors;
