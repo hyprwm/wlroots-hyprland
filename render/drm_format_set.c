@@ -271,10 +271,9 @@ bool wlr_drm_format_set_union(struct wlr_drm_format_set *dst,
 	}
 
 	// Add both a and b sets into out
-	if (!drm_format_set_extend(&out, a)) {
-		return false;
-	}
-	if (!drm_format_set_extend(&out, b)) {
+	if (!drm_format_set_extend(&out, a) ||
+		!drm_format_set_extend(&out, b)) {
+		wlr_drm_format_set_finish(&out);
 		return false;
 	}
 
