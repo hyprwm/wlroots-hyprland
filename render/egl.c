@@ -674,10 +674,6 @@ bool wlr_egl_unset_current(struct wlr_egl *egl) {
 	return true;
 }
 
-bool wlr_egl_is_current(struct wlr_egl *egl) {
-	return eglGetCurrentContext() == egl->context;
-}
-
 bool wlr_egl_restore_context(struct wlr_egl_context *context) {
 	// If the saved context is a null-context, we must use the current
 	// display instead of the saved display because eglMakeCurrent() can't

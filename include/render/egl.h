@@ -105,6 +105,4 @@ bool wlr_egl_make_current(struct wlr_egl *egl, struct wlr_egl_context *save_cont
 
 bool wlr_egl_unset_current(struct wlr_egl *egl);
 
-bool wlr_egl_is_current(struct wlr_egl *egl);
-
 #endif
