@@ -290,15 +290,18 @@ static void xwm_set_net_client_list(struct wlr_xwm *xwm) {
 		}
 	}
 
-	xcb_window_t *windows = malloc(sizeof(xcb_window_t) * mapped_surfaces);
-	if (!windows) {
-		return;
-	}
+	xcb_window_t *windows = NULL;
+	if (mapped_surfaces > 0) {
+		xcb_window_t *windows = malloc(sizeof(*windows) * mapped_surfaces);
+		if (!windows) {
+			return;
+		}
 
-	size_t index = 0;
-	wl_list_for_each(surface, &xwm->surfaces, link) {
-		if (surface->surface != NULL && surface->surface->mapped) {
-			windows[index++] = surface->window_id;
+		size_t index = 0;
+		wl_list_for_each(surface, &xwm->surfaces, link) {
+			if (surface->surface != NULL && surface->surface->mapped) {
+				windows[index++] = surface->window_id;
+			}
 		}
 	}
 
