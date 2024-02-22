@@ -171,7 +171,7 @@ static struct wlr_xwayland_surface *xwayland_surface_create(
 	xcb_get_geometry_cookie_t geometry_cookie =
 		xcb_get_geometry(xwm->xcb_conn, window_id);
 
-	xcb_res_query_client_ids_cookie_t client_id_cookie;
+	xcb_res_query_client_ids_cookie_t client_id_cookie = { 0 };
 	if (xwm->xres) {
 		xcb_res_client_id_spec_t spec = {
 			.client = window_id,
