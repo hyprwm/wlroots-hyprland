@@ -401,6 +401,8 @@ static bool query_modifier_support(struct wlr_vk_device *dev,
 		free(modp.pDrmFormatModifierProperties);
 		free(props->dmabuf.render_mods);
 		free(props->dmabuf.texture_mods);
+		props->dmabuf.render_mods = NULL;
+		props->dmabuf.texture_mods = NULL;
 		return false;
 	}
 
