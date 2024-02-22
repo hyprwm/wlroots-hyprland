@@ -101,7 +101,6 @@ static void gamma_control_handle_set_gamma(struct wl_client *client,
 		goto error_table;
 	}
 	close(fd);
-	fd = -1;
 
 	free(gamma_control->table);
 	gamma_control->table = table;
