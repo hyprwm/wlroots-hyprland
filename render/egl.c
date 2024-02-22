@@ -649,7 +649,11 @@ bool wlr_egl_destroy_image(struct wlr_egl *egl, EGLImage image) {
 	return egl->procs.eglDestroyImageKHR(egl->display, image);
 }
 
-bool wlr_egl_make_current(struct wlr_egl *egl) {
+bool wlr_egl_make_current(struct wlr_egl *egl,
+		struct wlr_egl_context *save_context) {
+	if (save_context != NULL) {
+		wlr_egl_save_context(save_context);
+	}
 	if (!eglMakeCurrent(egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
 			egl->context)) {
 		wlr_log(WLR_ERROR, "eglMakeCurrent failed");

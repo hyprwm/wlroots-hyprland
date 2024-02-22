@@ -56,8 +56,7 @@ static void destroy_buffer(struct wlr_gles2_buffer *buffer) {
 	wlr_addon_finish(&buffer->addon);
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(buffer->renderer->egl);
+	wlr_egl_make_current(buffer->renderer->egl, &prev_ctx);
 
 	push_gles2_debug(buffer->renderer);
 
@@ -208,7 +207,7 @@ struct wlr_egl *wlr_gles2_renderer_get_egl(struct wlr_renderer *wlr_renderer) {
 static void gles2_destroy(struct wlr_renderer *wlr_renderer) {
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, NULL);
 
 	struct wlr_gles2_texture *tex, *tex_tmp;
 	wl_list_for_each_safe(tex, tex_tmp, &renderer->textures, link) {
@@ -247,8 +246,7 @@ static struct wlr_render_pass *gles2_begin_buffer_pass(struct wlr_renderer *wlr_
 	struct wlr_gles2_renderer *renderer = gles2_get_renderer(wlr_renderer);
 
 	struct wlr_egl_context prev_ctx = {0};
-	wlr_egl_save_context(&prev_ctx);
-	if (!wlr_egl_make_current(renderer->egl)) {
+	if (!wlr_egl_make_current(renderer->egl, &prev_ctx)) {
 		return NULL;
 	}
 
@@ -276,8 +274,7 @@ GLuint wlr_gles2_renderer_get_buffer_fbo(struct wlr_renderer *wlr_renderer,
 	GLuint fbo = 0;
 
 	struct wlr_egl_context prev_ctx = {0};
-	wlr_egl_save_context(&prev_ctx);
-	if (!wlr_egl_make_current(renderer->egl)) {
+	if (!wlr_egl_make_current(renderer->egl, &prev_ctx)) {
 		return 0;
 	}
 
@@ -305,8 +302,7 @@ static struct wlr_render_timer *gles2_render_timer_create(struct wlr_renderer *w
 	timer->renderer = renderer;
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, &prev_ctx);
 	renderer->procs.glGenQueriesEXT(1, &timer->id);
 	wlr_egl_restore_context(&prev_ctx);
 
@@ -318,8 +314,7 @@ static int gles2_get_render_time(struct wlr_render_timer *wlr_timer) {
 	struct wlr_gles2_renderer *renderer = timer->renderer;
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, &prev_ctx);
 
 	GLint64 disjoint;
 	renderer->procs.glGetInteger64vEXT(GL_GPU_DISJOINT_EXT, &disjoint);
@@ -353,8 +348,7 @@ static void gles2_render_timer_destroy(struct wlr_render_timer *wlr_timer) {
 	struct wlr_gles2_renderer *renderer = timer->renderer;
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, &prev_ctx);
 	renderer->procs.glDeleteQueriesEXT(1, &timer->id);
 	wlr_egl_restore_context(&prev_ctx);
 	free(timer);
@@ -521,7 +515,7 @@ struct wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd) {
 }
 
 struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
-	if (!wlr_egl_make_current(egl)) {
+	if (!wlr_egl_make_current(egl, NULL)) {
 		return NULL;
 	}
 

@@ -105,10 +105,10 @@ bool wlr_egl_restore_context(struct wlr_egl_context *context);
 /**
  * Make the EGL context current.
  *
- * Callers are expected to clear the current context when they are done by
- * calling wlr_egl_unset_current().
+ * The old EGL context is saved. Callers are expected to clear the current
+ * context when they are done by calling wlr_egl_restore_context().
  */
-bool wlr_egl_make_current(struct wlr_egl *egl);
+bool wlr_egl_make_current(struct wlr_egl *egl, struct wlr_egl_context *save_context);
 
 bool wlr_egl_unset_current(struct wlr_egl *egl);
 

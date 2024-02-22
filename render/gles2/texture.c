@@ -68,8 +68,7 @@ static bool gles2_texture_update_from_buffer(struct wlr_texture *wlr_texture,
 	}
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(texture->renderer->egl);
+	wlr_egl_make_current(texture->renderer->egl, &prev_ctx);
 
 	push_gles2_debug(texture->renderer);
 
@@ -112,8 +111,7 @@ void gles2_texture_destroy(struct wlr_gles2_texture *texture) {
 		wlr_buffer_unlock(texture->buffer->buffer);
 	} else {
 		struct wlr_egl_context prev_ctx;
-		wlr_egl_save_context(&prev_ctx);
-		wlr_egl_make_current(texture->renderer->egl);
+		wlr_egl_make_current(texture->renderer->egl, &prev_ctx);
 
 		push_gles2_debug(texture->renderer);
 
@@ -196,9 +194,7 @@ static bool gles2_texture_read_pixels(struct wlr_texture *wlr_texture,
 
 	push_gles2_debug(texture->renderer);
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-
-	if (!wlr_egl_make_current(texture->renderer->egl)) {
+	if (!wlr_egl_make_current(texture->renderer->egl, &prev_ctx)) {
 		return false;
 	}
 
@@ -240,13 +236,12 @@ static uint32_t gles2_texture_preferred_read_format(struct wlr_texture *wlr_text
 	struct wlr_gles2_texture *texture = gles2_get_texture(wlr_texture);
 
 	push_gles2_debug(texture->renderer);
-	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
 
 	uint32_t fmt = DRM_FORMAT_INVALID;
 
-	if (!wlr_egl_make_current(texture->renderer->egl)) {
-		goto out;
+	struct wlr_egl_context prev_ctx;
+	if (!wlr_egl_make_current(texture->renderer->egl, &prev_ctx)) {
+		return fmt;
 	}
 
 	if (!gles2_texture_bind(texture)) {
@@ -339,8 +334,7 @@ static struct wlr_texture *gles2_texture_from_pixels(
 	}
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, &prev_ctx);
 
 	push_gles2_debug(renderer);
 
@@ -387,8 +381,7 @@ static struct wlr_texture *gles2_texture_from_dmabuf(
 	texture->has_alpha = pixel_format_has_alpha(attribs->format);
 
 	struct wlr_egl_context prev_ctx;
-	wlr_egl_save_context(&prev_ctx);
-	wlr_egl_make_current(renderer->egl);
+	wlr_egl_make_current(renderer->egl, &prev_ctx);
 	push_gles2_debug(texture->renderer);
 
 	bool invalid;
