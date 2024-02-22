@@ -292,7 +292,7 @@ static void xwm_set_net_client_list(struct wlr_xwm *xwm) {
 
 	xcb_window_t *windows = NULL;
 	if (mapped_surfaces > 0) {
-		xcb_window_t *windows = malloc(sizeof(*windows) * mapped_surfaces);
+		windows = malloc(sizeof(*windows) * mapped_surfaces);
 		if (!windows) {
 			return;
 		}
