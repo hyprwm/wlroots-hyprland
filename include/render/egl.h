@@ -91,13 +91,6 @@ bool wlr_egl_destroy_image(struct wlr_egl *egl, EGLImageKHR image);
 int wlr_egl_dup_drm_fd(struct wlr_egl *egl);
 
 /**
- * Save the current EGL context to the structure provided in the argument.
- *
- * This includes display, context, draw surface and read surface.
- */
-void wlr_egl_save_context(struct wlr_egl_context *context);
-
-/**
  * Restore EGL context that was previously saved using wlr_egl_save_current().
  */
 bool wlr_egl_restore_context(struct wlr_egl_context *context);

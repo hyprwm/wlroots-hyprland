@@ -652,7 +652,10 @@ bool wlr_egl_destroy_image(struct wlr_egl *egl, EGLImage image) {
 bool wlr_egl_make_current(struct wlr_egl *egl,
 		struct wlr_egl_context *save_context) {
 	if (save_context != NULL) {
-		wlr_egl_save_context(save_context);
+		save_context->display = eglGetCurrentDisplay();
+		save_context->context = eglGetCurrentContext();
+		save_context->draw_surface = eglGetCurrentSurface(EGL_DRAW);
+		save_context->read_surface = eglGetCurrentSurface(EGL_READ);
 	}
 	if (!eglMakeCurrent(egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
 			egl->context)) {
@@ -673,13 +676,6 @@ bool wlr_egl_unset_current(struct wlr_egl *egl) {
 
 bool wlr_egl_is_current(struct wlr_egl *egl) {
 	return eglGetCurrentContext() == egl->context;
-}
-
-void wlr_egl_save_context(struct wlr_egl_context *context) {
-	context->display = eglGetCurrentDisplay();
-	context->context = eglGetCurrentContext();
-	context->draw_surface = eglGetCurrentSurface(EGL_DRAW);
-	context->read_surface = eglGetCurrentSurface(EGL_READ);
 }
 
 bool wlr_egl_restore_context(struct wlr_egl_context *context) {
