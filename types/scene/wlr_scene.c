@@ -1196,6 +1196,7 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
 		struct wlr_texture *texture = scene_buffer_get_texture(scene_buffer,
 			data->output->output->renderer);
 		if (texture == NULL) {
+			wlr_damage_ring_add(&data->output->damage_ring, &render_region);
 			break;
 		}
 
