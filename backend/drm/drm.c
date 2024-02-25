@@ -672,20 +672,12 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
-	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) ? state->enabled : output->enabled) {
-		if ((state->committed &
-				(WLR_OUTPUT_STATE_ENABLED | WLR_OUTPUT_STATE_MODE)) &&
-				!(state->committed & WLR_OUTPUT_STATE_BUFFER)) {
-			wlr_drm_conn_log(conn, WLR_DEBUG,
-				"Can't enable an output without a buffer");
-			return false;
-		}
-
-		if (!drm_connector_alloc_crtc(conn)) {
-			wlr_drm_conn_log(conn, WLR_DEBUG,
-				"No CRTC available for this connector");
-			return false;
-		}
+	if (((state->committed & WLR_OUTPUT_STATE_ENABLED)
+			? state->enabled : output->enabled) &&
+			!drm_connector_alloc_crtc(conn)) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No CRTC available for this connector");
+		return false;
 	}
 
 	bool ok = false;
