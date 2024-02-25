@@ -672,25 +672,25 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
-	bool ok = false;
-	struct wlr_drm_connector_state pending = {0};
-	drm_connector_state_init(&pending, conn, state);
-
-	if (pending.active) {
+	if ((state->committed & WLR_OUTPUT_STATE_ENABLED) ? state->enabled : output->enabled) {
 		if ((state->committed &
 				(WLR_OUTPUT_STATE_ENABLED | WLR_OUTPUT_STATE_MODE)) &&
 				!(state->committed & WLR_OUTPUT_STATE_BUFFER)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"Can't enable an output without a buffer");
-			goto out;
+			return false;
 		}
 
 		if (!drm_connector_alloc_crtc(conn)) {
 			wlr_drm_conn_log(conn, WLR_DEBUG,
 				"No CRTC available for this connector");
-			goto out;
+			return false;
 		}
 	}
+
+	bool ok = false;
+	struct wlr_drm_connector_state pending = {0};
+	drm_connector_state_init(&pending, conn, state);
 
 	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
 			state->adaptive_sync_enabled &&
