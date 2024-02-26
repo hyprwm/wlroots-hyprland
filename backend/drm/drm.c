@@ -682,12 +682,6 @@ static bool drm_connector_test(struct wlr_output *output,
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
 
-	if (pending.active && !pending.primary_fb) {
-		wlr_drm_conn_log(conn, WLR_DEBUG,
-			"No primary frame buffer available for this connector");
-		goto out;
-	}
-
 	if ((state->committed & WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED) &&
 			state->adaptive_sync_enabled &&
 			!drm_connector_supports_vrr(conn)) {
@@ -722,6 +716,12 @@ static bool drm_connector_test(struct wlr_output *output,
 		if (!drm_connector_set_pending_layer_fbs(conn, pending.base)) {
 			return false;
 		}
+	}
+
+	if (pending.active && !pending.primary_fb) {
+		wlr_drm_conn_log(conn, WLR_DEBUG,
+			"No primary frame buffer available for this connector");
+		goto out;
 	}
 
 	ok = drm_crtc_commit(conn, &pending, 0, true);
