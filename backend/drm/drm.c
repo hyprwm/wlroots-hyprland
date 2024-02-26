@@ -27,6 +27,7 @@
 #include "render/pixel_format.h"
 #include "render/drm_format_set.h"
 #include "render/wlr_renderer.h"
+#include "types/wlr_output.h"
 #include "util/env.h"
 #include "config.h"
 
@@ -508,8 +509,7 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 	*state = (struct wlr_drm_connector_state){
 		.base = base,
 		.modeset = base->allow_reconfiguration,
-		.active = (base->committed & WLR_OUTPUT_STATE_ENABLED) ?
-			base->enabled : conn->output.enabled,
+		.active = output_pending_enabled(&conn->output, base),
 		// The wlr_output API requires non-modeset commits with a new buffer to
 		// wait for the frame event. However compositors often perform
 		// non-modesets commits without a new buffer without waiting for the
@@ -672,9 +672,7 @@ static bool drm_connector_test(struct wlr_output *output,
 		}
 	}
 
-	if (((state->committed & WLR_OUTPUT_STATE_ENABLED)
-			? state->enabled : output->enabled) &&
-			!drm_connector_alloc_crtc(conn)) {
+	if (output_pending_enabled(output, state) && !drm_connector_alloc_crtc(conn)) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,
 			"No CRTC available for this connector");
 		return false;
