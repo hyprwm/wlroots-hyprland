@@ -583,10 +583,7 @@ static bool output_basic_test(struct wlr_output *output,
 		wlr_drm_format_finish(&format);
 	}
 
-	bool enabled = output->enabled;
-	if (state->committed & WLR_OUTPUT_STATE_ENABLED) {
-		enabled = state->enabled;
-	}
+	bool enabled = output_pending_enabled(output, state);
 
 	if (enabled && (state->committed & (WLR_OUTPUT_STATE_ENABLED |
 			WLR_OUTPUT_STATE_MODE))) {
