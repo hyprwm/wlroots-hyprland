@@ -682,7 +682,7 @@ static bool drm_connector_test(struct wlr_output *output,
 	struct wlr_drm_connector_state pending = {0};
 	drm_connector_state_init(&pending, conn, state);
 
-	if (state->allow_reconfiguration && !pending.primary_fb) {
+	if (pending.active && !pending.primary_fb) {
 		wlr_drm_conn_log(conn, WLR_DEBUG,
 			"No primary frame buffer available for this connector");
 		goto out;
