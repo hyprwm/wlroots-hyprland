@@ -1216,6 +1216,14 @@ static void dealloc_crtc(struct wlr_drm_connector *conn) {
 	wlr_output_state_finish(&state);
 }
 
+static void format_nullable_crtc(char *str, size_t size, struct wlr_drm_crtc *crtc) {
+	if (crtc != NULL) {
+		snprintf(str, size, "CRTC %"PRIu32, crtc->id);
+	} else {
+		snprintf(str, size, "no CRTC");
+	}
+}
+
 static void realloc_crtcs(struct wlr_drm_backend *drm,
 		struct wlr_drm_connector *want_conn) {
 	assert(drm->num_crtcs > 0);
@@ -1236,7 +1244,6 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		previous_match[i] = UNMATCHED;
 	}
 
-	wlr_log(WLR_DEBUG, "State before reallocation:");
 	size_t i = 0;
 	struct wlr_drm_connector *conn;
 	wl_list_for_each(conn, &drm->connectors, link) {
@@ -1249,10 +1256,6 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		// Only request a CRTC if the connected is currently enabled or it's the
 		// connector the user wants to enable
 		bool want_crtc = conn == want_conn || conn->output.enabled;
-
-		wlr_log(WLR_DEBUG, "  '%s': crtc=%d status=%s want_crtc=%d",
-			conn->name, conn->crtc ? (int)(conn->crtc - drm->crtcs) : -1,
-			drm_connector_status_str(conn->status), want_crtc);
 
 		if (conn->status == DRM_MODE_CONNECTED && want_crtc) {
 			connector_constraints[i] = conn->possible_crtcs;
@@ -1278,6 +1281,31 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 		}
 	}
 
+	for (size_t i = 0; i < num_connectors; ++i) {
+		struct wlr_drm_connector *conn = connectors[i];
+
+		struct wlr_drm_crtc *new_crtc = NULL;
+		if (connector_match[i] >= 0) {
+			new_crtc = &drm->crtcs[connector_match[i]];
+		}
+
+		char old_crtc_str[16], new_crtc_str[16];
+		format_nullable_crtc(old_crtc_str, sizeof(old_crtc_str), conn->crtc);
+		format_nullable_crtc(new_crtc_str, sizeof(new_crtc_str), new_crtc);
+
+		char crtc_str[64];
+		if (conn->crtc != new_crtc) {
+			snprintf(crtc_str, sizeof(crtc_str), "%s → %s", old_crtc_str, new_crtc_str);
+		} else {
+			snprintf(crtc_str, sizeof(crtc_str), "%s (no change)", new_crtc_str);
+		}
+
+		wlr_log(WLR_DEBUG, "  Connector %s (%s%s): %s",
+			conn->name, drm_connector_status_str(conn->status),
+			connector_constraints[i] != 0 ? ", needs CRTC" : "",
+			crtc_str);
+	}
+
 	// Refuse to remove a CRTC from an enabled connector, and refuse to
 	// change the CRTC of an enabled connector.
 	for (size_t i = 0; i < num_connectors; ++i) {
@@ -1299,12 +1327,8 @@ static void realloc_crtcs(struct wlr_drm_backend *drm,
 	}
 
 	// Apply new configuration
-	wlr_log(WLR_DEBUG, "State after reallocation:");
 	for (size_t i = 0; i < num_connectors; ++i) {
 		struct wlr_drm_connector *conn = connectors[i];
-
-		wlr_log(WLR_DEBUG, "  '%s': crtc=%zd",
-			conn->name, connector_match[i]);
 
 		if (conn->crtc != NULL && connector_match[i] == conn->crtc - drm->crtcs) {
 			// We don't need to change anything
