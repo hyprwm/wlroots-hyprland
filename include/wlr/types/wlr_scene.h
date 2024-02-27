@@ -468,6 +468,13 @@ void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
 
 struct wlr_scene_output_state_options {
 	struct wlr_scene_timer *timer;
+
+	/**
+	 * Allows use of a custom swapchain. This can be useful when trying out an
+	 * output configuration. The swapchain dimensions must match the respective
+	 * wlr_output_state or output size if not specified.
+	 */
+	struct wlr_swapchain *swapchain;
 };
 
 /**
