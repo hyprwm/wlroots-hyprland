@@ -419,7 +419,7 @@ static bool crtc_commit(struct wlr_drm_connector *conn,
 		if (crtc->cursor) {
 			if (drm_connector_is_cursor_visible(conn)) {
 				ok = ok && set_plane_props(crtc->cursor, crtc->cursor->liftoff_layer,
-					get_next_cursor_fb(conn), conn->cursor_x, conn->cursor_y,
+					state->cursor_fb, conn->cursor_x, conn->cursor_y,
 					wl_list_length(&crtc->layers) + 1);
 			} else {
 				ok = ok && disable_plane(crtc->cursor);

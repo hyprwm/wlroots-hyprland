@@ -134,7 +134,7 @@ static bool legacy_crtc_commit(struct wlr_drm_connector *conn,
 	}
 
 	if (cursor != NULL && drm_connector_is_cursor_visible(conn)) {
-		struct wlr_drm_fb *cursor_fb = get_next_cursor_fb(conn);
+		struct wlr_drm_fb *cursor_fb = state->cursor_fb;
 		if (cursor_fb == NULL) {
 			wlr_drm_conn_log(conn, WLR_DEBUG, "Failed to acquire cursor FB");
 			return false;

@@ -468,9 +468,10 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	bool ok = drm->iface->crtc_commit(conn, state, page_flip, flags, test_only);
 	if (ok && !test_only) {
 		drm_fb_copy(&crtc->primary->queued_fb, state->primary_fb);
-		if (crtc->cursor != NULL && conn->cursor_pending_fb != NULL) {
-			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
+		if (crtc->cursor != NULL) {
+			drm_fb_copy(&crtc->cursor->queued_fb, state->cursor_fb);
 		}
+		drm_fb_clear(&conn->cursor_pending_fb);
 
 		struct wlr_drm_layer *layer;
 		wl_list_for_each(layer, &crtc->layers, link) {
@@ -551,10 +552,21 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 			state->primary_fb = drm_fb_lock(primary->current_fb);
 		}
 	}
+	if (conn->crtc != NULL && conn->cursor_enabled) {
+		struct wlr_drm_plane *cursor = conn->crtc->cursor;
+		if (conn->cursor_pending_fb != NULL) {
+			state->cursor_fb = drm_fb_lock(conn->cursor_pending_fb);
+		} else if (cursor->queued_fb != NULL) {
+			state->cursor_fb = drm_fb_lock(cursor->queued_fb);
+		} else if (cursor->current_fb != NULL) {
+			state->cursor_fb = drm_fb_lock(cursor->current_fb);
+		}
+	}
 }
 
 static void drm_connector_state_finish(struct wlr_drm_connector_state *state) {
 	drm_fb_clear(&state->primary_fb);
+	drm_fb_clear(&state->cursor_fb);
 }
 
 static bool drm_connector_state_update_primary_fb(struct wlr_drm_connector *conn,
@@ -875,19 +887,6 @@ static size_t drm_connector_get_gamma_size(struct wlr_output *output) {
 	}
 
 	return drm_crtc_get_gamma_lut_size(drm, crtc);
-}
-
-struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn) {
-	if (!conn->cursor_enabled || conn->crtc == NULL) {
-		return NULL;
-	}
-	if (conn->cursor_pending_fb != NULL) {
-		return conn->cursor_pending_fb;
-	}
-	if (conn->crtc->cursor->queued_fb != NULL) {
-		return conn->crtc->cursor->queued_fb;
-	}
-	return conn->crtc->cursor->current_fb;
 }
 
 static void realloc_crtcs(struct wlr_drm_backend *drm,

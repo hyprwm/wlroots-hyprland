@@ -129,6 +129,7 @@ struct wlr_drm_connector_state {
 	bool active;
 	drmModeModeInfo mode;
 	struct wlr_drm_fb *primary_fb;
+	struct wlr_drm_fb *cursor_fb;
 };
 
 /**
@@ -196,7 +197,6 @@ size_t drm_crtc_get_gamma_lut_size(struct wlr_drm_backend *drm,
 void drm_lease_destroy(struct wlr_drm_lease *lease);
 void drm_page_flip_destroy(struct wlr_drm_page_flip *page_flip);
 
-struct wlr_drm_fb *get_next_cursor_fb(struct wlr_drm_connector *conn);
 struct wlr_drm_layer *get_drm_layer(struct wlr_drm_backend *drm,
 	struct wlr_output_layer *layer);
 
