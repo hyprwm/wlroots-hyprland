@@ -16,19 +16,33 @@ enum wlr_button_state {
 	WLR_BUTTON_PRESSED,
 };
 
+/**
+ * Type of an input device.
+ */
 enum wlr_input_device_type {
-	WLR_INPUT_DEVICE_KEYBOARD,
-	WLR_INPUT_DEVICE_POINTER,
-	WLR_INPUT_DEVICE_TOUCH,
-	WLR_INPUT_DEVICE_TABLET_TOOL,
-	WLR_INPUT_DEVICE_TABLET_PAD,
-	WLR_INPUT_DEVICE_SWITCH,
+	WLR_INPUT_DEVICE_KEYBOARD, // struct wlr_keyboard
+	WLR_INPUT_DEVICE_POINTER, // struct wlr_pointer
+	WLR_INPUT_DEVICE_TOUCH, // struct wlr_touch
+	WLR_INPUT_DEVICE_TABLET_TOOL, // struct wlr_tablet_tool
+	WLR_INPUT_DEVICE_TABLET_PAD, // struct wlr_tablet_pad
+	WLR_INPUT_DEVICE_SWITCH, // struct wlr_switch
 };
 
+/**
+ * An input device.
+ *
+ * Depending on its type, the input device can be converted to a more specific
+ * type. See the various wlr_*_from_input_device() functions.
+ *
+ * Input devices are typically advertised by the new_input event in
+ * struct wlr_backend.
+ *
+ * The vendor/product are bus-specific identifiers.
+ */
 struct wlr_input_device {
 	enum wlr_input_device_type type;
 	unsigned int vendor, product;
-	char *name;
+	char *name; // may be NULL
 
 	struct {
 		struct wl_signal destroy;
