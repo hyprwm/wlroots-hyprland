@@ -180,15 +180,15 @@ void handle_libinput_event(struct wlr_libinput_backend *backend,
 #if HAVE_LIBINPUT_SCROLL_VALUE120
 	case LIBINPUT_EVENT_POINTER_SCROLL_WHEEL:
 		handle_pointer_axis_value120(event, &dev->pointer,
-			WLR_AXIS_SOURCE_WHEEL);
+			WL_POINTER_AXIS_SOURCE_WHEEL);
 		break;
 	case LIBINPUT_EVENT_POINTER_SCROLL_FINGER:
 		handle_pointer_axis_value120(event, &dev->pointer,
-			WLR_AXIS_SOURCE_FINGER);
+			WL_POINTER_AXIS_SOURCE_FINGER);
 		break;
 	case LIBINPUT_EVENT_POINTER_SCROLL_CONTINUOUS:
 		handle_pointer_axis_value120(event, &dev->pointer,
-			WLR_AXIS_SOURCE_CONTINUOUS);
+			WL_POINTER_AXIS_SOURCE_CONTINUOUS);
 		break;
 #endif
 	case LIBINPUT_EVENT_TOUCH_DOWN:

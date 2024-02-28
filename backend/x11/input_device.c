@@ -45,7 +45,7 @@ static void send_axis_event(struct wlr_x11_output *output, int32_t delta,
 	struct wlr_pointer_axis_event ev = {
 		.pointer = &output->pointer,
 		.time_msec = time,
-		.source = WLR_AXIS_SOURCE_WHEEL,
+		.source = WL_POINTER_AXIS_SOURCE_WHEEL,
 		.orientation = WLR_AXIS_ORIENTATION_VERTICAL,
 		// Most mice use a 15 degree angle per scroll click
 		.delta = delta * 15,

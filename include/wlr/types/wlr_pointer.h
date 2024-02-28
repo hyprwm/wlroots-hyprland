@@ -66,13 +66,6 @@ struct wlr_pointer_button_event {
 	enum wlr_button_state state;
 };
 
-enum wlr_axis_source {
-	WLR_AXIS_SOURCE_WHEEL,
-	WLR_AXIS_SOURCE_FINGER,
-	WLR_AXIS_SOURCE_CONTINUOUS,
-	WLR_AXIS_SOURCE_WHEEL_TILT,
-};
-
 enum wlr_axis_orientation {
 	WLR_AXIS_ORIENTATION_VERTICAL,
 	WLR_AXIS_ORIENTATION_HORIZONTAL,
@@ -88,7 +81,7 @@ enum wlr_axis_relative_direction {
 struct wlr_pointer_axis_event {
 	struct wlr_pointer *pointer;
 	uint32_t time_msec;
-	enum wlr_axis_source source;
+	enum wl_pointer_axis_source source;
 	enum wlr_axis_orientation orientation;
 	enum wlr_axis_relative_direction relative_direction;
 	double delta;

@@ -29,7 +29,7 @@ static uint32_t default_pointer_button(struct wlr_seat_pointer_grab *grab,
 
 static void default_pointer_axis(struct wlr_seat_pointer_grab *grab,
 		uint32_t time, enum wlr_axis_orientation orientation, double value,
-		int32_t value_discrete, enum wlr_axis_source source,
+		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wlr_axis_relative_direction relative_direction) {
 	wlr_seat_pointer_send_axis(grab->seat, time, orientation, value,
 		value_discrete, source, relative_direction);
@@ -321,7 +321,7 @@ static void update_value120_accumulators(struct wlr_seat_client *client,
 
 void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		enum wlr_axis_orientation orientation, double value,
-		int32_t value_discrete, enum wlr_axis_source source,
+		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wlr_axis_relative_direction relative_direction) {
 	struct wlr_seat_client *client = wlr_seat->pointer_state.focused_client;
 	if (client == NULL) {
@@ -484,7 +484,7 @@ uint32_t wlr_seat_pointer_notify_button(struct wlr_seat *wlr_seat,
 
 void wlr_seat_pointer_notify_axis(struct wlr_seat *wlr_seat, uint32_t time,
 		enum wlr_axis_orientation orientation, double value,
-		int32_t value_discrete, enum wlr_axis_source source,
+		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wlr_axis_relative_direction relative_direction) {
 	clock_gettime(CLOCK_MONOTONIC, &wlr_seat->last_event);
 	struct wlr_seat_pointer_grab *grab = wlr_seat->pointer_state.grab;

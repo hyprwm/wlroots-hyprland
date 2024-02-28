@@ -106,7 +106,7 @@ struct wlr_wl_pointer {
 	struct wlr_wl_seat *seat;
 	struct wlr_wl_output *output;
 
-	enum wlr_axis_source axis_source;
+	enum wl_pointer_axis_source axis_source;
 	int32_t axis_discrete;
 	uint32_t fingers; // trackpad gesture
 	enum wlr_axis_relative_direction axis_relative_direction;
