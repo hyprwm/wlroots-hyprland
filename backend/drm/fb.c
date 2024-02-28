@@ -249,3 +249,10 @@ void drm_fb_move(struct wlr_drm_fb **new, struct wlr_drm_fb **old) {
 	*new = *old;
 	*old = NULL;
 }
+
+void drm_fb_copy(struct wlr_drm_fb **new, struct wlr_drm_fb *old) {
+	drm_fb_clear(new);
+	if (old != NULL) {
+		*new = drm_fb_lock(old);
+	}
+}

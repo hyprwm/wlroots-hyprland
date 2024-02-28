@@ -467,10 +467,7 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 	struct wlr_drm_crtc *crtc = conn->crtc;
 	bool ok = drm->iface->crtc_commit(conn, state, page_flip, flags, test_only);
 	if (ok && !test_only) {
-		drm_fb_clear(&crtc->primary->queued_fb);
-		if (state->primary_fb != NULL) {
-			crtc->primary->queued_fb = drm_fb_lock(state->primary_fb);
-		}
+		drm_fb_copy(&crtc->primary->queued_fb, state->primary_fb);
 		if (crtc->cursor != NULL && conn->cursor_pending_fb != NULL) {
 			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
 		}
