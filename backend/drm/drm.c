@@ -986,6 +986,7 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
 	}
 
 	conn->cursor_enabled = false;
+	drm_fb_clear(&conn->cursor_pending_fb);
 	if (buffer != NULL) {
 		if ((uint64_t)buffer->width != drm->cursor_width ||
 				(uint64_t)buffer->height != drm->cursor_height) {
