@@ -118,10 +118,10 @@ void handle_pointer_axis(struct libinput_event *event,
 
 		switch (axes[i]) {
 		case LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL:
-			wlr_event.orientation = WLR_AXIS_ORIENTATION_VERTICAL;
+			wlr_event.orientation = WL_POINTER_AXIS_VERTICAL_SCROLL;
 			break;
 		case LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL:
-			wlr_event.orientation = WLR_AXIS_ORIENTATION_HORIZONTAL;
+			wlr_event.orientation = WL_POINTER_AXIS_HORIZONTAL_SCROLL;
 			break;
 		}
 		wlr_event.delta =
@@ -159,10 +159,10 @@ void handle_pointer_axis_value120(struct libinput_event *event,
 		}
 		switch (axes[i]) {
 		case LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL:
-			wlr_event.orientation = WLR_AXIS_ORIENTATION_VERTICAL;
+			wlr_event.orientation = WL_POINTER_AXIS_VERTICAL_SCROLL;
 			break;
 		case LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL:
-			wlr_event.orientation = WLR_AXIS_ORIENTATION_HORIZONTAL;
+			wlr_event.orientation = WL_POINTER_AXIS_HORIZONTAL_SCROLL;
 			break;
 		}
 		wlr_event.delta =

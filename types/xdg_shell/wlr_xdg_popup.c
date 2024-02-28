@@ -81,7 +81,7 @@ static uint32_t xdg_pointer_grab_button(struct wlr_seat_pointer_grab *grab,
 }
 
 static void xdg_pointer_grab_axis(struct wlr_seat_pointer_grab *grab,
-		uint32_t time, enum wlr_axis_orientation orientation, double value,
+		uint32_t time, enum wl_pointer_axis orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wl_pointer_axis_relative_direction relative_direction) {
 	wlr_seat_pointer_send_axis(grab->seat, time, orientation, value,

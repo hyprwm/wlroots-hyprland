@@ -66,18 +66,13 @@ struct wlr_pointer_button_event {
 	enum wl_pointer_button_state state;
 };
 
-enum wlr_axis_orientation {
-	WLR_AXIS_ORIENTATION_VERTICAL,
-	WLR_AXIS_ORIENTATION_HORIZONTAL,
-};
-
 #define WLR_POINTER_AXIS_DISCRETE_STEP 120
 
 struct wlr_pointer_axis_event {
 	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	enum wl_pointer_axis_source source;
-	enum wlr_axis_orientation orientation;
+	enum wl_pointer_axis orientation;
 	enum wl_pointer_axis_relative_direction relative_direction;
 	double delta;
 	int32_t delta_discrete;

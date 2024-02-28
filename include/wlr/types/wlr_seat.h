@@ -100,7 +100,7 @@ struct wlr_pointer_grab_interface {
 	uint32_t (*button)(struct wlr_seat_pointer_grab *grab, uint32_t time_msec,
 			uint32_t button, enum wl_pointer_button_state state);
 	void (*axis)(struct wlr_seat_pointer_grab *grab, uint32_t time_msec,
-			enum wlr_axis_orientation orientation, double value,
+			enum wl_pointer_axis orientation, double value,
 			int32_t value_discrete, enum wl_pointer_axis_source source,
 			enum wl_pointer_axis_relative_direction relative_direction);
 	void (*frame)(struct wlr_seat_pointer_grab *grab);
@@ -407,7 +407,7 @@ uint32_t wlr_seat_pointer_send_button(struct wlr_seat *wlr_seat,
  * instead.
  */
 void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time_msec,
-		enum wlr_axis_orientation orientation, double value,
+		enum wl_pointer_axis orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wl_pointer_axis_relative_direction relative_direction);
 
@@ -459,7 +459,7 @@ uint32_t wlr_seat_pointer_notify_button(struct wlr_seat *wlr_seat,
  * Notify the seat of an axis event. Defers to any grab of the pointer.
  */
 void wlr_seat_pointer_notify_axis(struct wlr_seat *wlr_seat, uint32_t time_msec,
-		enum wlr_axis_orientation orientation, double value,
+		enum wl_pointer_axis orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wl_pointer_axis_relative_direction relative_direction);
 

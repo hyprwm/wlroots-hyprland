@@ -234,7 +234,7 @@ static uint32_t drag_handle_pointer_button(struct wlr_seat_pointer_grab *grab,
 }
 
 static void drag_handle_pointer_axis(struct wlr_seat_pointer_grab *grab,
-		uint32_t time, enum wlr_axis_orientation orientation, double value,
+		uint32_t time, enum wl_pointer_axis orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
 		enum wl_pointer_axis_relative_direction relative_direction) {
 	// This space is intentionally left blank
