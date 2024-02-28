@@ -471,7 +471,7 @@ static bool drm_crtc_commit(struct wlr_drm_connector *conn,
 		if (state->primary_fb != NULL) {
 			crtc->primary->queued_fb = drm_fb_lock(state->primary_fb);
 		}
-		if (crtc->cursor != NULL) {
+		if (crtc->cursor != NULL && conn->cursor_pending_fb != NULL) {
 			drm_fb_move(&crtc->cursor->queued_fb, &conn->cursor_pending_fb);
 		}
 
