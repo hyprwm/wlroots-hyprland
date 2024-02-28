@@ -102,7 +102,7 @@ struct wlr_pointer_grab_interface {
 	void (*axis)(struct wlr_seat_pointer_grab *grab, uint32_t time_msec,
 			enum wlr_axis_orientation orientation, double value,
 			int32_t value_discrete, enum wl_pointer_axis_source source,
-			enum wlr_axis_relative_direction relative_direction);
+			enum wl_pointer_axis_relative_direction relative_direction);
 	void (*frame)(struct wlr_seat_pointer_grab *grab);
 	void (*cancel)(struct wlr_seat_pointer_grab *grab);
 };
@@ -409,7 +409,7 @@ uint32_t wlr_seat_pointer_send_button(struct wlr_seat *wlr_seat,
 void wlr_seat_pointer_send_axis(struct wlr_seat *wlr_seat, uint32_t time_msec,
 		enum wlr_axis_orientation orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
-		enum wlr_axis_relative_direction relative_direction);
+		enum wl_pointer_axis_relative_direction relative_direction);
 
 /**
  * Send a frame event to the surface with pointer focus. This function does not
@@ -461,7 +461,7 @@ uint32_t wlr_seat_pointer_notify_button(struct wlr_seat *wlr_seat,
 void wlr_seat_pointer_notify_axis(struct wlr_seat *wlr_seat, uint32_t time_msec,
 		enum wlr_axis_orientation orientation, double value,
 		int32_t value_discrete, enum wl_pointer_axis_source source,
-		enum wlr_axis_relative_direction relative_direction);
+		enum wl_pointer_axis_relative_direction relative_direction);
 
 /**
  * Notify the seat of a frame event. Frame events are sent to end a group of
