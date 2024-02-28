@@ -63,7 +63,7 @@ struct wlr_pointer_button_event {
 	struct wlr_pointer *pointer;
 	uint32_t time_msec;
 	uint32_t button;
-	enum wlr_button_state state;
+	enum wl_pointer_button_state state;
 };
 
 enum wlr_axis_orientation {

@@ -69,13 +69,13 @@ void handle_pointer_button(struct libinput_event *event,
 	uint32_t seat_count = libinput_event_pointer_get_seat_button_count(pevent);
 	switch (libinput_event_pointer_get_button_state(pevent)) {
 	case LIBINPUT_BUTTON_STATE_PRESSED:
-		wlr_event.state = WLR_BUTTON_PRESSED;
+		wlr_event.state = WL_POINTER_BUTTON_STATE_PRESSED;
 		if (seat_count != 1) {
 			return;
 		}
 		break;
 	case LIBINPUT_BUTTON_STATE_RELEASED:
-		wlr_event.state = WLR_BUTTON_RELEASED;
+		wlr_event.state = WL_POINTER_BUTTON_STATE_RELEASED;
 		if (seat_count != 0) {
 			return;
 		}

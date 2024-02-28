@@ -144,7 +144,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_button_event *event = data;
 
 	float (*color)[4];
-	if (event->state == WLR_BUTTON_RELEASED) {
+	if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
 		color = &sample->default_color;
 		memcpy(&sample->clear_color, color, sizeof(*color));
 	} else {
