@@ -106,9 +106,9 @@ void add_tablet_client(struct wlr_tablet_seat_client_v2 *seat,
 		zwp_tablet_v2_send_name(client->resource,
 			tablet->wlr_tablet->base.name);
 	}
-	if (tablet->wlr_device->vendor != 0) {
+	if (tablet->wlr_tablet->usb_vendor_id != 0) {
 		zwp_tablet_v2_send_id(client->resource,
-			tablet->wlr_device->vendor, tablet->wlr_device->product);
+			tablet->wlr_tablet->usb_vendor_id, tablet->wlr_tablet->usb_product_id);
 	}
 
 	const char **path_ptr;
