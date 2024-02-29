@@ -33,7 +33,7 @@ static const struct zwp_tablet_v2_interface tablet_impl = {
 
 static void handle_wlr_tablet_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_tablet_v2_tablet *tablet =
-		wl_container_of(listener, tablet, tool_destroy);
+		wl_container_of(listener, tablet, tablet_destroy);
 
 	struct wlr_tablet_client_v2 *pos;
 	struct wlr_tablet_client_v2 *tmp;
@@ -43,7 +43,7 @@ static void handle_wlr_tablet_destroy(struct wl_listener *listener, void *data) 
 
 	wl_list_remove(&tablet->clients);
 	wl_list_remove(&tablet->link);
-	wl_list_remove(&tablet->tool_destroy.link);
+	wl_list_remove(&tablet->tablet_destroy.link);
 	free(tablet);
 }
 
@@ -67,8 +67,8 @@ struct wlr_tablet_v2_tablet *wlr_tablet_create(
 	wl_list_init(&tablet->clients);
 
 
-	tablet->tool_destroy.notify = handle_wlr_tablet_destroy;
-	wl_signal_add(&wlr_device->events.destroy, &tablet->tool_destroy);
+	tablet->tablet_destroy.notify = handle_wlr_tablet_destroy;
+	wl_signal_add(&wlr_device->events.destroy, &tablet->tablet_destroy);
 	wl_list_insert(&seat->tablets, &tablet->link);
 
 	// We need to create a tablet client for all clients on the seat

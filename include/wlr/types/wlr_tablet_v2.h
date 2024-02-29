@@ -59,7 +59,7 @@ struct wlr_tablet_v2_tablet {
 	struct wlr_input_device *wlr_device;
 	struct wl_list clients; // wlr_tablet_client_v2.tablet_link
 
-	struct wl_listener tool_destroy;
+	struct wl_listener tablet_destroy;
 
 	struct wlr_tablet_client_v2 *current_client;
 };
