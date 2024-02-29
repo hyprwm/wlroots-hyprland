@@ -184,7 +184,8 @@ static void cursor_detach_output_layout(struct wlr_cursor *cur) {
 
 static void cursor_device_destroy(struct wlr_cursor_device *c_device) {
 	struct wlr_input_device *dev = c_device->device;
-	if (dev->type == WLR_INPUT_DEVICE_POINTER) {
+	switch (dev->type) {
+	case WLR_INPUT_DEVICE_POINTER:
 		wl_list_remove(&c_device->motion.link);
 		wl_list_remove(&c_device->motion_absolute.link);
 		wl_list_remove(&c_device->button.link);
@@ -198,17 +199,22 @@ static void cursor_device_destroy(struct wlr_cursor_device *c_device) {
 		wl_list_remove(&c_device->pinch_end.link);
 		wl_list_remove(&c_device->hold_begin.link);
 		wl_list_remove(&c_device->hold_end.link);
-	} else if (dev->type == WLR_INPUT_DEVICE_TOUCH) {
+		break;
+	case WLR_INPUT_DEVICE_TOUCH:
 		wl_list_remove(&c_device->touch_down.link);
 		wl_list_remove(&c_device->touch_up.link);
 		wl_list_remove(&c_device->touch_motion.link);
 		wl_list_remove(&c_device->touch_cancel.link);
 		wl_list_remove(&c_device->touch_frame.link);
-	} else if (dev->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
+		break;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
 		wl_list_remove(&c_device->tablet_tool_axis.link);
 		wl_list_remove(&c_device->tablet_tool_proximity.link);
 		wl_list_remove(&c_device->tablet_tool_tip.link);
 		wl_list_remove(&c_device->tablet_tool_button.link);
+		break;
+	default:
+		abort(); // unreachable
 	}
 
 	wl_list_remove(&c_device->link);
@@ -950,7 +956,8 @@ static struct wlr_cursor_device *cursor_device_create(
 	wl_signal_add(&device->events.destroy, &c_device->destroy);
 	c_device->destroy.notify = handle_device_destroy;
 
-	if (device->type == WLR_INPUT_DEVICE_POINTER) {
+	switch (device->type) {
+	case WLR_INPUT_DEVICE_POINTER:;
 		struct wlr_pointer *pointer = wlr_pointer_from_input_device(device);
 
 		wl_signal_add(&pointer->events.motion, &c_device->motion);
@@ -992,7 +999,9 @@ static struct wlr_cursor_device *cursor_device_create(
 
 		wl_signal_add(&pointer->events.hold_end, &c_device->hold_end);
 		c_device->hold_end.notify = handle_pointer_hold_end;
-	} else if (device->type == WLR_INPUT_DEVICE_TOUCH) {
+
+		break;
+	case WLR_INPUT_DEVICE_TOUCH:;
 		struct wlr_touch *touch = wlr_touch_from_input_device(device);
 
 		wl_signal_add(&touch->events.motion, &c_device->touch_motion);
@@ -1009,7 +1018,9 @@ static struct wlr_cursor_device *cursor_device_create(
 
 		wl_signal_add(&touch->events.frame, &c_device->touch_frame);
 		c_device->touch_frame.notify = handle_touch_frame;
-	} else if (device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
+
+		break;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:;
 		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
 
 		wl_signal_add(&tablet->events.tip, &c_device->tablet_tool_tip);
@@ -1024,6 +1035,11 @@ static struct wlr_cursor_device *cursor_device_create(
 
 		wl_signal_add(&tablet->events.button, &c_device->tablet_tool_button);
 		c_device->tablet_tool_button.notify = handle_tablet_tool_button;
+
+		break;
+
+	default:
+		abort(); // unreachable
 	}
 
 	wl_list_insert(&cursor->state->devices, &c_device->link);
@@ -1033,9 +1049,12 @@ static struct wlr_cursor_device *cursor_device_create(
 
 void wlr_cursor_attach_input_device(struct wlr_cursor *cur,
 		struct wlr_input_device *dev) {
-	if (dev->type != WLR_INPUT_DEVICE_POINTER &&
-			dev->type != WLR_INPUT_DEVICE_TOUCH &&
-			dev->type != WLR_INPUT_DEVICE_TABLET_TOOL) {
+	switch (dev->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+	case WLR_INPUT_DEVICE_TOUCH:
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		break;
+	default:
 		wlr_log(WLR_ERROR, "only device types of pointer, touch or tablet tool"
 				"are supported");
 		return;
