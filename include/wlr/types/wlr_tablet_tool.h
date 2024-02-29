@@ -64,6 +64,7 @@ struct wlr_tablet {
 
 	const struct wlr_tablet_impl *impl;
 
+	uint16_t usb_vendor_id, usb_product_id; // zero if unset
 	double width_mm, height_mm;
 
 	struct {

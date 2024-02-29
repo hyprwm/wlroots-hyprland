@@ -22,6 +22,8 @@ void init_device_tablet(struct wlr_libinput_input_device *dev) {
 	wlr_tablet_init(wlr_tablet, &libinput_tablet_impl, name);
 	wlr_tablet->base.vendor = libinput_device_get_id_vendor(dev->handle);
 	wlr_tablet->base.product = libinput_device_get_id_product(dev->handle);
+	wlr_tablet->usb_vendor_id = libinput_device_get_id_vendor(dev->handle);
+	wlr_tablet->usb_product_id = libinput_device_get_id_product(dev->handle);
 
 	libinput_device_get_size(dev->handle, &wlr_tablet->width_mm,
 		&wlr_tablet->height_mm);
