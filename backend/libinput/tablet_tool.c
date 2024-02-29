@@ -17,7 +17,7 @@ const struct wlr_tablet_impl libinput_tablet_impl = {
 };
 
 void init_device_tablet(struct wlr_libinput_input_device *dev) {
-	const char *name = libinput_device_get_name(dev->handle);
+	const char *name = get_libinput_device_name(dev->handle);
 	struct wlr_tablet *wlr_tablet = &dev->tablet;
 	wlr_tablet_init(wlr_tablet, &libinput_tablet_impl, name);
 	wlr_tablet->base.vendor = libinput_device_get_id_vendor(dev->handle);

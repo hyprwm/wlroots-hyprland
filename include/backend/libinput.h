@@ -48,6 +48,7 @@ void handle_libinput_event(struct wlr_libinput_backend *state,
 		struct libinput_event *event);
 
 void destroy_libinput_input_device(struct wlr_libinput_input_device *dev);
+const char *get_libinput_device_name(struct libinput_device *device);
 
 extern const struct wlr_keyboard_impl libinput_keyboard_impl;
 extern const struct wlr_pointer_impl libinput_pointer_impl;

@@ -233,3 +233,13 @@ struct libinput_device *wlr_libinput_get_device_handle(
 uint32_t usec_to_msec(uint64_t usec) {
 	return (uint32_t)(usec / 1000);
 }
+
+const char *get_libinput_device_name(struct libinput_device *device) {
+	// libinput guarantees that the name is non-NULL, and an empty string if
+	// unset. However wlroots uses NULL to indicate that the name is unset.
+	const char *name = libinput_device_get_name(device);
+	if (name[0] == '\0') {
+		return NULL;
+	}
+	return name;
+}

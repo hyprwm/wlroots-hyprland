@@ -8,7 +8,7 @@ const struct wlr_switch_impl libinput_switch_impl = {
 };
 
 void init_device_switch(struct wlr_libinput_input_device *dev) {
-	const char *name = libinput_device_get_name(dev->handle);
+	const char *name = get_libinput_device_name(dev->handle);
 	struct wlr_switch *wlr_switch = &dev->switch_device;
 	wlr_switch_init(wlr_switch, &libinput_switch_impl, name);
 	wlr_switch->base.vendor = libinput_device_get_id_vendor(dev->handle);

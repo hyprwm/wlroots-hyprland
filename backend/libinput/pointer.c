@@ -8,7 +8,7 @@ const struct wlr_pointer_impl libinput_pointer_impl = {
 };
 
 void init_device_pointer(struct wlr_libinput_input_device *dev) {
-	const char *name = libinput_device_get_name(dev->handle);
+	const char *name = get_libinput_device_name(dev->handle);
 	struct wlr_pointer *wlr_pointer = &dev->pointer;
 	wlr_pointer_init(wlr_pointer, &libinput_pointer_impl, name);
 	wlr_pointer->base.vendor = libinput_device_get_id_vendor(dev->handle);
