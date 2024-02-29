@@ -93,8 +93,6 @@ void init_device_tablet_pad(struct wlr_libinput_input_device *dev) {
 	const char *name = get_libinput_device_name(handle);
 	struct wlr_tablet_pad *wlr_tablet_pad = &dev->tablet_pad;
 	wlr_tablet_pad_init(wlr_tablet_pad, &libinput_tablet_pad_impl, name);
-	wlr_tablet_pad->base.vendor = libinput_device_get_id_vendor(handle);
-	wlr_tablet_pad->base.product = libinput_device_get_id_product(handle);
 
 	wlr_tablet_pad->button_count =
 		libinput_device_tablet_pad_get_num_buttons(handle);

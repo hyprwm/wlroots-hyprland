@@ -11,8 +11,6 @@ void init_device_touch(struct wlr_libinput_input_device *dev) {
 	const char *name = get_libinput_device_name(dev->handle);
 	struct wlr_touch *wlr_touch = &dev->touch;
 	wlr_touch_init(wlr_touch, &libinput_touch_impl, name);
-	wlr_touch->base.vendor = libinput_device_get_id_vendor(dev->handle);
-	wlr_touch->base.product = libinput_device_get_id_product(dev->handle);
 
 	libinput_device_get_size(dev->handle, &wlr_touch->width_mm,
 		&wlr_touch->height_mm);

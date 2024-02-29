@@ -36,12 +36,9 @@ enum wlr_input_device_type {
  *
  * Input devices are typically advertised by the new_input event in
  * struct wlr_backend.
- *
- * The vendor/product are bus-specific identifiers.
  */
 struct wlr_input_device {
 	enum wlr_input_device_type type;
-	unsigned int vendor, product;
 	char *name; // may be NULL
 
 	struct {

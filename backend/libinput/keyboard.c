@@ -26,8 +26,6 @@ void init_device_keyboard(struct wlr_libinput_input_device *dev) {
 	const char *name = get_libinput_device_name(dev->handle);
 	struct wlr_keyboard *wlr_kb = &dev->keyboard;
 	wlr_keyboard_init(wlr_kb, &libinput_keyboard_impl, name);
-	wlr_kb->base.vendor = libinput_device_get_id_vendor(dev->handle);
-	wlr_kb->base.product = libinput_device_get_id_product(dev->handle);
 
 	libinput_device_led_update(dev->handle, 0);
 }
