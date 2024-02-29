@@ -220,7 +220,7 @@ struct libinput_device *wlr_libinput_get_device_handle(
 	case WLR_INPUT_DEVICE_TOUCH:
 		dev = device_from_touch(wlr_touch_from_input_device(wlr_dev));
 		break;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		dev = device_from_tablet(wlr_tablet_from_input_device(wlr_dev));
 		break;
 	case WLR_INPUT_DEVICE_TABLET_PAD:

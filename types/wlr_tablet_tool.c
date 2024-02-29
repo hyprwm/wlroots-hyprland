@@ -9,7 +9,7 @@
 
 struct wlr_tablet *wlr_tablet_from_input_device(
 		struct wlr_input_device *input_device) {
-	assert(input_device->type == WLR_INPUT_DEVICE_TABLET_TOOL);
+	assert(input_device->type == WLR_INPUT_DEVICE_TABLET);
 	return wl_container_of(input_device, (struct wlr_tablet *)NULL, base);
 }
 
@@ -18,7 +18,7 @@ void wlr_tablet_init(struct wlr_tablet *tablet,
 	*tablet = (struct wlr_tablet){
 		.impl = impl,
 	};
-	wlr_input_device_init(&tablet->base, WLR_INPUT_DEVICE_TABLET_TOOL, name);
+	wlr_input_device_init(&tablet->base, WLR_INPUT_DEVICE_TABLET, name);
 
 	wl_signal_init(&tablet->events.axis);
 	wl_signal_init(&tablet->events.proximity);

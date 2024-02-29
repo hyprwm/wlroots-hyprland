@@ -171,7 +171,7 @@ void wlr_cursor_set_surface(struct wlr_cursor *cur, struct wlr_surface *surface,
  *
  * - WLR_INPUT_DEVICE_POINTER
  * - WLR_INPUT_DEVICE_TOUCH
- * - WLR_INPUT_DEVICE_TABLET_TOOL
+ * - WLR_INPUT_DEVICE_TABLET
  */
 void wlr_cursor_attach_input_device(struct wlr_cursor *cur,
 		struct wlr_input_device *dev);

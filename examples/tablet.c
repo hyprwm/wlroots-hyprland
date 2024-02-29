@@ -351,7 +351,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&pstate->wlr_tablet_pad->events.ring, &pstate->ring);
 		wl_list_insert(&sample->tablet_pads, &pstate->link);
 		break;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:;
+	case WLR_INPUT_DEVICE_TABLET:;
 		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
 		sample->width_mm = tablet->width_mm == 0 ?
 			20 : tablet->width_mm;

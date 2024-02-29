@@ -298,7 +298,7 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_POINTER:
 	case WLR_INPUT_DEVICE_TOUCH:
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		wlr_cursor_attach_input_device(state->cursor, device);
 		break;
 

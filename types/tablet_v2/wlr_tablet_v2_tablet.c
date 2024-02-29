@@ -51,7 +51,7 @@ struct wlr_tablet_v2_tablet *wlr_tablet_create(
 		struct wlr_tablet_manager_v2 *manager,
 		struct wlr_seat *wlr_seat,
 		struct wlr_input_device *wlr_device) {
-	assert(wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL);
+	assert(wlr_device->type == WLR_INPUT_DEVICE_TABLET);
 	struct wlr_tablet_seat_v2 *seat = get_or_create_tablet_seat(manager, wlr_seat);
 	if (!seat) {
 		return NULL;

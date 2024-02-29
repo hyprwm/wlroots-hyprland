@@ -47,7 +47,7 @@ bool wlr_input_device_is_libinput(struct wlr_input_device *wlr_dev) {
 	case WLR_INPUT_DEVICE_TOUCH:
 		return wlr_touch_from_input_device(wlr_dev)->impl ==
 			&libinput_touch_impl;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 		return wlr_tablet_from_input_device(wlr_dev)-> impl ==
 			&libinput_tablet_impl;
 	case WLR_INPUT_DEVICE_TABLET_PAD:

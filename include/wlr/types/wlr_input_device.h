@@ -23,7 +23,7 @@ enum wlr_input_device_type {
 	WLR_INPUT_DEVICE_KEYBOARD, // struct wlr_keyboard
 	WLR_INPUT_DEVICE_POINTER, // struct wlr_pointer
 	WLR_INPUT_DEVICE_TOUCH, // struct wlr_touch
-	WLR_INPUT_DEVICE_TABLET_TOOL, // struct wlr_tablet
+	WLR_INPUT_DEVICE_TABLET, // struct wlr_tablet
 	WLR_INPUT_DEVICE_TABLET_PAD, // struct wlr_tablet_pad
 	WLR_INPUT_DEVICE_SWITCH, // struct wlr_switch
 };
