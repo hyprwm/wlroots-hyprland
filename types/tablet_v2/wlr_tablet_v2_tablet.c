@@ -102,13 +102,14 @@ void add_tablet_client(struct wlr_tablet_seat_client_v2 *seat,
 		client, destroy_tablet_v2);
 	zwp_tablet_seat_v2_send_tablet_added(seat->resource, client->resource);
 
-	// Send the expected events
 	if (tablet->wlr_tablet->base.name) {
 		zwp_tablet_v2_send_name(client->resource,
 			tablet->wlr_tablet->base.name);
 	}
-	zwp_tablet_v2_send_id(client->resource,
-		tablet->wlr_device->vendor, tablet->wlr_device->product);
+	if (tablet->wlr_device->vendor != 0) {
+		zwp_tablet_v2_send_id(client->resource,
+			tablet->wlr_device->vendor, tablet->wlr_device->product);
+	}
 
 	const char **path_ptr;
 	wl_array_for_each(path_ptr, &tablet->wlr_tablet->paths) {
