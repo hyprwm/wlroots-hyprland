@@ -2380,3 +2380,8 @@ void wlr_xwayland_set_workareas(struct wlr_xwayland *wlr_xwayland,
 			XCB_ATOM_CARDINAL, 32, 4 * num_workareas, data);
 	free(data);
 }
+
+xcb_connection_t *wlr_xwayland_get_xwm_connection(
+	struct wlr_xwayland *wlr_xwayland) {
+	return wlr_xwayland->xwm ? wlr_xwayland->xwm->xcb_conn : NULL;
+}

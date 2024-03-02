@@ -298,4 +298,15 @@ enum wlr_xwayland_icccm_input_model wlr_xwayland_icccm_input_model(
 void wlr_xwayland_set_workareas(struct wlr_xwayland *wlr_xwayland,
 	const struct wlr_box *workareas, size_t num_workareas);
 
+
+/**
+ * Get the XCB connection of the XWM.
+ *
+ * The connection is only valid after wlr_xwayland.events.ready, and becomes
+ * invalid on wlr_xwayland_server.events.destroy. In that case, NULL is
+ * returned.
+ */
+xcb_connection_t *wlr_xwayland_get_xwm_connection(
+	struct wlr_xwayland *wlr_xwayland);
+
 #endif
