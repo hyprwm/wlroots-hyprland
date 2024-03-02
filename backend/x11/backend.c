@@ -261,11 +261,13 @@ static int query_dri3_drm_fd(struct wlr_x11_backend *x11) {
 	xcb_dri3_open_reply_t *open_reply =
 		xcb_dri3_open_reply(x11->xcb, open_cookie, NULL);
 	if (open_reply == NULL) {
+		wlr_log(WLR_ERROR, "Failed to open DRI3");
 		return -1;
 	}
 
 	int *open_fds = xcb_dri3_open_reply_fds(x11->xcb, open_reply);
 	if (open_fds == NULL) {
+		wlr_log(WLR_ERROR, "xcb_dri3_open_reply_fds() failed");
 		free(open_reply);
 		return -1;
 	}
@@ -277,10 +279,12 @@ static int query_dri3_drm_fd(struct wlr_x11_backend *x11) {
 
 	int flags = fcntl(drm_fd, F_GETFD);
 	if (flags < 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to get DRM FD flags");
 		close(drm_fd);
 		return -1;
 	}
 	if (fcntl(drm_fd, F_SETFD, flags | FD_CLOEXEC) < 0) {
+		wlr_log_errno(WLR_ERROR, "Failed to set DRM FD flags");
 		close(drm_fd);
 		return -1;
 	}
@@ -288,6 +292,7 @@ static int query_dri3_drm_fd(struct wlr_x11_backend *x11) {
 	if (drmGetNodeTypeFromFd(drm_fd) != DRM_NODE_RENDER) {
 		char *render_name = drmGetRenderDeviceNameFromFd(drm_fd);
 		if (render_name == NULL) {
+			wlr_log(WLR_ERROR, "Failed to get DRM render node name from DRM FD");
 			close(drm_fd);
 			return -1;
 		}
@@ -295,6 +300,7 @@ static int query_dri3_drm_fd(struct wlr_x11_backend *x11) {
 		close(drm_fd);
 		drm_fd = open(render_name, O_RDWR | O_CLOEXEC);
 		if (drm_fd < 0) {
+			wlr_log_errno(WLR_ERROR, "Failed to open DRM render node '%s'", render_name);
 			free(render_name);
 			return -1;
 		}
