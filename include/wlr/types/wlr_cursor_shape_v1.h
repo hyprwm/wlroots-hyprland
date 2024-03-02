@@ -41,6 +41,8 @@ enum wlr_cursor_shape_manager_v1_device_type {
 struct wlr_cursor_shape_manager_v1_request_set_shape_event {
 	struct wlr_seat_client *seat_client;
 	enum wlr_cursor_shape_manager_v1_device_type device_type;
+	// NULL if device_type is not TABLET_TOOL
+	struct wlr_tablet_v2_tablet_tool *tablet_tool;
 	uint32_t serial;
 	enum wp_cursor_shape_device_v1_shape shape;
 };
