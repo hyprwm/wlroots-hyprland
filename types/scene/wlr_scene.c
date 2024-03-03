@@ -1686,8 +1686,9 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		.output = scene_output,
 	};
 
+	int resolution_width, resolution_height;
 	output_pending_resolution(output, state,
-		&render_data.trans_width, &render_data.trans_height);
+		&resolution_width, &resolution_height);
 
 	if (state->committed & WLR_OUTPUT_STATE_TRANSFORM) {
 		if (render_data.transform != state->transform) {
@@ -1705,6 +1706,8 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 		render_data.scale = state->scale;
 	}
 
+	render_data.trans_width = resolution_width;
+	render_data.trans_height = resolution_height;
 	wlr_output_transform_coords(render_data.transform,
 		&render_data.trans_width, &render_data.trans_height);
 
@@ -1799,6 +1802,8 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
 	if (buffer == NULL) {
 		return false;
 	}
+
+	assert(buffer->width == resolution_width && buffer->height == resolution_height);
 
 	if (timer) {
 		timer->render_timer = wlr_render_timer_create(output->renderer);
