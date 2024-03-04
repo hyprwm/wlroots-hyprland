@@ -544,22 +544,27 @@ static void drm_connector_state_init(struct wlr_drm_connector_state *state,
 		state->mode.type = DRM_MODE_TYPE_USERDEF;
 	}
 
-	if (conn->crtc != NULL) {
+	if (output_pending_enabled(&conn->output, base)) {
+		// The CRTC must be set up before this function is called
+		assert(conn->crtc != NULL);
+
 		struct wlr_drm_plane *primary = conn->crtc->primary;
 		if (primary->queued_fb != NULL) {
 			state->primary_fb = drm_fb_lock(primary->queued_fb);
 		} else if (primary->current_fb != NULL) {
 			state->primary_fb = drm_fb_lock(primary->current_fb);
 		}
-	}
-	if (conn->crtc != NULL && conn->cursor_enabled) {
-		struct wlr_drm_plane *cursor = conn->crtc->cursor;
-		if (conn->cursor_pending_fb != NULL) {
-			state->cursor_fb = drm_fb_lock(conn->cursor_pending_fb);
-		} else if (cursor->queued_fb != NULL) {
-			state->cursor_fb = drm_fb_lock(cursor->queued_fb);
-		} else if (cursor->current_fb != NULL) {
-			state->cursor_fb = drm_fb_lock(cursor->current_fb);
+
+		if (conn->cursor_enabled) {
+			struct wlr_drm_plane *cursor = conn->crtc->cursor;
+			assert(cursor != NULL);
+			if (conn->cursor_pending_fb != NULL) {
+				state->cursor_fb = drm_fb_lock(conn->cursor_pending_fb);
+			} else if (cursor->queued_fb != NULL) {
+				state->cursor_fb = drm_fb_lock(cursor->queued_fb);
+			} else if (cursor->current_fb != NULL) {
+				state->cursor_fb = drm_fb_lock(cursor->current_fb);
+			}
 		}
 	}
 }
