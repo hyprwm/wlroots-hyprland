@@ -126,7 +126,10 @@ static void manager_handle_get_pointer(struct wl_client *client, struct wl_resou
 static void manager_handle_get_tablet_tool_v2(struct wl_client *client, struct wl_resource *manager_resource,
 		uint32_t id, struct wl_resource *tablet_tool_resource) {
 	struct wlr_tablet_tool_client_v2 *tablet_tool_client = tablet_tool_client_from_resource(tablet_tool_resource);
-	struct wlr_seat_client *seat_client = tablet_tool_client->seat->seat_client;
+	struct wlr_seat_client *seat_client = NULL;
+	if (tablet_tool_client != NULL) {
+		seat_client = tablet_tool_client->seat->seat_client;
+	}
 	create_device(manager_resource, id, seat_client,
 		WLR_CURSOR_SHAPE_MANAGER_V1_DEVICE_TYPE_TABLET_TOOL);
 }
