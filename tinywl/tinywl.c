@@ -1065,6 +1065,9 @@ int main(int argc, char *argv[]) {
 	wl_display_destroy_clients(server.wl_display);
 	wlr_scene_node_destroy(&server.scene->tree.node);
 	wlr_xcursor_manager_destroy(server.cursor_mgr);
+	wlr_cursor_destroy(server.cursor);
+	wlr_allocator_destroy(server.allocator);
+	wlr_renderer_destroy(server.renderer);
 	wlr_backend_destroy(server.backend);
 	wl_display_destroy(server.wl_display);
 	return 0;
