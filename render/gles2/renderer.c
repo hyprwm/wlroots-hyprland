@@ -614,7 +614,11 @@ struct wlr_renderer *wlr_gles2_renderer_create(struct wlr_egl *egl) {
 		load_gl_proc(&renderer->procs.glQueryCounterEXT, "glQueryCounterEXT");
 		load_gl_proc(&renderer->procs.glGetQueryObjectivEXT, "glGetQueryObjectivEXT");
 		load_gl_proc(&renderer->procs.glGetQueryObjectui64vEXT, "glGetQueryObjectui64vEXT");
-		load_gl_proc(&renderer->procs.glGetInteger64vEXT, "glGetInteger64vEXT");
+		if (eglGetProcAddress("glGetInteger64vEXT")) {
+			load_gl_proc(&renderer->procs.glGetInteger64vEXT, "glGetInteger64vEXT");
+		} else {
+			load_gl_proc(&renderer->procs.glGetInteger64vEXT, "glGetInteger64v");
+		}
 	}
 
 	if (renderer->exts.KHR_debug) {
