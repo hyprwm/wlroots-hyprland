@@ -1294,7 +1294,16 @@ static void scene_output_handle_commit(struct wl_listener *listener, void *data)
 	// will be acknowledged by the backend so we don't need to keep track of it
 	// anymore
 	if (state->committed & WLR_OUTPUT_STATE_DAMAGE) {
-		if (wlr_swapchain_has_buffer(scene_output->output->swapchain, state->buffer)) {
+		bool tracking_buffer = false;
+		struct wlr_damage_ring_buffer *buffer;
+		wl_list_for_each(buffer, &scene_output->damage_ring.buffers, link) {
+			if (buffer->buffer == state->buffer) {
+				tracking_buffer = true;
+				break;
+			}
+		}
+
+		if (tracking_buffer) {
 			pixman_region32_subtract(&scene_output->pending_commit_damage,
 				&scene_output->pending_commit_damage, &state->damage);
 		} else {
