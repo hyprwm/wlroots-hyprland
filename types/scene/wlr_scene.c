@@ -669,6 +669,11 @@ void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buff
 	bool mapped = buffer != NULL;
 	bool prev_mapped = scene_buffer->buffer != NULL || scene_buffer->texture != NULL;
 
+	if (!mapped && !prev_mapped) {
+		// unmapping already unmapped buffer - noop
+		return;
+	}
+
 	// if this node used to not be mapped or its previous displayed
 	// buffer region will be different from what the new buffer would
 	// produce we need to update the node.
