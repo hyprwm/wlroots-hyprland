@@ -666,17 +666,16 @@ void wlr_scene_buffer_set_buffer_with_damage(struct wlr_scene_buffer *scene_buff
 	// coordinates.
 	assert(buffer || !damage);
 
-	bool update = false;
-	if (buffer) {
-		// if this node used to not be mapped or its previous displayed
-		// buffer region will be different from what the new buffer would
-		// produce we need to update the node.
-		update = (!scene_buffer->buffer && !scene_buffer->texture) ||
-			(scene_buffer->dst_width == 0 && scene_buffer->dst_height == 0 &&
-				(scene_buffer->buffer_width != buffer->width ||
-					scene_buffer->buffer_height != buffer->height));
-	} else {
-		update = true;
+	bool mapped = buffer != NULL;
+	bool prev_mapped = scene_buffer->buffer != NULL || scene_buffer->texture != NULL;
+
+	// if this node used to not be mapped or its previous displayed
+	// buffer region will be different from what the new buffer would
+	// produce we need to update the node.
+	bool update = mapped != prev_mapped;
+	if (buffer != NULL && scene_buffer->dst_width == 0 && scene_buffer->dst_height == 0) {
+		update = update || scene_buffer->buffer_width != buffer->width ||
+			scene_buffer->buffer_height != buffer->height;
 	}
 
 	wlr_texture_destroy(scene_buffer->texture);
