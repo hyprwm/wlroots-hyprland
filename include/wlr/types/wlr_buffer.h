@@ -151,6 +151,7 @@ struct wlr_client_buffer {
 	// private state
 
 	struct wl_listener source_destroy;
+	struct wl_listener renderer_destroy;
 
 	size_t n_ignore_locks;
 };
