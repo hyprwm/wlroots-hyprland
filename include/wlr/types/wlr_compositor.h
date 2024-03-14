@@ -121,7 +121,7 @@ struct wlr_surface_output {
 
 struct wlr_surface {
 	struct wl_resource *resource;
-	struct wlr_renderer *renderer; // may be NULL
+	struct wlr_compositor *compositor;
 	/**
 	 * The surface's buffer, if any. A surface has an attached buffer when it
 	 * commits with a non-null buffer in its pending state. A surface will not
@@ -212,7 +212,6 @@ struct wlr_surface {
 
 	// private state
 
-	struct wl_listener renderer_destroy;
 	struct wl_listener role_resource_destroy;
 
 	struct {

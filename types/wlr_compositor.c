@@ -426,12 +426,12 @@ static void surface_apply_damage(struct wlr_surface *surface) {
 		}
 	}
 
-	if (surface->renderer == NULL) {
+	if (surface->compositor->renderer == NULL) {
 		return;
 	}
 
 	struct wlr_client_buffer *buffer = wlr_client_buffer_create(
-			surface->current.buffer, surface->renderer);
+			surface->current.buffer, surface->compositor->renderer);
 
 	if (buffer == NULL) {
 		wlr_log(WLR_ERROR, "Failed to upload buffer");
@@ -736,7 +736,6 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 		surface_state_destroy_cached(cached, surface);
 	}
 
-	wl_list_remove(&surface->renderer_destroy.link);
 	wl_list_remove(&surface->role_resource_destroy.link);
 
 	wl_list_remove(&surface->pending_buffer_resource_destroy.link);
@@ -752,15 +751,8 @@ static void surface_handle_resource_destroy(struct wl_resource *resource) {
 	free(surface);
 }
 
-static void surface_handle_renderer_destroy(struct wl_listener *listener,
-		void *data) {
-	struct wlr_surface *surface =
-		wl_container_of(listener, surface, renderer_destroy);
-	wl_resource_destroy(surface->resource);
-}
-
 static struct wlr_surface *surface_create(struct wl_client *client,
-		uint32_t version, uint32_t id, struct wlr_renderer *renderer) {
+		uint32_t version, uint32_t id, struct wlr_compositor *compositor) {
 	struct wlr_surface *surface = calloc(1, sizeof(*surface));
 	if (!surface) {
 		wl_client_post_no_memory(client);
@@ -778,7 +770,7 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 
 	wlr_log(WLR_DEBUG, "New wlr_surface %p (res %p)", surface, surface->resource);
 
-	surface->renderer = renderer;
+	surface->compositor = compositor;
 
 	surface_state_init(&surface->current, surface);
 	surface_state_init(&surface->pending, surface);
@@ -797,13 +789,6 @@ static struct wlr_surface *surface_create(struct wl_client *client,
 	pixman_region32_init(&surface->input_region);
 	wlr_addon_set_init(&surface->addons);
 	wl_list_init(&surface->synced);
-
-	if (renderer != NULL) {
-		wl_signal_add(&renderer->events.destroy, &surface->renderer_destroy);
-		surface->renderer_destroy.notify = surface_handle_renderer_destroy;
-	} else {
-		wl_list_init(&surface->renderer_destroy.link);
-	}
 
 	wl_list_init(&surface->role_resource_destroy.link);
 
@@ -1310,7 +1295,7 @@ static void compositor_create_surface(struct wl_client *client,
 	struct wlr_compositor *compositor = compositor_from_resource(resource);
 
 	struct wlr_surface *surface = surface_create(client,
-		wl_resource_get_version(resource), id, compositor->renderer);
+		wl_resource_get_version(resource), id, compositor);
 	if (surface == NULL) {
 		wl_client_post_no_memory(client);
 		return;
