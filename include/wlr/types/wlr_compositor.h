@@ -247,6 +247,7 @@ struct wlr_compositor {
 	struct wlr_renderer *renderer; // may be NULL
 
 	struct wl_listener display_destroy;
+	struct wl_listener renderer_destroy;
 
 	struct {
 		struct wl_signal new_surface;
