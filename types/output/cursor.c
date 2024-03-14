@@ -334,6 +334,13 @@ bool wlr_output_cursor_set_buffer(struct wlr_output_cursor *cursor,
 		dst_width, dst_height, WL_OUTPUT_TRANSFORM_NORMAL, hotspot_x, hotspot_y);
 }
 
+static void output_cursor_handle_renderer_destroy(struct wl_listener *listener,
+		void *data) {
+	struct wlr_output_cursor *cursor = wl_container_of(listener, cursor, renderer_destroy);
+	output_cursor_set_texture(cursor, NULL, false, NULL, 0, 0,
+		WL_OUTPUT_TRANSFORM_NORMAL, 0, 0);
+}
+
 bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 		struct wlr_texture *texture, bool own_texture, const struct wlr_fbox *src_box,
 		int dst_width, int dst_height, enum wl_output_transform transform,
@@ -363,6 +370,14 @@ bool output_cursor_set_texture(struct wlr_output_cursor *cursor,
 	}
 	cursor->texture = texture;
 	cursor->own_texture = own_texture;
+
+	wl_list_remove(&cursor->renderer_destroy.link);
+	if (texture != NULL) {
+		cursor->renderer_destroy.notify = output_cursor_handle_renderer_destroy;
+		wl_signal_add(&texture->renderer->events.destroy, &cursor->renderer_destroy);
+	} else {
+		wl_list_init(&cursor->renderer_destroy.link);
+	}
 
 	if (output_cursor_attempt_hardware(cursor)) {
 		return true;
@@ -415,6 +430,7 @@ struct wlr_output_cursor *wlr_output_cursor_create(struct wlr_output *output) {
 	cursor->output = output;
 	wl_list_insert(&output->cursors, &cursor->link);
 	cursor->visible = true; // default position is at (0, 0)
+	wl_list_init(&cursor->renderer_destroy.link);
 	return cursor;
 }
 
@@ -428,6 +444,7 @@ void wlr_output_cursor_destroy(struct wlr_output_cursor *cursor) {
 		output_set_hardware_cursor(cursor->output, NULL, 0, 0);
 		cursor->output->hardware_cursor = NULL;
 	}
+	wl_list_remove(&cursor->renderer_destroy.link);
 	if (cursor->own_texture) {
 		wlr_texture_destroy(cursor->texture);
 	}
