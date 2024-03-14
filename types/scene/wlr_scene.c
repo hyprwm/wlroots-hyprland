@@ -637,10 +637,24 @@ static void scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
 	wl_signal_add(&buffer->events.release, &scene_buffer->buffer_release);
 }
 
+static void scene_buffer_handle_renderer_destroy(struct wl_listener *listener,
+		void *data) {
+	struct wlr_scene_buffer *scene_buffer = wl_container_of(listener, scene_buffer, renderer_destroy);
+	scene_buffer_set_texture(scene_buffer, NULL);
+}
+
 static void scene_buffer_set_texture(struct wlr_scene_buffer *scene_buffer,
 		struct wlr_texture *texture) {
+	wl_list_remove(&scene_buffer->renderer_destroy.link);
 	wlr_texture_destroy(scene_buffer->texture);
 	scene_buffer->texture = texture;
+
+	if (texture != NULL) {
+		scene_buffer->renderer_destroy.notify = scene_buffer_handle_renderer_destroy;
+		wl_signal_add(&texture->renderer->events.destroy, &scene_buffer->renderer_destroy);
+	} else {
+		wl_list_init(&scene_buffer->renderer_destroy.link);
+	}
 }
 
 struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
@@ -659,6 +673,7 @@ struct wlr_scene_buffer *wlr_scene_buffer_create(struct wlr_scene_tree *parent,
 	wl_signal_init(&scene_buffer->events.frame_done);
 	pixman_region32_init(&scene_buffer->opaque_region);
 	wl_list_init(&scene_buffer->buffer_release.link);
+	wl_list_init(&scene_buffer->renderer_destroy.link);
 	scene_buffer->opacity = 1;
 
 	scene_buffer_set_buffer(scene_buffer, buffer);

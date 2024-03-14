@@ -191,6 +191,7 @@ struct wlr_scene_buffer {
 	bool buffer_is_opaque;
 
 	struct wl_listener buffer_release;
+	struct wl_listener renderer_destroy;
 };
 
 /** A viewport for an output in the scene-graph */
