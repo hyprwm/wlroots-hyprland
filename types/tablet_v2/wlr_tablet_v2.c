@@ -271,6 +271,12 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, manager, display_destroy);
 	wl_signal_emit_mutable(&manager->events.destroy, manager);
 	wl_list_remove(&manager->display_destroy.link);
+
+	struct wlr_tablet_seat_v2 *seat, *tmp;
+	wl_list_for_each_safe(seat, tmp, &manager->seats, link) {
+		tablet_seat_destroy(seat);
+	}
+
 	wl_global_destroy(manager->wl_global);
 	free(manager);
 }
