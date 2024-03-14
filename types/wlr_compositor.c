@@ -1342,9 +1342,7 @@ static void compositor_handle_renderer_destroy(
 		struct wl_listener *listener, void *data) {
 	struct wlr_compositor *compositor =
 		wl_container_of(listener, compositor, renderer_destroy);
-	compositor->renderer = NULL;
-	wl_list_remove(&compositor->renderer_destroy.link);
-	wl_list_init(&compositor->renderer_destroy.link);
+	wlr_compositor_set_renderer(compositor, NULL);
 }
 
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
@@ -1362,13 +1360,23 @@ struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
 		free(compositor);
 		return NULL;
 	}
-	compositor->renderer = renderer;
 
 	wl_signal_init(&compositor->events.new_surface);
 	wl_signal_init(&compositor->events.destroy);
+	wl_list_init(&compositor->renderer_destroy.link);
 
 	compositor->display_destroy.notify = compositor_handle_display_destroy;
 	wl_display_add_destroy_listener(display, &compositor->display_destroy);
+
+	wlr_compositor_set_renderer(compositor, renderer);
+
+	return compositor;
+}
+
+void wlr_compositor_set_renderer(struct wlr_compositor *compositor,
+		struct wlr_renderer *renderer) {
+	wl_list_remove(&compositor->renderer_destroy.link);
+	compositor->renderer = renderer;
 
 	if (renderer != NULL) {
 		compositor->renderer_destroy.notify = compositor_handle_renderer_destroy;
@@ -1376,8 +1384,6 @@ struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
 	} else {
 		wl_list_init(&compositor->renderer_destroy.link);
 	}
-
-	return compositor;
 }
 
 static bool surface_state_add_synced(struct wlr_surface_state *state, void *value) {

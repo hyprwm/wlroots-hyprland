@@ -524,4 +524,16 @@ const pixman_region32_t *wlr_region_from_resource(struct wl_resource *resource);
 struct wlr_compositor *wlr_compositor_create(struct wl_display *display,
 	uint32_t version, struct wlr_renderer *renderer);
 
+/**
+ * Set the renderer used for creating struct wlr_texture objects from client
+ * buffers on surface commit.
+ *
+ * The renderer may be NULL, in which case no textures are created.
+ *
+ * Calling this function does not update existing textures, it only affects
+ * future surface commits.
+ */
+void wlr_compositor_set_renderer(struct wlr_compositor *compositor,
+	struct wlr_renderer *renderer);
+
 #endif
