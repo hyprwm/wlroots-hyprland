@@ -123,11 +123,6 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
 		wl_signal_emit_mutable(&backend->backend.events.new_input,
 			&dev->tablet_pad.base);
 	}
-
-	if (libinput_device_has_capability(
-			libinput_dev, LIBINPUT_DEVICE_CAP_GESTURE)) {
-		wlr_log(WLR_DEBUG, "libinput gesture not handled");
-	}
 }
 
 static void handle_device_removed(struct wlr_libinput_backend *backend,
