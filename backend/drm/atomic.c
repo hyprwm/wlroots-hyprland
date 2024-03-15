@@ -301,6 +301,9 @@ void drm_atomic_connector_apply_commit(struct wlr_drm_connector_state *state) {
 	commit_blob(drm, &crtc->mode_id, state->mode_id);
 	commit_blob(drm, &crtc->gamma_lut, state->gamma_lut);
 
+	conn->output.adaptive_sync_status = state->vrr_enabled ?
+		WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED : WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED;
+
 	destroy_blob(drm, state->fb_damage_clips);
 }
 
