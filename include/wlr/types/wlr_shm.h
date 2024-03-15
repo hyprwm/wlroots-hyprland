@@ -22,7 +22,16 @@ struct wlr_renderer;
  * Currently, accessing two buffers concurrently via
  * wlr_buffer_begin_data_ptr_access() will return an error.
  */
-struct wlr_shm;
+struct wlr_shm {
+	struct wl_global *global;
+
+	// private state
+
+	uint32_t *formats;
+	size_t formats_len;
+
+	struct wl_listener display_destroy;
+};
 
 /**
  * Create the wl_shm global.

@@ -23,14 +23,6 @@
 
 #define SHM_VERSION 1
 
-struct wlr_shm {
-	struct wl_global *global;
-	uint32_t *formats;
-	size_t formats_len;
-
-	struct wl_listener display_destroy;
-};
-
 struct wlr_shm_pool {
 	struct wl_resource *resource; // may be NULL
 	struct wlr_shm *shm;
