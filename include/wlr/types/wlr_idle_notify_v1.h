@@ -16,7 +16,17 @@ struct wlr_seat;
 /**
  * An idle notifier, implementing the ext-idle-notify-v1 protocol.
  */
-struct wlr_idle_notifier_v1;
+struct wlr_idle_notifier_v1 {
+	struct wl_global *global;
+
+	// private state
+
+	bool inhibited;
+	struct wl_list notifications; // wlr_idle_notification_v1.link
+
+	struct wl_listener display_destroy;
+};
+
 
 /**
  * Create the ext_idle_notifier_v1 global.

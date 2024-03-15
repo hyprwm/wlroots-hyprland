@@ -6,15 +6,6 @@
 
 #define IDLE_NOTIFIER_VERSION 1
 
-struct wlr_idle_notifier_v1 {
-	struct wl_global *global;
-
-	bool inhibited;
-	struct wl_list notifications; // wlr_idle_notification_v1.link
-
-	struct wl_listener display_destroy;
-};
-
 struct wlr_idle_notification_v1 {
 	struct wl_resource *resource;
 	struct wl_list link; // wlr_idle_notifier_v1.notifications
