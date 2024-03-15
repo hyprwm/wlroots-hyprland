@@ -50,6 +50,6 @@ struct wlr_security_context_v1_commit_event {
 struct wlr_security_context_manager_v1 *wlr_security_context_manager_v1_create(
 	struct wl_display *display);
 const struct wlr_security_context_v1_state *wlr_security_context_manager_v1_lookup_client(
-	struct wlr_security_context_manager_v1 *manager, struct wl_client *client);
+	struct wlr_security_context_manager_v1 *manager, const struct wl_client *client);
 
 #endif

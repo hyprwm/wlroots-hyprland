@@ -429,8 +429,8 @@ struct wlr_security_context_manager_v1 *wlr_security_context_manager_v1_create(
 }
 
 const struct wlr_security_context_v1_state *wlr_security_context_manager_v1_lookup_client(
-		struct wlr_security_context_manager_v1 *manager, struct wl_client *client) {
-	struct wl_listener *listener = wl_client_get_destroy_listener(client,
+		struct wlr_security_context_manager_v1 *manager, const struct wl_client *client) {
+	struct wl_listener *listener = wl_client_get_destroy_listener((struct wl_client *)client,
 		security_context_client_handle_destroy);
 	if (listener == NULL) {
 		return NULL;
