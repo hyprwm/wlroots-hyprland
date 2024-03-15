@@ -8,12 +8,6 @@
 
 #define SINGLE_PIXEL_MANAGER_VERSION 1
 
-struct wlr_single_pixel_buffer_manager_v1 {
-	struct wl_global *global;
-
-	struct wl_listener display_destroy;
-};
-
 struct wlr_single_pixel_buffer_v1 {
 	struct wlr_buffer base;
 	struct wl_resource *resource;

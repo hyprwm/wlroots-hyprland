@@ -11,7 +11,14 @@
 
 #include <wayland-server-core.h>
 
-struct wlr_single_pixel_buffer_manager_v1;
+struct wlr_single_pixel_buffer_manager_v1 {
+	struct wl_global *global;
+
+	// private state
+
+	struct wl_listener display_destroy;
+};
+
 
 struct wlr_single_pixel_buffer_manager_v1 *wlr_single_pixel_buffer_manager_v1_create(
 	struct wl_display *display);
