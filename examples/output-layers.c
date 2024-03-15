@@ -204,6 +204,12 @@ static void output_surface_handle_commit(struct wl_listener *listener,
 	struct output_surface *output_surface =
 		wl_container_of(listener, output_surface, commit);
 
+	struct wlr_xdg_toplevel *xdg_toplevel =
+		wlr_xdg_toplevel_try_from_wlr_surface(output_surface->wlr_surface);
+	if (xdg_toplevel != NULL && xdg_toplevel->base->initial_commit) {
+		wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
+	}
+
 	struct wlr_buffer *buffer = NULL;
 	if (output_surface->wlr_surface->buffer != NULL) {
 		buffer = wlr_buffer_lock(&output_surface->wlr_surface->buffer->base);

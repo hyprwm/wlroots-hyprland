@@ -94,9 +94,16 @@ static void server_handle_new_output(struct wl_listener *listener, void *data) {
 
 static void surface_handle_commit(struct wl_listener *listener, void *data) {
 	struct surface *surface = wl_container_of(listener, surface, commit);
+
 	wlr_scene_rect_set_size(surface->border,
 			surface->wlr->current.width + 2 * border_width,
 			surface->wlr->current.height + 2 * border_width);
+
+	struct wlr_xdg_toplevel *xdg_toplevel =
+		wlr_xdg_toplevel_try_from_wlr_surface(surface->wlr);
+	if (xdg_toplevel != NULL && xdg_toplevel->base->initial_commit) {
+		wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
+	}
 }
 
 static void surface_handle_destroy(struct wl_listener *listener, void *data) {
