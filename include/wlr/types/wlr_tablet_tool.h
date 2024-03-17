@@ -34,7 +34,6 @@ enum wlr_tablet_tool_type {
 	WLR_TABLET_TOOL_TYPE_LENS,
 	/** A rotary device with positional and rotation data */
 	WLR_TABLET_TOOL_TYPE_TOTEM,
-
 };
 
 struct wlr_tablet_tool {
@@ -68,10 +67,10 @@ struct wlr_tablet {
 	double width_mm, height_mm;
 
 	struct {
-		struct wl_signal axis;
-		struct wl_signal proximity;
-		struct wl_signal tip;
-		struct wl_signal button;
+		struct wl_signal axis; // struct wlr_tablet_tool_axis_event
+		struct wl_signal proximity; // struct wlr_tablet_tool_proximity_event
+		struct wl_signal tip; // struct wlr_tablet_tool_tip_event
+		struct wl_signal button; // struct wlr_tablet_tool_button_event
 	} events;
 
 	struct wl_array paths; // char *
