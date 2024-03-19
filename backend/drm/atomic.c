@@ -353,6 +353,10 @@ static void set_plane_props(struct atomic *atom, struct wlr_drm_backend *drm,
 	atomic_add(atom, id, props->crtc_y, (uint64_t)y);
 }
 
+static bool supports_cursor_hotspots(const struct wlr_drm_plane* plane) {
+	return plane->props.hotspot_x && plane->props.hotspot_y;
+}
+
 static void atomic_connector_add(struct atomic *atom,
 		const struct wlr_drm_connector_state *state, bool modeset) {
 	struct wlr_drm_connector *conn = state->connector;
@@ -391,6 +395,12 @@ static void atomic_connector_add(struct atomic *atom,
 			if (drm_connector_is_cursor_visible(conn)) {
 				set_plane_props(atom, drm, crtc->cursor, state->cursor_fb,
 					crtc->id, conn->cursor_x, conn->cursor_y);
+				if (supports_cursor_hotspots(crtc->cursor)) {
+					atomic_add(atom, crtc->cursor->id,
+						crtc->cursor->props.hotspot_x, conn->cursor_hotspot_x);
+					atomic_add(atom, crtc->cursor->id,
+						crtc->cursor->props.hotspot_y, conn->cursor_hotspot_y);
+				}
 			} else {
 				plane_disable(atom, crtc->cursor);
 			}

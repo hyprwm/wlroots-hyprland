@@ -65,8 +65,10 @@ union wlr_drm_plane_props {
 		uint32_t fb_id;
 		uint32_t crtc_id;
 		uint32_t fb_damage_clips;
+		uint32_t hotspot_x;
+		uint32_t hotspot_y;
 	};
-	uint32_t props[14];
+	uint32_t props[16];
 };
 
 bool get_drm_connector_props(int fd, uint32_t id,

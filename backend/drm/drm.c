@@ -111,6 +111,11 @@ bool check_drm_features(struct wlr_drm_backend *drm) {
 		wlr_log(WLR_DEBUG, "Using atomic DRM interface");
 		drm->iface = &atomic_iface;
 	}
+#ifdef DRM_CLIENT_CAP_CURSOR_PLANE_HOTSPOT
+	if (drm->iface == &atomic_iface && drmSetClientCap(drm->fd, DRM_CLIENT_CAP_CURSOR_PLANE_HOTSPOT, 1) == 0) {
+		wlr_log(WLR_INFO, "DRM_CLIENT_CAP_CURSOR_PLANE_HOTSPOT supported");
+	}
+#endif
 
 	if (drm->iface == &legacy_iface) {
 		drm->supports_tearing_page_flips = drmGetCap(drm->fd, DRM_CAP_ASYNC_PAGE_FLIP, &cap) == 0 && cap == 1;
