@@ -556,7 +556,7 @@ struct wlr_scene_tree *wlr_scene_subsurface_tree_create(
  * A NULL or empty clip will disable clipping
  */
 void wlr_scene_subsurface_tree_set_clip(struct wlr_scene_node *node,
-	struct wlr_box *clip);
+	const struct wlr_box *clip);
 
 /**
  * Add a node displaying an xdg_surface and all of its sub-surfaces to the

@@ -326,7 +326,7 @@ static struct wlr_scene_subsurface_tree *get_subsurface_tree_from_node(
 }
 
 static bool subsurface_tree_set_clip(struct wlr_scene_node *node,
-		struct wlr_box *clip) {
+		const struct wlr_box *clip) {
 	if (node->type != WLR_SCENE_NODE_TREE) {
 		return false;
 	}
@@ -360,7 +360,7 @@ static bool subsurface_tree_set_clip(struct wlr_scene_node *node,
 }
 
 void wlr_scene_subsurface_tree_set_clip(struct wlr_scene_node *node,
-		struct wlr_box *clip) {
+		const struct wlr_box *clip) {
 #ifndef NDEBUG
 	bool found =
 #endif
