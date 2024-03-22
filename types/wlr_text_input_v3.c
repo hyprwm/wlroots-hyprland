@@ -25,6 +25,7 @@ void wlr_text_input_v3_send_enter(struct wlr_text_input_v3 *text_input,
 		struct wlr_surface *surface) {
 	assert(wl_resource_get_client(text_input->resource)
 		== wl_resource_get_client(surface->resource));
+	assert(text_input->focused_surface == NULL);
 	text_input->focused_surface = surface;
 	wl_signal_add(&text_input->focused_surface->events.destroy,
 		&text_input->surface_destroy);
@@ -33,6 +34,7 @@ void wlr_text_input_v3_send_enter(struct wlr_text_input_v3 *text_input,
 }
 
 void wlr_text_input_v3_send_leave(struct wlr_text_input_v3 *text_input) {
+	assert(text_input->focused_surface != NULL);
 	zwp_text_input_v3_send_leave(text_input->resource,
 		text_input->focused_surface->resource);
 	text_input_clear_focused_surface(text_input);
