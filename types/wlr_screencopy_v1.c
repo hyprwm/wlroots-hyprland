@@ -207,6 +207,7 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 
 	struct wlr_texture *texture = wlr_texture_from_buffer(renderer, src_buffer);
 	if (!texture) {
+		wlr_log(WLR_DEBUG, "Failed to grab a texture from a buffer during shm screencopy");
 		goto out;
 	}
 
@@ -221,6 +222,11 @@ static bool frame_shm_copy(struct wlr_screencopy_frame_v1 *frame,
 
 out:
 	wlr_buffer_end_data_ptr_access(frame->buffer);
+
+	if (!ok) {
+		wlr_log(WLR_DEBUG, "Failed to copy to destination during shm screencopy");
+	}
+
 	return ok;
 }
 
@@ -234,6 +240,7 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 	struct wlr_texture *src_tex =
 		wlr_texture_from_buffer(renderer, src_buffer);
 	if (src_tex == NULL) {
+		wlr_log(WLR_DEBUG, "Failed to grab a texture from a buffer during dma screencopy");
 		return false;
 	}
 
@@ -264,6 +271,11 @@ static bool frame_dma_copy(struct wlr_screencopy_frame_v1 *frame,
 
 out:
 	wlr_texture_destroy(src_tex);
+
+	if (!ok) {
+		wlr_log(WLR_DEBUG, "Failed to render to destination during dma screencopy");
+	}
+
 	return ok;
 }
 
