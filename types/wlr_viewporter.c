@@ -158,7 +158,7 @@ static void viewport_handle_surface_client_commit(struct wl_listener *listener,
 		return;
 	}
 
-	if (state->viewport.has_src && state->buffer != NULL &&
+	if (state->viewport.has_src && wlr_surface_state_has_buffer(state) &&
 			!check_src_buffer_bounds(state)) {
 		wlr_surface_reject_pending(viewport->surface,
 			viewport->resource, WP_VIEWPORT_ERROR_OUT_OF_BUFFER,
