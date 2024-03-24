@@ -18,9 +18,9 @@
  *
  * - The size of the surface texture may not match the surface size anymore.
  *   Compositors must use the surface size only.
- * - Compositors must call wlr_render_subtexture_with_matrix() when rendering a
- *   surface texture with the source box returned by
- *   wlr_surface_get_buffer_source_box().
+ * - When rendering a surface texture, compositors should use
+ *   wlr_surface_get_buffer_source_box() to get the source rectangle and crop
+ *   the texture accordingly.
  */
 struct wlr_viewporter {
 	struct wl_global *global;
