@@ -723,37 +723,43 @@ load_all_cursors_from_dir(const char *path, int size,
 	closedir(dir);
 }
 
-/** Load all the cursor of a theme
- *
- * This function loads all the cursor images of a given theme and its
- * inherited themes. Each cursor is loaded into an struct xcursor_images object
- * which is passed to the caller's load callback. If a cursor appears
- * more than once across all the inherited themes, the load callback
- * will be called multiple times, with possibly different struct xcursor_images
- * object which have the same name. The user is expected to destroy the
- * struct xcursor_images objects passed to the callback with
- * xcursor_images_destroy().
- *
- * \param theme The name of theme that should be loaded
- * \param size The desired size of the cursor images
- * \param load_callback A callback function that will be called
- * for each cursor loaded. The first parameter is the struct xcursor_images
- * object representing the loaded cursor and the second is a pointer
- * to data provided by the user.
- * \param user_data The data that should be passed to the load callback
- */
-void
-xcursor_load_theme(const char *theme, int size,
-		   void (*load_callback)(struct xcursor_images *, void *),
-		   void *user_data)
+struct xcursor_nodelist {
+	size_t nodelen;
+	const char *node;
+	struct xcursor_nodelist *next;
+};
+
+static bool
+nodelist_contains(struct xcursor_nodelist *nodelist, const char *s, size_t ss) {
+	struct xcursor_nodelist *vi;
+	for (vi = nodelist; vi && vi->node; vi = vi->next) {
+		if (vi->nodelen == ss && !strncmp(s, vi->node, vi->nodelen))
+			return true;
+	}
+	return false;
+}
+
+static void
+xcursor_load_theme_protected(const char *theme,
+			     int size,
+			     void (*load_callback)(struct xcursor_images *, void *),
+			     void *user_data,
+			     struct xcursor_nodelist *visited_nodes)
 {
 	char *full, *dir;
 	char *inherits = NULL;
 	const char *path, *i;
 	char *xcursor_path;
+	size_t si;
+	struct xcursor_nodelist current_node;
 
 	if (!theme)
 		theme = "default";
+
+	current_node.next = visited_nodes;
+	current_node.node = theme;
+	current_node.nodelen = strlen(theme);
+	visited_nodes = &current_node;
 
 	xcursor_path = xcursor_library_path();
 	for (path = xcursor_path;
@@ -779,9 +785,39 @@ xcursor_load_theme(const char *theme, int size,
 		free(dir);
 	}
 
-	for (i = inherits; i; i = xcursor_next_path(i))
-		xcursor_load_theme(i, size, load_callback, user_data);
+	for (i = inherits; i; i = xcursor_next_path(i)) {
+		si = strlen(i);
+		if (nodelist_contains(visited_nodes, i, si))
+			continue;
+		xcursor_load_theme_protected(i, size, load_callback, user_data, visited_nodes);
+	}
 
 	free(inherits);
 	free(xcursor_path);
+}
+
+/** Load all the cursor of a theme
+ *
+ * This function loads all the cursor images of a given theme and its
+ * inherited themes. Each cursor is loaded into an struct xcursor_images object
+ * which is passed to the caller's load callback. If a cursor appears
+ * more than once across all the inherited themes, the load callback
+ * will be called multiple times, with possibly different struct xcursor_images
+ * object which have the same name. The user is expected to destroy the
+ * struct xcursor_images objects passed to the callback with
+ * xcursor_images_destroy().
+ *
+ * \param theme The name of theme that should be loaded
+ * \param size The desired size of the cursor images
+ * \param load_callback A callback function that will be called
+ * for each cursor loaded. The first parameter is the struct xcursor_images
+ * object representing the loaded cursor and the second is a pointer
+ * to data provided by the user.
+ * \param user_data The data that should be passed to the load callback
+ */
+void
+xcursor_load_theme(const char *theme, int size,
+		   void (*load_callback)(struct xcursor_images *, void *),
+		   void *user_data) {
+	return xcursor_load_theme_protected(theme, size, load_callback, user_data, NULL);
 }
