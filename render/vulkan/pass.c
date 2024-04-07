@@ -48,6 +48,10 @@ static float color_to_linear(float non_linear) {
 		non_linear / 12.92;
 }
 
+static float color_to_linear_premult(float non_linear, float alpha) {
+	return (alpha == 0) ? 0 : color_to_linear(non_linear / alpha) * alpha;
+}
+
 static void mat3_to_mat4(const float mat3[9], float mat4[4][4]) {
 	memset(mat4, 0, sizeof(float) * 16);
 	mat4[0][0] = mat3[0];
@@ -443,9 +447,9 @@ static void render_pass_add_rect(struct wlr_render_pass *wlr_pass,
 	// colors in linear space as well (and vulkan then automatically
 	// does the conversion for out sRGB render targets).
 	float linear_color[] = {
-		color_to_linear(options->color.r),
-		color_to_linear(options->color.g),
-		color_to_linear(options->color.b),
+		color_to_linear_premult(options->color.r, options->color.a),
+		color_to_linear_premult(options->color.g, options->color.a),
+		color_to_linear_premult(options->color.b, options->color.a),
 		options->color.a, // no conversion for alpha
 	};
 
