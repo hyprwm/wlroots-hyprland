@@ -1923,6 +1923,13 @@ bool commit_drm_device(struct wlr_drm_backend *drm,
 		modeset |= output_state->base.allow_reconfiguration;
 	}
 
+	if (test_only && drm->parent) {
+		// If we're running as a secondary GPU, we can't perform an atomic
+		// commit without blitting a buffer.
+		ok = true;
+		goto out;
+	}
+
 	uint32_t flags = 0;
 	if (!test_only) {
 		flags |= DRM_MODE_PAGE_FLIP_EVENT;
