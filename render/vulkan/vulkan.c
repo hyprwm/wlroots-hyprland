@@ -31,7 +31,7 @@ static bool check_extension(const VkExtensionProperties *avail,
 	return false;
 }
 
-static VkBool32 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+static VKAPI_ATTR VkBool32 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
 		const VkDebugUtilsMessengerCallbackDataEXT *debug_data,
 		void *data) {
