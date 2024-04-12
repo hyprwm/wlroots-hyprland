@@ -11,12 +11,6 @@ project(
 	],
 )
 
-version = meson.project_version().split('-')[0]
-version_major = version.split('.')[0]
-version_minor = version.split('.')[1]
-assert(version_major == '0')
-soversion = version_minor.to_int() - 5
-
 little_endian = target_machine.endian() == 'little'
 big_endian = target_machine.endian() == 'big'
 
@@ -173,9 +167,8 @@ wlr_inc = include_directories('include')
 
 symbols_file = 'wlroots.syms'
 symbols_flag = '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(), symbols_file)
-lib_wlr = library(
+lib_wlr = static_library(
 	meson.project_name(), wlr_files,
-	soversion: soversion.to_string(),
 	dependencies: wlr_deps,
 	include_directories: [wlr_inc],
 	install: true,
