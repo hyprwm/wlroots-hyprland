@@ -1,1 +1,5 @@
 /subprojects/
+
+/.cache/
+/src/
+/tmp/
