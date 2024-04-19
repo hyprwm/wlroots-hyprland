@@ -80,6 +80,8 @@ else
 	)
 endif
 
+patching = run_command('./patches/apply.sh', capture: true, check: true)
+
 features = {
 	'drm-backend': false,
 	'x11-backend': false,
@@ -204,3 +206,5 @@ pkgconfig.generate(
 	url: 'https://gitlab.freedesktop.org/wlroots/wlroots',
 	variables: wlr_vars,
 )
+
+message(patching.stdout().strip())
