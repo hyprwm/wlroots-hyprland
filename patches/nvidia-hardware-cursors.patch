@@ -1,0 +1,360 @@
+This patch fixes hardware cursor rendering for NVIDIA GPUs,
+removing the requirement of setting the WLR_NO_HARDWARE_CURSORS
+environment variable when using said GPUs. The following comes from:
+https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4596
+diff --git a/backend/drm/backend.c b/backend/drm/backend.c
+index f91492ac..b16451e0 100644
+--- a/backend/drm/backend.c
++++ b/backend/drm/backend.c
+@@ -53,9 +53,7 @@ static void backend_destroy(struct wlr_backend *backend) {
+ 	wl_list_remove(&drm->dev_change.link);
+ 	wl_list_remove(&drm->dev_remove.link);
+ 
+-	if (drm->parent) {
+-		finish_drm_renderer(&drm->mgpu_renderer);
+-	}
++	finish_drm_renderer(&drm->mgpu_renderer);
+ 
+ 	finish_drm_resources(drm);
+ 
+@@ -224,22 +222,20 @@ struct wlr_backend *wlr_drm_backend_create(struct wlr_session *session,
+ 		goto error_event;
+ 	}
+ 
+-	if (drm->parent) {
+-		if (!init_drm_renderer(drm, &drm->mgpu_renderer)) {
+-			wlr_log(WLR_ERROR, "Failed to initialize renderer");
+-			goto error_resources;
+-		}
+-
+-		// We'll perform a multi-GPU copy for all submitted buffers, we need
+-		// to be able to texture from them
+-		struct wlr_renderer *renderer = drm->mgpu_renderer.wlr_rend;
+-		const struct wlr_drm_format_set *texture_formats =
+-			wlr_renderer_get_dmabuf_texture_formats(renderer);
+-		if (texture_formats == NULL) {
+-			wlr_log(WLR_ERROR, "Failed to query renderer texture formats");
+-			goto error_mgpu_renderer;
+-		}
++	if (!init_drm_renderer(drm, &drm->mgpu_renderer)) {
++		wlr_log(WLR_ERROR, "Failed to initialize renderer");
++		goto error_resources;
++	}
+ 
++	// We'll perform a multi-GPU copy for all submitted buffers, we need
++	// to be able to texture from them
++	struct wlr_renderer *renderer = drm->mgpu_renderer.wlr_rend;
++	const struct wlr_drm_format_set *texture_formats =
++		wlr_renderer_get_dmabuf_texture_formats(renderer);
++	// Some configurations (alpine CI job) will have a renderer here that does not
++	// support dmabuf formats. We don't want to fail creation of the drm backend
++	// as a result of this, we simply don't populate the format set in that case.
++	if (texture_formats) {
+ 		// Forbid implicit modifiers, because their meaning changes from one
+ 		// GPU to another.
+ 		for (size_t i = 0; i < texture_formats->len; i++) {
+@@ -259,8 +255,6 @@ struct wlr_backend *wlr_drm_backend_create(struct wlr_session *session,
+ 
+ 	return &drm->backend;
+ 
+-error_mgpu_renderer:
+-	finish_drm_renderer(&drm->mgpu_renderer);
+ error_resources:
+ 	finish_drm_resources(drm);
+ error_event:
+diff --git a/include/render/allocator/gbm.h b/include/render/allocator/gbm.h
+index 7e043faf..eb13b3f1 100644
+--- a/include/render/allocator/gbm.h
++++ b/include/render/allocator/gbm.h
+@@ -12,6 +12,7 @@ struct wlr_gbm_buffer {
+ 	struct wl_list link; // wlr_gbm_allocator.buffers
+ 
+ 	struct gbm_bo *gbm_bo; // NULL if the gbm_device has been destroyed
++	void *gbm_map_data; // NULL unless we have an active mapping
+ 	struct wlr_dmabuf_attributes dmabuf;
+ };
+ 
+diff --git a/render/allocator/gbm.c b/render/allocator/gbm.c
+index baa0fb6e..f7946dcc 100644
+--- a/render/allocator/gbm.c
++++ b/render/allocator/gbm.c
+@@ -171,9 +171,51 @@ static bool buffer_get_dmabuf(struct wlr_buffer *wlr_buffer,
+ 	return true;
+ }
+ 
++static bool gbm_buffer_begin_data_ptr_access(struct wlr_buffer *wlr_buffer,
++		uint32_t flags, void **data_ptr, uint32_t *format_ptr, size_t *stride_ptr) {
++	struct wlr_gbm_buffer *buffer = get_gbm_buffer_from_buffer(wlr_buffer);
++
++	if (buffer->gbm_bo == NULL) {
++		return false;
++	}
++
++	uint32_t gbm_flags = 0;
++	if (flags & WLR_BUFFER_DATA_PTR_ACCESS_READ) {
++		gbm_flags |= GBM_BO_TRANSFER_READ;
++	}
++	if (flags & WLR_BUFFER_DATA_PTR_ACCESS_WRITE) {
++		gbm_flags |= GBM_BO_TRANSFER_WRITE;
++	}
++
++	uint32_t stride = 0;
++	void *gbm_map_data = NULL;
++	void *data = gbm_bo_map(buffer->gbm_bo, 0, 0,
++		wlr_buffer->width, wlr_buffer->height, gbm_flags, &stride, &gbm_map_data);
++	if (data == NULL) {
++		wlr_log_errno(WLR_ERROR, "gbm_bo_map failed");
++		return false;
++	}
++
++	*data_ptr = data;
++	*format_ptr = buffer->dmabuf.format;
++	*stride_ptr = stride;
++	assert(buffer->gbm_map_data == NULL);
++	buffer->gbm_map_data = gbm_map_data;
++	return true;
++}
++
++static void gbm_buffer_end_data_ptr_access(struct wlr_buffer *wlr_buffer) {
++	struct wlr_gbm_buffer *buffer = get_gbm_buffer_from_buffer(wlr_buffer);
++	assert(buffer->gbm_bo != NULL);
++	gbm_bo_unmap(buffer->gbm_bo, buffer->gbm_map_data);
++	buffer->gbm_map_data = NULL;
++}
++
+ static const struct wlr_buffer_impl buffer_impl = {
+ 	.destroy = buffer_destroy,
+ 	.get_dmabuf = buffer_get_dmabuf,
++	.begin_data_ptr_access = gbm_buffer_begin_data_ptr_access,
++	.end_data_ptr_access = gbm_buffer_end_data_ptr_access,
+ };
+ 
+ static const struct wlr_allocator_interface allocator_impl;
+diff --git a/backend/drm/drm.c b/backend/drm/drm.c
+index b2e2c392..e23e3be5 100644
+--- a/backend/drm/drm.c
++++ b/backend/drm/drm.c
+@@ -1005,6 +1005,7 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
+ 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
+ 	struct wlr_drm_backend *drm = conn->backend;
+ 	struct wlr_drm_crtc *crtc = conn->crtc;
++	bool ok = false;
+ 
+ 	if (!crtc) {
+ 		return false;
+@@ -1033,34 +1034,62 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
+ 			return false;
+ 		}
+ 
+-		struct wlr_buffer *local_buf;
+-		if (drm->parent) {
++		// First try importing our buffer
++		struct wlr_buffer *local_buf = wlr_buffer_lock(buffer);
++		ok = drm_fb_import(&conn->cursor_pending_fb, drm, local_buf,
++				&plane->formats);
++		wlr_buffer_unlock(local_buf);
++
++		if (!ok) {
++			// If this failed blit a compatible buffer. This will blit it to
++			// our mgpu surface in the case that we are a secondary device
+ 			struct wlr_drm_format format = {0};
++			// Try to find a common format/modifier
+ 			if (!drm_plane_pick_render_format(plane, &format, &drm->mgpu_renderer)) {
+ 				wlr_log(WLR_ERROR, "Failed to pick cursor plane format");
+-				return false;
++				// If the above failed it may be because the modifier for this
++				// buffer is not able to be scanned out, as is the case on some
++				// GPUs.  If it failed try to do a linear copy. This will map
++				// the mgpu surface as a linear texture and read pixels from
++				// the buffer into it. This avoids a scenario where the
++				// hardware cannot render to linear textures but only linear
++				// textures are supported for cursors, as is the case with
++				// Nvidia and VmWare GPUs
++
++				// Create a default format with only the linear modifier
++				wlr_drm_format_init(&format, DRM_FORMAT_ARGB8888);
++				if (!wlr_drm_format_add(&format, 0)) {
++					wlr_drm_format_finish(&format);
++					return false;
++				}
+ 			}
+ 
+-			bool ok = init_drm_surface(&plane->mgpu_surf, &drm->mgpu_renderer,
+-				buffer->width, buffer->height, &format);
++			ok = init_drm_surface(&plane->mgpu_surf, &drm->mgpu_renderer,
++					buffer->width, buffer->height, &format);
+ 			wlr_drm_format_finish(&format);
+ 			if (!ok) {
+ 				return false;
+ 			}
+ 
++			// First try to blit our cursor image.
+ 			local_buf = drm_surface_blit(&plane->mgpu_surf, buffer);
++			// If this is not possible due to the GPU not being able to
++			// render to a supported cursor format, then fall back to a
++			// more expensive copy
+ 			if (local_buf == NULL) {
+-				return false;
++				// use the primary GPU for this, which will either be the current DRM
++				// backend or the parent if it has one
++				struct wlr_drm_renderer *drm_renderer =
++					drm->parent ? &drm->parent->mgpu_renderer : &drm->mgpu_renderer;
++				local_buf = drm_cursor_copy(&plane->mgpu_surf, drm_renderer, buffer);
++				if (local_buf == NULL) {
++					return false;
++				}
+ 			}
+-		} else {
+-			local_buf = wlr_buffer_lock(buffer);
+-		}
+ 
+-		bool ok = drm_fb_import(&conn->cursor_pending_fb, drm, local_buf,
+-			&plane->formats);
+-		wlr_buffer_unlock(local_buf);
+-		if (!ok) {
+-			return false;
++			ok = drm_fb_import(&conn->cursor_pending_fb, drm, local_buf,
++					&plane->formats);
++			wlr_buffer_unlock(local_buf);
+ 		}
+ 
+ 		conn->cursor_enabled = true;
+@@ -1069,7 +1098,7 @@ static bool drm_connector_set_cursor(struct wlr_output *output,
+ 	}
+ 
+ 	wlr_output_update_needs_frame(output);
+-	return true;
++	return ok;
+ }
+ 
+ static bool drm_connector_move_cursor(struct wlr_output *output,
+diff --git a/backend/drm/renderer.c b/backend/drm/renderer.c
+index e4aadc10..07ec5a52 100644
+--- a/backend/drm/renderer.c
++++ b/backend/drm/renderer.c
+@@ -1,4 +1,5 @@
+ #include <assert.h>
++#include <stdlib.h>
+ #include <drm_fourcc.h>
+ #include <wlr/render/swapchain.h>
+ #include <wlr/render/wlr_renderer.h>
+@@ -73,6 +74,82 @@ bool init_drm_surface(struct wlr_drm_surface *surf,
+ 	return true;
+ }
+ 
++struct wlr_buffer *drm_cursor_copy(struct wlr_drm_surface *surf,
++		struct wlr_drm_renderer *parent_renderer, struct wlr_buffer *buffer) {
++	void *data, *src_data;
++	size_t stride, src_stride;
++	uint32_t drm_format = DRM_FORMAT_ARGB8888;
++
++	if (surf->swapchain->width != buffer->width ||
++			surf->swapchain->height != buffer->height) {
++		wlr_log(WLR_ERROR, "Surface size doesn't match buffer size");
++		return NULL;
++	}
++
++	struct wlr_texture *tex = wlr_texture_from_buffer(parent_renderer->wlr_rend, buffer);
++	if (tex == NULL) {
++		wlr_log(WLR_ERROR, "Failed to import cursor into multi-GPU renderer");
++		return NULL;
++	}
++
++	struct wlr_buffer *dst = wlr_swapchain_acquire(surf->swapchain, NULL);
++	if (!dst) {
++		wlr_log(WLR_ERROR, "Failed to acquire multi-GPU swapchain buffer");
++		goto error_tex;
++	}
++
++	if (!wlr_buffer_begin_data_ptr_access(dst, WLR_BUFFER_DATA_PTR_ACCESS_WRITE, &data,
++				&drm_format, &stride)) {
++		wlr_log(WLR_ERROR, "Failed to get data ptr access to DRM cursor surface");
++		goto error_dst;
++	}
++
++	// Allocate memory to store our pixel data
++	src_stride = tex->width * 4;
++	src_data = malloc(tex->height * src_stride);
++	if (data == NULL) {
++		goto end_access;
++	}
++
++	// Get our linear pixel data from the source texture
++	bool result = wlr_texture_read_pixels(tex, &(struct wlr_texture_read_pixels_options) {
++		.format = DRM_FORMAT_ARGB8888,
++		.stride = src_stride,
++		.data = src_data,
++	});
++
++	if (!result) {
++		wlr_log(WLR_ERROR, "Failed to get data ptr access to DRM cursor surface");
++		goto free_src_data;
++	}
++
++	if (stride != src_stride) {
++		wlr_log(WLR_ERROR, "Format/stride values for DRM cursor source and destination"
++				"buffers do not match");
++		goto free_src_data;
++	}
++
++	// Copy our linear pixels into our DRM surface
++	memcpy(data, src_data, stride * buffer->height);
++
++	free(src_data);
++	wlr_buffer_end_data_ptr_access(dst);
++	wlr_texture_destroy(tex);
++
++	return dst;
++
++free_src_data:
++	free(src_data);
++end_access:
++	wlr_buffer_end_data_ptr_access(dst);
++error_dst:
++	wlr_buffer_unlock(dst);
++error_tex:
++	wlr_texture_destroy(tex);
++
++	return NULL;
++}
++
+ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
+ 		struct wlr_buffer *buffer) {
+ 	struct wlr_renderer *renderer = surf->renderer->wlr_rend;
+diff --git a/include/backend/drm/renderer.h b/include/backend/drm/renderer.h
+index f53f720b..115d49f3 100644
+--- a/include/backend/drm/renderer.h
++++ b/include/backend/drm/renderer.h
+@@ -33,6 +33,8 @@ void finish_drm_surface(struct wlr_drm_surface *surf);
+ 
+ struct wlr_buffer *drm_surface_blit(struct wlr_drm_surface *surf,
+ 	struct wlr_buffer *buffer);
++struct wlr_buffer *drm_cursor_copy(struct wlr_drm_surface *surf,
++	struct wlr_drm_renderer *parent_renderer, struct wlr_buffer *buffer);
+ 
+ bool drm_plane_pick_render_format(struct wlr_drm_plane *plane,
+ 	struct wlr_drm_format *fmt, struct wlr_drm_renderer *renderer);
+diff --git a/types/output/cursor.c b/types/output/cursor.c
+index 22654b0a..ee9a195f 100644
+--- a/types/output/cursor.c
++++ b/types/output/cursor.c
+@@ -171,7 +171,17 @@ static bool output_pick_cursor_format(struct wlr_output *output,
+ 		}
+ 	}
+ 
+-	return output_pick_format(output, display_formats, format, DRM_FORMAT_ARGB8888);
++
++	// If this fails to find a shared modifier try to use a linear
++	// modifier. This avoids a scenario where the hardware cannot render to
++	// linear textures but only linear textures are supported for cursors,
++	// as is the case with Nvidia and VmWare GPUs
++	if (!output_pick_format(output, display_formats, format, DRM_FORMAT_ARGB8888)) {
++		// Clear the format as output_pick_format doesn't zero it
++		memset(format, 0, sizeof(*format));
++		return output_pick_format(output, NULL, format, DRM_FORMAT_ARGB8888);
++	}
++	return true;
+ }
+ 
+ static struct wlr_buffer *render_cursor_buffer(struct wlr_output_cursor *cursor) {
+
