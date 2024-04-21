@@ -1,3 +1,7 @@
+This patch suppresses the error when the surface buffer size is not divisible by the scale,
+and logs a bug message instead. It reverts this commit:
+https://gitlab.freedesktop.org/wlroots/wlroots/-/commit/18595000f3a21502fd60bf213122859cc348f9af
+It is intended as a temporary workaround for https://github.com/hyprwm/Hyprland/issues/509
 diff --git a/types/wlr_compositor.c b/types/wlr_compositor.c
 index c5044ce4..89e410bc 100644
 --- a/types/wlr_compositor.c
