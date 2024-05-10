@@ -25,7 +25,7 @@ if not features.get('session')
 endif
 
 install_subdir('wlr',
-	install_dir: get_option('includedir'),
+	install_dir: get_option('includedir') / 'hyprland',
 	exclude_files: exclude_files,
 )
 

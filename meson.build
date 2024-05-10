@@ -199,10 +199,12 @@ if get_option('examples')
 	subdir('tinywl')
 endif
 
+pkg_install_dir = join_paths(get_option('datadir'), 'pkgconfig')
 pkgconfig = import('pkgconfig')
 pkgconfig.generate(
 	lib_wlr,
 	description: 'Wayland compositor library',
+	install_dir: pkg_install_dir,
 	url: 'https://gitlab.freedesktop.org/wlroots/wlroots',
 	variables: wlr_vars,
 )
