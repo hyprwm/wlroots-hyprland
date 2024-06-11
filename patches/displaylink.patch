@@ -1,0 +1,29 @@
+This patch adds support is DisplayLink and the DisplayLink driver.
+The following comes from:
+https://github.com/muellerjoel/wlroots-displaylink
+diff --git a/render/egl.c b/render/egl.c
+index e3839c7d..558cff00 100644
+--- a/render/egl.c
++++ b/render/egl.c
+@@ -490,8 +490,21 @@ static int open_render_node(int drm_fd) {
+ 		}
+ 		wlr_log(WLR_DEBUG, "DRM device '%s' has no render node, "
+ 			"falling back to primary node", render_name);
++
++		drmVersion *render_version = drmGetVersion(drm_fd);
++		if (render_version != NULL && render_version->name != NULL) {
++			wlr_log(WLR_DEBUG, "DRM device version.name '%s'", render_version->name);
++			if (strcmp(render_version->name, "evdi") == 0) {
++				free(render_name);
++				render_name = malloc(sizeof(char)*15);
++				strcpy(render_name, "/dev/dri/card0");
++			}
++			drmFreeVersion(render_version);
++		}
+ 	}
+ 
++	wlr_log(WLR_DEBUG, "open_render_node() DRM device '%s'", render_name);
++
+ 	int render_fd = open(render_name, O_RDWR | O_CLOEXEC);
+ 	if (render_fd < 0) {
+ 		wlr_log_errno(WLR_ERROR, "Failed to open DRM node '%s'", render_name);
